@@ -298,11 +298,13 @@
     border-radius: var(--radius-lg);
     padding: 24px;
     margin-bottom: 24px;
+    text-align: left;
 }
 
 .overview-section h3 {
     font-size: 1rem;
     margin-bottom: 6px;
+    text-align: left;
 }
 
 .section-description {
@@ -317,12 +319,18 @@
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 20px;
+    width: 100%;
 }
 
 .section-header h3 {
-    margin-bottom: 0;
+    margin: 0;
     flex: 1;
     text-align: left;
+}
+
+.section-header .btn {
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .btn-sm {
