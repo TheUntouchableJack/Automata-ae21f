@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="project.css?v=3">
+    <link rel="stylesheet" href="project.css?v=4">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
 </head>
@@ -100,11 +100,15 @@
             </div>
 
             <!-- Tabs -->
-            <div class="tabs">
-                <button class="tab active" data-tab="overview" data-i18n="project.overview">Overview</button>
-                <button class="tab" data-tab="automations" data-i18n="project.automations">Automations</button>
-                <button class="tab" data-tab="customers" data-i18n="project.customers">Customers</button>
-                <button class="tab" data-tab="settings" data-i18n="project.settings">Settings</button>
+            <div class="tabs-wrapper">
+                <div class="container">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="overview" data-i18n="project.overview">Overview</button>
+                        <button class="tab" data-tab="automations" data-i18n="project.automations">Automations</button>
+                        <button class="tab" data-tab="customers" data-i18n="project.customers">Customers</button>
+                        <button class="tab" data-tab="settings" data-i18n="project.settings">Settings</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Tab Content -->
@@ -194,6 +198,7 @@
                                         </button>
                                     </div>
 
+                                    <div class="section-content">
                                     <!-- View Mode -->
                                     <div id="details-view-mode">
                                         <div class="detail-item">
@@ -261,6 +266,7 @@
                                             <button type="submit" class="btn btn-primary" id="save-details-btn">Save Details</button>
                                         </div>
                                     </form>
+                                    </div><!-- end section-content -->
                                 </div>
 
                                 <!-- Business Context Section -->
@@ -275,6 +281,7 @@
                                         </button>
                                     </div>
 
+                                    <div class="section-content">
                                     <!-- View Mode -->
                                     <div id="context-view-mode">
                                         <div class="context-item">
@@ -328,6 +335,7 @@
                                             <button type="button" class="btn btn-primary" id="save-context-btn">Save Context</button>
                                         </div>
                                     </div>
+                                    </div><!-- end section-content -->
                                 </div>
                             </div>
 

@@ -58,11 +58,14 @@
 
 .project-header-info {
     flex: 1;
+    order: 1;
 }
 
 .project-header-actions {
     display: flex;
     gap: 12px;
+    order: 2;
+    flex-shrink: 0;
 }
 
 .project-industry-badge {
@@ -80,12 +83,15 @@
 }
 
 /* Tabs */
+.tabs-wrapper {
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+}
+
 .tabs {
     display: flex;
     gap: 32px;
-    border-bottom: 1px solid var(--color-border);
-    padding: 0 24px;
-    background: var(--color-bg);
+    padding: 0;
 }
 
 .tab {
@@ -296,11 +302,11 @@
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: 24px;
     margin-bottom: 24px;
     text-align: left;
     overflow: hidden;
 }
+
 
 .overview-section h3 {
     font-size: 1rem;
@@ -319,11 +325,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin: -24px -24px 20px -24px;
     padding: 16px 24px;
     background: var(--color-bg-secondary);
     border-bottom: 1px solid var(--color-border);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .section-header h3 {
@@ -337,6 +341,10 @@
 
 .section-header .btn {
     flex-shrink: 0;
+}
+
+.section-content {
+    padding: 24px;
 }
 
 .btn-sm {
