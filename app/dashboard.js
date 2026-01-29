@@ -1,6 +1,8 @@
 // ===== Dashboard Initialization =====
 let currentUser = null;
 let currentOrganization = null;
+let currentUsage = null;
+let orgLimits = null;
 
 async function initDashboard() {
     // Require authentication
@@ -12,6 +14,9 @@ async function initDashboard() {
 
     // Load user's organization
     await loadOrganization();
+
+    // Load usage data
+    await loadUsageData();
 
     // Load projects
     await loadProjects();
@@ -37,19 +42,230 @@ async function loadOrganization() {
             return;
         }
 
-        // Then get the organization details
+        // Then get the organization details including plan info
         const { data: org, error: orgError } = await supabase
             .from('organizations')
-            .select('id, name, slug')
+            .select('id, name, slug, plan_type, appsumo_tier, subscription_tier, plan_limits_override')
             .eq('id', memberships[0].organization_id)
             .single();
 
         if (orgError) throw orgError;
 
         currentOrganization = org;
+
+        // Get plan limits
+        if (typeof getOrgLimits === 'function') {
+            orgLimits = getOrgLimits(org);
+        }
     } catch (error) {
         console.error('Error loading organization:', error);
     }
+}
+
+// ===== Load Usage Data =====
+async function loadUsageData() {
+    if (!currentOrganization) return;
+
+    try {
+        // Try to get current usage period
+        const { data: usage, error } = await supabase
+            .rpc('get_current_usage', { org_id: currentOrganization.id });
+
+        if (error) {
+            // If RPC doesn't exist yet, calculate manually
+            console.log('get_current_usage not available, calculating manually');
+            await calculateUsageManually();
+            return;
+        }
+
+        currentUsage = usage;
+
+        // Update snapshot counts
+        await supabase.rpc('update_usage_snapshots', { org_id: currentOrganization.id });
+
+        // Re-fetch updated usage
+        const { data: updatedUsage } = await supabase
+            .rpc('get_current_usage', { org_id: currentOrganization.id });
+
+        if (updatedUsage) {
+            currentUsage = updatedUsage;
+        }
+
+        renderUsageDashboard();
+    } catch (error) {
+        console.error('Error loading usage data:', error);
+        // Fall back to manual calculation
+        await calculateUsageManually();
+    }
+}
+
+// ===== Calculate Usage Manually (fallback) =====
+async function calculateUsageManually() {
+    if (!currentOrganization) return;
+
+    try {
+        // Count projects
+        const { count: projectsCount } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', currentOrganization.id);
+
+        // Count automations via projects
+        const { data: projects } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('organization_id', currentOrganization.id);
+
+        let automationsCount = 0;
+        if (projects && projects.length > 0) {
+            const projectIds = projects.map(p => p.id);
+            const { count } = await supabase
+                .from('automations')
+                .select('*', { count: 'exact', head: true })
+                .in('project_id', projectIds);
+            automationsCount = count || 0;
+        }
+
+        // Count customers
+        const { count: customersCount } = await supabase
+            .from('customers')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', currentOrganization.id);
+
+        currentUsage = {
+            projects_count: projectsCount || 0,
+            automations_count: automationsCount,
+            customers_count: customersCount || 0,
+            emails_sent: 0,
+            sms_sent: 0,
+            ai_analyses_used: 0
+        };
+
+        renderUsageDashboard();
+    } catch (error) {
+        console.error('Error calculating usage:', error);
+    }
+}
+
+// ===== Render Usage Dashboard =====
+function renderUsageDashboard() {
+    const usageSection = document.getElementById('usage-section');
+    const usageMetrics = document.getElementById('usage-metrics');
+    const planName = document.getElementById('usage-plan-name');
+    const planBadge = document.getElementById('usage-plan-badge');
+    const redeemBtn = document.getElementById('redeem-code-btn');
+    const upgradeBtn = document.getElementById('upgrade-btn');
+    const usageFooter = document.getElementById('usage-footer');
+
+    if (!usageSection || !currentUsage || !orgLimits) return;
+
+    // Show the section
+    usageSection.style.display = 'block';
+
+    // Set plan name and badge
+    planName.textContent = orgLimits.name || 'Free';
+
+    if (orgLimits.badge) {
+        planBadge.textContent = orgLimits.badge;
+        planBadge.style.display = 'inline-block';
+    }
+
+    // Show redeem button for free users or AppSumo users who can stack
+    if (currentOrganization.plan_type === 'free' ||
+        (currentOrganization.plan_type === 'appsumo_lifetime' && currentOrganization.appsumo_tier < 3)) {
+        redeemBtn.style.display = 'inline-flex';
+    }
+
+    // Hide upgrade button for max tier AppSumo or enterprise
+    if (currentOrganization.plan_type === 'appsumo_lifetime' && currentOrganization.appsumo_tier === 3) {
+        upgradeBtn.textContent = 'Stack Code';
+        upgradeBtn.href = '/app/redeem.html';
+    } else if (currentOrganization.subscription_tier === 'enterprise') {
+        upgradeBtn.style.display = 'none';
+    }
+
+    // Render metrics
+    const metrics = [
+        {
+            key: 'projects',
+            label: 'Projects',
+            used: currentUsage.projects_count || 0,
+            limit: orgLimits.projects,
+            icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
+        },
+        {
+            key: 'automations',
+            label: 'Automations',
+            used: currentUsage.automations_count || 0,
+            limit: orgLimits.automations,
+            icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
+        },
+        {
+            key: 'customers',
+            label: 'Customers',
+            used: currentUsage.customers_count || 0,
+            limit: orgLimits.customers,
+            icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+        },
+        {
+            key: 'emails',
+            label: 'Emails',
+            used: currentUsage.emails_sent || 0,
+            limit: orgLimits.emails_monthly,
+            icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+            resets: true
+        },
+        {
+            key: 'ai',
+            label: 'AI Analyses',
+            used: currentUsage.ai_analyses_used || 0,
+            limit: orgLimits.ai_analyses,
+            icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10"/><circle cx="12" cy="12" r="3"/></svg>',
+            resets: true
+        }
+    ];
+
+    usageMetrics.innerHTML = metrics.map(m => {
+        const isUnlimited = m.limit === -1;
+        const percent = isUnlimited ? 0 : Math.min(Math.round((m.used / m.limit) * 100), 100);
+        const status = getUsageStatusClass(percent);
+
+        return `
+            <div class="usage-metric ${isUnlimited ? 'unlimited' : ''}">
+                <div class="usage-metric-header">
+                    <div class="usage-metric-label">
+                        ${m.icon}
+                        ${m.label}
+                    </div>
+                    ${m.resets ? '<span class="usage-metric-value">This month</span>' : ''}
+                </div>
+                ${!isUnlimited ? `
+                    <div class="usage-metric-bar">
+                        <div class="usage-metric-fill ${status}" style="width: ${percent}%"></div>
+                    </div>
+                ` : ''}
+                <div class="usage-metric-numbers">
+                    <span class="usage-metric-used">${m.used.toLocaleString()}</span>
+                    <span class="usage-metric-limit">/ ${isUnlimited ? 'Unlimited' : m.limit.toLocaleString()}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Show footer with reset date
+    usageFooter.style.display = 'flex';
+    const resetDate = document.getElementById('reset-date');
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    nextMonth.setDate(1);
+    resetDate.textContent = nextMonth.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function getUsageStatusClass(percent) {
+    if (percent >= 100) return 'critical';
+    if (percent >= 80) return 'warning';
+    if (percent >= 50) return 'moderate';
+    return 'healthy';
 }
 
 // ===== Load User Info =====
@@ -256,6 +472,20 @@ async function handleCreateProject(e) {
     const createBtn = document.getElementById('create-btn');
     const originalText = createBtn.textContent;
 
+    // Check limit before creating
+    if (orgLimits && currentUsage && typeof checkLimit === 'function') {
+        const limitCheck = checkLimit(
+            currentOrganization,
+            { projects: currentUsage.projects_count || 0 },
+            'projects'
+        );
+
+        if (!limitCheck.allowed) {
+            showUpgradeModal('projects', limitCheck);
+            return;
+        }
+    }
+
     createBtn.disabled = true;
     createBtn.textContent = 'Creating...';
 
@@ -279,6 +509,12 @@ async function handleCreateProject(e) {
 
         if (error) throw error;
 
+        // Update local usage count
+        if (currentUsage) {
+            currentUsage.projects_count = (currentUsage.projects_count || 0) + 1;
+            renderUsageDashboard();
+        }
+
         // Celebrate!
         celebrate();
         createBtn.textContent = 'Created!';
@@ -294,6 +530,102 @@ async function handleCreateProject(e) {
         alert('Error creating project. Please try again.');
         createBtn.disabled = false;
         createBtn.textContent = originalText;
+    }
+}
+
+// ===== Upgrade Modal =====
+function showUpgradeModal(limitType, limitCheck) {
+    const modal = document.getElementById('upgrade-modal');
+    if (!modal) {
+        // Create modal if it doesn't exist
+        createUpgradeModal();
+    }
+
+    const upgradeTitle = document.getElementById('upgrade-title');
+    const upgradeMessage = document.getElementById('upgrade-message');
+    const upgradeOptions = document.getElementById('upgrade-options');
+
+    // Set title and message
+    const limitNames = {
+        projects: 'Projects',
+        automations: 'Automations',
+        customers: 'Customers',
+        emails_monthly: 'Monthly Emails',
+        ai_analyses: 'AI Analyses'
+    };
+
+    upgradeTitle.textContent = `${limitNames[limitType] || 'Limit'} Reached`;
+    upgradeMessage.textContent = limitCheck.message;
+
+    // Get upgrade options
+    const options = typeof getUpgradeOptions === 'function'
+        ? getUpgradeOptions(currentOrganization)
+        : [];
+
+    upgradeOptions.innerHTML = options.map(opt => `
+        <a href="${opt.action === 'redeem' ? '/app/redeem.html' : '/pricing.html'}" class="upgrade-option">
+            <div class="upgrade-option-icon">
+                ${opt.type === 'stack_code' || opt.type === 'appsumo'
+                    ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>'
+                    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+                }
+            </div>
+            <div class="upgrade-option-content">
+                <h4>${opt.label}</h4>
+                <p>${opt.description}</p>
+            </div>
+        </a>
+    `).join('');
+
+    document.getElementById('upgrade-modal').classList.add('active');
+}
+
+function createUpgradeModal() {
+    const modalHtml = `
+        <div class="modal-overlay upgrade-modal" id="upgrade-modal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 id="upgrade-title">Limit Reached</h2>
+                    <button class="modal-close" onclick="closeUpgradeModal()">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="upgrade-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <p class="upgrade-message" id="upgrade-message">You've reached your limit.</p>
+                    <div class="upgrade-options" id="upgrade-options">
+                        <!-- Options populated by JS -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeUpgradeModal()">Maybe Later</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Close on overlay click
+    document.getElementById('upgrade-modal').addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-overlay')) {
+            closeUpgradeModal();
+        }
+    });
+}
+
+function closeUpgradeModal() {
+    const modal = document.getElementById('upgrade-modal');
+    if (modal) {
+        modal.classList.remove('active');
     }
 }
 

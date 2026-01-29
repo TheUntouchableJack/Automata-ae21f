@@ -85,6 +85,42 @@
                 </div>
             </div>
 
+            <!-- Usage Dashboard Section -->
+            <section class="usage-section" id="usage-section" style="display: none;">
+                <div class="container">
+                    <div class="usage-dashboard">
+                        <div class="usage-header">
+                            <div class="usage-plan">
+                                <span class="usage-plan-label">Current Plan</span>
+                                <span class="usage-plan-name" id="usage-plan-name">Free</span>
+                                <span class="usage-plan-badge" id="usage-plan-badge" style="display: none;"></span>
+                            </div>
+                            <div class="usage-actions">
+                                <a href="/app/redeem.html" class="btn btn-sm btn-secondary" id="redeem-code-btn" style="display: none;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                    </svg>
+                                    Redeem Code
+                                </a>
+                                <a href="/pricing.html" class="btn btn-sm btn-primary" id="upgrade-btn">
+                                    Upgrade Plan
+                                </a>
+                            </div>
+                        </div>
+                        <div class="usage-metrics" id="usage-metrics">
+                            <!-- Usage meters will be populated by JS -->
+                        </div>
+                        <div class="usage-footer" id="usage-footer" style="display: none;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            <span>Monthly limits reset on <strong id="reset-date">the 1st</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="projects-section">
                 <div class="container">
                     <!-- Loading State -->
@@ -170,6 +206,7 @@
     <script src="auth.js?v=2"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="danger-modal.js?v=1"></script>
-    <script src="dashboard.js?v=4"></script>
+    <script src="plan-limits.js?v=1"></script>
+    <script src="dashboard.js?v=5"></script>
 </body>
 </html>
