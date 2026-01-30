@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <style>
@@ -562,66 +563,119 @@
             outline: none;
             border-color: var(--color-primary);
         }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--color-border-light);
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-pages {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pagination-page {
+            min-width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: none;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .pagination-page:hover {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-border);
+        }
+
+        .pagination-page.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .pagination-ellipsis {
+            padding: 0 8px;
+            color: var(--color-text-muted);
+        }
+
+        @media (max-width: 640px) {
+            .pagination {
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
+            }
+
+            .pagination-info {
+                text-align: center;
+            }
+
+            .pagination-controls {
+                justify-content: center;
+            }
+
+            .pagination-btn span {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="dashboard-layout">
-        <!-- App Header -->
-        <header class="app-header">
-            <div class="container">
-                <a href="/app/dashboard.html" class="logo">
-                    <span class="logo-icon">A</span>
-                    <span class="logo-text">Automata</span>
-                </a>
-
-                <nav class="main-nav">
-                    <a href="/app/dashboard.html" class="nav-link" data-i18n="nav.projects">Projects</a>
-                    <a href="/app/automations.html" class="nav-link active" data-i18n="nav.automations">Automations</a>
-                    <a href="/app/customers.html" class="nav-link" data-i18n="nav.customers">Customers</a>
-                </nav>
-
-                <div class="header-actions">
-                    <!-- Language Selector -->
-                    <div class="lang-selector">
-                        <button class="lang-selector-btn" type="button" aria-label="Change language">
-                            <span class="lang-selector-current">EN</span>
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="lang-dropdown">
-                            <a href="#" class="lang-option active" data-lang="en">EN</a>
-                            <a href="#" class="lang-option" data-lang="es">ES</a>
-                            <a href="#" class="lang-option" data-lang="fr">FR</a>
-                            <a href="#" class="lang-option" data-lang="de">DE</a>
-                            <a href="#" class="lang-option" data-lang="it">IT</a>
-                            <a href="#" class="lang-option" data-lang="pt">PT</a>
-                            <a href="#" class="lang-option" data-lang="zh">ZH</a>
-                            <a href="#" class="lang-option" data-lang="ar">AR</a>
-                        </div>
-                    </div>
-                    <div class="user-menu">
-                        <button class="user-menu-btn" id="user-menu-btn">
-                            <span class="user-avatar" id="user-avatar">?</span>
-                            <span class="user-name" id="user-name">Loading...</span>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="user-dropdown" id="user-dropdown">
-                            <a href="/app/dashboard.html" data-i18n="nav.dashboard">Dashboard</a>
-                            <a href="/app/automations.html" data-i18n="nav.automations">Automations</a>
-                            <a href="/app/customers.html" data-i18n="nav.customers">Customers</a>
-                            <div class="divider"></div>
-                            <button class="logout-btn" id="logout-btn" data-i18n="nav.signOut">Sign Out</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="app-main">
             <div class="page-header">
                 <div class="container">
                     <div>
@@ -685,6 +739,9 @@
                     <h3 id="empty-title">No automations found</h3>
                     <p id="empty-message">Create your first automation from a project.</p>
                 </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination" style="display: none;"></div>
             </div>
         </main>
     </div>
@@ -926,11 +983,15 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="auth.js?v=2"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="danger-modal.js?v=1"></script>
     <script src="icon-library.js?v=1"></script>
     <script src="templates-library.js?v=1"></script>
-    <script src="automations.js?v=2"></script>
+    <script src="soft-delete.js?v=1"></script>
+    <script src="undo-toast.js?v=1"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script src="automations.js?v=8"></script>
 </body>
 </html>

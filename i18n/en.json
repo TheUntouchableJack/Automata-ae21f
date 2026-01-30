@@ -1,6 +1,7 @@
 {
     "nav": {
         "automations": "Automations",
+        "apps": "Apps",
         "features": "Features",
         "howItWorks": "How It Works",
         "pricing": "Pricing",
@@ -10,7 +11,21 @@
         "projects": "Projects",
         "customers": "Customers",
         "dashboard": "Dashboard",
-        "signOut": "Sign Out"
+        "signOut": "Sign Out",
+        "outgoing": "Outgoing",
+        "roadmap": "Roadmap",
+        "settings": "Settings",
+        "profile": "Profile",
+        "management": "Management",
+        "system": "System",
+        "freePlan": "Free Plan",
+        "admin": "Admin",
+        "launchPlan": "Launch Plan",
+        "intelligence": "Intelligence"
+    },
+    "launchPlan": {
+        "title": "Launch Plan",
+        "subtitle": "Go-to-market strategy and platform launches"
     },
     "hero": {
         "badge": "Now in Beta — Join the waitlist",
@@ -225,9 +240,42 @@
         "noProjectsDesc": "Create your first project to start automating",
         "createFirst": "Create Your First Project"
     },
+    "aiFeed": {
+        "title": "AI Intelligence Feed",
+        "analyze": "Analyze My Business",
+        "emptyTitle": "No recommendations yet",
+        "emptyDesc": "Click \"Analyze My Business\" to get AI-powered insights based on your data.",
+        "analyzing": "Analyzing your business data...",
+        "opportunity": "Opportunity",
+        "efficiency": "Efficiency",
+        "risk": "Risk Alert",
+        "growth": "Growth",
+        "automation": "Automation",
+        "highImpact": "High Impact",
+        "mediumImpact": "Medium Impact",
+        "lowImpact": "Low Impact",
+        "dismiss": "Dismiss",
+        "tellMeMore": "Tell Me More",
+        "confidence": "Confidence"
+    },
+    "intelligence": {
+        "title": "AI Intelligence",
+        "subtitle": "AI-powered insights and recommendations for your business",
+        "analyze": "Analyze My Business",
+        "pending": "Pending Actions",
+        "implemented": "Implemented",
+        "highImpact": "High Impact",
+        "lastAnalysis": "Last Analysis",
+        "loading": "Loading recommendations...",
+        "emptyTitle": "No recommendations yet",
+        "emptyDesc": "Click \"Analyze My Business\" to get AI-powered insights based on your organization data.",
+        "acceptCreate": "Accept & Create",
+        "viewAll": "View All"
+    },
     "project": {
         "overview": "Overview",
         "automations": "Automations",
+        "apps": "Apps",
         "customers": "Customers",
         "settings": "Settings",
         "newAutomation": "New Automation",
@@ -407,6 +455,295 @@
                 "title": "Publish When Ready",
                 "description": "Review your settings, then publish to activate"
             }
+        }
+    },
+    "outgoing": {
+        "comingSoon": "Coming Soon",
+        "title": "Outgoing Messages",
+        "subtitle": "Your command center for all scheduled messages. Monitor, pause, cancel, or reschedule any automation message before it's sent.",
+        "featuresTitle": "What you'll be able to do",
+        "feature1": "View all scheduled SMS and email messages in one place",
+        "feature2": "Filter by project, automation, channel, or date range",
+        "feature3": "Pause, cancel, or reschedule individual messages",
+        "feature4": "Bulk actions to manage multiple messages at once",
+        "feature5": "Real-time delivery status and error tracking",
+        "backToDashboard": "Back to Dashboard"
+    },
+    "roadmap": {
+        "title": "Product Roadmap",
+        "subtitle": "See what we're building and suggest new features",
+        "ideas": "Ideas",
+        "inProgress": "In Progress",
+        "recentlyDeployed": "Recently Deployed",
+        "suggestFeature": "Suggest a Feature",
+        "upvote": "Upvote",
+        "upvoted": "Upvoted",
+        "categories": {
+            "feature": "Feature",
+            "improvement": "Improvement",
+            "integration": "Integration",
+            "bug": "Bug Fix"
+        },
+        "suggestForm": {
+            "title": "Suggest a Feature",
+            "subtitle": "Help us build what you need most",
+            "titleLabel": "Feature Title",
+            "titlePlaceholder": "e.g., Integration with Shopify",
+            "descLabel": "Description",
+            "descPlaceholder": "Describe the feature and how it would help your business...",
+            "categoryLabel": "Category",
+            "emailLabel": "Email (optional)",
+            "emailPlaceholder": "your@email.com",
+            "submit": "Submit Suggestion",
+            "cancel": "Cancel",
+            "success": "Thank you! Your suggestion has been submitted for review."
+        }
+    },
+    "rateLimit": {
+        "tooMany": "Too many {action}. Please try again in {time}.",
+        "remaining": "You have {count} {action} remaining this hour.",
+        "lastOne": "You have 1 {action} remaining this hour.",
+        "limitReached": "You've reached the limit for {action} this hour.",
+        "actions": {
+            "featureRequests": "feature requests",
+            "featureRequest": "feature request",
+            "signups": "signup attempts",
+            "signup": "signup attempt",
+            "analyses": "AI analyses",
+            "analysis": "AI analysis",
+            "votes": "votes",
+            "vote": "vote"
+        }
+    },
+    "settings": {
+        "title": "Account Settings",
+        "nav": {
+            "profile": "Profile",
+            "security": "Security",
+            "team": "Team",
+            "plan": "Plan",
+            "activity": "Activity",
+            "support": "Support",
+            "danger": "Danger Zone"
+        },
+        "profile": {
+            "title": "Profile Information",
+            "subtitle": "Update your personal details and profile photo",
+            "avatar": "Profile Photo",
+            "uploadPhoto": "Upload Photo",
+            "removePhoto": "Remove",
+            "photoHelper": "JPG, PNG or GIF. Max 2MB.",
+            "firstName": "First Name",
+            "lastName": "Last Name",
+            "email": "Email Address",
+            "emailHelper": "Contact support to change your email",
+            "phone": "Phone Number",
+            "phoneHelper": "Optional",
+            "saveChanges": "Save Changes"
+        },
+        "security": {
+            "title": "Change Password",
+            "subtitle": "Update your password to keep your account secure",
+            "currentPassword": "Current Password",
+            "newPassword": "New Password",
+            "confirmPassword": "Confirm New Password",
+            "updatePassword": "Update Password",
+            "strength": {
+                "weak": "Weak",
+                "medium": "Medium",
+                "strong": "Strong"
+            }
+        },
+        "team": {
+            "title": "Team Members",
+            "subtitle": "Manage who has access to your organization",
+            "you": "You",
+            "inviteMember": "Invite Member",
+            "inviteEmail": "Email address",
+            "inviteRole": "Role",
+            "sendInvite": "Send Invite",
+            "pendingInvitations": "Pending Invitations",
+            "cancelInvite": "Cancel",
+            "resendInvite": "Resend",
+            "removeMember": "Remove",
+            "changeRole": "Change role",
+            "inviteSent": "Invitation sent",
+            "expires": "Expires",
+            "roles": {
+                "owner": "Owner",
+                "admin": "Admin",
+                "member": "Member"
+            },
+            "limits": {
+                "title": "Team Limit",
+                "description": "Upgrade your plan to add more team members"
+            }
+        },
+        "plan": {
+            "title": "Current Plan",
+            "subtitle": "Manage your subscription and billing",
+            "currentPlan": "Current Plan",
+            "features": "Features",
+            "projects": "Projects",
+            "automations": "Automations",
+            "customers": "Customers",
+            "teamMembers": "Team Members",
+            "unlimited": "Unlimited",
+            "upgrade": "Upgrade Plan",
+            "redeem": "Redeem Code",
+            "billingNote": "Billing management coming soon"
+        },
+        "activity": {
+            "title": "Activity Log",
+            "subtitle": "View recent changes in your organization",
+            "allTypes": "All Types",
+            "projects": "Projects",
+            "automations": "Automations",
+            "customers": "Customers",
+            "team": "Team",
+            "settings": "Settings",
+            "last7Days": "Last 7 days",
+            "last30Days": "Last 30 days",
+            "last90Days": "Last 90 days",
+            "allTime": "All time",
+            "noActivity": "No activity yet",
+            "noActivityDesc": "Actions in your organization will appear here",
+            "loadMore": "Load More",
+            "actions": {
+                "create": "Created",
+                "update": "Updated",
+                "delete": "Deleted",
+                "activate": "Activated",
+                "deactivate": "Deactivated",
+                "invite": "Invited",
+                "remove": "Removed",
+                "role_change": "Changed role for",
+                "cancel": "Cancelled invitation for"
+            },
+            "entities": {
+                "project": "project",
+                "automation": "automation",
+                "customer": "customer",
+                "team_member": "team member",
+                "team_invite": "team invitation"
+            }
+        },
+        "support": {
+            "title": "Need Help?",
+            "subtitle": "Get support or review our policies",
+            "contactSupport": "Contact Support",
+            "contactDesc": "Our team is here to help",
+            "termsOfService": "Terms of Service",
+            "privacyPolicy": "Privacy Policy"
+        },
+        "danger": {
+            "title": "Danger Zone",
+            "subtitle": "Irreversible and destructive actions",
+            "deleteAccount": "Delete Account",
+            "deleteTitle": "Delete your account",
+            "deleteWarning": "Once you delete your account, all of your data will be permanently removed. This action cannot be undone.",
+            "deleteButton": "Delete Account",
+            "confirmTitle": "Are you absolutely sure?",
+            "confirmMessage": "This will permanently delete your account and all associated data including projects, automations, and customer records."
+        },
+        "toast": {
+            "profileSaved": "Profile updated successfully",
+            "passwordChanged": "Password changed successfully",
+            "inviteSent": "Invitation sent successfully",
+            "inviteCancelled": "Invitation cancelled",
+            "memberRemoved": "Team member removed",
+            "roleChanged": "Role updated successfully",
+            "error": "Something went wrong. Please try again."
+        }
+    },
+    "undo": {
+        "undo": "Undo",
+        "dismiss": "Dismiss",
+        "canRestore": "You can restore this for up to 1 hour",
+        "restoring": "Restoring...",
+        "restored": "{name} restored",
+        "restoreFailed": "Failed to restore"
+    },
+    "customerApp": {
+        "title": "Customer Apps",
+        "subtitle": "Build customer-facing experiences for your automations",
+        "newApp": "New App",
+        "noApps": "No customer apps yet",
+        "noAppsDesc": "Create your first customer app to engage your audience with loyalty programs, rewards, and more.",
+        "createFirst": "Create Your First App",
+        "templates": {
+            "loyalty": "Loyalty Program",
+            "loyaltyDesc": "Points per visit",
+            "rewards": "Rewards Club",
+            "rewardsDesc": "Redeem prizes",
+            "membership": "VIP Membership",
+            "membershipDesc": "Exclusive perks"
+        },
+        "modal": {
+            "title": "Create Customer App",
+            "name": "App Name",
+            "description": "Description",
+            "type": "App Type",
+            "features": "Features"
+        },
+        "types": {
+            "loyalty": "Loyalty Program",
+            "rewards": "Rewards Club",
+            "membership": "VIP Membership",
+            "custom": "Custom"
+        },
+        "features": {
+            "points": "Points System",
+            "leaderboard": "Leaderboard",
+            "rewards": "Rewards Catalog",
+            "menu": "Menu Browser",
+            "announcements": "Announcements"
+        },
+        "builder": {
+            "basics": "Basic Info",
+            "features": "Features",
+            "branding": "Branding",
+            "settings": "Settings",
+            "qrCode": "QR Code",
+            "preview": "Preview"
+        },
+        "member": {
+            "welcome": "Welcome to {appName}!",
+            "yourPoints": "Your Points",
+            "redeemReward": "Redeem",
+            "viewLeaderboard": "Leaderboard",
+            "scanToEarn": "Scan to Earn",
+            "tier": "Tier"
+        },
+        "join": {
+            "title": "Join {appName}",
+            "firstName": "First Name",
+            "lastName": "Last Name",
+            "email": "Email",
+            "phone": "Phone",
+            "createPin": "Create PIN",
+            "joinButton": "Join Now",
+            "alreadyMember": "Already a member?",
+            "login": "Log in"
+        },
+        "stats": {
+            "members": "Members",
+            "pointsIssued": "Points Issued",
+            "redemptions": "Redemptions"
+        },
+        "share": {
+            "title": "App Link",
+            "copyLink": "Copy Link",
+            "copied": "Copied!",
+            "shareHint": "Share this link with customers so they can join your app",
+            "share": "Share",
+            "whatsapp": "WhatsApp",
+            "sms": "SMS",
+            "email": "Email",
+            "qrTitle": "QR Code",
+            "download": "Download",
+            "print": "Print",
+            "tips": "Tips for sharing your app"
         }
     }
 }

@@ -1,6 +1,7 @@
 {
     "nav": {
         "automations": "الأتمتة",
+        "apps": "التطبيقات",
         "features": "المميزات",
         "howItWorks": "كيف يعمل",
         "pricing": "الأسعار",
@@ -10,13 +11,35 @@
         "projects": "المشاريع",
         "customers": "العملاء",
         "dashboard": "لوحة التحكم",
-        "signOut": "تسجيل الخروج"
+        "signOut": "تسجيل الخروج",
+        "outgoing": "الرسائل الصادرة",
+        "roadmap": "خارطة الطريق",
+        "settings": "الإعدادات",
+        "profile": "الملف الشخصي",
+        "management": "الإدارة",
+        "system": "النظام",
+        "freePlan": "الخطة المجانية",
+        "admin": "المسؤول",
+        "launchPlan": "خطة الإطلاق",
+        "intelligence": "الذكاء"
+    },
+    "launchPlan": {
+        "title": "خطة الإطلاق",
+        "subtitle": "استراتيجية الدخول للسوق وإطلاق المنصات"
     },
     "hero": {
         "badge": "في مرحلة بيتا — انضم لقائمة الانتظار",
         "titleLine1": "{word} واحد.",
         "titleLine2": "آلاف العلاقات.",
-        "rotatingWords": ["شخص", "مؤسس", "رائد أعمال", "مالك", "مبدع", "أم", "امرأة"],
+        "rotatingWords": [
+            "شخص",
+            "مؤسس",
+            "رائد أعمال",
+            "مالك",
+            "مبدع",
+            "أم",
+            "امرأة"
+        ],
         "subtitle": "كل عيد ميلاد مُتذكَّر. كل زيارة مُتابَعة. كل عميل وفيّ مشكور — تلقائياً.",
         "joinWaitlist": "انضم للقائمة",
         "seeHowItWorks": "شاهد كيف يعمل",
@@ -225,9 +248,42 @@
         "noProjectsDesc": "أنشئ مشروعك الأول للبدء في الأتمتة",
         "createFirst": "أنشئ مشروعك الأول"
     },
+    "aiFeed": {
+        "title": "موجز الذكاء الاصطناعي",
+        "analyze": "تحليل عملي",
+        "emptyTitle": "لا توجد توصيات بعد",
+        "emptyDesc": "انقر على \"تحليل عملي\" للحصول على رؤى مدعومة بالذكاء الاصطناعي.",
+        "analyzing": "جاري تحليل بيانات عملك...",
+        "opportunity": "فرصة",
+        "efficiency": "كفاءة",
+        "risk": "تنبيه مخاطر",
+        "growth": "نمو",
+        "automation": "أتمتة",
+        "highImpact": "تأثير عالي",
+        "mediumImpact": "تأثير متوسط",
+        "lowImpact": "تأثير منخفض",
+        "dismiss": "تجاهل",
+        "tellMeMore": "أخبرني المزيد",
+        "confidence": "الثقة"
+    },
+    "intelligence": {
+        "title": "الذكاء الاصطناعي",
+        "subtitle": "رؤى وتوصيات مدعومة بالذكاء الاصطناعي لعملك",
+        "analyze": "تحليل عملي",
+        "pending": "إجراءات معلقة",
+        "implemented": "تم التنفيذ",
+        "highImpact": "تأثير عالي",
+        "lastAnalysis": "آخر تحليل",
+        "loading": "جاري تحميل التوصيات...",
+        "emptyTitle": "لا توجد توصيات بعد",
+        "emptyDesc": "انقر على \"تحليل عملي\" للحصول على رؤى بناءً على بيانات مؤسستك.",
+        "acceptCreate": "قبول وإنشاء",
+        "viewAll": "عرض الكل"
+    },
     "project": {
         "overview": "نظرة عامة",
         "automations": "الأتمتة",
+        "apps": "التطبيقات",
         "customers": "العملاء",
         "settings": "الإعدادات",
         "newAutomation": "أتمتة جديدة",
@@ -407,6 +463,295 @@
                 "title": "انشر عندما تكون جاهزاً",
                 "description": "راجع إعداداتك، ثم انشر للتفعيل"
             }
+        }
+    },
+    "outgoing": {
+        "comingSoon": "قريباً",
+        "title": "الرسائل الصادرة",
+        "subtitle": "مركز التحكم الخاص بك لجميع الرسائل المجدولة. راقب، أوقف مؤقتاً، ألغِ أو أعد جدولة أي رسالة أتمتة قبل إرسالها.",
+        "featuresTitle": "ما ستتمكن من فعله",
+        "feature1": "عرض جميع الرسائل النصية والبريد الإلكتروني المجدولة في مكان واحد",
+        "feature2": "التصفية حسب المشروع أو الأتمتة أو القناة أو نطاق التاريخ",
+        "feature3": "إيقاف مؤقت أو إلغاء أو إعادة جدولة الرسائل الفردية",
+        "feature4": "إجراءات جماعية لإدارة رسائل متعددة دفعة واحدة",
+        "feature5": "حالة التسليم في الوقت الفعلي وتتبع الأخطاء",
+        "backToDashboard": "العودة للوحة التحكم"
+    },
+    "roadmap": {
+        "title": "خارطة طريق المنتج",
+        "subtitle": "شاهد ما نبنيه واقترح ميزات جديدة",
+        "ideas": "أفكار",
+        "inProgress": "قيد التنفيذ",
+        "recentlyDeployed": "تم نشره مؤخراً",
+        "suggestFeature": "اقترح ميزة",
+        "upvote": "صوّت",
+        "upvoted": "تم التصويت",
+        "categories": {
+            "feature": "ميزة",
+            "improvement": "تحسين",
+            "integration": "تكامل",
+            "bug": "إصلاح خطأ"
+        },
+        "suggestForm": {
+            "title": "اقترح ميزة",
+            "subtitle": "ساعدنا في بناء ما تحتاجه أكثر",
+            "titleLabel": "عنوان الميزة",
+            "titlePlaceholder": "مثال، تكامل مع Shopify",
+            "descLabel": "الوصف",
+            "descPlaceholder": "صف الميزة وكيف ستساعد عملك...",
+            "categoryLabel": "الفئة",
+            "emailLabel": "البريد الإلكتروني (اختياري)",
+            "emailPlaceholder": "your@email.com",
+            "submit": "إرسال الاقتراح",
+            "cancel": "إلغاء",
+            "success": "شكراً! تم إرسال اقتراحك للمراجعة."
+        }
+    },
+    "rateLimit": {
+        "tooMany": "عدد كبير جداً من {action}. يرجى المحاولة مرة أخرى بعد {time}.",
+        "remaining": "لديك {count} {action} متبقية هذه الساعة.",
+        "lastOne": "لديك {action} واحدة متبقية هذه الساعة.",
+        "limitReached": "لقد وصلت إلى الحد الأقصى من {action} لهذه الساعة.",
+        "actions": {
+            "featureRequests": "طلبات الميزات",
+            "featureRequest": "طلب ميزة",
+            "signups": "محاولات التسجيل",
+            "signup": "محاولة تسجيل",
+            "analyses": "تحليلات الذكاء الاصطناعي",
+            "analysis": "تحليل الذكاء الاصطناعي",
+            "votes": "أصوات",
+            "vote": "صوت"
+        }
+    },
+    "settings": {
+        "title": "إعدادات الحساب",
+        "nav": {
+            "profile": "الملف الشخصي",
+            "security": "الأمان",
+            "team": "الفريق",
+            "plan": "الخطة",
+            "activity": "النشاط",
+            "support": "الدعم",
+            "danger": "منطقة الخطر"
+        },
+        "profile": {
+            "title": "معلومات الملف الشخصي",
+            "subtitle": "قم بتحديث بياناتك الشخصية وصورة ملفك الشخصي",
+            "avatar": "صورة الملف الشخصي",
+            "uploadPhoto": "رفع صورة",
+            "removePhoto": "إزالة",
+            "photoHelper": "JPG أو PNG أو GIF. الحد الأقصى 2 ميجابايت.",
+            "firstName": "الاسم الأول",
+            "lastName": "اسم العائلة",
+            "email": "عنوان البريد الإلكتروني",
+            "emailHelper": "تواصل مع الدعم لتغيير بريدك الإلكتروني",
+            "phone": "رقم الهاتف",
+            "phoneHelper": "اختياري",
+            "saveChanges": "حفظ التغييرات"
+        },
+        "security": {
+            "title": "تغيير كلمة المرور",
+            "subtitle": "قم بتحديث كلمة المرور للحفاظ على أمان حسابك",
+            "currentPassword": "كلمة المرور الحالية",
+            "newPassword": "كلمة المرور الجديدة",
+            "confirmPassword": "تأكيد كلمة المرور الجديدة",
+            "updatePassword": "تحديث كلمة المرور",
+            "strength": {
+                "weak": "ضعيفة",
+                "medium": "متوسطة",
+                "strong": "قوية"
+            }
+        },
+        "team": {
+            "title": "أعضاء الفريق",
+            "subtitle": "إدارة من لديه حق الوصول إلى مؤسستك",
+            "you": "أنت",
+            "inviteMember": "دعوة عضو",
+            "inviteEmail": "عنوان البريد الإلكتروني",
+            "inviteRole": "الدور",
+            "sendInvite": "إرسال الدعوة",
+            "pendingInvitations": "الدعوات المعلقة",
+            "cancelInvite": "إلغاء",
+            "resendInvite": "إعادة الإرسال",
+            "removeMember": "إزالة",
+            "changeRole": "تغيير الدور",
+            "inviteSent": "تم إرسال الدعوة",
+            "expires": "تنتهي",
+            "roles": {
+                "owner": "المالك",
+                "admin": "مسؤول",
+                "member": "عضو"
+            },
+            "limits": {
+                "title": "حد الفريق",
+                "description": "قم بترقية خطتك لإضافة المزيد من الأعضاء"
+            }
+        },
+        "plan": {
+            "title": "الخطة الحالية",
+            "subtitle": "إدارة اشتراكك والفوترة",
+            "currentPlan": "الخطة الحالية",
+            "features": "الميزات",
+            "projects": "المشاريع",
+            "automations": "الأتمتة",
+            "customers": "العملاء",
+            "teamMembers": "أعضاء الفريق",
+            "unlimited": "غير محدود",
+            "upgrade": "ترقية الخطة",
+            "redeem": "استرداد الرمز",
+            "billingNote": "إدارة الفواتير قريباً"
+        },
+        "activity": {
+            "title": "سجل النشاط",
+            "subtitle": "عرض التغييرات الأخيرة في مؤسستك",
+            "allTypes": "جميع الأنواع",
+            "projects": "المشاريع",
+            "automations": "الأتمتة",
+            "customers": "العملاء",
+            "team": "الفريق",
+            "settings": "الإعدادات",
+            "last7Days": "آخر 7 أيام",
+            "last30Days": "آخر 30 يوماً",
+            "last90Days": "آخر 90 يوماً",
+            "allTime": "كل الوقت",
+            "noActivity": "لا يوجد نشاط بعد",
+            "noActivityDesc": "ستظهر الإجراءات في مؤسستك هنا",
+            "loadMore": "تحميل المزيد",
+            "actions": {
+                "create": "أنشأ",
+                "update": "حدّث",
+                "delete": "حذف",
+                "activate": "فعّل",
+                "deactivate": "عطّل",
+                "invite": "دعا",
+                "remove": "أزال",
+                "role_change": "غيّر دور",
+                "cancel": "ألغى دعوة"
+            },
+            "entities": {
+                "project": "مشروع",
+                "automation": "أتمتة",
+                "customer": "عميل",
+                "team_member": "عضو فريق",
+                "team_invite": "دعوة فريق"
+            }
+        },
+        "support": {
+            "title": "تحتاج مساعدة؟",
+            "subtitle": "احصل على الدعم أو راجع سياساتنا",
+            "contactSupport": "تواصل مع الدعم",
+            "contactDesc": "فريقنا هنا للمساعدة",
+            "termsOfService": "شروط الخدمة",
+            "privacyPolicy": "سياسة الخصوصية"
+        },
+        "danger": {
+            "title": "منطقة الخطر",
+            "subtitle": "إجراءات لا رجعة فيها ومدمرة",
+            "deleteAccount": "حذف الحساب",
+            "deleteTitle": "حذف حسابك",
+            "deleteWarning": "بمجرد حذف حسابك، ستتم إزالة جميع بياناتك بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+            "deleteButton": "حذف الحساب",
+            "confirmTitle": "هل أنت متأكد تماماً؟",
+            "confirmMessage": "سيؤدي هذا إلى حذف حسابك وجميع البيانات المرتبطة به بشكل دائم، بما في ذلك المشاريع والأتمتة وسجلات العملاء."
+        },
+        "toast": {
+            "profileSaved": "تم تحديث الملف الشخصي بنجاح",
+            "passwordChanged": "تم تغيير كلمة المرور بنجاح",
+            "inviteSent": "تم إرسال الدعوة بنجاح",
+            "inviteCancelled": "تم إلغاء الدعوة",
+            "memberRemoved": "تمت إزالة عضو الفريق",
+            "roleChanged": "تم تحديث الدور بنجاح",
+            "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+        }
+    },
+    "undo": {
+        "undo": "تراجع",
+        "dismiss": "إغلاق",
+        "canRestore": "يمكنك استعادة هذا لمدة ساعة واحدة",
+        "restoring": "جاري الاستعادة...",
+        "restored": "تم استعادة {name}",
+        "restoreFailed": "فشل في الاستعادة"
+    },
+    "customerApp": {
+        "title": "تطبيقات العملاء",
+        "subtitle": "أنشئ تجارب موجهة للعملاء لأتمتتك",
+        "newApp": "تطبيق جديد",
+        "noApps": "لا توجد تطبيقات عملاء بعد",
+        "noAppsDesc": "أنشئ أول تطبيق عملاء لإشراك جمهورك ببرامج الولاء والمكافآت والمزيد.",
+        "createFirst": "أنشئ تطبيقك الأول",
+        "templates": {
+            "loyalty": "برنامج الولاء",
+            "loyaltyDesc": "نقاط لكل زيارة",
+            "rewards": "نادي المكافآت",
+            "rewardsDesc": "استرداد الجوائز",
+            "membership": "عضوية VIP",
+            "membershipDesc": "امتيازات حصرية"
+        },
+        "modal": {
+            "title": "إنشاء تطبيق عملاء",
+            "name": "اسم التطبيق",
+            "description": "الوصف",
+            "type": "نوع التطبيق",
+            "features": "الميزات"
+        },
+        "types": {
+            "loyalty": "برنامج الولاء",
+            "rewards": "نادي المكافآت",
+            "membership": "عضوية VIP",
+            "custom": "مخصص"
+        },
+        "features": {
+            "points": "نظام النقاط",
+            "leaderboard": "لوحة المتصدرين",
+            "rewards": "كتالوج المكافآت",
+            "menu": "متصفح القائمة",
+            "announcements": "الإعلانات"
+        },
+        "builder": {
+            "basics": "المعلومات الأساسية",
+            "features": "الميزات",
+            "branding": "العلامة التجارية",
+            "settings": "الإعدادات",
+            "qrCode": "رمز QR",
+            "preview": "معاينة"
+        },
+        "member": {
+            "welcome": "مرحباً بك في {appName}!",
+            "yourPoints": "نقاطك",
+            "redeemReward": "استرداد",
+            "viewLeaderboard": "لوحة المتصدرين",
+            "scanToEarn": "امسح لكسب النقاط",
+            "tier": "المستوى"
+        },
+        "join": {
+            "title": "انضم إلى {appName}",
+            "firstName": "الاسم الأول",
+            "lastName": "اسم العائلة",
+            "email": "البريد الإلكتروني",
+            "phone": "الهاتف",
+            "createPin": "إنشاء رمز PIN",
+            "joinButton": "انضم الآن",
+            "alreadyMember": "عضو بالفعل؟",
+            "login": "تسجيل الدخول"
+        },
+        "stats": {
+            "members": "الأعضاء",
+            "pointsIssued": "النقاط الممنوحة",
+            "redemptions": "عمليات الاسترداد"
+        },
+        "share": {
+            "title": "رابط التطبيق",
+            "copyLink": "نسخ الرابط",
+            "copied": "تم النسخ!",
+            "shareHint": "شارك هذا الرابط مع عملائك للانضمام إلى تطبيقك",
+            "share": "مشاركة",
+            "whatsapp": "واتساب",
+            "sms": "رسالة نصية",
+            "email": "بريد إلكتروني",
+            "qrTitle": "رمز QR",
+            "download": "تحميل",
+            "print": "طباعة",
+            "tips": "نصائح لمشاركة تطبيقك"
         }
     }
 }

@@ -9,68 +9,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <link rel="stylesheet" href="coaching.css">
 </head>
 <body>
-    <div class="dashboard-layout">
-        <!-- App Header -->
-        <header class="app-header">
-            <div class="container">
-                <a href="/app/dashboard.html" class="logo">
-                    <span class="logo-icon">A</span>
-                    <span class="logo-text">Automata</span>
-                </a>
-
-                <nav class="main-nav">
-                    <a href="/app/dashboard.html" class="nav-link active" data-i18n="nav.projects">Projects</a>
-                    <a href="/app/automations.html" class="nav-link" data-i18n="nav.automations">Automations</a>
-                    <a href="/app/customers.html" class="nav-link" data-i18n="nav.customers">Customers</a>
-                </nav>
-
-                <div class="header-actions">
-                    <!-- Language Selector -->
-                    <div class="lang-selector">
-                        <button class="lang-selector-btn" type="button" aria-label="Change language">
-                            <span class="lang-selector-current">EN</span>
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="lang-dropdown">
-                            <a href="#" class="lang-option active" data-lang="en">EN</a>
-                            <a href="#" class="lang-option" data-lang="es">ES</a>
-                            <a href="#" class="lang-option" data-lang="fr">FR</a>
-                            <a href="#" class="lang-option" data-lang="de">DE</a>
-                            <a href="#" class="lang-option" data-lang="it">IT</a>
-                            <a href="#" class="lang-option" data-lang="pt">PT</a>
-                            <a href="#" class="lang-option" data-lang="zh">ZH</a>
-                            <a href="#" class="lang-option" data-lang="ar">AR</a>
-                        </div>
-                    </div>
-                    <div class="user-menu">
-                        <button class="user-menu-btn" id="user-menu-btn">
-                            <span class="user-avatar" id="user-avatar">?</span>
-                            <span class="user-name" id="user-name">Loading...</span>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="user-dropdown" id="user-dropdown">
-                            <a href="/app/dashboard.html" data-i18n="nav.dashboard">Dashboard</a>
-                            <a href="/app/automations.html" data-i18n="nav.automations">Automations</a>
-                            <a href="/app/customers.html" data-i18n="nav.customers">Customers</a>
-                            <div class="divider"></div>
-                            <button class="logout-btn" id="logout-btn" data-i18n="nav.signOut">Sign Out</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="app-main">
             <div class="page-header">
                 <div class="container">
                     <div>
@@ -117,6 +67,65 @@
                                 <path d="M12 6v6l4 2"/>
                             </svg>
                             <span>Monthly limits reset on <strong id="reset-date">the 1st</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Intelligence Feed Section (Admin Only) -->
+            <section class="ai-feed-section" id="ai-feed-section" style="display: none;">
+                <div class="container">
+                    <div class="ai-feed-container">
+                        <div class="ai-feed-header">
+                            <div class="ai-feed-title">
+                                <div class="ai-feed-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+                                        <path d="M12 2a10 10 0 0 1 10 10"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 data-i18n="aiFeed.title">AI Intelligence Feed</h3>
+                                </div>
+                                <span class="ai-feed-badge">Admin</span>
+                            </div>
+                            <div class="ai-feed-actions">
+                                <a href="/app/intelligence.html" class="btn btn-sm btn-secondary" id="view-all-intel-btn">
+                                    View All
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                                <button class="btn btn-sm btn-analyze" id="analyze-business-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"/>
+                                        <path d="M21 21l-4.35-4.35"/>
+                                    </svg>
+                                    <span data-i18n="aiFeed.analyze">Analyze My Business</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ai-feed-body" id="ai-feed-body">
+                            <!-- Feed content loaded by JS -->
+                            <div class="ai-feed-empty" id="ai-feed-empty">
+                                <div class="ai-feed-empty-icon">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+                                        <path d="M12 2a10 10 0 0 1 10 10"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </div>
+                                <h4 data-i18n="aiFeed.emptyTitle">No recommendations yet</h4>
+                                <p data-i18n="aiFeed.emptyDesc">Click "Analyze My Business" to get AI-powered insights based on your data.</p>
+                            </div>
+                            <div class="ai-feed-list" id="ai-feed-list" style="display: none;">
+                                <!-- Recommendations will be inserted here -->
+                            </div>
+                            <div class="ai-feed-loading" id="ai-feed-loading" style="display: none;">
+                                <div class="loading-spinner"></div>
+                                <p data-i18n="aiFeed.analyzing">Analyzing your business data...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -204,13 +213,19 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="auth.js?v=2"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="danger-modal.js?v=1"></script>
     <script src="plan-limits.js?v=1"></script>
     <script src="onboarding-storage.js"></script>
     <script src="onboarding-processor.js"></script>
     <script src="coaching.js"></script>
-    <script src="dashboard.js?v=6"></script>
+    <script src="audit-log.js?v=1"></script>
+    <script src="soft-delete.js?v=1"></script>
+    <script src="undo-toast.js?v=1"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script src="ai-feed.js?v=2"></script>
+    <script src="dashboard.js?v=13"></script>
 </body>
 </html>

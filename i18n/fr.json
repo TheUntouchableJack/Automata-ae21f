@@ -1,6 +1,7 @@
 {
     "nav": {
         "automations": "Automatisations",
+        "apps": "Applications",
         "features": "Fonctionnalités",
         "howItWorks": "Comment ça marche",
         "pricing": "Tarifs",
@@ -10,13 +11,35 @@
         "projects": "Projets",
         "customers": "Clients",
         "dashboard": "Tableau de bord",
-        "signOut": "Déconnexion"
+        "signOut": "Déconnexion",
+        "outgoing": "Sortants",
+        "roadmap": "Feuille de Route",
+        "settings": "Paramètres",
+        "profile": "Profil",
+        "management": "Gestion",
+        "system": "Système",
+        "freePlan": "Plan Gratuit",
+        "admin": "Admin",
+        "launchPlan": "Plan de Lancement",
+        "intelligence": "Intelligence"
+    },
+    "launchPlan": {
+        "title": "Plan de Lancement",
+        "subtitle": "Stratégie de mise sur le marché et lancements"
     },
     "hero": {
         "badge": "En Bêta — Rejoignez la liste d'attente",
         "titleLine1": "Un {word}.",
         "titleLine2": "Des Milliers de Relations.",
-        "rotatingWords": ["Personne", "Fondateur", "Entrepreneur", "Propriétaire", "Créateur", "Mère", "Femme"],
+        "rotatingWords": [
+            "Personne",
+            "Fondateur",
+            "Entrepreneur",
+            "Propriétaire",
+            "Créateur",
+            "Mère",
+            "Femme"
+        ],
         "subtitle": "Chaque anniversaire mémorisé. Chaque visite suivie. Chaque client fidèle remercié — automatiquement.",
         "joinWaitlist": "Rejoindre la Liste",
         "seeHowItWorks": "Voir Comment Ça Marche",
@@ -225,9 +248,42 @@
         "noProjectsDesc": "Créez votre premier projet pour commencer à automatiser",
         "createFirst": "Créez Votre Premier Projet"
     },
+    "aiFeed": {
+        "title": "Fil d'Intelligence IA",
+        "analyze": "Analyser Mon Entreprise",
+        "emptyTitle": "Pas encore de recommandations",
+        "emptyDesc": "Cliquez sur \"Analyser Mon Entreprise\" pour obtenir des insights basés sur l'IA.",
+        "analyzing": "Analyse de vos données commerciales...",
+        "opportunity": "Opportunité",
+        "efficiency": "Efficacité",
+        "risk": "Alerte de Risque",
+        "growth": "Croissance",
+        "automation": "Automatisation",
+        "highImpact": "Impact Élevé",
+        "mediumImpact": "Impact Moyen",
+        "lowImpact": "Faible Impact",
+        "dismiss": "Ignorer",
+        "tellMeMore": "En Savoir Plus",
+        "confidence": "Confiance"
+    },
+    "intelligence": {
+        "title": "Intelligence IA",
+        "subtitle": "Insights et recommandations alimentés par l'IA pour votre entreprise",
+        "analyze": "Analyser Mon Entreprise",
+        "pending": "Actions en Attente",
+        "implemented": "Implémenté",
+        "highImpact": "Impact Élevé",
+        "lastAnalysis": "Dernière Analyse",
+        "loading": "Chargement des recommandations...",
+        "emptyTitle": "Pas encore de recommandations",
+        "emptyDesc": "Cliquez sur \"Analyser Mon Entreprise\" pour obtenir des insights basés sur les données de votre organisation.",
+        "acceptCreate": "Accepter et Créer",
+        "viewAll": "Voir Tout"
+    },
     "project": {
         "overview": "Aperçu",
         "automations": "Automatisations",
+        "apps": "Apps",
         "customers": "Clients",
         "settings": "Paramètres",
         "newAutomation": "Nouvelle Automatisation",
@@ -407,6 +463,295 @@
                 "title": "Publier Quand Prêt",
                 "description": "Vérifiez vos paramètres, puis publiez pour activer"
             }
+        }
+    },
+    "outgoing": {
+        "comingSoon": "Bientôt Disponible",
+        "title": "Messages Sortants",
+        "subtitle": "Votre centre de contrôle pour tous les messages programmés. Surveillez, mettez en pause, annulez ou reprogrammez tout message d'automatisation avant son envoi.",
+        "featuresTitle": "Ce que vous pourrez faire",
+        "feature1": "Voir tous les SMS et e-mails programmés en un seul endroit",
+        "feature2": "Filtrer par projet, automatisation, canal ou plage de dates",
+        "feature3": "Mettre en pause, annuler ou reprogrammer des messages individuels",
+        "feature4": "Actions groupées pour gérer plusieurs messages à la fois",
+        "feature5": "Statut de livraison en temps réel et suivi des erreurs",
+        "backToDashboard": "Retour au Tableau de bord"
+    },
+    "roadmap": {
+        "title": "Feuille de Route Produit",
+        "subtitle": "Découvrez ce que nous construisons et suggérez de nouvelles fonctionnalités",
+        "ideas": "Idées",
+        "inProgress": "En Cours",
+        "recentlyDeployed": "Récemment Déployé",
+        "suggestFeature": "Suggérer une Fonctionnalité",
+        "upvote": "Voter",
+        "upvoted": "Voté",
+        "categories": {
+            "feature": "Fonctionnalité",
+            "improvement": "Amélioration",
+            "integration": "Intégration",
+            "bug": "Correction de Bug"
+        },
+        "suggestForm": {
+            "title": "Suggérer une Fonctionnalité",
+            "subtitle": "Aidez-nous à construire ce dont vous avez le plus besoin",
+            "titleLabel": "Titre de la Fonctionnalité",
+            "titlePlaceholder": "ex., Intégration avec Shopify",
+            "descLabel": "Description",
+            "descPlaceholder": "Décrivez la fonctionnalité et comment elle aiderait votre entreprise...",
+            "categoryLabel": "Catégorie",
+            "emailLabel": "Email (optionnel)",
+            "emailPlaceholder": "votre@email.com",
+            "submit": "Soumettre la Suggestion",
+            "cancel": "Annuler",
+            "success": "Merci ! Votre suggestion a été soumise pour examen."
+        }
+    },
+    "rateLimit": {
+        "tooMany": "Trop de {action}. Veuillez réessayer dans {time}.",
+        "remaining": "Il vous reste {count} {action} cette heure.",
+        "lastOne": "Il vous reste 1 {action} cette heure.",
+        "limitReached": "Vous avez atteint la limite de {action} cette heure.",
+        "actions": {
+            "featureRequests": "demandes de fonctionnalités",
+            "featureRequest": "demande de fonctionnalité",
+            "signups": "tentatives d'inscription",
+            "signup": "tentative d'inscription",
+            "analyses": "analyses IA",
+            "analysis": "analyse IA",
+            "votes": "votes",
+            "vote": "vote"
+        }
+    },
+    "settings": {
+        "title": "Paramètres du Compte",
+        "nav": {
+            "profile": "Profil",
+            "security": "Sécurité",
+            "team": "Équipe",
+            "plan": "Forfait",
+            "activity": "Activité",
+            "support": "Support",
+            "danger": "Zone de Danger"
+        },
+        "profile": {
+            "title": "Informations du Profil",
+            "subtitle": "Mettez à jour vos informations personnelles et votre photo de profil",
+            "avatar": "Photo de Profil",
+            "uploadPhoto": "Télécharger une Photo",
+            "removePhoto": "Supprimer",
+            "photoHelper": "JPG, PNG ou GIF. Max 2 Mo.",
+            "firstName": "Prénom",
+            "lastName": "Nom",
+            "email": "Adresse Email",
+            "emailHelper": "Contactez le support pour modifier votre email",
+            "phone": "Numéro de Téléphone",
+            "phoneHelper": "Optionnel",
+            "saveChanges": "Enregistrer les Modifications"
+        },
+        "security": {
+            "title": "Changer le Mot de Passe",
+            "subtitle": "Mettez à jour votre mot de passe pour sécuriser votre compte",
+            "currentPassword": "Mot de Passe Actuel",
+            "newPassword": "Nouveau Mot de Passe",
+            "confirmPassword": "Confirmer le Nouveau Mot de Passe",
+            "updatePassword": "Mettre à Jour le Mot de Passe",
+            "strength": {
+                "weak": "Faible",
+                "medium": "Moyen",
+                "strong": "Fort"
+            }
+        },
+        "team": {
+            "title": "Membres de l'Équipe",
+            "subtitle": "Gérez qui a accès à votre organisation",
+            "you": "Vous",
+            "inviteMember": "Inviter un Membre",
+            "inviteEmail": "Adresse email",
+            "inviteRole": "Rôle",
+            "sendInvite": "Envoyer l'Invitation",
+            "pendingInvitations": "Invitations en Attente",
+            "cancelInvite": "Annuler",
+            "resendInvite": "Renvoyer",
+            "removeMember": "Supprimer",
+            "changeRole": "Changer le rôle",
+            "inviteSent": "Invitation envoyée",
+            "expires": "Expire",
+            "roles": {
+                "owner": "Propriétaire",
+                "admin": "Administrateur",
+                "member": "Membre"
+            },
+            "limits": {
+                "title": "Limite d'Équipe",
+                "description": "Passez à un forfait supérieur pour ajouter plus de membres"
+            }
+        },
+        "plan": {
+            "title": "Forfait Actuel",
+            "subtitle": "Gérez votre abonnement et facturation",
+            "currentPlan": "Forfait Actuel",
+            "features": "Fonctionnalités",
+            "projects": "Projets",
+            "automations": "Automatisations",
+            "customers": "Clients",
+            "teamMembers": "Membres de l'Équipe",
+            "unlimited": "Illimité",
+            "upgrade": "Mettre à Niveau",
+            "redeem": "Utiliser un Code",
+            "billingNote": "Gestion de facturation bientôt disponible"
+        },
+        "activity": {
+            "title": "Journal d'Activité",
+            "subtitle": "Voir les changements récents dans votre organisation",
+            "allTypes": "Tous les Types",
+            "projects": "Projets",
+            "automations": "Automatisations",
+            "customers": "Clients",
+            "team": "Équipe",
+            "settings": "Paramètres",
+            "last7Days": "7 derniers jours",
+            "last30Days": "30 derniers jours",
+            "last90Days": "90 derniers jours",
+            "allTime": "Tout le temps",
+            "noActivity": "Pas encore d'activité",
+            "noActivityDesc": "Les actions dans votre organisation apparaîtront ici",
+            "loadMore": "Charger Plus",
+            "actions": {
+                "create": "A créé",
+                "update": "A mis à jour",
+                "delete": "A supprimé",
+                "activate": "A activé",
+                "deactivate": "A désactivé",
+                "invite": "A invité",
+                "remove": "A supprimé",
+                "role_change": "A changé le rôle de",
+                "cancel": "A annulé l'invitation de"
+            },
+            "entities": {
+                "project": "projet",
+                "automation": "automatisation",
+                "customer": "client",
+                "team_member": "membre de l'équipe",
+                "team_invite": "invitation d'équipe"
+            }
+        },
+        "support": {
+            "title": "Besoin d'Aide ?",
+            "subtitle": "Obtenez de l'aide ou consultez nos politiques",
+            "contactSupport": "Contacter le Support",
+            "contactDesc": "Notre équipe est là pour vous aider",
+            "termsOfService": "Conditions d'Utilisation",
+            "privacyPolicy": "Politique de Confidentialité"
+        },
+        "danger": {
+            "title": "Zone de Danger",
+            "subtitle": "Actions irréversibles et destructrices",
+            "deleteAccount": "Supprimer le Compte",
+            "deleteTitle": "Supprimer votre compte",
+            "deleteWarning": "Une fois votre compte supprimé, toutes vos données seront définitivement effacées. Cette action est irréversible.",
+            "deleteButton": "Supprimer le Compte",
+            "confirmTitle": "Êtes-vous absolument sûr ?",
+            "confirmMessage": "Cela supprimera définitivement votre compte et toutes les données associées, y compris les projets, automatisations et dossiers clients."
+        },
+        "toast": {
+            "profileSaved": "Profil mis à jour avec succès",
+            "passwordChanged": "Mot de passe modifié avec succès",
+            "inviteSent": "Invitation envoyée avec succès",
+            "inviteCancelled": "Invitation annulée",
+            "memberRemoved": "Membre de l'équipe supprimé",
+            "roleChanged": "Rôle mis à jour avec succès",
+            "error": "Une erreur s'est produite. Veuillez réessayer."
+        }
+    },
+    "undo": {
+        "undo": "Annuler",
+        "dismiss": "Fermer",
+        "canRestore": "Vous pouvez restaurer ceci pendant 1 heure",
+        "restoring": "Restauration...",
+        "restored": "{name} restauré",
+        "restoreFailed": "Échec de la restauration"
+    },
+    "customerApp": {
+        "title": "Applications Client",
+        "subtitle": "Créez des expériences client pour vos automatisations",
+        "newApp": "Nouvelle Application",
+        "noApps": "Pas encore d'applications client",
+        "noAppsDesc": "Créez votre première application client pour engager votre audience avec des programmes de fidélité, des récompenses et plus encore.",
+        "createFirst": "Créez Votre Première Application",
+        "templates": {
+            "loyalty": "Programme de Fidélité",
+            "loyaltyDesc": "Points par visite",
+            "rewards": "Club de Récompenses",
+            "rewardsDesc": "Échanger des prix",
+            "membership": "Adhésion VIP",
+            "membershipDesc": "Avantages exclusifs"
+        },
+        "modal": {
+            "title": "Créer une Application Client",
+            "name": "Nom de l'Application",
+            "description": "Description",
+            "type": "Type d'Application",
+            "features": "Fonctionnalités"
+        },
+        "types": {
+            "loyalty": "Programme de Fidélité",
+            "rewards": "Club de Récompenses",
+            "membership": "Adhésion VIP",
+            "custom": "Personnalisé"
+        },
+        "features": {
+            "points": "Système de Points",
+            "leaderboard": "Classement",
+            "rewards": "Catalogue de Récompenses",
+            "menu": "Navigateur de Menu",
+            "announcements": "Annonces"
+        },
+        "builder": {
+            "basics": "Informations de Base",
+            "features": "Fonctionnalités",
+            "branding": "Image de Marque",
+            "settings": "Paramètres",
+            "qrCode": "Code QR",
+            "preview": "Aperçu"
+        },
+        "member": {
+            "welcome": "Bienvenue sur {appName} !",
+            "yourPoints": "Vos Points",
+            "redeemReward": "Échanger",
+            "viewLeaderboard": "Classement",
+            "scanToEarn": "Scanner pour Gagner",
+            "tier": "Niveau"
+        },
+        "join": {
+            "title": "Rejoindre {appName}",
+            "firstName": "Prénom",
+            "lastName": "Nom",
+            "email": "Email",
+            "phone": "Téléphone",
+            "createPin": "Créer un PIN",
+            "joinButton": "Rejoindre Maintenant",
+            "alreadyMember": "Déjà membre ?",
+            "login": "Se connecter"
+        },
+        "stats": {
+            "members": "Membres",
+            "pointsIssued": "Points Émis",
+            "redemptions": "Échanges"
+        },
+        "share": {
+            "title": "Lien de l'App",
+            "copyLink": "Copier le Lien",
+            "copied": "Copié !",
+            "shareHint": "Partagez ce lien avec vos clients pour qu'ils rejoignent votre app",
+            "share": "Partager",
+            "whatsapp": "WhatsApp",
+            "sms": "SMS",
+            "email": "Email",
+            "qrTitle": "Code QR",
+            "download": "Télécharger",
+            "print": "Imprimer",
+            "tips": "Conseils pour partager votre app"
         }
     }
 }

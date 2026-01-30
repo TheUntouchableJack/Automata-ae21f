@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Intelligence - Automata</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
+    <link rel="stylesheet" href="intelligence.css?v=1">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="page-header intelligence-header">
+                <div class="container">
+                    <div>
+                        <div class="page-title-wrapper">
+                            <div class="page-title-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+                                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="page-title" data-i18n="intelligence.title">AI Intelligence</h1>
+                                <p class="page-subtitle" data-i18n="intelligence.subtitle">AI-powered insights and recommendations for your business</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page-header-actions">
+                        <button class="btn btn-primary btn-analyze-lg" id="analyze-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                            <span data-i18n="intelligence.analyze">Analyze My Business</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <section class="intelligence-stats">
+                <div class="container">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon recommendations">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-pending">0</span>
+                                <span class="stat-label" data-i18n="intelligence.pending">Pending Actions</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon implemented">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-implemented">0</span>
+                                <span class="stat-label" data-i18n="intelligence.implemented">Implemented</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon high-impact">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                    <polyline points="17 6 23 6 23 12"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-high-impact">0</span>
+                                <span class="stat-label" data-i18n="intelligence.highImpact">High Impact</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon last-analysis">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-last-analysis">Never</span>
+                                <span class="stat-label" data-i18n="intelligence.lastAnalysis">Last Analysis</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Content Area -->
+            <section class="intelligence-content">
+                <div class="container">
+                    <!-- Filters -->
+                    <div class="intelligence-filters">
+                        <div class="filter-tabs">
+                            <button class="filter-tab active" data-filter="all">All</button>
+                            <button class="filter-tab" data-filter="pending">Pending</button>
+                            <button class="filter-tab" data-filter="implemented">Implemented</button>
+                            <button class="filter-tab" data-filter="dismissed">Dismissed</button>
+                        </div>
+                        <div class="filter-type">
+                            <select id="type-filter" class="filter-select">
+                                <option value="">All Types</option>
+                                <option value="opportunity">Opportunities</option>
+                                <option value="efficiency">Efficiency</option>
+                                <option value="growth">Growth</option>
+                                <option value="risk">Risk Alerts</option>
+                                <option value="automation">Automation</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="intelligence-loading" id="intelligence-loading">
+                        <div class="loading-spinner"></div>
+                        <p data-i18n="intelligence.loading">Loading recommendations...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="intelligence-empty" id="intelligence-empty" style="display: none;">
+                        <div class="empty-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+                                <path d="M12 2a10 10 0 0 1 10 10"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </div>
+                        <h3 data-i18n="intelligence.emptyTitle">No recommendations yet</h3>
+                        <p data-i18n="intelligence.emptyDesc">Click "Analyze My Business" to get AI-powered insights based on your organization data.</p>
+                        <button class="btn btn-primary" id="empty-analyze-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                            Analyze Now
+                        </button>
+                    </div>
+
+                    <!-- Recommendations List -->
+                    <div class="recommendations-list" id="recommendations-list" style="display: none;">
+                        <!-- Recommendations will be rendered here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="celebrate.js?v=2"></script>
+    <script src="audit-log.js?v=1"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script src="intelligence.js?v=1"></script>
+</body>
+</html>

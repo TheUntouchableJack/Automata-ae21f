@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <link rel="stylesheet" href="coaching.css">
@@ -250,6 +251,83 @@
             background: transparent;
         }
 
+        /* Customer App Connection */
+        .connected-app-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .connected-app-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .connected-app-icon {
+            font-size: 28px;
+        }
+
+        .connected-app-name {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .connected-app-url {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .connected-app-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .app-options {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+        }
+
+        .btn-ghost:hover {
+            background: var(--color-bg-hover);
+            color: var(--color-text);
+        }
+
+        @media (max-width: 640px) {
+            .connected-app-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .connected-app-info {
+                flex-direction: column;
+            }
+
+            .connected-app-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .app-options {
+                flex-direction: column;
+            }
+
+            .app-options .btn {
+                width: 100%;
+            }
+        }
+
         /* Generate Button */
         .generate-section {
             display: flex;
@@ -394,57 +472,12 @@
     </style>
 </head>
 <body>
-    <div class="dashboard-layout">
-        <!-- App Header -->
-        <header class="app-header">
-            <div class="container">
-                <a href="/app/dashboard.html" class="logo">
-                    <span class="logo-icon">A</span>
-                    <span class="logo-text">Automata</span>
-                </a>
-
-                <div class="header-actions">
-                    <!-- Language Selector -->
-                    <div class="lang-selector">
-                        <button class="lang-selector-btn" type="button" aria-label="Change language">
-                            <span class="lang-selector-current">EN</span>
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="lang-dropdown">
-                            <a href="#" class="lang-option active" data-lang="en">EN</a>
-                            <a href="#" class="lang-option" data-lang="es">ES</a>
-                            <a href="#" class="lang-option" data-lang="fr">FR</a>
-                            <a href="#" class="lang-option" data-lang="de">DE</a>
-                            <a href="#" class="lang-option" data-lang="it">IT</a>
-                            <a href="#" class="lang-option" data-lang="pt">PT</a>
-                            <a href="#" class="lang-option" data-lang="zh">ZH</a>
-                            <a href="#" class="lang-option" data-lang="ar">AR</a>
-                        </div>
-                    </div>
-                    <div class="user-menu">
-                        <button class="user-menu-btn" id="user-menu-btn">
-                            <span class="user-avatar" id="user-avatar">?</span>
-                            <span class="user-name" id="user-name">Loading...</span>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="user-dropdown" id="user-dropdown">
-                            <a href="/app/dashboard.html" data-i18n="nav.dashboard">Dashboard</a>
-                            <a href="/app/automations.html" data-i18n="nav.automations">Automations</a>
-                            <a href="/app/customers.html" data-i18n="nav.customers">Customers</a>
-                            <div class="divider"></div>
-                            <button class="logout-btn" id="logout-btn" data-i18n="nav.signOut">Sign Out</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="app-main">
             <div class="page-header">
                 <div class="container">
                     <div class="breadcrumb">
@@ -597,6 +630,55 @@
                             </form>
                         </div>
 
+                        <!-- Customer App Connection -->
+                        <div class="settings-panel" id="customer-app-panel">
+                            <h3>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                </svg>
+                                Customer App
+                            </h3>
+                            <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+                                Connect this automation to a customer-facing app. Events from the app (joins, points earned, etc.) can trigger this automation.
+                            </p>
+
+                            <div class="connected-app" id="connected-app" style="display: none;">
+                                <div class="connected-app-card">
+                                    <div class="connected-app-info">
+                                        <span class="connected-app-icon">📱</span>
+                                        <div>
+                                            <div class="connected-app-name" id="connected-app-name">My Loyalty App</div>
+                                            <div class="connected-app-url" id="connected-app-url">automata.app/a/my-app</div>
+                                        </div>
+                                    </div>
+                                    <div class="connected-app-actions">
+                                        <a href="#" class="btn btn-sm btn-secondary" id="edit-app-btn">Edit App</a>
+                                        <button class="btn btn-sm btn-ghost" id="disconnect-app-btn">Disconnect</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="no-app-connected" id="no-app-connected">
+                                <div class="app-options">
+                                    <button class="btn btn-primary" id="create-new-app-btn">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        Create New App
+                                    </button>
+                                    <button class="btn btn-secondary" id="connect-existing-app-btn">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                        </svg>
+                                        Connect Existing App
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Note: Automations can be deleted from Manage Automations page -->
                     </div>
                 </div>
@@ -607,10 +689,15 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="auth.js?v=2"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="danger-modal.js?v=1"></script>
     <script src="coaching.js"></script>
-    <script src="automation.js?v=5"></script>
+    <script src="audit-log.js?v=1"></script>
+    <script src="soft-delete.js?v=1"></script>
+    <script src="undo-toast.js?v=1"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script src="automation.js?v=11"></script>
 </body>
 </html>

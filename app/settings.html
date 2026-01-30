@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Automata</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
+    <link rel="stylesheet" href="settings.css?v=1">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <link rel="stylesheet" href="danger-modal.css">
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title" data-i18n="settings.title">Account Settings</h1>
+                        <p class="page-subtitle" data-i18n="settings.subtitle">Manage your profile, security, and preferences</p>
+                    </div>
+                </div>
+            </div>
+
+            <section class="settings-section">
+                <div class="container">
+                    <div class="settings-layout">
+                        <!-- Vertical Navigation -->
+                        <nav class="settings-nav">
+                            <button class="settings-nav-item active" data-tab="profile">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <span data-i18n="settings.nav.profile">Profile</span>
+                            </button>
+                            <button class="settings-nav-item" data-tab="security">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                <span data-i18n="settings.nav.security">Security</span>
+                            </button>
+                            <button class="settings-nav-item" data-tab="team">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
+                                <span data-i18n="settings.nav.team">Team</span>
+                            </button>
+                            <button class="settings-nav-item" data-tab="plan">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                    <line x1="1" y1="10" x2="23" y2="10"/>
+                                </svg>
+                                <span data-i18n="settings.nav.plan">Plan</span>
+                            </button>
+                            <button class="settings-nav-item" data-tab="activity">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span data-i18n="settings.nav.activity">Activity</span>
+                            </button>
+                            <button class="settings-nav-item" data-tab="support">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                                <span data-i18n="settings.nav.support">Support</span>
+                            </button>
+                            <button class="settings-nav-item danger" data-tab="danger">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                                <span data-i18n="settings.nav.danger">Danger Zone</span>
+                            </button>
+                        </nav>
+
+                        <!-- Tab Content -->
+                        <div class="settings-content">
+                            <!-- Profile Tab -->
+                            <div class="tab-content active" id="profile-tab">
+                                <div class="settings-card">
+                                    <h3 data-i18n="settings.profile.title">Profile Information</h3>
+                                    <p class="settings-card-subtitle" data-i18n="settings.profile.subtitle">Update your personal information</p>
+
+                                    <!-- Avatar Upload -->
+                                    <div class="avatar-upload">
+                                        <div class="avatar-preview" id="avatar-preview">
+                                            <span id="avatar-initials">?</span>
+                                            <img id="avatar-image" src="" alt="" style="display: none;">
+                                        </div>
+                                        <div class="avatar-actions">
+                                            <label class="btn btn-secondary btn-sm avatar-upload-btn">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                    <polyline points="17 8 12 3 7 8"/>
+                                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                                </svg>
+                                                <span data-i18n="settings.profile.uploadPhoto">Upload Photo</span>
+                                                <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+                                            </label>
+                                            <button class="btn btn-ghost btn-sm" id="remove-avatar-btn" style="display: none;">
+                                                <span data-i18n="settings.profile.removePhoto">Remove</span>
+                                            </button>
+                                            <p class="avatar-helper" data-i18n="settings.profile.avatarHelper">JPG, PNG, GIF, or WebP. Max 2MB.</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Profile Form -->
+                                    <form id="profile-form" class="settings-form">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="first-name" data-i18n="settings.profile.firstName">First Name</label>
+                                                <input type="text" id="first-name" name="first_name" placeholder="John">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="last-name" data-i18n="settings.profile.lastName">Last Name</label>
+                                                <input type="text" id="last-name" name="last_name" placeholder="Doe">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="email-display" data-i18n="settings.profile.email">Email Address</label>
+                                            <input type="email" id="email-display" disabled>
+                                            <p class="form-helper" data-i18n="settings.profile.emailHelper">Contact support to change your email</p>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="phone" data-i18n="settings.profile.phone">Phone Number</label>
+                                            <input type="tel" id="phone" name="phone" data-i18n-placeholder="settings.profile.phonePlaceholder" placeholder="+1 (555) 123-4567">
+                                        </div>
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn btn-primary" id="save-profile-btn">
+                                                <span data-i18n="settings.profile.saveChanges">Save Changes</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Security Tab -->
+                            <div class="tab-content" id="security-tab" style="display: none;">
+                                <div class="settings-card">
+                                    <h3 data-i18n="settings.security.title">Password & Security</h3>
+                                    <p class="settings-card-subtitle" data-i18n="settings.security.subtitle">Manage your account security</p>
+
+                                    <form id="password-form" class="settings-form">
+                                        <div class="form-group">
+                                            <label for="new-password" data-i18n="settings.security.newPassword">New Password</label>
+                                            <input type="password" id="new-password" name="new_password" minlength="6">
+                                            <div class="password-strength" id="password-strength" style="display: none;">
+                                                <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+                                                <span class="strength-text" id="strength-text"></span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="confirm-password" data-i18n="settings.security.confirmPassword">Confirm New Password</label>
+                                            <input type="password" id="confirm-password" name="confirm_password" minlength="6">
+                                        </div>
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn btn-primary" id="update-password-btn">
+                                                <span data-i18n="settings.security.updatePassword">Update Password</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Team Tab -->
+                            <div class="tab-content" id="team-tab" style="display: none;">
+                                <div class="settings-card">
+                                    <h3 data-i18n="settings.team.title">Team Members</h3>
+                                    <p class="settings-card-subtitle" data-i18n="settings.team.subtitle">Manage who has access to your organization</p>
+
+                                    <!-- Team Members List -->
+                                    <div class="team-list" id="team-members-list">
+                                        <div class="loading-spinner"></div>
+                                    </div>
+
+                                    <!-- Pending Invitations -->
+                                    <div class="pending-invitations" id="pending-invitations-section" style="display: none;">
+                                        <h4 data-i18n="settings.team.pendingInvitations">Pending Invitations</h4>
+                                        <div id="pending-invitations-list"></div>
+                                    </div>
+
+                                    <!-- Invite Form -->
+                                    <div class="invite-form-container">
+                                        <h4 data-i18n="settings.team.inviteMember">Invite Team Member</h4>
+                                        <form id="invite-form" class="invite-form">
+                                            <div class="form-group">
+                                                <label for="invite-email" data-i18n="settings.team.inviteEmail">Email Address</label>
+                                                <input type="email" id="invite-email" data-i18n-placeholder="settings.team.inviteEmailPlaceholder" placeholder="colleague@example.com" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="invite-role" data-i18n="settings.team.inviteRole">Role</label>
+                                                <select id="invite-role">
+                                                    <option value="member" data-i18n="settings.team.roleMember">Member</option>
+                                                    <option value="admin" data-i18n="settings.team.roleAdmin">Admin</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                                </svg>
+                                                <span data-i18n="settings.team.sendInvite">Send Invitation</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Plan Tab -->
+                            <div class="tab-content" id="plan-tab" style="display: none;">
+                                <div class="settings-card">
+                                    <h3 data-i18n="settings.plan.title">Current Plan</h3>
+                                    <p class="settings-card-subtitle" data-i18n="settings.plan.subtitle">View your subscription and usage</p>
+
+                                    <div class="plan-card" id="plan-card">
+                                        <div class="plan-header">
+                                            <div class="plan-info">
+                                                <span class="plan-label" data-i18n="settings.plan.currentPlan">Current Plan</span>
+                                                <h3 class="plan-name" id="plan-name">Free</h3>
+                                            </div>
+                                        </div>
+                                        <div class="plan-features" id="plan-features">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                        <div class="plan-actions">
+                                            <a href="/pricing.html" class="btn btn-primary">
+                                                <span data-i18n="settings.plan.upgradePlan">Upgrade Plan</span>
+                                            </a>
+                                            <p class="billing-note" data-i18n="settings.plan.billingNote">Billing management coming soon</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Activity Tab -->
+                            <div class="tab-content" id="activity-tab" style="display: none;">
+                                <div class="settings-card">
+                                    <div class="activity-header">
+                                        <div>
+                                            <h3 data-i18n="settings.activity.title">Activity Log</h3>
+                                            <p class="settings-card-subtitle" data-i18n="settings.activity.subtitle">View recent changes in your organization</p>
+                                        </div>
+                                        <div class="activity-filters">
+                                            <select id="activity-entity-filter" class="filter-select">
+                                                <option value="" data-i18n="settings.activity.allTypes">All Types</option>
+                                                <option value="project" data-i18n="settings.activity.projects">Projects</option>
+                                                <option value="automation" data-i18n="settings.activity.automations">Automations</option>
+                                                <option value="customer" data-i18n="settings.activity.customers">Customers</option>
+                                                <option value="team" data-i18n="settings.activity.team">Team</option>
+                                            </select>
+                                            <select id="activity-date-filter" class="filter-select">
+                                                <option value="7" data-i18n="settings.activity.last7Days">Last 7 days</option>
+                                                <option value="30" data-i18n="settings.activity.last30Days">Last 30 days</option>
+                                                <option value="90" data-i18n="settings.activity.last90Days">Last 90 days</option>
+                                                <option value="all" data-i18n="settings.activity.allTime">All time</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity Feed -->
+                                    <div class="activity-feed" id="activity-feed">
+                                        <div class="loading-spinner"></div>
+                                    </div>
+
+                                    <!-- Empty State -->
+                                    <div class="activity-empty" id="activity-empty" style="display: none;">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <h4 data-i18n="settings.activity.noActivity">No activity yet</h4>
+                                        <p data-i18n="settings.activity.noActivityDesc">Actions in your organization will appear here</p>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <div class="activity-pagination" id="activity-pagination" style="display: none;">
+                                        <button class="btn btn-secondary btn-sm" id="activity-load-more" data-i18n="settings.activity.loadMore">Load More</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Support Tab -->
+                            <div class="tab-content" id="support-tab" style="display: none;">
+                                <div class="settings-card">
+                                    <h3 data-i18n="settings.support.title">Support & Help</h3>
+                                    <p class="settings-card-subtitle" data-i18n="settings.support.subtitle">Get help with your account</p>
+
+                                    <div class="support-card">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                        <h4 data-i18n="settings.support.contactSupport">Contact Support</h4>
+                                        <p data-i18n="settings.support.contactDesc">Have a question or need help? We're here for you.</p>
+                                        <a href="mailto:support@automata.com" class="btn btn-primary">
+                                            <span data-i18n="settings.support.emailSupport">Email Support</span>
+                                        </a>
+                                    </div>
+
+                                    <div class="legal-links">
+                                        <h4 data-i18n="settings.support.legal">Legal</h4>
+                                        <a href="/terms.html" class="legal-link">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                <polyline points="14 2 14 8 20 8"/>
+                                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                            </svg>
+                                            <span data-i18n="settings.support.termsOfService">Terms of Service</span>
+                                        </a>
+                                        <a href="/privacy.html" class="legal-link">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                            </svg>
+                                            <span data-i18n="settings.support.privacyPolicy">Privacy Policy</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Danger Zone Tab -->
+                            <div class="tab-content" id="danger-tab" style="display: none;">
+                                <div class="settings-card danger-zone">
+                                    <h3 data-i18n="settings.danger.title">Danger Zone</h3>
+                                    <p class="settings-card-subtitle" data-i18n="settings.danger.subtitle">Irreversible and destructive actions</p>
+
+                                    <div class="danger-action">
+                                        <div class="danger-info">
+                                            <h4 data-i18n="settings.danger.deleteAccount">Delete Account</h4>
+                                            <p data-i18n="settings.danger.deleteWarning">Once you delete your account, there is no going back. This will permanently delete your profile, all your data, projects, automations, and customer records.</p>
+                                        </div>
+                                        <button class="btn btn-danger" id="delete-account-btn">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                            </svg>
+                                            <span data-i18n="settings.danger.deleteButton">Delete My Account</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="celebrate.js?v=2"></script>
+    <script src="danger-modal.js?v=1"></script>
+    <script src="plan-limits.js?v=1"></script>
+    <script src="audit-log.js?v=1"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script src="settings.js?v=6"></script>
+</body>
+</html>

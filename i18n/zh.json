@@ -1,6 +1,7 @@
 {
     "nav": {
         "automations": "自动化",
+        "apps": "应用",
         "features": "功能",
         "howItWorks": "工作原理",
         "pricing": "定价",
@@ -10,13 +11,35 @@
         "projects": "项目",
         "customers": "客户",
         "dashboard": "仪表板",
-        "signOut": "退出"
+        "signOut": "退出",
+        "outgoing": "发送消息",
+        "roadmap": "产品路线图",
+        "settings": "设置",
+        "profile": "个人资料",
+        "management": "管理",
+        "system": "系统",
+        "freePlan": "免费计划",
+        "admin": "管理员",
+        "launchPlan": "发布计划",
+        "intelligence": "智能分析"
+    },
+    "launchPlan": {
+        "title": "发布计划",
+        "subtitle": "市场推广策略和平台发布"
     },
     "hero": {
         "badge": "测试版 — 加入等候名单",
         "titleLine1": "一个{word}。",
         "titleLine2": "数千个关系。",
-        "rotatingWords": ["人", "创始人", "企业家", "老板", "创造者", "母亲", "女性"],
+        "rotatingWords": [
+            "人",
+            "创始人",
+            "企业家",
+            "老板",
+            "创造者",
+            "母亲",
+            "女性"
+        ],
         "subtitle": "每个生日都被记住。每次到访都有跟进。每位忠实客户都被感谢——全自动完成。",
         "joinWaitlist": "加入等候名单",
         "seeHowItWorks": "了解工作原理",
@@ -225,9 +248,42 @@
         "noProjectsDesc": "创建您的第一个项目以开始自动化",
         "createFirst": "创建您的第一个项目"
     },
+    "aiFeed": {
+        "title": "AI智能推送",
+        "analyze": "分析我的业务",
+        "emptyTitle": "暂无推荐",
+        "emptyDesc": "点击\"分析我的业务\"获取基于AI的洞察。",
+        "analyzing": "正在分析您的业务数据...",
+        "opportunity": "机会",
+        "efficiency": "效率",
+        "risk": "风险警报",
+        "growth": "增长",
+        "automation": "自动化",
+        "highImpact": "高影响",
+        "mediumImpact": "中等影响",
+        "lowImpact": "低影响",
+        "dismiss": "忽略",
+        "tellMeMore": "了解更多",
+        "confidence": "置信度"
+    },
+    "intelligence": {
+        "title": "AI智能分析",
+        "subtitle": "为您的业务提供AI驱动的洞察和建议",
+        "analyze": "分析我的业务",
+        "pending": "待处理操作",
+        "implemented": "已实施",
+        "highImpact": "高影响",
+        "lastAnalysis": "上次分析",
+        "loading": "加载建议中...",
+        "emptyTitle": "暂无建议",
+        "emptyDesc": "点击\"分析我的业务\"获取基于您组织数据的洞察。",
+        "acceptCreate": "接受并创建",
+        "viewAll": "查看全部"
+    },
     "project": {
         "overview": "概览",
         "automations": "自动化",
+        "apps": "应用",
         "customers": "客户",
         "settings": "设置",
         "newAutomation": "新自动化",
@@ -407,6 +463,295 @@
                 "title": "准备好后发布",
                 "description": "检查您的设置，然后发布以激活"
             }
+        }
+    },
+    "outgoing": {
+        "comingSoon": "即将推出",
+        "title": "发送消息",
+        "subtitle": "您的所有预定消息的控制中心。在发送前监控、暂停、取消或重新安排任何自动化消息。",
+        "featuresTitle": "您将能够做什么",
+        "feature1": "在一个地方查看所有预定的短信和电子邮件",
+        "feature2": "按项目、自动化、渠道或日期范围筛选",
+        "feature3": "暂停、取消或重新安排单个消息",
+        "feature4": "批量操作，一次管理多条消息",
+        "feature5": "实时投递状态和错误跟踪",
+        "backToDashboard": "返回仪表板"
+    },
+    "roadmap": {
+        "title": "产品路线图",
+        "subtitle": "查看我们正在构建的功能并提交建议",
+        "ideas": "想法",
+        "inProgress": "进行中",
+        "recentlyDeployed": "最近上线",
+        "suggestFeature": "建议功能",
+        "upvote": "投票",
+        "upvoted": "已投票",
+        "categories": {
+            "feature": "新功能",
+            "improvement": "改进",
+            "integration": "集成",
+            "bug": "Bug修复"
+        },
+        "suggestForm": {
+            "title": "建议功能",
+            "subtitle": "帮助我们构建您最需要的功能",
+            "titleLabel": "功能标题",
+            "titlePlaceholder": "例如，与Shopify集成",
+            "descLabel": "描述",
+            "descPlaceholder": "描述该功能以及它如何帮助您的业务...",
+            "categoryLabel": "类别",
+            "emailLabel": "邮箱（可选）",
+            "emailPlaceholder": "your@email.com",
+            "submit": "提交建议",
+            "cancel": "取消",
+            "success": "谢谢！您的建议已提交审核。"
+        }
+    },
+    "rateLimit": {
+        "tooMany": "{action}次数过多。请在{time}后重试。",
+        "remaining": "本小时内您还有{count}次{action}。",
+        "lastOne": "本小时内您还有1次{action}。",
+        "limitReached": "您已达到本小时的{action}限制。",
+        "actions": {
+            "featureRequests": "功能请求",
+            "featureRequest": "功能请求",
+            "signups": "注册尝试",
+            "signup": "注册尝试",
+            "analyses": "AI分析",
+            "analysis": "AI分析",
+            "votes": "投票",
+            "vote": "投票"
+        }
+    },
+    "settings": {
+        "title": "账户设置",
+        "nav": {
+            "profile": "个人资料",
+            "security": "安全",
+            "team": "团队",
+            "plan": "计划",
+            "activity": "活动",
+            "support": "支持",
+            "danger": "危险区域"
+        },
+        "profile": {
+            "title": "个人资料",
+            "subtitle": "更新您的个人信息和头像",
+            "avatar": "头像",
+            "uploadPhoto": "上传照片",
+            "removePhoto": "移除",
+            "photoHelper": "JPG、PNG 或 GIF。最大 2MB。",
+            "firstName": "名",
+            "lastName": "姓",
+            "email": "电子邮件地址",
+            "emailHelper": "联系客服更改您的邮箱",
+            "phone": "电话号码",
+            "phoneHelper": "可选",
+            "saveChanges": "保存更改"
+        },
+        "security": {
+            "title": "更改密码",
+            "subtitle": "更新您的密码以保护账户安全",
+            "currentPassword": "当前密码",
+            "newPassword": "新密码",
+            "confirmPassword": "确认新密码",
+            "updatePassword": "更新密码",
+            "strength": {
+                "weak": "弱",
+                "medium": "中",
+                "strong": "强"
+            }
+        },
+        "team": {
+            "title": "团队成员",
+            "subtitle": "管理谁可以访问您的组织",
+            "you": "您",
+            "inviteMember": "邀请成员",
+            "inviteEmail": "电子邮件地址",
+            "inviteRole": "角色",
+            "sendInvite": "发送邀请",
+            "pendingInvitations": "待处理邀请",
+            "cancelInvite": "取消",
+            "resendInvite": "重新发送",
+            "removeMember": "移除",
+            "changeRole": "更改角色",
+            "inviteSent": "邀请已发送",
+            "expires": "过期时间",
+            "roles": {
+                "owner": "所有者",
+                "admin": "管理员",
+                "member": "成员"
+            },
+            "limits": {
+                "title": "团队限制",
+                "description": "升级您的计划以添加更多成员"
+            }
+        },
+        "plan": {
+            "title": "当前计划",
+            "subtitle": "管理您的订阅和账单",
+            "currentPlan": "当前计划",
+            "features": "功能",
+            "projects": "项目",
+            "automations": "自动化",
+            "customers": "客户",
+            "teamMembers": "团队成员",
+            "unlimited": "无限制",
+            "upgrade": "升级计划",
+            "redeem": "兑换代码",
+            "billingNote": "账单管理即将推出"
+        },
+        "activity": {
+            "title": "活动日志",
+            "subtitle": "查看组织中的最近更改",
+            "allTypes": "所有类型",
+            "projects": "项目",
+            "automations": "自动化",
+            "customers": "客户",
+            "team": "团队",
+            "settings": "设置",
+            "last7Days": "最近7天",
+            "last30Days": "最近30天",
+            "last90Days": "最近90天",
+            "allTime": "全部时间",
+            "noActivity": "暂无活动",
+            "noActivityDesc": "您组织中的操作将显示在这里",
+            "loadMore": "加载更多",
+            "actions": {
+                "create": "创建了",
+                "update": "更新了",
+                "delete": "删除了",
+                "activate": "激活了",
+                "deactivate": "停用了",
+                "invite": "邀请了",
+                "remove": "移除了",
+                "role_change": "更改了角色",
+                "cancel": "取消了邀请"
+            },
+            "entities": {
+                "project": "项目",
+                "automation": "自动化",
+                "customer": "客户",
+                "team_member": "团队成员",
+                "team_invite": "团队邀请"
+            }
+        },
+        "support": {
+            "title": "需要帮助？",
+            "subtitle": "获取支持或查看我们的政策",
+            "contactSupport": "联系客服",
+            "contactDesc": "我们的团队随时为您服务",
+            "termsOfService": "服务条款",
+            "privacyPolicy": "隐私政策"
+        },
+        "danger": {
+            "title": "危险区域",
+            "subtitle": "不可逆的破坏性操作",
+            "deleteAccount": "删除账户",
+            "deleteTitle": "删除您的账户",
+            "deleteWarning": "一旦删除账户，您的所有数据将被永久移除。此操作无法撤销。",
+            "deleteButton": "删除账户",
+            "confirmTitle": "您确定吗？",
+            "confirmMessage": "这将永久删除您的账户和所有相关数据，包括项目、自动化和客户记录。"
+        },
+        "toast": {
+            "profileSaved": "个人资料更新成功",
+            "passwordChanged": "密码修改成功",
+            "inviteSent": "邀请发送成功",
+            "inviteCancelled": "邀请已取消",
+            "memberRemoved": "团队成员已移除",
+            "roleChanged": "角色更新成功",
+            "error": "出错了，请重试。"
+        }
+    },
+    "undo": {
+        "undo": "撤销",
+        "dismiss": "关闭",
+        "canRestore": "您可以在1小时内恢复此项",
+        "restoring": "正在恢复...",
+        "restored": "{name} 已恢复",
+        "restoreFailed": "恢复失败"
+    },
+    "customerApp": {
+        "title": "客户应用",
+        "subtitle": "为您的自动化创建面向客户的体验",
+        "newApp": "新建应用",
+        "noApps": "暂无客户应用",
+        "noAppsDesc": "创建您的第一个客户应用，通过忠诚度计划、奖励等方式吸引您的受众。",
+        "createFirst": "创建您的第一个应用",
+        "templates": {
+            "loyalty": "忠诚度计划",
+            "loyaltyDesc": "每次访问获得积分",
+            "rewards": "奖励俱乐部",
+            "rewardsDesc": "兑换奖品",
+            "membership": "VIP会员",
+            "membershipDesc": "专属特权"
+        },
+        "modal": {
+            "title": "创建客户应用",
+            "name": "应用名称",
+            "description": "描述",
+            "type": "应用类型",
+            "features": "功能"
+        },
+        "types": {
+            "loyalty": "忠诚度计划",
+            "rewards": "奖励俱乐部",
+            "membership": "VIP会员",
+            "custom": "自定义"
+        },
+        "features": {
+            "points": "积分系统",
+            "leaderboard": "排行榜",
+            "rewards": "奖励目录",
+            "menu": "菜单浏览",
+            "announcements": "公告"
+        },
+        "builder": {
+            "basics": "基本信息",
+            "features": "功能",
+            "branding": "品牌",
+            "settings": "设置",
+            "qrCode": "二维码",
+            "preview": "预览"
+        },
+        "member": {
+            "welcome": "欢迎来到 {appName}！",
+            "yourPoints": "您的积分",
+            "redeemReward": "兑换",
+            "viewLeaderboard": "排行榜",
+            "scanToEarn": "扫码赚积分",
+            "tier": "等级"
+        },
+        "join": {
+            "title": "加入 {appName}",
+            "firstName": "名",
+            "lastName": "姓",
+            "email": "电子邮件",
+            "phone": "电话",
+            "createPin": "创建PIN码",
+            "joinButton": "立即加入",
+            "alreadyMember": "已经是会员？",
+            "login": "登录"
+        },
+        "stats": {
+            "members": "会员",
+            "pointsIssued": "已发放积分",
+            "redemptions": "兑换次数"
+        },
+        "share": {
+            "title": "应用链接",
+            "copyLink": "复制链接",
+            "copied": "已复制！",
+            "shareHint": "分享此链接给您的客户，让他们加入您的应用",
+            "share": "分享",
+            "whatsapp": "WhatsApp",
+            "sms": "短信",
+            "email": "邮件",
+            "qrTitle": "二维码",
+            "download": "下载",
+            "print": "打印",
+            "tips": "分享应用的技巧"
         }
     }
 }

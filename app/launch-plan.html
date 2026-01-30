@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launch Plan - Automata</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <style>
+        .launch-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .launch-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .launch-stat {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .launch-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 4px;
+        }
+
+        .launch-stat-label {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .launch-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .launch-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--color-border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .launch-section-header:hover {
+            background: var(--color-surface-hover);
+        }
+
+        .launch-section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .launch-section-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .launch-section-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-bar {
+            width: 120px;
+            height: 8px;
+            background: var(--color-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--color-primary);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            min-width: 50px;
+        }
+
+        .launch-section-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .launch-section.expanded .launch-section-content {
+            padding: 24px;
+            max-height: 2000px;
+        }
+
+        .launch-section-header .chevron {
+            transition: transform 0.3s ease;
+        }
+
+        .launch-section.expanded .chevron {
+            transform: rotate(180deg);
+        }
+
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .platform-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: all 0.15s;
+        }
+
+        .platform-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+        }
+
+        .platform-card.completed {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .platform-checkbox {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--color-border);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            margin-top: 2px;
+        }
+
+        .platform-checkbox:hover {
+            border-color: var(--color-primary);
+        }
+
+        .platform-checkbox.checked {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        .platform-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .platform-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .platform-name {
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .platform-name a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .platform-name a:hover {
+            color: var(--color-primary);
+        }
+
+        .platform-badge {
+            font-size: 0.625rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .platform-badge.priority {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .platform-badge.paid {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .platform-desc {
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+            line-height: 1.4;
+        }
+
+        .platform-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+
+        .platform-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .content-strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .strategy-card {
+            padding: 20px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .strategy-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .strategy-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .strategy-card li {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 0;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .strategy-card li:last-child {
+            border-bottom: none;
+        }
+
+        .strategy-card li::before {
+            content: '→';
+            color: var(--color-primary);
+            flex-shrink: 0;
+        }
+
+        .distribution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .distribution-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            color: var(--color-text);
+        }
+
+        .distribution-item .icon {
+            font-size: 1.25rem;
+        }
+
+        .notes-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 0.875rem;
+            resize: vertical;
+        }
+
+        .notes-area:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .save-indicator {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .save-indicator.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .save-indicator.success {
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar injected by JS -->
+
+        <main class="app-main">
+            <div class="page-header">
+                <div class="launch-container">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+                            <h1 class="page-title" data-i18n="launchPlan.title">Launch Plan</h1>
+                            <span class="admin-badge">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
+                                Admin Only
+                            </span>
+                        </div>
+                        <p class="page-subtitle" data-i18n="launchPlan.subtitle">Go-to-market strategy and platform launches</p>
+                    </div>
+                </div>
+            </div>
+
+            <section style="padding: 24px 0;">
+                <div class="launch-container">
+                    <!-- Stats Overview -->
+                    <div class="launch-stats">
+                        <div class="launch-stat">
+                            <div class="launch-stat-value" id="stat-platforms">0/34</div>
+                            <div class="launch-stat-label">Platforms Launched</div>
+                        </div>
+                        <div class="launch-stat">
+                            <div class="launch-stat-value" id="stat-content">0</div>
+                            <div class="launch-stat-label">Content Pieces</div>
+                        </div>
+                        <div class="launch-stat">
+                            <div class="launch-stat-value" id="stat-backlinks">0</div>
+                            <div class="launch-stat-label">Backlinks Created</div>
+                        </div>
+                        <div class="launch-stat">
+                            <div class="launch-stat-value" id="stat-languages">8</div>
+                            <div class="launch-stat-label">Languages Supported</div>
+                        </div>
+                    </div>
+
+                    <!-- Launch Platforms Section -->
+                    <div class="launch-section expanded" id="platforms-section">
+                        <div class="launch-section-header" onclick="toggleSection('platforms-section')">
+                            <div class="launch-section-title">
+                                <div class="launch-section-icon" style="background: rgba(99, 102, 241, 0.1);">🚀</div>
+                                Launch Platforms
+                            </div>
+                            <div class="launch-section-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="platforms-progress" style="width: 0%"></div>
+                                </div>
+                                <span class="progress-text" id="platforms-progress-text">0%</span>
+                                <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="launch-section-content">
+                            <div class="platform-grid" id="platforms-grid">
+                                <!-- Platforms will be inserted by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content Strategy Section -->
+                    <div class="launch-section" id="content-section">
+                        <div class="launch-section-header" onclick="toggleSection('content-section')">
+                            <div class="launch-section-title">
+                                <div class="launch-section-icon" style="background: rgba(16, 185, 129, 0.1);">📝</div>
+                                Content Strategy
+                            </div>
+                            <div class="launch-section-progress">
+                                <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="launch-section-content">
+                            <div class="content-strategy-grid">
+                                <div class="strategy-card">
+                                    <h4>📰 Blog Content Engine</h4>
+                                    <ul>
+                                        <li>New app announcements & features</li>
+                                        <li>Automation ideas by industry</li>
+                                        <li>Use case tutorials & guides</li>
+                                        <li>Customer success stories</li>
+                                        <li>Industry trend analysis</li>
+                                    </ul>
+                                </div>
+                                <div class="strategy-card">
+                                    <h4>🌐 Multi-Language Content</h4>
+                                    <ul>
+                                        <li>English (en) - Primary</li>
+                                        <li>Spanish (es) - LATAM + Spain</li>
+                                        <li>French (fr) - France + Africa</li>
+                                        <li>German (de) - DACH region</li>
+                                        <li>Portuguese (pt) - Brazil</li>
+                                        <li>Chinese (zh) - Asia Pacific</li>
+                                        <li>Italian (it) - Southern Europe</li>
+                                        <li>Arabic (ar) - MENA region</li>
+                                    </ul>
+                                </div>
+                                <div class="strategy-card">
+                                    <h4>🔍 SEO Optimization</h4>
+                                    <ul>
+                                        <li>Schema.org structured data</li>
+                                        <li>JSON-LD markup for AI readability</li>
+                                        <li>OpenGraph & Twitter cards</li>
+                                        <li>Semantic HTML5 structure</li>
+                                        <li>Internal linking architecture</li>
+                                        <li>Keyword-optimized headings</li>
+                                    </ul>
+                                </div>
+                                <div class="strategy-card">
+                                    <h4>🔗 Backlink Strategy</h4>
+                                    <ul>
+                                        <li>Guest posts on industry blogs</li>
+                                        <li>Directory submissions (23+ platforms)</li>
+                                        <li>Social media profile links</li>
+                                        <li>Forum & community contributions</li>
+                                        <li>Partnership link exchanges</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content Distribution Section -->
+                    <div class="launch-section" id="distribution-section">
+                        <div class="launch-section-header" onclick="toggleSection('distribution-section')">
+                            <div class="launch-section-title">
+                                <div class="launch-section-icon" style="background: rgba(245, 158, 11, 0.1);">📢</div>
+                                Content Distribution Channels
+                            </div>
+                            <div class="launch-section-progress">
+                                <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="launch-section-content">
+                            <p style="margin-bottom: 16px; color: var(--color-text-muted);">Auto-post content to maximize reach and build backlinks:</p>
+                            <div class="distribution-grid">
+                                <div class="distribution-item">
+                                    <span class="icon">📱</span>
+                                    <span>Reddit</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">💼</span>
+                                    <span>LinkedIn</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">🐦</span>
+                                    <span>X (Twitter)</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">📝</span>
+                                    <span>Medium</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">❓</span>
+                                    <span>Quora</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">💻</span>
+                                    <span>Dev.to</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">📰</span>
+                                    <span>Hashnode</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">🗞️</span>
+                                    <span>Substack</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">🎥</span>
+                                    <span>YouTube</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">📸</span>
+                                    <span>Instagram</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">🎵</span>
+                                    <span>TikTok</span>
+                                </div>
+                                <div class="distribution-item">
+                                    <span class="icon">📌</span>
+                                    <span>Pinterest</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Automata Tools Section -->
+                    <div class="launch-section" id="tools-section">
+                        <div class="launch-section-header" onclick="toggleSection('tools-section')">
+                            <div class="launch-section-title">
+                                <div class="launch-section-icon" style="background: rgba(139, 92, 246, 0.1);">⚡</div>
+                                Automata Tools for G2M
+                            </div>
+                            <div class="launch-section-progress">
+                                <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="launch-section-content">
+                            <div class="content-strategy-grid">
+                                <div class="strategy-card">
+                                    <h4>📰 Blogging App</h4>
+                                    <ul>
+                                        <li>Multi-language blog posts</li>
+                                        <li>SEO-optimized templates</li>
+                                        <li>Auto schema markup</li>
+                                        <li>RSS feed generation</li>
+                                    </ul>
+                                </div>
+                                <div class="strategy-card">
+                                    <h4>🤖 Blog Post Automation</h4>
+                                    <ul>
+                                        <li>Daily content generation</li>
+                                        <li>Industry-specific topics</li>
+                                        <li>Auto-translation to 8 languages</li>
+                                        <li>Scheduled publishing</li>
+                                    </ul>
+                                </div>
+                                <div class="strategy-card">
+                                    <h4>🔄 Distribution Automation</h4>
+                                    <ul>
+                                        <li>Auto-post to social channels</li>
+                                        <li>Cross-platform formatting</li>
+                                        <li>Engagement tracking</li>
+                                        <li>Link tracking & analytics</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div class="launch-section" id="notes-section">
+                        <div class="launch-section-header" onclick="toggleSection('notes-section')">
+                            <div class="launch-section-title">
+                                <div class="launch-section-icon" style="background: rgba(236, 72, 153, 0.1);">📋</div>
+                                Notes & Ideas
+                            </div>
+                            <div class="launch-section-progress">
+                                <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="launch-section-content">
+                            <textarea class="notes-area" id="launch-notes" placeholder="Add notes, ideas, and reminders for the launch plan..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Save Indicator -->
+    <div class="save-indicator" id="save-indicator">
+        <span id="save-text">Saving...</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script src="launch-plan.js?v=6"></script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Requests - Automata</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
+    <style>
+        .requests-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .requests-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .requests-grid {
+            display: grid;
+            gap: 16px;
+            padding: 0 24px 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .request-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+        .request-card.pending { border-left: 4px solid #f59e0b; }
+        .request-card.approved { border-left: 4px solid var(--color-accent); }
+        .request-card.rejected { border-left: 4px solid #ef4444; }
+        .request-card.converted { border-left: 4px solid var(--color-primary); }
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .request-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+        .request-meta {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .request-category {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: var(--radius-sm);
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--color-primary);
+        }
+        .request-status {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+        }
+        .request-status.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .request-status.approved { background: rgba(16, 185, 129, 0.1); color: var(--color-accent); }
+        .request-status.rejected { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .request-status.converted { background: rgba(99, 102, 241, 0.1); color: var(--color-primary); }
+        .request-description {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .request-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
+        .request-info {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+        .request-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .request-actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-approve {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--color-accent);
+            color: var(--color-accent);
+        }
+        .btn-approve:hover { background: var(--color-accent); color: white; }
+        .btn-reject {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+        .btn-reject:hover { background: #ef4444; color: white; }
+        .btn-convert {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--color-primary);
+            color: var(--color-primary);
+        }
+        .btn-convert:hover { background: var(--color-primary); color: white; }
+        .btn-pending {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid #f59e0b;
+            color: #f59e0b;
+        }
+        .btn-pending:hover { background: #f59e0b; color: white; }
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--color-text-muted);
+        }
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-tab {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            background: transparent;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .filter-tab.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="requests-header">
+                <h1>Feature Requests</h1>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-status="all">All</button>
+                    <button class="filter-tab" data-status="pending">Pending</button>
+                    <button class="filter-tab" data-status="approved">Approved</button>
+                    <button class="filter-tab" data-status="converted">Converted</button>
+                    <button class="filter-tab" data-status="rejected">Rejected</button>
+                </div>
+            </div>
+
+            <div class="requests-grid" id="requests-grid">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <p>Loading requests...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script>
+        let requests = [];
+        let currentFilter = 'all';
+
+        async function init() {
+            const user = await requireAuth();
+            if (!user) return;
+
+            const profile = await getUserProfile(user.id);
+            if (!profile?.is_admin) {
+                window.location.href = '/app/roadmap.html';
+                return;
+            }
+
+            setupFilters();
+            await loadRequests();
+        }
+
+        function setupFilters() {
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentFilter = tab.dataset.status;
+                    renderRequests();
+                });
+            });
+
+            // Event delegation for request actions (security: avoids inline onclick)
+            document.getElementById('requests-grid').addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+
+                const action = btn.dataset.action;
+                const id = btn.dataset.id;
+
+                if (action === 'approve') {
+                    updateStatus(id, 'approved');
+                } else if (action === 'reject') {
+                    updateStatus(id, 'rejected');
+                } else if (action === 'pending') {
+                    updateStatus(id, 'pending');
+                } else if (action === 'convert') {
+                    convertToRoadmap(id);
+                }
+            });
+        }
+
+        async function loadRequests() {
+            const { data, error } = await supabase
+                .from('feature_requests')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading requests:', error);
+                document.getElementById('requests-grid').innerHTML = `
+                    <div class="empty-state">
+                        <p>Failed to load requests. Make sure the table exists.</p>
+                    </div>`;
+                return;
+            }
+
+            requests = data || [];
+            renderRequests();
+        }
+
+        // Get action buttons based on current status (admin can manage all statuses)
+        function getActionButtons(r) {
+            const id = escapeHtml(r.id);
+
+            switch (r.status) {
+                case 'pending':
+                    return `
+                        <button class="btn-approve" data-action="approve" data-id="${id}">Approve</button>
+                        <button class="btn-reject" data-action="reject" data-id="${id}">Reject</button>
+                        <button class="btn-convert" data-action="convert" data-id="${id}">Add to Roadmap</button>
+                    `;
+                case 'approved':
+                    return `
+                        <button class="btn-pending" data-action="pending" data-id="${id}">Back to Pending</button>
+                        <button class="btn-reject" data-action="reject" data-id="${id}">Reject</button>
+                        <button class="btn-convert" data-action="convert" data-id="${id}">Add to Roadmap</button>
+                    `;
+                case 'rejected':
+                    return `
+                        <button class="btn-pending" data-action="pending" data-id="${id}">Back to Pending</button>
+                        <button class="btn-approve" data-action="approve" data-id="${id}">Approve</button>
+                    `;
+                case 'converted':
+                    return `
+                        <button class="btn-pending" data-action="pending" data-id="${id}">Back to Pending</button>
+                        <a href="/app/roadmap.html" class="btn-convert" style="text-decoration:none;">View Roadmap</a>
+                    `;
+                default:
+                    return `
+                        <button class="btn-approve" data-action="approve" data-id="${id}">Approve</button>
+                        <button class="btn-reject" data-action="reject" data-id="${id}">Reject</button>
+                    `;
+            }
+        }
+
+        function renderRequests() {
+            const grid = document.getElementById('requests-grid');
+            const filtered = currentFilter === 'all'
+                ? requests
+                : requests.filter(r => r.status === currentFilter);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>No ${currentFilter === 'all' ? '' : currentFilter} requests</p>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(r => `
+                <div class="request-card ${escapeHtml(r.status)}" data-id="${escapeHtml(r.id)}">
+                    <div class="request-header">
+                        <h3 class="request-title">${escapeHtml(r.title)}</h3>
+                        <div class="request-meta">
+                            <span class="request-category">${escapeHtml(r.category)}</span>
+                            <span class="request-status ${escapeHtml(r.status)}">${escapeHtml(r.status)}</span>
+                        </div>
+                    </div>
+                    <p class="request-description">${escapeHtml(r.description || 'No description')}</p>
+                    <div class="request-footer">
+                        <span class="request-info">
+                            ${escapeHtml(r.email) || 'No email'} • ${new Date(r.created_at).toLocaleDateString()}
+                        </span>
+                        <div class="request-actions">
+                            ${getActionButtons(r)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function updateStatus(id, status) {
+            const { error } = await supabase
+                .from('feature_requests')
+                .update({ status })
+                .eq('id', id);
+
+            if (error) {
+                alert('Failed to update status');
+                return;
+            }
+
+            const request = requests.find(r => r.id === id);
+            if (request) request.status = status;
+            renderRequests();
+        }
+
+        async function convertToRoadmap(id) {
+            const request = requests.find(r => r.id === id);
+            if (!request) return;
+
+            // Create roadmap item
+            const { data, error } = await supabase
+                .from('roadmap_items')
+                .insert({
+                    title: request.title,
+                    description: request.description,
+                    category: request.category,
+                    status: 'ideas',
+                    is_public: false,
+                    votes: 0
+                })
+                .select()
+                .single();
+
+            if (error) {
+                alert('Failed to add to roadmap');
+                return;
+            }
+
+            // Update request status
+            await supabase
+                .from('feature_requests')
+                .update({
+                    status: 'converted',
+                    converted_to_roadmap_id: data.id
+                })
+                .eq('id', id);
+
+            request.status = 'converted';
+            renderRequests();
+            alert('Added to roadmap! Go to Roadmap to make it public.');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

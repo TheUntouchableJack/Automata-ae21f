@@ -1,0 +1,525 @@
+/* ===== AI Intelligence Page Styles ===== */
+
+/* Page Header */
+.intelligence-header {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.08));
+    border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.page-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.page-title-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--color-primary), #8b5cf6);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.btn-analyze-lg {
+    background: linear-gradient(135deg, var(--color-primary), #8b5cf6);
+    border: none;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.btn-analyze-lg:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-analyze-lg:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-analyze-lg .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+}
+
+/* Stats Section */
+.intelligence-stats {
+    padding: 24px 0;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.stat-card {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon.recommendations {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-primary);
+}
+
+.stat-icon.implemented {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.stat-icon.high-impact {
+    background: rgba(168, 85, 247, 0.1);
+    color: #8b5cf6;
+}
+
+.stat-icon.last-analysis {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+/* Main Content */
+.intelligence-content {
+    padding: 24px 0;
+    background: var(--color-bg-secondary);
+    min-height: calc(100vh - 300px);
+}
+
+/* Filters */
+.intelligence-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--color-bg);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+.filter-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-tab:hover {
+    color: var(--color-text);
+    background: var(--color-bg-secondary);
+}
+
+.filter-tab.active {
+    color: white;
+    background: linear-gradient(135deg, var(--color-primary), #8b5cf6);
+}
+
+.filter-select {
+    padding: 8px 32px 8px 12px;
+    font-size: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+/* Loading State */
+.intelligence-loading {
+    text-align: center;
+    padding: 64px 24px;
+}
+
+.intelligence-loading .loading-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+}
+
+.intelligence-loading p {
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+/* Empty State */
+.intelligence-empty {
+    text-align: center;
+    padding: 80px 24px;
+    background: var(--color-bg);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+}
+
+.intelligence-empty .empty-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    color: var(--color-primary);
+}
+
+.intelligence-empty h3 {
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+    color: var(--color-text);
+}
+
+.intelligence-empty p {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    max-width: 400px;
+    margin: 0 auto 24px;
+}
+
+/* Recommendations List */
+.recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Recommendation Card */
+.recommendation-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    transition: all 0.2s;
+}
+
+.recommendation-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: var(--shadow-md);
+}
+
+.recommendation-card.implemented {
+    opacity: 0.7;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.recommendation-card.dismissed {
+    opacity: 0.5;
+}
+
+.recommendation-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.recommendation-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.recommendation-type-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recommendation-type-icon.opportunity {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.recommendation-type-icon.efficiency {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.recommendation-type-icon.risk {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.recommendation-type-icon.growth {
+    background: rgba(168, 85, 247, 0.1);
+    color: #8b5cf6;
+}
+
+.recommendation-type-icon.automation {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-primary);
+}
+
+.recommendation-type-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.recommendation-type-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.recommendation-type-label.opportunity { color: #10b981; }
+.recommendation-type-label.efficiency { color: #3b82f6; }
+.recommendation-type-label.risk { color: #f59e0b; }
+.recommendation-type-label.growth { color: #8b5cf6; }
+.recommendation-type-label.automation { color: var(--color-primary); }
+
+.recommendation-date {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.recommendation-impact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.recommendation-impact.high {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.recommendation-impact.medium {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.recommendation-impact.low {
+    background: rgba(156, 163, 175, 0.1);
+    color: #6b7280;
+}
+
+.recommendation-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.recommendation-description {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+.recommendation-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.recommendation-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.recommendation-actions .btn {
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+.recommendation-confidence {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.confidence-bar-lg {
+    width: 80px;
+    height: 6px;
+    background: var(--color-bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.confidence-fill-lg {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), #8b5cf6);
+    border-radius: 3px;
+}
+
+.recommendation-will-create {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    padding: 8px 12px;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    margin-top: 12px;
+}
+
+.recommendation-will-create strong {
+    color: var(--color-text-secondary);
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.status-badge.implemented {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.status-badge.dismissed {
+    background: rgba(156, 163, 175, 0.1);
+    color: #6b7280;
+}
+
+/* Button variants */
+.btn-success {
+    background: #10b981;
+    color: white;
+    border: none;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--color-text-muted);
+    border: none;
+}
+
+.btn-ghost:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .page-header .container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .page-title-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-title-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .intelligence-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .recommendation-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .recommendation-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .recommendation-actions {
+        flex-direction: column;
+    }
+
+    .recommendation-actions .btn {
+        justify-content: center;
+    }
+}

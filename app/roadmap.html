@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap - Automata</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <style>
+        /* Roadmap Styles */
+        .roadmap-header {
+            text-align: center;
+            padding: 40px 24px 32px;
+        }
+
+        .roadmap-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .roadmap-header p {
+            font-size: 16px;
+            color: var(--color-text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Admin Banner */
+        .admin-banner {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: var(--radius-md);
+            padding: 12px 20px;
+            margin: 0 24px 24px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .admin-banner-text {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-primary);
+        }
+
+        .admin-banner-text svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .admin-banner-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .pending-badge {
+            background: var(--color-warning);
+            color: white;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .roadmap-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            padding: 0 24px 48px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1024px) {
+            .roadmap-board {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+            }
+        }
+
+        .roadmap-column {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .column-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--color-text);
+        }
+
+        .column-title .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .column-title .status-dot.ideas { background: var(--color-primary); }
+        .column-title .status-dot.in-progress { background: #f59e0b; }
+        .column-title .status-dot.deployed { background: var(--color-accent); }
+
+        .column-count {
+            background: var(--color-bg);
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+        }
+
+        .column-content {
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .roadmap-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .roadmap-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+        }
+
+        .roadmap-card:last-child { margin-bottom: 0; }
+
+        /* Hidden card (admin only) */
+        .roadmap-card.hidden-item {
+            opacity: 0.6;
+            border-style: dashed;
+        }
+
+        .roadmap-card.hidden-item::before {
+            content: 'Hidden';
+            position: absolute;
+            top: 8px;
+            right: 36px;
+            background: var(--color-text-muted);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Kebab Menu (Admin) */
+        .card-menu {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 10;
+        }
+
+        .card-menu-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--color-text-muted);
+            transition: all 0.15s ease;
+            opacity: 0;
+        }
+
+        .roadmap-card:hover .card-menu-btn {
+            opacity: 1;
+        }
+
+        .card-menu-btn:hover {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-border);
+            color: var(--color-text);
+        }
+
+        .card-menu.active .card-menu-btn {
+            opacity: 1;
+            background: var(--color-bg-secondary);
+            border-color: var(--color-border);
+        }
+
+        .card-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            min-width: 160px;
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            padding: 4px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.15s ease;
+            z-index: 100;
+        }
+
+        .card-menu.active .card-menu-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(4px);
+        }
+
+        .card-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.1s ease;
+        }
+
+        .card-menu-item:hover {
+            background: var(--color-bg-secondary);
+            color: var(--color-text);
+        }
+
+        .card-menu-item.danger {
+            color: #ef4444;
+        }
+
+        .card-menu-item.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .card-menu-divider {
+            height: 1px;
+            background: var(--color-border);
+            margin: 4px 0;
+        }
+
+        .card-menu-item svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .card-category {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+        }
+
+        .card-category.feature { background: rgba(99, 102, 241, 0.1); color: var(--color-primary); }
+        .card-category.improvement { background: rgba(16, 185, 129, 0.1); color: var(--color-accent); }
+        .card-category.integration { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+        .card-category.bug { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .card-description {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .card-votes { display: flex; align-items: center; gap: 6px; }
+
+        .vote-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .vote-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .vote-btn.voted {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .vote-btn svg { width: 14px; height: 14px; }
+
+        .card-date {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        /* Admin Toggle Button */
+        .visibility-toggle {
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .visibility-toggle.is-public {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .visibility-toggle.is-hidden {
+            background: rgba(100, 116, 139, 0.1);
+            border-color: var(--color-text-muted);
+            color: var(--color-text-muted);
+        }
+
+        .visibility-toggle:hover { opacity: 0.8; }
+
+        /* Submit Feature Request */
+        .submit-request {
+            max-width: 600px;
+            margin: 0 auto 48px;
+            padding: 0 24px;
+        }
+
+        .submit-card {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .submit-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .submit-card p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin-bottom: 24px;
+        }
+
+        .submit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-align: left;
+        }
+
+        .submit-form input,
+        .submit-form textarea,
+        .submit-form select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: var(--color-surface);
+            color: var(--color-text);
+            transition: border-color 0.2s ease;
+        }
+
+        .submit-form input:focus,
+        .submit-form textarea:focus,
+        .submit-form select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .submit-form textarea { min-height: 100px; resize: vertical; }
+        .submit-form .btn { align-self: center; min-width: 200px; }
+
+        /* Rate Limit Warning */
+        .rate-limit-warning {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            color: #b45309;
+        }
+        .rate-limit-warning svg { flex-shrink: 0; color: #f59e0b; }
+        .rate-limit-warning.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #dc2626;
+        }
+        .rate-limit-warning.danger svg { color: #ef4444; }
+
+        .submit-success {
+            display: none;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .submit-success.visible { display: block; }
+
+        .submit-success svg {
+            width: 48px;
+            height: 48px;
+            color: var(--color-accent);
+            margin-bottom: 16px;
+        }
+
+        .submit-success h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .submit-success p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .column-empty {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--color-text-muted);
+            font-size: 14px;
+        }
+
+        .roadmap-card.deployed {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .deployed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-top: 8px;
+        }
+
+        .deployed-badge svg { width: 14px; height: 14px; }
+
+        /* Loading State */
+        .column-loading {
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .column-loading .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="roadmap-header">
+                <h1 data-i18n="roadmap.title">Product Roadmap</h1>
+                <p data-i18n="roadmap.subtitle">See what we're building and share your ideas. Your feedback shapes Automata's future.</p>
+            </div>
+
+            <!-- Admin Banner (hidden by default, shown for admins) -->
+            <div class="admin-banner" id="admin-banner" style="display: none;">
+                <div class="admin-banner-text">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    Admin Mode — You can toggle item visibility
+                </div>
+                <div class="admin-banner-actions">
+                    <a href="/app/feature-requests.html" class="btn btn-sm btn-secondary">
+                        View Requests
+                        <span class="pending-badge" id="pending-count" style="display: none;">0</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Roadmap Board -->
+            <div class="roadmap-board">
+                <!-- Ideas Column -->
+                <div class="roadmap-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="status-dot ideas"></span>
+                            <span data-i18n="roadmap.ideas">Ideas</span>
+                        </div>
+                        <span class="column-count" id="ideas-count">0</span>
+                    </div>
+                    <div class="column-content" id="ideas-column">
+                        <div class="column-loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+
+                <!-- In Progress Column -->
+                <div class="roadmap-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="status-dot in-progress"></span>
+                            <span data-i18n="roadmap.inProgress">In Progress</span>
+                        </div>
+                        <span class="column-count" id="progress-count">0</span>
+                    </div>
+                    <div class="column-content" id="progress-column">
+                        <div class="column-loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+
+                <!-- Recently Deployed Column -->
+                <div class="roadmap-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="status-dot deployed"></span>
+                            <span data-i18n="roadmap.recentlyDeployed">Recently Deployed</span>
+                        </div>
+                        <span class="column-count" id="deployed-count">0</span>
+                    </div>
+                    <div class="column-content" id="deployed-column">
+                        <div class="column-loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Feature Request -->
+            <div class="submit-request" id="suggest">
+                <div class="submit-card">
+                    <div id="submit-form-container">
+                        <h3 data-i18n="roadmap.suggestForm.title">Suggest a Feature</h3>
+                        <p data-i18n="roadmap.suggestForm.subtitle">Help us build what you need most</p>
+                        <form class="submit-form" id="feature-request-form">
+                            <input type="text" id="request-title" placeholder="Feature title" data-i18n-placeholder="roadmap.suggestForm.titlePlaceholder" required>
+                            <select id="request-category" required>
+                                <option value="">Select category</option>
+                                <option value="feature" data-i18n="roadmap.categories.feature">Feature</option>
+                                <option value="improvement" data-i18n="roadmap.categories.improvement">Improvement</option>
+                                <option value="integration" data-i18n="roadmap.categories.integration">Integration</option>
+                                <option value="bug" data-i18n="roadmap.categories.bug">Bug Fix</option>
+                            </select>
+                            <textarea id="request-description" placeholder="Describe your idea in detail..." data-i18n-placeholder="roadmap.suggestForm.descPlaceholder" required></textarea>
+                            <input type="email" id="request-email" placeholder="Your email (optional)" data-i18n-placeholder="roadmap.suggestForm.emailPlaceholder">
+                            <div class="rate-limit-warning" id="rate-limit-warning" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span id="rate-limit-message"></span>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                                <span data-i18n="roadmap.suggestForm.submit">Submit Suggestion</span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="submit-success" id="submit-success">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <h4 data-i18n="roadmap.suggestForm.success">Thank you!</h4>
+                        <p>Your suggestion has been submitted for review.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="rate-limiter.js?v=1"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script>
+        // ===== Roadmap Page =====
+        let currentUser = null;
+        let userProfile = null;
+        let userIsAdmin = false;
+        let currentOrganization = null;
+        let currentUserRole = null;
+        let roadmapItems = [];
+
+        async function initRoadmap() {
+            currentUser = await requireAuth();
+            if (!currentUser) return;
+
+            await loadUserInfo();
+
+            // Initialize sidebar with role for admin features
+            if (typeof AppSidebar !== 'undefined') {
+                let fullName = '';
+                if (userProfile && (userProfile.first_name || userProfile.last_name)) {
+                    fullName = [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ');
+                } else {
+                    fullName = currentUser.email.split('@')[0];
+                }
+
+                AppSidebar.init({
+                    name: fullName,
+                    email: currentUser.email,
+                    organization: currentOrganization,
+                    role: currentUserRole
+                });
+            }
+
+            setupEventListeners();
+            await loadRoadmapItems();
+
+            // Update rate limit warning
+            updateRateLimitWarning();
+
+            // Scroll to suggest section if hash is present
+            if (window.location.hash === '#suggest') {
+                document.getElementById('suggest').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // ===== Rate Limit Warning =====
+        function updateRateLimitWarning() {
+            if (!window.RateLimiter) return;
+
+            const warning = document.getElementById('rate-limit-warning');
+            const message = document.getElementById('rate-limit-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            const status = window.RateLimiter.getRateLimitStatus('feature_request');
+            if (!status) return;
+
+            if (status.isLimited) {
+                // Fully rate limited
+                warning.style.display = 'flex';
+                warning.classList.add('danger');
+                message.textContent = `You've reached the limit. Please try again in ${status.timeUntilReset}.`;
+                submitBtn.disabled = true;
+            } else if (status.remaining <= 2) {
+                // Warning - approaching limit
+                warning.style.display = 'flex';
+                warning.classList.remove('danger');
+                if (status.remaining === 1) {
+                    message.textContent = `You have 1 submission remaining this hour.`;
+                } else {
+                    message.textContent = `You have ${status.remaining} submissions remaining this hour.`;
+                }
+                submitBtn.disabled = false;
+            } else {
+                // Plenty of submissions left - hide warning
+                warning.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        }
+
+        // ===== Load User Info =====
+        async function loadUserInfo() {
+            userProfile = await getUserProfile(currentUser.id);
+            userIsAdmin = userProfile?.is_admin || false;
+
+            // Load organization membership for role
+            try {
+                const { data: membership } = await supabase
+                    .from('organization_members')
+                    .select('role, organizations(id, name)')
+                    .eq('user_id', currentUser.id)
+                    .limit(1)
+                    .single();
+
+                if (membership) {
+                    currentUserRole = membership.role;
+                    currentOrganization = membership.organizations;
+                }
+            } catch (e) {
+                console.error('Error loading organization:', e);
+            }
+
+            // Show admin banner if admin
+            if (userIsAdmin) {
+                document.getElementById('admin-banner').style.display = 'flex';
+                loadPendingRequestsCount();
+            }
+        }
+
+        function getInitials(firstName, lastName) {
+            if (firstName && lastName) return (firstName[0] + lastName[0]).toUpperCase();
+            if (firstName) return firstName.substring(0, 2).toUpperCase();
+            if (lastName) return lastName.substring(0, 2).toUpperCase();
+            return '?';
+        }
+
+        // ===== Load Roadmap Items =====
+        async function loadRoadmapItems() {
+            try {
+                // Admins see all items, regular users only see public items
+                let query = supabase.from('roadmap_items').select('*');
+
+                if (!userIsAdmin) {
+                    query = query.eq('is_public', true);
+                }
+
+                const { data, error } = await query.order('display_order', { ascending: true });
+
+                if (error) {
+                    console.error('Error loading roadmap items:', error);
+                    // Fall back to sample data if table doesn't exist yet
+                    roadmapItems = getSampleData();
+                } else {
+                    roadmapItems = data || [];
+                    // If no data, show sample data
+                    if (roadmapItems.length === 0) {
+                        roadmapItems = getSampleData();
+                    }
+                }
+
+                renderRoadmapItems();
+            } catch (err) {
+                console.error('Error:', err);
+                roadmapItems = getSampleData();
+                renderRoadmapItems();
+            }
+        }
+
+        function getSampleData() {
+            return [
+                { id: '1', title: 'Twilio SMS Integration', description: 'Send automated SMS messages through Twilio for appointment reminders and promotions.', category: 'integration', status: 'ideas', is_public: true, votes: 24 },
+                { id: '2', title: 'Customer Segmentation', description: 'Create dynamic customer segments based on behavior, location, and custom tags.', category: 'feature', status: 'ideas', is_public: true, votes: 18 },
+                { id: '3', title: 'Zapier Integration', description: 'Connect Automata with 5,000+ apps through Zapier for seamless workflows.', category: 'integration', status: 'ideas', is_public: true, votes: 15 },
+                { id: '4', title: 'Advanced Analytics Dashboard', description: 'Detailed insights on automation performance, customer engagement, and ROI tracking.', category: 'improvement', status: 'ideas', is_public: true, votes: 12 },
+                { id: '5', title: 'Outgoing Messages Dashboard', description: 'View, pause, cancel, and reschedule all scheduled automation messages in one place.', category: 'feature', status: 'in_progress', is_public: true },
+                { id: '6', title: 'Email Template Builder', description: 'Drag-and-drop email builder with pre-designed templates for common automation types.', category: 'improvement', status: 'in_progress', is_public: true },
+                { id: '7', title: 'AI-Powered Onboarding', description: 'Smart onboarding that analyzes your business and recommends personalized automations.', category: 'feature', status: 'deployed', is_public: true, deployed_at: '2026-01-28' },
+                { id: '8', title: 'Multi-Language Support', description: 'Full localization in 8 languages: English, Spanish, French, German, Italian, Portuguese, Chinese, Arabic.', category: 'improvement', status: 'deployed', is_public: true, deployed_at: '2026-01-27' },
+                { id: '9', title: 'Automation Templates Library', description: '12 pre-built automation templates for common business use cases like birthday rewards and win-back campaigns.', category: 'feature', status: 'deployed', is_public: true, deployed_at: '2026-01-26' }
+            ];
+        }
+
+        function renderRoadmapItems() {
+            const ideasColumn = document.getElementById('ideas-column');
+            const progressColumn = document.getElementById('progress-column');
+            const deployedColumn = document.getElementById('deployed-column');
+
+            const ideasItems = roadmapItems.filter(i => i.status === 'ideas');
+            const progressItems = roadmapItems.filter(i => i.status === 'in_progress');
+            const deployedItems = roadmapItems.filter(i => i.status === 'deployed');
+
+            // Update counts
+            document.getElementById('ideas-count').textContent = ideasItems.filter(i => userIsAdmin || i.is_public).length;
+            document.getElementById('progress-count').textContent = progressItems.filter(i => userIsAdmin || i.is_public).length;
+            document.getElementById('deployed-count').textContent = deployedItems.filter(i => userIsAdmin || i.is_public).length;
+
+            // Render columns
+            ideasColumn.innerHTML = ideasItems.length ? ideasItems.map(item => renderCard(item, true)).join('') : '<div class="column-empty">No ideas yet</div>';
+            progressColumn.innerHTML = progressItems.length ? progressItems.map(item => renderCard(item, false)).join('') : '<div class="column-empty">Nothing in progress</div>';
+            deployedColumn.innerHTML = deployedItems.length ? deployedItems.map(item => renderDeployedCard(item)).join('') : '<div class="column-empty">Nothing deployed yet</div>';
+
+            // Load user votes
+            loadUserVotes();
+        }
+
+        // Security: Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderCard(item, showVotes) {
+            const hiddenClass = !item.is_public ? 'hidden-item' : '';
+            const safeId = escapeHtml(item.id);
+            const currentStatus = item.status;
+
+            const adminMenu = userIsAdmin ? `
+                <div class="card-menu" data-id="${safeId}">
+                    <button class="card-menu-btn" data-action="toggle-menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+                        </svg>
+                    </button>
+                    <div class="card-menu-dropdown">
+                        ${currentStatus !== 'ideas' ? `<button class="card-menu-item" data-action="move-status" data-id="${safeId}" data-status="ideas">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                            Move to Ideas
+                        </button>` : ''}
+                        ${currentStatus !== 'in_progress' ? `<button class="card-menu-item" data-action="move-status" data-id="${safeId}" data-status="in_progress">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            Move to In Progress
+                        </button>` : ''}
+                        ${currentStatus !== 'deployed' ? `<button class="card-menu-item" data-action="move-status" data-id="${safeId}" data-status="deployed">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            Move to Deployed
+                        </button>` : ''}
+                        <div class="card-menu-divider"></div>
+                        <button class="card-menu-item" data-action="toggle-visibility" data-id="${safeId}" data-public="${!item.is_public}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            ${item.is_public ? 'Make Hidden' : 'Make Public'}
+                        </button>
+                        <div class="card-menu-divider"></div>
+                        <button class="card-menu-item danger" data-action="delete-item" data-id="${safeId}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            ` : '';
+
+            const adminToggle = userIsAdmin ? `
+                <button class="visibility-toggle ${item.is_public ? 'is-public' : 'is-hidden'}" data-action="toggle-visibility" data-id="${safeId}" data-public="${!item.is_public}">
+                    ${item.is_public ? 'Public' : 'Hidden'}
+                </button>
+            ` : '';
+
+            return `
+                <div class="roadmap-card ${hiddenClass}" data-id="${safeId}" data-status="${currentStatus}">
+                    ${adminMenu}
+                    <span class="card-category ${escapeHtml(item.category)}">${escapeHtml(item.category)}</span>
+                    <h4 class="card-title">${escapeHtml(item.title)}</h4>
+                    <p class="card-description">${escapeHtml(item.description)}</p>
+                    <div class="card-footer">
+                        ${showVotes ? `
+                            <div class="card-votes">
+                                <button class="vote-btn" data-action="vote" data-id="${safeId}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 19V5M5 12l7-7 7 7"/>
+                                    </svg>
+                                    <span>${item.votes || 0}</span>
+                                </button>
+                            </div>
+                        ` : '<span></span>'}
+                        ${adminToggle}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDeployedCard(item) {
+            const hiddenClass = !item.is_public ? 'hidden-item' : '';
+            const safeId = escapeHtml(item.id);
+            const currentStatus = item.status;
+
+            const adminMenu = userIsAdmin ? `
+                <div class="card-menu" data-id="${safeId}">
+                    <button class="card-menu-btn" data-action="toggle-menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+                        </svg>
+                    </button>
+                    <div class="card-menu-dropdown">
+                        <button class="card-menu-item" data-action="move-status" data-id="${safeId}" data-status="ideas">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                            Move to Ideas
+                        </button>
+                        <button class="card-menu-item" data-action="move-status" data-id="${safeId}" data-status="in_progress">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            Move to In Progress
+                        </button>
+                        <div class="card-menu-divider"></div>
+                        <button class="card-menu-item" data-action="toggle-visibility" data-id="${safeId}" data-public="${!item.is_public}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            ${item.is_public ? 'Make Hidden' : 'Make Public'}
+                        </button>
+                        <div class="card-menu-divider"></div>
+                        <button class="card-menu-item danger" data-action="delete-item" data-id="${safeId}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            ` : '';
+
+            const adminToggle = userIsAdmin ? `
+                <button class="visibility-toggle ${item.is_public ? 'is-public' : 'is-hidden'}" data-action="toggle-visibility" data-id="${safeId}" data-public="${!item.is_public}">
+                    ${item.is_public ? 'Public' : 'Hidden'}
+                </button>
+            ` : '';
+
+            const deployedDate = item.deployed_at ? new Date(item.deployed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+            return `
+                <div class="roadmap-card deployed ${hiddenClass}" data-id="${safeId}" data-status="${currentStatus}">
+                    ${adminMenu}
+                    <span class="card-category ${escapeHtml(item.category)}">${escapeHtml(item.category)}</span>
+                    <h4 class="card-title">${escapeHtml(item.title)}</h4>
+                    <p class="card-description">${escapeHtml(item.description)}</p>
+                    <div class="card-footer">
+                        <div class="deployed-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            ${deployedDate ? `Deployed ${deployedDate}` : 'Deployed'}
+                        </div>
+                        ${adminToggle}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== Admin Functions =====
+        async function toggleVisibility(itemId, newValue) {
+            if (!userIsAdmin) return;
+
+            try {
+                const { error } = await supabase
+                    .from('roadmap_items')
+                    .update({ is_public: newValue })
+                    .eq('id', itemId);
+
+                if (error) throw error;
+
+                // Update local state and re-render
+                const item = roadmapItems.find(i => i.id === itemId);
+                if (item) item.is_public = newValue;
+                renderRoadmapItems();
+            } catch (err) {
+                console.error('Error updating visibility:', err);
+                alert('Failed to update visibility. Check console for details.');
+            }
+        }
+
+        async function loadPendingRequestsCount() {
+            try {
+                const { count, error } = await supabase
+                    .from('feature_requests')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'pending');
+
+                if (!error && count > 0) {
+                    const badge = document.getElementById('pending-count');
+                    badge.textContent = count;
+                    badge.style.display = 'inline';
+                }
+            } catch (err) {
+                console.log('Could not load pending requests count');
+            }
+        }
+
+        // ===== Voting =====
+        function loadUserVotes() {
+            const votes = JSON.parse(localStorage.getItem('roadmap_votes') || '[]');
+            votes.forEach(id => {
+                const btn = document.querySelector(`.roadmap-card[data-id="${id}"] .vote-btn`);
+                if (btn) btn.classList.add('voted');
+            });
+        }
+
+        async function toggleVote(btn, itemId) {
+            const countSpan = btn.querySelector('span');
+            let count = parseInt(countSpan.textContent);
+            let votes = JSON.parse(localStorage.getItem('roadmap_votes') || '[]');
+
+            if (btn.classList.contains('voted')) {
+                btn.classList.remove('voted');
+                count--;
+                votes = votes.filter(v => v !== itemId);
+            } else {
+                btn.classList.add('voted');
+                count++;
+                votes.push(itemId);
+            }
+
+            countSpan.textContent = count;
+            localStorage.setItem('roadmap_votes', JSON.stringify(votes));
+
+            // Update in database (fire and forget)
+            try {
+                await supabase
+                    .from('roadmap_items')
+                    .update({ votes: count })
+                    .eq('id', itemId);
+            } catch (err) {
+                console.log('Could not sync vote to database');
+            }
+        }
+
+        // ===== Input Validation =====
+        function validateFeatureRequest(title, category, description, email) {
+            const errors = [];
+
+            // Title validation
+            if (!title || title.trim().length < 3) {
+                errors.push('Title must be at least 3 characters');
+            }
+            if (title && title.length > 200) {
+                errors.push('Title must be less than 200 characters');
+            }
+
+            // Category validation
+            const validCategories = ['feature', 'improvement', 'integration', 'bug'];
+            if (!category || !validCategories.includes(category)) {
+                errors.push('Please select a valid category');
+            }
+
+            // Description validation
+            if (!description || description.trim().length < 10) {
+                errors.push('Description must be at least 10 characters');
+            }
+            if (description && description.length > 5000) {
+                errors.push('Description must be less than 5000 characters');
+            }
+
+            // Email validation (optional but must be valid if provided)
+            if (email && email.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email.trim())) {
+                    errors.push('Please enter a valid email address');
+                }
+            }
+
+            return errors;
+        }
+
+        // ===== Submit Feature Request =====
+        async function handleSubmitRequest(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submit-btn');
+
+            // Check rate limiting first
+            if (window.RateLimiter && window.RateLimiter.isRateLimited('feature_request')) {
+                const errorMsg = window.RateLimiter.getRateLimitErrorMessage('feature_request');
+                alert(errorMsg);
+                return;
+            }
+
+            const title = document.getElementById('request-title').value.trim();
+            const category = document.getElementById('request-category').value;
+            const description = document.getElementById('request-description').value.trim();
+            const email = document.getElementById('request-email').value.trim();
+
+            // Validate input
+            const errors = validateFeatureRequest(title, category, description, email);
+            if (errors.length > 0) {
+                alert(errors.join('\n'));
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>Submitting...</span>';
+
+            try {
+                const { error } = await supabase.from('feature_requests').insert({
+                    title,
+                    category,
+                    description,
+                    email: email || null,
+                    submitted_by: currentUser.id,
+                    status: 'pending'
+                });
+
+                if (error) throw error;
+
+                // Record rate limit attempt on success
+                if (window.RateLimiter) {
+                    window.RateLimiter.recordRateLimit('feature_request');
+                }
+
+                // Update rate limit warning
+                updateRateLimitWarning();
+
+                // Show success
+                document.getElementById('submit-form-container').style.display = 'none';
+                document.getElementById('submit-success').classList.add('visible');
+
+                // Send email notification (via edge function or webhook)
+                sendEmailNotification({ title, category, description, email, user: currentUser.email });
+
+                // Reset after delay
+                setTimeout(() => {
+                    document.getElementById('feature-request-form').reset();
+                    document.getElementById('submit-form-container').style.display = 'block';
+                    document.getElementById('submit-success').classList.remove('visible');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span data-i18n="roadmap.suggestForm.submit">Submit Suggestion</span>';
+                }, 5000);
+
+            } catch (err) {
+                console.error('Error submitting request:', err);
+                alert('Failed to submit. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span>Submit Suggestion</span>';
+            }
+        }
+
+        // Email notification (placeholder - implement via Supabase Edge Function or webhook)
+        async function sendEmailNotification(data) {
+            // TODO: Implement email notification via:
+            // 1. Supabase Edge Function that sends email
+            // 2. Webhook to email service (Resend, SendGrid, etc.)
+            // 3. Slack/Discord webhook for instant notification
+            console.log('New feature request submitted:', data);
+
+            // Example webhook call (uncomment and configure):
+            // fetch('YOUR_WEBHOOK_URL', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({
+            //         text: `New feature request: ${data.title}\nCategory: ${data.category}\nFrom: ${data.user}\n\n${data.description}`
+            //     })
+            // }).catch(console.error);
+        }
+
+        // ===== Event Listeners =====
+        function setupEventListeners() {
+            // Legacy user menu handling (now handled by sidebar, but keep for safety)
+            const userMenuBtn = document.getElementById('user-menu-btn');
+            const userDropdown = document.getElementById('user-dropdown');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (userMenuBtn && userDropdown) {
+                userMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('active');
+                });
+
+                document.addEventListener('click', () => {
+                    userDropdown.classList.remove('active');
+                });
+            }
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await signOut();
+                });
+            }
+
+            document.getElementById('feature-request-form').addEventListener('submit', handleSubmitRequest);
+
+            // Event delegation for roadmap board actions (security: avoids inline onclick)
+            document.querySelector('.roadmap-board').addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+
+                const action = btn.dataset.action;
+                const itemId = btn.dataset.id;
+
+                if (action === 'vote') {
+                    toggleVote(btn, itemId);
+                } else if (action === 'toggle-visibility') {
+                    const newPublic = btn.dataset.public === 'true';
+                    toggleVisibility(itemId, newPublic);
+                    closeAllMenus();
+                } else if (action === 'toggle-menu') {
+                    e.stopPropagation();
+                    const menu = btn.closest('.card-menu');
+                    const wasActive = menu.classList.contains('active');
+                    closeAllMenus();
+                    if (!wasActive) {
+                        menu.classList.add('active');
+                    }
+                } else if (action === 'move-status') {
+                    const newStatus = btn.dataset.status;
+                    moveItemStatus(itemId, newStatus);
+                    closeAllMenus();
+                } else if (action === 'delete-item') {
+                    if (confirm('Are you sure you want to delete this item?')) {
+                        deleteItem(itemId);
+                    }
+                    closeAllMenus();
+                }
+            });
+
+            // Close menus when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.card-menu')) {
+                    closeAllMenus();
+                }
+            });
+        }
+
+        // Close all card menus
+        function closeAllMenus() {
+            document.querySelectorAll('.card-menu.active').forEach(menu => {
+                menu.classList.remove('active');
+            });
+        }
+
+        // Move item to different status
+        async function moveItemStatus(itemId, newStatus) {
+            if (!userIsAdmin) return;
+
+            try {
+                const updateData = { status: newStatus };
+
+                // If moving to deployed, set deployed_at
+                if (newStatus === 'deployed') {
+                    updateData.deployed_at = new Date().toISOString().split('T')[0];
+                }
+
+                const { error } = await supabase
+                    .from('roadmap_items')
+                    .update(updateData)
+                    .eq('id', itemId);
+
+                if (error) throw error;
+
+                // Update local data
+                const item = roadmapItems.find(i => i.id === itemId);
+                if (item) {
+                    item.status = newStatus;
+                    if (newStatus === 'deployed') {
+                        item.deployed_at = updateData.deployed_at;
+                    }
+                }
+
+                renderRoadmapItems();
+            } catch (err) {
+                console.error('Error moving item:', err);
+                alert('Failed to move item. Please try again.');
+            }
+        }
+
+        // Delete roadmap item
+        async function deleteItem(itemId) {
+            if (!userIsAdmin) return;
+
+            try {
+                const { error } = await supabase
+                    .from('roadmap_items')
+                    .delete()
+                    .eq('id', itemId);
+
+                if (error) throw error;
+
+                // Remove from local data
+                roadmapItems = roadmapItems.filter(i => i.id !== itemId);
+                renderRoadmapItems();
+            } catch (err) {
+                console.error('Error deleting item:', err);
+                alert('Failed to delete item. Please try again.');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initRoadmap);
+    </script>
+</body>
+</html>

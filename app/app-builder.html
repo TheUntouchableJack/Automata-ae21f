@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Builder - Automata</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="sidebar.css?v=3">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <link rel="stylesheet" href="app-builder.css">
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Header -->
+            <div class="builder-header">
+                <div class="builder-header-left">
+                    <a href="/app/apps.html" class="back-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        <span>Back to Apps</span>
+                    </a>
+                    <h1 class="builder-title" id="builder-title">New App</h1>
+                </div>
+                <div class="builder-header-right">
+                    <button class="btn btn-secondary" id="save-draft-btn">Save Draft</button>
+                    <button class="btn btn-primary" id="publish-btn" disabled>Publish App</button>
+                </div>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="builder-progress">
+                <div class="progress-step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Basics</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Features</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Settings</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Branding</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="5">
+                    <div class="step-number">5</div>
+                    <div class="step-label">QR Code</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="6">
+                    <div class="step-number">6</div>
+                    <div class="step-label">Preview</div>
+                </div>
+            </div>
+
+            <!-- Builder Content -->
+            <div class="builder-content">
+                <!-- Loading State -->
+                <div class="loading-container" id="loading">
+                    <div class="loading-spinner"></div>
+                </div>
+
+                <!-- Step 1: Basics -->
+                <div class="builder-step" id="step-1" style="display: none;">
+                    <div class="step-header">
+                        <h2>Basic Information</h2>
+                        <p>Give your app a name and choose a type</p>
+                    </div>
+                    <div class="step-body">
+                        <div class="form-group">
+                            <label for="app-name">App Name *</label>
+                            <input type="text" id="app-name" placeholder="My Loyalty Program" required>
+                            <span class="form-helper">This is what customers will see</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="app-description">Description</label>
+                            <textarea id="app-description" rows="3" placeholder="Describe your app for customers..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="app-project">Link to Project (Optional)</label>
+                            <select id="app-project">
+                                <option value="">No project - Org-wide app</option>
+                                <!-- Projects will be loaded dynamically -->
+                            </select>
+                            <span class="form-helper">Link this app to a specific project or keep it organization-wide</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>App Type</label>
+                            <div class="type-cards">
+                                <label class="type-card selected" data-type="loyalty">
+                                    <input type="radio" name="app-type" value="loyalty" checked>
+                                    <div class="type-icon loyalty">&#11088;</div>
+                                    <div class="type-name">Loyalty Program</div>
+                                    <div class="type-desc">Points per visit</div>
+                                </label>
+                                <label class="type-card" data-type="rewards">
+                                    <input type="radio" name="app-type" value="rewards">
+                                    <div class="type-icon rewards">&#127873;</div>
+                                    <div class="type-name">Rewards Club</div>
+                                    <div class="type-desc">Redeem prizes</div>
+                                </label>
+                                <label class="type-card" data-type="membership">
+                                    <input type="radio" name="app-type" value="membership">
+                                    <div class="type-icon membership">&#128081;</div>
+                                    <div class="type-name">VIP Membership</div>
+                                    <div class="type-desc">Exclusive perks</div>
+                                </label>
+                                <label class="type-card" data-type="custom">
+                                    <input type="radio" name="app-type" value="custom">
+                                    <div class="type-icon custom">&#128736;</div>
+                                    <div class="type-name">Custom</div>
+                                    <div class="type-desc">Build your own</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="app-slug">URL Slug</label>
+                            <div class="slug-input">
+                                <span class="slug-prefix">automata.app/a/</span>
+                                <input type="text" id="app-slug" placeholder="my-loyalty-program">
+                            </div>
+                            <span class="form-helper">This is the link customers will use to access your app</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Features -->
+                <div class="builder-step" id="step-2" style="display: none;">
+                    <div class="step-header">
+                        <h2>Features</h2>
+                        <p>Choose which features to enable for your customers</p>
+                    </div>
+                    <div class="step-body">
+                        <div class="features-grid">
+                            <div class="feature-toggle">
+                                <div class="feature-info">
+                                    <div class="feature-icon">&#127775;</div>
+                                    <div class="feature-details">
+                                        <div class="feature-name">Points System</div>
+                                        <div class="feature-desc">Customers earn points on visits or purchases</div>
+                                    </div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="feature-points" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="feature-toggle">
+                                <div class="feature-info">
+                                    <div class="feature-icon">&#127942;</div>
+                                    <div class="feature-details">
+                                        <div class="feature-name">Leaderboard</div>
+                                        <div class="feature-desc">Show top customers and rankings</div>
+                                    </div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="feature-leaderboard" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="feature-toggle">
+                                <div class="feature-info">
+                                    <div class="feature-icon">&#127873;</div>
+                                    <div class="feature-details">
+                                        <div class="feature-name">Rewards Catalog</div>
+                                        <div class="feature-desc">Let customers redeem points for prizes</div>
+                                    </div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="feature-rewards" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="feature-toggle">
+                                <div class="feature-info">
+                                    <div class="feature-icon">&#127860;</div>
+                                    <div class="feature-details">
+                                        <div class="feature-name">Menu Browser</div>
+                                        <div class="feature-desc">Show your products or services</div>
+                                    </div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="feature-menu">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="feature-toggle">
+                                <div class="feature-info">
+                                    <div class="feature-icon">&#128227;</div>
+                                    <div class="feature-details">
+                                        <div class="feature-name">Announcements</div>
+                                        <div class="feature-desc">Share updates and promotions</div>
+                                    </div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="feature-announcements" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="feature-toggle">
+                                <div class="feature-info">
+                                    <div class="feature-icon">&#128101;</div>
+                                    <div class="feature-details">
+                                        <div class="feature-name">Referrals</div>
+                                        <div class="feature-desc">Let customers invite friends for bonus points</div>
+                                    </div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="feature-referrals">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Settings -->
+                <div class="builder-step" id="step-3" style="display: none;">
+                    <div class="step-header">
+                        <h2>Settings</h2>
+                        <p>Configure how your points and tiers work</p>
+                    </div>
+                    <div class="step-body">
+                        <div class="settings-section">
+                            <h3>Points Configuration</h3>
+                            <div class="settings-grid">
+                                <div class="form-group">
+                                    <label for="points-per-scan">Points per Scan</label>
+                                    <input type="number" id="points-per-scan" value="10" min="0">
+                                    <span class="form-helper">Points awarded when customer scans QR</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="points-per-dollar">Points per Dollar</label>
+                                    <input type="number" id="points-per-dollar" value="1" min="0">
+                                    <span class="form-helper">Points per dollar spent (0 = disabled)</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="welcome-points">Welcome Bonus</label>
+                                    <input type="number" id="welcome-points" value="50" min="0">
+                                    <span class="form-helper">Points given when customer joins</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="daily-scan-limit">Daily Scan Limit</label>
+                                    <input type="number" id="daily-scan-limit" value="5" min="1">
+                                    <span class="form-helper">Max scans per customer per day</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Tier Thresholds</h3>
+                            <p class="section-desc">Customers automatically upgrade tiers when they reach these point totals</p>
+                            <div class="tiers-grid">
+                                <div class="tier-card bronze">
+                                    <div class="tier-badge">&#129353;</div>
+                                    <div class="tier-name">Bronze</div>
+                                    <div class="tier-threshold">Starting tier</div>
+                                </div>
+                                <div class="tier-card silver">
+                                    <div class="tier-badge">&#129352;</div>
+                                    <div class="tier-name">Silver</div>
+                                    <input type="number" id="tier-silver" value="500" min="0"> points
+                                </div>
+                                <div class="tier-card gold">
+                                    <div class="tier-badge">&#129351;</div>
+                                    <div class="tier-name">Gold</div>
+                                    <input type="number" id="tier-gold" value="1500" min="0"> points
+                                </div>
+                                <div class="tier-card platinum">
+                                    <div class="tier-badge">&#128142;</div>
+                                    <div class="tier-name">Platinum</div>
+                                    <input type="number" id="tier-platinum" value="5000" min="0"> points
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Customer Information</h3>
+                            <div class="settings-grid">
+                                <div class="form-group inline">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="require-email" checked>
+                                        <span>Require email address</span>
+                                    </label>
+                                </div>
+                                <div class="form-group inline">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="require-phone">
+                                        <span>Require phone number</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Branding -->
+                <div class="builder-step" id="step-4" style="display: none;">
+                    <div class="step-header">
+                        <h2>Branding</h2>
+                        <p>Customize the look and feel of your app</p>
+                    </div>
+                    <div class="step-body">
+                        <div class="branding-section">
+                            <div class="branding-colors">
+                                <div class="form-group">
+                                    <label for="primary-color">Primary Color</label>
+                                    <div class="color-picker">
+                                        <input type="color" id="primary-color" value="#6366f1">
+                                        <input type="text" id="primary-color-hex" value="#6366f1" pattern="^#[0-9A-Fa-f]{6}$">
+                                    </div>
+                                    <span class="form-helper">Used for buttons and accents</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="secondary-color">Secondary Color</label>
+                                    <div class="color-picker">
+                                        <input type="color" id="secondary-color" value="#1e293b">
+                                        <input type="text" id="secondary-color-hex" value="#1e293b" pattern="^#[0-9A-Fa-f]{6}$">
+                                    </div>
+                                    <span class="form-helper">Used for text and backgrounds</span>
+                                </div>
+                            </div>
+
+                            <div class="branding-preview">
+                                <h4>Color Preview</h4>
+                                <div class="preview-card" id="brand-preview">
+                                    <div class="preview-header">
+                                        <div class="preview-logo">A</div>
+                                        <span>Your App</span>
+                                    </div>
+                                    <div class="preview-body">
+                                        <div class="preview-points">
+                                            <span class="points-value">150</span>
+                                            <span class="points-label">points</span>
+                                        </div>
+                                        <button class="preview-btn">Redeem Reward</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="branding-section">
+                            <h3>Logo</h3>
+                            <div class="logo-upload">
+                                <div class="logo-preview" id="logo-preview">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                                        <path d="M21 15l-5-5L5 21"/>
+                                    </svg>
+                                </div>
+                                <div class="logo-actions">
+                                    <button class="btn btn-secondary" id="upload-logo-btn">Upload Logo</button>
+                                    <input type="file" id="logo-input" accept="image/*" style="display: none;">
+                                    <span class="form-helper">PNG or JPG, max 2MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: QR Code & Share -->
+                <div class="builder-step" id="step-5" style="display: none;">
+                    <div class="step-header">
+                        <h2>QR Code & Share Link</h2>
+                        <p>Share your app with customers via QR code or direct link</p>
+                    </div>
+                    <div class="step-body">
+                        <div class="qr-section">
+                            <!-- Share URL Section -->
+                            <div class="share-url-section">
+                                <h3>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                    </svg>
+                                    App Link
+                                </h3>
+                                <div class="share-url-box">
+                                    <input type="text" id="share-url-input" readonly class="share-url-input">
+                                    <button class="btn btn-primary" id="copy-url-btn">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                        </svg>
+                                        <span id="copy-btn-text">Copy Link</span>
+                                    </button>
+                                </div>
+                                <p class="share-hint">Share this link with customers so they can join your app</p>
+
+                                <!-- Share Options -->
+                                <div class="share-options">
+                                    <button class="share-btn" id="share-native-btn" title="Share">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="18" cy="5" r="3"/>
+                                            <circle cx="6" cy="12" r="3"/>
+                                            <circle cx="18" cy="19" r="3"/>
+                                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                        </svg>
+                                        <span>Share</span>
+                                    </button>
+                                    <button class="share-btn share-whatsapp" id="share-whatsapp-btn" title="Share on WhatsApp">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                        </svg>
+                                        <span>WhatsApp</span>
+                                    </button>
+                                    <button class="share-btn share-sms" id="share-sms-btn" title="Share via SMS">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                        <span>SMS</span>
+                                    </button>
+                                    <button class="share-btn share-email" id="share-email-btn" title="Share via Email">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                            <polyline points="22,6 12,13 2,6"/>
+                                        </svg>
+                                        <span>Email</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- QR Code Section -->
+                            <div class="qr-display-section">
+                                <h3>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7"/>
+                                        <rect x="14" y="3" width="7" height="7"/>
+                                        <rect x="3" y="14" width="7" height="7"/>
+                                        <rect x="14" y="14" width="7" height="7"/>
+                                    </svg>
+                                    QR Code
+                                </h3>
+                                <div class="qr-display">
+                                    <div class="qr-code" id="qr-code">
+                                        <!-- QR code will be generated here -->
+                                        <div class="qr-placeholder">
+                                            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                                <rect x="3" y="3" width="7" height="7"/>
+                                                <rect x="14" y="3" width="7" height="7"/>
+                                                <rect x="3" y="14" width="7" height="7"/>
+                                                <rect x="14" y="14" width="7" height="7"/>
+                                            </svg>
+                                            <span>QR code will appear here</span>
+                                        </div>
+                                    </div>
+                                    <div class="qr-url" id="qr-url-display">automata.app/a/your-app</div>
+                                </div>
+                                <div class="qr-actions">
+                                    <button class="btn btn-primary" id="download-qr-btn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="7 10 12 15 17 10"/>
+                                            <line x1="12" y1="15" x2="12" y2="3"/>
+                                        </svg>
+                                        Download
+                                    </button>
+                                    <button class="btn btn-secondary" id="print-qr-btn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 6 2 18 2 18 9"/>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                            <rect x="6" y="14" width="12" height="8"/>
+                                        </svg>
+                                        Print
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tips -->
+                            <div class="qr-tips">
+                                <h4>Tips for sharing your app</h4>
+                                <ul>
+                                    <li>Print the QR code and display at your counter or entrance</li>
+                                    <li>Add the link or QR to receipts and business cards</li>
+                                    <li>Include it in your social media posts and stories</li>
+                                    <li>Send the link via text to your existing customers</li>
+                                    <li>Make sure QR codes are large enough to scan easily (min 1 inch)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 6: Preview -->
+                <div class="builder-step" id="step-6" style="display: none;">
+                    <div class="step-header">
+                        <h2>Preview</h2>
+                        <p>See how your app will look to customers</p>
+                    </div>
+                    <div class="step-body">
+                        <div class="preview-section">
+                            <div class="phone-mockup">
+                                <div class="phone-frame">
+                                    <div class="phone-notch"></div>
+                                    <div class="phone-screen" id="phone-preview">
+                                        <!-- App preview will be rendered here -->
+                                        <div class="app-preview-header">
+                                            <div class="app-preview-logo">A</div>
+                                            <div class="app-preview-name">Your App</div>
+                                        </div>
+                                        <div class="app-preview-body">
+                                            <div class="app-preview-points">
+                                                <div class="points-circle">
+                                                    <span class="points-number">50</span>
+                                                    <span class="points-text">points</span>
+                                                </div>
+                                                <div class="tier-badge-preview">Bronze</div>
+                                            </div>
+                                            <div class="app-preview-nav">
+                                                <div class="nav-item active">
+                                                    <span>&#127968;</span>
+                                                    <span>Home</span>
+                                                </div>
+                                                <div class="nav-item">
+                                                    <span>&#127942;</span>
+                                                    <span>Rank</span>
+                                                </div>
+                                                <div class="nav-item">
+                                                    <span>&#127873;</span>
+                                                    <span>Rewards</span>
+                                                </div>
+                                                <div class="nav-item">
+                                                    <span>&#128100;</span>
+                                                    <span>Profile</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-summary">
+                                <h3>App Summary</h3>
+                                <div class="summary-list">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Name</span>
+                                        <span class="summary-value" id="summary-name">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Type</span>
+                                        <span class="summary-value" id="summary-type">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Features</span>
+                                        <span class="summary-value" id="summary-features">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Welcome Bonus</span>
+                                        <span class="summary-value" id="summary-welcome">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">URL</span>
+                                        <span class="summary-value" id="summary-url">-</span>
+                                    </div>
+                                </div>
+                                <div class="publish-ready">
+                                    <div class="ready-icon">&#9989;</div>
+                                    <h4>Ready to publish!</h4>
+                                    <p>Your app is configured and ready for customers. Click "Publish App" to make it live.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step Navigation -->
+                <div class="step-navigation" id="step-nav" style="display: none;">
+                    <button class="btn btn-secondary" id="prev-btn" style="visibility: hidden;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Previous
+                    </button>
+                    <button class="btn btn-primary" id="next-btn">
+                        Next
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="sidebar.js?v=11"></script>
+    <script src="app-templates-library.js?v=1"></script>
+    <script src="app-builder.js?v=12"></script>
+</body>
+</html>
