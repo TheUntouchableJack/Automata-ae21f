@@ -263,7 +263,8 @@ const AppSidebar = (function() {
                 <button class="mobile-menu-toggle" id="mobile-menu-toggle">
                     ${icons.menu}
                 </button>
-                <div class="sidebar-logo-text" style="opacity: 1; margin-left: 12px;">Royalty</div>
+                <img src="/logo.svg" alt="Royalty" class="sidebar-logo" style="width:28px;height:28px;">
+                <div class="sidebar-logo-text" style="opacity: 1; margin-left: 8px;">Royalty</div>
             </div>
 
             <!-- Sidebar Overlay (mobile) -->
@@ -273,7 +274,7 @@ const AppSidebar = (function() {
             <aside class="app-sidebar" id="app-sidebar">
                 <!-- Logo -->
                 <div class="sidebar-header">
-                    <div class="sidebar-logo">R</div>
+                    <img src="/logo.svg" alt="Royalty" class="sidebar-logo">
                     <span class="sidebar-logo-text">Royalty</span>
                 </div>
 

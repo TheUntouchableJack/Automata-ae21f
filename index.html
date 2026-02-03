@@ -5,6 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Royalty — AI That Builds and Runs Your Loyalty Program</title>
     <meta name="description" content="Royalty is an AI that builds your loyalty program in 60 seconds—then runs it forever. Turn first-time visitors into regulars, automatically.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:title" content="Royalty — AI That Builds and Runs Your Loyalty Program">
+    <meta property="og:description" content="Describe your business, AI builds your loyalty program in 60 seconds. Points, tiers, rewards — all automated.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://royaltyapp.ai">
+    <meta property="og:image" content="https://royaltyapp.ai/og-image.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Royalty — AI-Powered Loyalty Programs">
+    <meta name="twitter:description" content="Describe your business, AI builds your loyalty program in 60 seconds.">
+    <meta name="twitter:image" content="https://royaltyapp.ai/og-image.png">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://royaltyapp.ai/">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Royalty",
+        "description": "AI-powered loyalty programs for local businesses. Describe your business, AI builds your loyalty program in 60 seconds.",
+        "url": "https://royaltyapp.ai",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "AggregateOffer",
+            "lowPrice": "0",
+            "highPrice": "399",
+            "priceCurrency": "USD"
+        }
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,6 +51,15 @@
     <link rel="stylesheet" href="i18n/i18n.css">
     <!-- Cloudflare Turnstile CAPTCHA -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FQ3SGEP2YG"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-FQ3SGEP2YG');
+    </script>
 </head>
 <body>
     <!-- Constellation Network Background -->
@@ -21,7 +69,7 @@
     <nav class="navbar">
         <div class="container nav-container">
             <a href="#" class="logo">
-                <span class="logo-icon">R</span>
+                <img src="/logo.svg" alt="Royalty" class="logo-icon">
                 <span class="logo-text">Royalty</span>
             </a>
             <div class="nav-links">
@@ -182,7 +230,7 @@
             <div class="comparison">
                 <div class="comparison-card old-way">
                     <div class="comparison-header">
-                        <span class="comparison-icon">
+                        <span class="comparison-icon" aria-hidden="true">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
@@ -199,7 +247,7 @@
                 </div>
                 <div class="comparison-card new-way">
                     <div class="comparison-header">
-                        <span class="comparison-icon">
+                        <span class="comparison-icon" aria-hidden="true">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                 <path d="M5 12L10 17L20 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
@@ -228,7 +276,7 @@
             </div>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">
+                    <div class="feature-icon" aria-hidden="true">
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <path d="M16 4L20 12L28 13L22 19L24 28L16 24L8 28L10 19L4 13L12 12L16 4Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
                         </svg>
@@ -237,7 +285,7 @@
                     <p>Customers scan a QR code to earn points. Redeem for rewards you define. No app download required.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">
+                    <div class="feature-icon" aria-hidden="true">
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <circle cx="16" cy="16" r="12" stroke="currentColor" stroke-width="2.5"/>
                             <path d="M12 16L15 19L20 13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -247,7 +295,7 @@
                     <p>Bronze → Silver → Gold → Platinum. Customers level up automatically. Gamification that works.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">
+                    <div class="feature-icon" aria-hidden="true">
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <path d="M16 4V12M16 28V20M4 16H12M28 16H20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                             <circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="2.5"/>
@@ -257,7 +305,7 @@
                     <p>AI sends win-back offers, birthday rewards, and milestone bonuses—automatically. You get a weekly summary.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">
+                    <div class="feature-icon" aria-hidden="true">
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <path d="M4 24L12 16L18 22L28 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -266,7 +314,7 @@
                     <p>"8 customers haven't visited in 30 days." AI tells you what's happening and what to do about it.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">
+                    <div class="feature-icon" aria-hidden="true">
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <rect x="4" y="4" width="24" height="24" rx="4" stroke="currentColor" stroke-width="2.5"/>
                             <path d="M4 12H28M12 4V28" stroke="currentColor" stroke-width="2.5"/>
@@ -276,7 +324,7 @@
                     <p>Customers scan to earn points. One scan per day. Streak bonuses for regulars. Simple.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">
+                    <div class="feature-icon" aria-hidden="true">
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2.5"/>
                             <circle cx="22" cy="16" r="4" stroke="currentColor" stroke-width="2.5"/>
@@ -430,7 +478,7 @@
                 <p>See what happens when AI runs your loyalty program</p>
             </div>
             <div class="testimonial-card">
-                <div class="quote-icon">
+                <div class="quote-icon" aria-hidden="true">
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                         <path d="M14 24C14 19 18 16 22 16V20C20 20 18 21 18 24V28H22V36H14V24ZM30 24C30 19 34 16 38 16V20C36 20 34 21 34 24V28H38V36H30V24Z" fill="currentColor"/>
                     </svg>
@@ -604,7 +652,7 @@
             <div class="footer-content">
                 <div class="footer-brand">
                     <a href="#" class="logo">
-                        <span class="logo-icon">R</span>
+                        <img src="/logo.svg" alt="Royalty" class="logo-icon">
                         <span class="logo-text">Royalty</span>
                     </a>
                     <p>AI that builds and runs your loyalty program.</p>

@@ -4,7 +4,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Automata's app_id for the blog (will be set after first newsletter app is created)
+// Royalty's app_id for the blog (will be set after first newsletter app is created)
 // For dogfooding, we'll use a fixed app_id or fallback to blog_posts table
 let AUTOMATA_APP_ID = null;
 
@@ -315,7 +315,7 @@ async function loadPost(slug) {
         postContent.style.display = 'block';
 
         // Update page metadata
-        document.title = `${post.meta_title || post.title} - Automata Blog`;
+        document.title = `${post.meta_title || post.title} - Royalty Blog`;
         updateMetaTags(post);
         injectSchemaMarkup(post);
 
@@ -338,7 +338,7 @@ async function loadPost(slug) {
 
 function updateMetaTags(post) {
     const description = post.meta_description || extractExcerpt(post.content);
-    const image = post.og_image_url || 'https://automata.app/og-default.png';
+    const image = post.og_image_url || 'https://royaltyapp.ai/og-default.png';
     const url = window.location.href;
 
     // Description
@@ -412,18 +412,18 @@ function injectSchemaMarkup(post) {
         '@type': 'Article',
         'headline': post.title,
         'description': post.meta_description || extractExcerpt(post.content),
-        'image': post.og_image_url || 'https://automata.app/og-default.png',
+        'image': post.og_image_url || 'https://royaltyapp.ai/og-default.png',
         'author': {
             '@type': 'Organization',
-            'name': 'Automata',
-            'url': 'https://automata.app'
+            'name': 'Royalty',
+            'url': 'https://royaltyapp.ai'
         },
         'publisher': {
             '@type': 'Organization',
-            'name': 'Automata',
+            'name': 'Royalty',
             'logo': {
                 '@type': 'ImageObject',
-                'url': 'https://automata.app/logo.png'
+                'url': 'https://royaltyapp.ai/logo.png'
             }
         },
         'datePublished': post.published_at,
@@ -449,13 +449,13 @@ function injectSchemaMarkup(post) {
                 '@type': 'ListItem',
                 'position': 1,
                 'name': 'Blog',
-                'item': 'https://automata.app/blog/'
+                'item': 'https://royaltyapp.ai/blog/'
             },
             {
                 '@type': 'ListItem',
                 'position': 2,
                 'name': post.primary_topic || post.industry || 'Articles',
-                'item': `https://automata.app/blog/?topic=${encodeURIComponent(post.primary_topic || post.industry || 'all')}`
+                'item': `https://royaltyapp.ai/blog/?topic=${encodeURIComponent(post.primary_topic || post.industry || 'all')}`
             },
             {
                 '@type': 'ListItem',

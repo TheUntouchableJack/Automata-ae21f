@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Loading...</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #f8fafc;
+        }
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #7c3aed;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <script>
+        // Extract slug from URL path: /a/{slug} or /a/{slug}/app
+        const path = window.location.pathname;
+        const match = path.match(/\/a\/([^\/]+)(\/app)?/);
+
+        if (match) {
+            const slug = match[1];
+            const isAppPage = match[2] === '/app';
+
+            // Redirect to appropriate page with slug parameter
+            const targetPage = isAppPage ? 'app.html' : 'index.html';
+            window.location.replace(`/customer-app/${targetPage}?slug=${encodeURIComponent(slug)}`);
+        } else {
+            // No slug found, show error
+            document.body.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h2 style="margin-bottom: 16px; color: #1e293b;">Invalid Link</h2>
+                    <p style="color: #64748b;">Please scan the QR code again or check the link.</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

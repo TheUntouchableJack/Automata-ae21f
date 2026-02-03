@@ -563,9 +563,10 @@
 }
 
 .first-login-logo .logo-icon {
-    font-size: 40px;
-    font-weight: 800;
-    color: #7c3aed;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    object-fit: contain;
 }
 
 .first-login-content h2 {

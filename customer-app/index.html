@@ -1,0 +1,2976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Join - Rewards</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --app-primary: #6366f1;
+            --app-primary-rgb: 99, 102, 241;
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-border: #e2e8f0;
+            --color-text: #0f172a;
+            --color-text-secondary: #64748b;
+            --color-text-muted: #94a3b8;
+            --color-error: #ef4444;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        /* Landing Container - Clean light background */
+        .landing-container {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: var(--color-bg);
+            position: relative;
+        }
+
+        /* Subtle top accent */
+        .landing-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(180deg, rgba(var(--app-primary-rgb), 0.08) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* Language Selector */
+        .language-selector {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+        }
+
+        .language-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .language-btn:hover {
+            border-color: var(--app-primary);
+            color: var(--app-primary);
+        }
+
+        .language-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            min-width: 160px;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .language-dropdown.active {
+            display: block;
+            animation: dropdownFade 0.2s ease;
+        }
+
+        @keyframes dropdownFade {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .language-option:hover {
+            background: var(--color-bg);
+        }
+
+        .language-option.selected {
+            background: rgba(var(--app-primary-rgb), 0.08);
+            color: var(--app-primary);
+            font-weight: 500;
+        }
+
+        .language-option .flag {
+            font-size: 18px;
+        }
+
+        /* Brand Header */
+        .brand-header {
+            padding: 32px 24px 24px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-logo {
+            width: 80px;
+            height: 80px;
+            background: var(--color-surface);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--app-primary);
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--color-border);
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+        }
+
+        .brand-name {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 4px;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-tagline {
+            font-size: 15px;
+            color: var(--color-text-secondary);
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        /* App Preview Section - Customer Profile */
+        .app-preview-wrapper {
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-preview-card {
+            max-width: 360px;
+            margin: 0 auto;
+            background: var(--color-surface);
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+
+        /* Profile Header */
+        .profile-header {
+            background: linear-gradient(135deg, var(--app-primary) 0%, color-mix(in srgb, var(--app-primary) 75%, #1e1b4b) 100%);
+            padding: 24px 20px 28px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated gradient overlay */
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.05) 50%,
+                transparent 70%
+            );
+            background-size: 200% 200%;
+            animation: shimmer 8s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 200% 200%; }
+            50% { background-position: 0% 0%; }
+        }
+
+        .profile-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            margin: 0 auto 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.15);
+            position: relative;
+            z-index: 1;
+            animation: avatarFloat 4s ease-in-out infinite;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes avatarFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .profile-member-since {
+            font-size: 13px;
+            opacity: 0.9;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .profile-tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+            animation: badgePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+        }
+
+        /* Profile Stats */
+        .profile-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--color-border);
+        }
+
+        .profile-stat {
+            background: var(--color-surface);
+            padding: 16px 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--app-primary);
+            line-height: 1;
+            position: relative;
+            display: inline-block;
+        }
+
+        .stat-value::after {
+            content: '';
+            position: absolute;
+            inset: -4px -8px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(var(--app-primary-rgb), 0.15),
+                transparent
+            );
+            background-size: 200% 100%;
+            animation: statShimmer 3s ease-in-out infinite;
+            border-radius: 8px;
+            z-index: -1;
+        }
+
+        @keyframes statShimmer {
+            0%, 100% { background-position: -200% 0; }
+            50% { background-position: 200% 0; }
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            padding: 16px 20px;
+            height: 180px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top fade */
+        .activity-feed::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--color-surface) 0%, var(--color-surface) 30%, transparent 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Bottom fade */
+        .activity-feed::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to top, var(--color-surface) 0%, var(--color-surface) 30%, transparent 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .activity-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 3;
+            background: var(--color-surface);
+            padding-bottom: 4px;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: scrollActivity 12s linear infinite;
+        }
+
+        @keyframes scrollActivity {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: var(--color-bg);
+            border-radius: var(--radius-md);
+            flex-shrink: 0;
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.earn {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1));
+        }
+
+        .activity-icon.redeem {
+            background: linear-gradient(135deg, rgba(var(--app-primary-rgb), 0.15), rgba(var(--app-primary-rgb), 0.1));
+        }
+
+        .activity-icon.milestone {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+        }
+
+        .activity-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .activity-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .activity-points {
+            font-size: 14px;
+            font-weight: 700;
+            color: #16a34a;
+            white-space: nowrap;
+        }
+
+        .activity-points.spent {
+            color: var(--app-primary);
+        }
+
+        /* ============================================
+           NEWSLETTER/BLOG PREVIEW
+           ============================================ */
+        .newsletter-preview-wrapper {
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+            display: none;
+        }
+
+        .newsletter-preview-wrapper.active {
+            display: block;
+        }
+
+        .newsletter-preview-card {
+            max-width: 360px;
+            margin: 0 auto;
+            background: var(--color-surface);
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+
+        .newsletter-header {
+            background: linear-gradient(135deg, var(--app-primary) 0%, color-mix(in srgb, var(--app-primary) 75%, #1e1b4b) 100%);
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .newsletter-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .newsletter-header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .blog-posts-preview {
+            padding: 16px;
+            max-height: 380px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .blog-posts-list {
+            animation: scrollBlogPosts 15s linear infinite;
+        }
+
+        @keyframes scrollBlogPosts {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .blog-posts-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(to bottom, var(--color-surface), transparent);
+            z-index: 3;
+        }
+
+        .blog-posts-preview::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(to top, var(--color-surface), transparent);
+            z-index: 3;
+        }
+
+        .blog-post-card {
+            display: flex;
+            gap: 14px;
+            padding: 14px;
+            background: var(--color-bg);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .blog-post-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .blog-post-image {
+            width: 72px;
+            height: 72px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(var(--app-primary-rgb), 0.2), rgba(var(--app-primary-rgb), 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .blog-post-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .blog-post-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .blog-post-meta {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .blog-post-date {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .blog-post-date svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .newsletter-empty-state {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .newsletter-empty-state svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .newsletter-empty-state h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .newsletter-empty-state p {
+            font-size: 14px;
+        }
+
+        /* Blog Post Modal */
+        .blog-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .blog-modal-overlay.active {
+            display: flex;
+        }
+
+        .blog-modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            margin: 40px auto;
+            position: relative;
+            overflow: hidden;
+            animation: blogModalIn 0.3s ease;
+        }
+
+        @keyframes blogModalIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .blog-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+
+        .blog-modal-close:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .blog-hero-image {
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        .blog-hero-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .blog-modal-content {
+            padding: 32px;
+        }
+
+        .blog-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .blog-date {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .blog-body {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #374151;
+        }
+
+        .blog-body p {
+            margin-bottom: 16px;
+        }
+
+        .blog-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .blog-share {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .blog-share span {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .blog-share button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            background: white;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .blog-share button:hover {
+            background: var(--app-primary, #6366f1);
+            color: white;
+            border-color: var(--app-primary, #6366f1);
+        }
+
+        /* Business Info Section */
+        .business-info {
+            padding: 24px 20px;
+            max-width: 360px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            text-decoration: none;
+            color: var(--color-text);
+            transition: all 0.2s ease;
+        }
+
+        .info-item:hover {
+            border-color: var(--app-primary);
+            box-shadow: 0 2px 8px rgba(var(--app-primary-rgb), 0.1);
+        }
+
+        .info-item.clickable {
+            cursor: pointer;
+        }
+
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--color-bg);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .info-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--app-primary);
+        }
+
+        .info-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Social Links */
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 20px;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .social-link {
+            width: 44px;
+            height: 44px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .social-link:hover {
+            border-color: var(--app-primary);
+            background: rgba(var(--app-primary-rgb), 0.05);
+        }
+
+        .social-link svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--color-text-secondary);
+        }
+
+        .social-link:hover svg {
+            fill: var(--app-primary);
+        }
+
+        /* CTA Section - Fixed at bottom */
+        .cta-section {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid var(--color-border);
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Add bottom padding to landing container to account for fixed CTA */
+        .landing-container {
+            padding-bottom: 180px;
+        }
+
+        .cta-inner {
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .cta-welcome-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            padding: 10px 18px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #15803d;
+            margin-bottom: 16px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .cta-footer {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .cta-footer a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--app-primary), color-mix(in srgb, var(--app-primary) 80%, #1e1b4b));
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(var(--app-primary-rgb), 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(var(--app-primary-rgb), 0.4);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+            background: var(--color-surface);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--app-primary);
+            color: var(--app-primary);
+        }
+
+        .btn-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Footer */
+        .landing-footer {
+            padding: 16px 24px;
+            text-align: center;
+            background: var(--color-surface);
+        }
+
+        .landing-footer p {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .landing-footer a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* ============================================
+           MODALS
+           ============================================ */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-handle {
+            width: 40px;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .modal-header p {
+            font-size: 15px;
+            color: #64748b;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+
+        .form-group label .required {
+            color: var(--color-error);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            background: #f8fafc;
+            color: #0f172a;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--app-primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(var(--app-primary-rgb), 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .form-error {
+            font-size: 13px;
+            color: var(--color-error);
+            margin-top: 6px;
+            display: none;
+        }
+
+        .form-error.visible {
+            display: block;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* PIN Input */
+        .pin-section {
+            margin-bottom: 24px;
+        }
+
+        .pin-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #0f172a;
+        }
+
+        .pin-helper {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 14px;
+        }
+
+        .pin-input-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .pin-digit {
+            width: 56px;
+            height: 64px;
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            background: #f8fafc;
+            color: #0f172a;
+            transition: all 0.2s ease;
+            caret-color: var(--app-primary);
+        }
+
+        .pin-digit:focus {
+            outline: none;
+            border-color: var(--app-primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(var(--app-primary-rgb), 0.1);
+            transform: scale(1.02);
+        }
+
+        .modal-submit-btn {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--app-primary), color-mix(in srgb, var(--app-primary) 80%, #1e1b4b));
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(var(--app-primary-rgb), 0.35);
+        }
+
+        .modal-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(var(--app-primary-rgb), 0.45);
+        }
+
+        .modal-submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal-cancel {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: #64748b;
+            font-size: 15px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .signup-modal .modal-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .welcome-bonus-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+        }
+
+        .bonus-icon-wrapper {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+            flex-shrink: 0;
+        }
+
+        .bonus-details { flex: 1; }
+        .bonus-title { font-weight: 700; font-size: 15px; color: #15803d; }
+        .bonus-subtitle { font-size: 13px; color: #64748b; }
+
+        /* Success/Error Screens */
+        .success-screen, .error-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 24px;
+            text-align: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--color-surface);
+        }
+
+        .success-screen.active, .error-screen.active {
+            display: flex;
+        }
+
+        .success-checkmark {
+            width: 88px;
+            height: 88px;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            animation: successPop 0.5s ease;
+            box-shadow: 0 8px 32px rgba(34, 197, 94, 0.4);
+        }
+
+        .success-checkmark svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            stroke-width: 3;
+        }
+
+        @keyframes successPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .success-screen h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+        .success-screen .subtitle { color: var(--color-text-secondary); margin-bottom: 32px; font-size: 15px; }
+
+        /* Fix button in success screen - prevent flex stretching */
+        .success-screen .btn-primary {
+            flex: none;
+            width: auto;
+            min-width: 200px;
+            padding: 16px 48px;
+        }
+
+        .success-points-display {
+            background: linear-gradient(135deg, var(--app-primary), color-mix(in srgb, var(--app-primary) 70%, #1e1b4b));
+            color: white;
+            padding: 24px 48px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 32px;
+            box-shadow: 0 8px 32px rgba(var(--app-primary-rgb), 0.3);
+        }
+
+        .success-points-value { font-size: 52px; font-weight: 800; line-height: 1; }
+        .success-points-label { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+
+        .error-icon {
+            width: 72px;
+            height: 72px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .error-icon svg { width: 36px; height: 36px; stroke: var(--color-error); }
+        .error-screen h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+        .error-screen p { color: var(--color-text-secondary); font-size: 15px; }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--color-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--app-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Hide sections when empty */
+        .business-info:empty, .social-links:empty {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Main Landing Page -->
+    <div class="landing-container" id="landing-container" style="display: none;">
+        <!-- Language Selector -->
+        <div class="language-selector">
+            <button class="language-btn" id="language-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <span id="current-lang">EN</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </button>
+            <div class="language-dropdown" id="language-dropdown">
+                <div class="language-option" data-lang="en"><span class="flag">🇺🇸</span> English</div>
+                <div class="language-option" data-lang="es"><span class="flag">🇪🇸</span> Español</div>
+                <div class="language-option" data-lang="fr"><span class="flag">🇫🇷</span> Français</div>
+                <div class="language-option" data-lang="de"><span class="flag">🇩🇪</span> Deutsch</div>
+                <div class="language-option" data-lang="it"><span class="flag">🇮🇹</span> Italiano</div>
+                <div class="language-option" data-lang="pt"><span class="flag">🇧🇷</span> Português</div>
+                <div class="language-option" data-lang="zh"><span class="flag">🇨🇳</span> 中文</div>
+                <div class="language-option" data-lang="ar"><span class="flag">🇸🇦</span> العربية</div>
+            </div>
+        </div>
+
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <div class="brand-logo" id="brand-logo">R</div>
+            <h1 class="brand-name" id="brand-name">Rewards</h1>
+            <p class="brand-tagline" id="brand-tagline">Earn points, unlock rewards</p>
+        </div>
+
+        <!-- App Preview - Customer Profile -->
+        <div class="app-preview-wrapper">
+            <div class="app-preview-card">
+                <!-- Profile Header -->
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face" alt="Profile">
+                    </div>
+                    <div class="profile-name">Sarah M.</div>
+                    <div class="profile-member-since">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span id="member-since-text">Member since Feb 2025</span>
+                    </div>
+                    <div class="profile-tier-badge">
+                        <span>&#11088;</span> Gold Member
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <div class="stat-value" id="preview-points">1,250</div>
+                        <div class="stat-label" id="stat-label-points">Points</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label" id="stat-label-visits">Visits</div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-feed">
+                    <div class="activity-header" id="activity-header">Recent Activity</div>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon earn">&#9749;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Morning coffee visit</div>
+                                <div class="activity-time">Today, 8:32 AM</div>
+                            </div>
+                            <div class="activity-points">+25</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon redeem">&#127873;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Redeemed free pastry</div>
+                                <div class="activity-time">Yesterday</div>
+                            </div>
+                            <div class="activity-points spent">-150</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon milestone">&#127942;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Reached Gold status!</div>
+                                <div class="activity-time">Jan 28</div>
+                            </div>
+                            <div class="activity-points">+100</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon earn">&#128722;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Lunch purchase</div>
+                                <div class="activity-time">Jan 27</div>
+                            </div>
+                            <div class="activity-points">+45</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon earn">&#10024;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Bonus points day</div>
+                                <div class="activity-time">Jan 25</div>
+                            </div>
+                            <div class="activity-points">+50</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon redeem">&#127881;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Birthday reward!</div>
+                                <div class="activity-time">Jan 22</div>
+                            </div>
+                            <div class="activity-points spent">FREE</div>
+                        </div>
+                        <!-- Duplicate for seamless loop -->
+                        <div class="activity-item">
+                            <div class="activity-icon earn">&#9749;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Morning coffee visit</div>
+                                <div class="activity-time">Today, 8:32 AM</div>
+                            </div>
+                            <div class="activity-points">+25</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon redeem">&#127873;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Redeemed free pastry</div>
+                                <div class="activity-time">Yesterday</div>
+                            </div>
+                            <div class="activity-points spent">-150</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon milestone">&#127942;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Reached Gold status!</div>
+                                <div class="activity-time">Jan 28</div>
+                            </div>
+                            <div class="activity-points">+100</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon earn">&#128722;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Lunch purchase</div>
+                                <div class="activity-time">Jan 27</div>
+                            </div>
+                            <div class="activity-points">+45</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon earn">&#10024;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Bonus points day</div>
+                                <div class="activity-time">Jan 25</div>
+                            </div>
+                            <div class="activity-points">+50</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon redeem">&#127881;</div>
+                            <div class="activity-details">
+                                <div class="activity-title">Birthday reward!</div>
+                                <div class="activity-time">Jan 22</div>
+                            </div>
+                            <div class="activity-points spent">FREE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Newsletter/Blog Preview (hidden by default, shown for newsletter apps) -->
+        <div class="newsletter-preview-wrapper" id="newsletter-preview-wrapper">
+            <div class="newsletter-preview-card">
+                <div class="newsletter-header">
+                    <h3>Latest Posts</h3>
+                    <p>Stay updated with our content</p>
+                </div>
+                <div class="blog-posts-preview" id="blog-posts-preview">
+                    <div class="blog-posts-list">
+                        <!-- Sample blog posts for preview -->
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#128240;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Welcome to our newsletter!</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Today
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#128161;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Tips and insights from our team</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Yesterday
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#127775;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Exciting updates coming soon</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Jan 28
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#128218;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Deep dive: Behind the scenes</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Jan 25
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#127891;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Community spotlight</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Jan 22
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Duplicate for seamless loop -->
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#128240;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Welcome to our newsletter!</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Today
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#128161;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Tips and insights from our team</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Yesterday
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#127775;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Exciting updates coming soon</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Jan 28
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#128218;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Deep dive: Behind the scenes</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Jan 25
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="blog-post-card">
+                            <div class="blog-post-image">&#127891;</div>
+                            <div class="blog-post-content">
+                                <div class="blog-post-title">Community spotlight</div>
+                                <div class="blog-post-meta">
+                                    <span class="blog-post-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        Jan 22
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Info Section -->
+        <div class="business-info" id="business-info"></div>
+
+        <!-- Social Links -->
+        <div class="social-links" id="social-links"></div>
+
+        <!-- CTA Section -->
+        <div class="cta-section">
+            <div class="cta-inner">
+                <div class="cta-welcome-badge" id="welcome-badge">
+                    <span>&#127881;</span> <span id="welcome-badge-text">Get <strong id="welcome-points-text">50</strong> points free when you join</span>
+                </div>
+                <div class="cta-buttons">
+                    <button class="btn-primary" id="join-btn">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="8.5" cy="7" r="4"/>
+                            <line x1="20" y1="8" x2="20" y2="14"/>
+                            <line x1="23" y1="11" x2="17" y2="11"/>
+                        </svg>
+                        <span id="join-btn-text">Sign Up</span>
+                    </button>
+                    <button class="btn-secondary" id="login-btn">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                            <polyline points="10,17 15,12 10,7"/>
+                            <line x1="15" y1="12" x2="3" y2="12"/>
+                        </svg>
+                        <span id="login-btn-text">Log In</span>
+                    </button>
+                </div>
+                <!-- Powered by Automata -->
+                <p class="cta-footer">Powered by <a href="https://automata.app">Automata</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Screen -->
+    <div class="success-screen" id="success-screen">
+        <div class="success-checkmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2 id="success-title">Welcome to the family!</h2>
+        <p class="subtitle" id="success-subtitle">Your account has been created</p>
+        <div class="success-points-display">
+            <div class="success-points-value" id="earned-points">50</div>
+            <div class="success-points-label" id="success-points-label">points earned</div>
+        </div>
+        <button class="btn-primary" id="open-app-btn" style="max-width: 280px;"><span id="open-app-btn-text">Open App</span></button>
+    </div>
+
+    <!-- Error Screen -->
+    <div class="error-screen" id="error-screen">
+        <div class="error-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+            </svg>
+        </div>
+        <h2 id="error-title">App Not Found</h2>
+        <p id="error-message">This app doesn't exist or is not available.</p>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-backdrop" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3 id="login-modal-title">Welcome Back</h3>
+                <p id="login-modal-subtitle">Enter your email and PIN</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email" id="login-email-label">Email</label>
+                    <input type="email" id="login-email" class="form-input" placeholder="you@example.com" autocomplete="email" required>
+                </div>
+                <div class="pin-section">
+                    <label class="pin-label">Your PIN</label>
+                    <div class="pin-input-row">
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit login-pin" autocomplete="off" required>
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit login-pin" autocomplete="off" required>
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit login-pin" autocomplete="off" required>
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit login-pin" autocomplete="off" required>
+                    </div>
+                    <div class="form-error" id="login-error">Invalid email or PIN</div>
+                </div>
+                <button type="submit" class="modal-submit-btn" id="login-submit-btn">Log In</button>
+            </form>
+            <a href="#" class="modal-cancel" id="close-login">Cancel</a>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal-backdrop signup-modal" id="signup-modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3 id="signup-modal-title">Create Account</h3>
+                <p id="signup-modal-subtitle">Start earning rewards today</p>
+            </div>
+            <div class="welcome-bonus-card" id="welcome-bonus">
+                <div class="bonus-icon-wrapper">&#127881;</div>
+                <div class="bonus-details">
+                    <div class="bonus-title" id="bonus-amount">+50 Welcome Points</div>
+                    <div class="bonus-subtitle" id="bonus-subtitle">Join today and get a head start!</div>
+                </div>
+            </div>
+            <form id="join-form" autocomplete="on">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first-name" id="first-name-label">First Name <span class="required">*</span></label>
+                        <input type="text" id="first-name" name="first_name" class="form-input" placeholder="John" required autocomplete="given-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="last-name" id="last-name-label">Last Name <span class="required">*</span></label>
+                        <input type="text" id="last-name" name="last_name" class="form-input" placeholder="Smith" required autocomplete="family-name">
+                    </div>
+                </div>
+                <div class="form-group" id="email-group">
+                    <label for="email" id="email-label">Email <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com" required autocomplete="email">
+                    <div class="form-error" id="email-error">Please enter a valid email address</div>
+                </div>
+                <div class="form-group" id="phone-group">
+                    <label for="phone" id="phone-label">Phone <span id="phone-required"></span></label>
+                    <input type="tel" id="phone" name="phone" class="form-input" placeholder="(555) 123-4567" autocomplete="tel">
+                </div>
+                <div class="pin-section">
+                    <label class="pin-label" id="pin-label">Create a 4-digit PIN <span class="required">*</span></label>
+                    <p class="pin-helper" id="pin-helper">You'll use this to log in quickly</p>
+                    <div class="pin-input-row">
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit signup-pin" data-index="0" autocomplete="off" required>
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit signup-pin" data-index="1" autocomplete="off" required>
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit signup-pin" data-index="2" autocomplete="off" required>
+                        <input type="text" inputmode="numeric" maxlength="1" class="pin-digit signup-pin" data-index="3" autocomplete="off" required>
+                    </div>
+                    <div class="form-error" id="pin-error">Please enter a 4-digit PIN</div>
+                </div>
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onSignupTurnstileSuccess" data-theme="light" style="margin-bottom: 16px;"></div>
+                <button type="submit" class="modal-submit-btn" id="submit-btn">Join Now</button>
+            </form>
+            <a href="#" class="modal-cancel" id="close-signup">Cancel</a>
+        </div>
+    </div>
+
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // CAPTCHA token for signup
+        let signupTurnstileToken = null;
+        function onSignupTurnstileSuccess(token) {
+            signupTurnstileToken = token;
+        }
+
+        const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocG1tZmhmd25wbWF2eXRvb21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTgyMDYsImV4cCI6MjA4NTE3NDIwNn0.6JmfnTTR8onr3ZgFpzdZa4BbVBraUyePVEUHOJgxmuk';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentApp = null;
+        let appSlug = null;
+        let isPreviewMode = false;
+
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            isPreviewMode = urlParams.get('preview') === 'true';
+
+            // Check for preview mode first
+            if (isPreviewMode) {
+                const appId = urlParams.get('app_id');
+                if (!appId) {
+                    showError('Invalid Preview URL', 'Missing app ID parameter.');
+                    return;
+                }
+                await loadAppForPreview(appId);
+                showPreviewBanner();
+                return;
+            }
+
+            // Normal mode - get slug from URL
+            const path = window.location.pathname;
+            const match = path.match(/\/a\/([^\/]+)/);
+            appSlug = match ? match[1] : urlParams.get('slug');
+
+            if (!appSlug) {
+                showError('Invalid URL', 'Please scan the QR code again.');
+                return;
+            }
+            await loadApp();
+        }
+
+        async function loadAppForPreview(appId) {
+            try {
+                const { data, error } = await supabaseClient.rpc('preview_app_by_id', { p_app_id: appId });
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    showError('Preview Unavailable', 'App not found. Make sure to save the app first.');
+                    return;
+                }
+                currentApp = data[0];
+                appSlug = currentApp.slug; // Set slug for consistency
+                renderApp();
+            } catch (error) {
+                console.error('Failed to load app preview:', error);
+                // Check if function doesn't exist
+                if (error.message?.includes('preview_app_by_id') || error.code === '42883') {
+                    showError('Preview Setup Required', 'Run the preview-app-function.sql in Supabase SQL Editor.');
+                } else {
+                    showError('Preview Error', 'Failed to load app preview. ' + (error.message || ''));
+                }
+            }
+        }
+
+        function showPreviewBanner() {
+            const banner = document.createElement('div');
+            banner.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(90deg, #f59e0b, #d97706);
+                color: white;
+                text-align: center;
+                padding: 10px 16px;
+                font-size: 13px;
+                font-weight: 600;
+                z-index: 10000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+            `;
+            banner.innerHTML = '<span>Preview Mode</span><span style="font-weight: 400; opacity: 0.9;">This app is not yet published</span>';
+            document.body.insertBefore(banner, document.body.firstChild);
+            document.body.style.paddingTop = '42px';
+        }
+
+        async function loadApp() {
+            try {
+                const { data, error } = await supabaseClient.rpc('get_app_by_slug', { p_slug: appSlug });
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    showError('App Not Found', 'This app doesn\'t exist or is not available.');
+                    return;
+                }
+                currentApp = data[0];
+                renderApp();
+            } catch (error) {
+                console.error('Failed to load app:', error);
+                showError('Error', 'Failed to load app. Please try again.');
+            }
+        }
+
+        function renderApp() {
+            // Theme color
+            const primaryColor = currentApp.branding?.primary_color || '#6366f1';
+            const root = document.documentElement;
+            root.style.setProperty('--app-primary', primaryColor);
+            const rgb = hexToRgb(primaryColor);
+            if (rgb) root.style.setProperty('--app-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+            document.querySelector('meta[name="theme-color"]').content = primaryColor;
+
+            // Logo
+            const logoEl = document.getElementById('brand-logo');
+            if (currentApp.branding?.logo_url) {
+                const logoFit = currentApp.branding.logo_fit || 'contain';
+                logoEl.innerHTML = `<img src="${currentApp.branding.logo_url}" alt="Logo" style="object-fit: ${logoFit};">`;
+            } else {
+                logoEl.textContent = (currentApp.name || 'R').charAt(0).toUpperCase();
+            }
+
+            // Brand info
+            document.getElementById('brand-name').textContent = currentApp.name;
+            document.title = `Join ${currentApp.name}`;
+
+            // Check app type and render appropriate UI
+            const appType = currentApp.app_type || 'loyalty';
+            const isNewsletter = appType === 'newsletter';
+
+            if (isNewsletter) {
+                // Newsletter/Blog app - show blog preview
+                document.querySelector('.app-preview-wrapper').style.display = 'none';
+                document.getElementById('newsletter-preview-wrapper').classList.add('active');
+
+                // Load real published posts
+                loadPublishedPosts();
+
+                // Update tagline for newsletter
+                document.getElementById('brand-tagline').textContent = currentApp.description || 'Stay updated with our latest content';
+
+                // Update CTA for newsletter
+                const welcomeBadge = document.getElementById('welcome-badge');
+                if (welcomeBadge) {
+                    welcomeBadge.innerHTML = '<span>&#128231;</span> <span>Subscribe to get our latest updates</span>';
+                }
+
+                // Update signup bonus text for newsletter
+                const bonusAmount = document.getElementById('bonus-amount');
+                if (bonusAmount) {
+                    bonusAmount.textContent = 'Free Subscription';
+                }
+                const bonusSubtitle = document.getElementById('bonus-subtitle');
+                if (bonusSubtitle) {
+                    bonusSubtitle.textContent = 'Get notified when we publish new content';
+                }
+
+                // Update button text
+                document.getElementById('join-btn-text').textContent = 'Subscribe';
+                document.getElementById('submit-btn').textContent = 'Subscribe Now';
+
+                // Update success screen for newsletter
+                document.getElementById('success-title').textContent = 'You\'re subscribed!';
+                document.getElementById('success-subtitle').textContent = 'You\'ll receive our latest updates';
+                document.querySelector('.success-points-display').style.display = 'none';
+
+            } else {
+                // Loyalty/Rewards app - show loyalty preview (default)
+                document.querySelector('.app-preview-wrapper').style.display = 'block';
+                document.getElementById('newsletter-preview-wrapper').classList.remove('active');
+
+                // Default tagline for loyalty
+                document.getElementById('brand-tagline').textContent = currentApp.description || 'Earn points, unlock rewards';
+
+                // Welcome points (used in CTA and signup bonus)
+                const welcomePoints = currentApp.settings?.welcome_points || 50;
+                document.getElementById('welcome-points-text').textContent = welcomePoints;
+                document.getElementById('bonus-amount').textContent = `+${welcomePoints} Welcome Points`;
+                document.getElementById('earned-points').textContent = welcomePoints;
+            }
+
+            // Phone requirement
+            if (currentApp.settings?.require_phone) {
+                document.getElementById('phone').required = true;
+                document.getElementById('phone-required').innerHTML = '<span class="required">*</span>';
+            }
+
+            // Render business info
+            renderBusinessInfo();
+
+            // Render social links
+            renderSocialLinks();
+
+            // Show content
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('landing-container').style.display = 'flex';
+
+            // Initialize language after app data is loaded
+            initializeLanguage();
+        }
+
+        // Load published posts from content_posts table
+        async function loadPublishedPosts() {
+            const blogContainer = document.getElementById('blog-posts-preview');
+            if (!blogContainer) return;
+
+            try {
+                // Get published posts for this app's project
+                const { data: posts, error } = await supabaseClient
+                    .from('content_posts')
+                    .select('id, title, excerpt, hero_image_url, published_at, slug')
+                    .eq('app_id', currentApp.id)
+                    .eq('status', 'published')
+                    .is('deleted_at', null)
+                    .order('published_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    console.log('Could not load posts (table may not exist yet):', error.message);
+                    return; // Keep showing sample posts
+                }
+
+                if (!posts || posts.length === 0) {
+                    // No published posts yet - keep showing sample posts
+                    return;
+                }
+
+                // Render real posts
+                renderBlogPosts(posts);
+
+            } catch (error) {
+                console.log('Blog posts not available:', error);
+                // Keep showing sample posts on error
+            }
+        }
+
+        function renderBlogPosts(posts) {
+            const blogList = document.querySelector('.blog-posts-list');
+            if (!blogList) return;
+
+            // Create post cards
+            const postsHtml = posts.map(post => {
+                const date = post.published_at
+                    ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : 'Just now';
+
+                // Use emoji placeholder if no image
+                const imageContent = post.hero_image_url
+                    ? `<img src="${post.hero_image_url}" alt="${escapeHtml(post.title)}" style="width: 100%; height: 100%; object-fit: cover;">`
+                    : '&#128240;';
+
+                return `
+                    <div class="blog-post-card" onclick="openBlogPost('${post.id}')" style="cursor: pointer;">
+                        <div class="blog-post-image">${imageContent}</div>
+                        <div class="blog-post-content">
+                            <div class="blog-post-title">${escapeHtml(post.title)}</div>
+                            <div class="blog-post-meta">
+                                <span class="blog-post-date">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                                        <line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                    ${date}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Duplicate for seamless scroll loop
+            blogList.innerHTML = postsHtml + postsHtml;
+        }
+
+        function openBlogPost(postId) {
+            // Open blog post in a modal
+            showBlogPostModal(postId);
+        }
+
+        async function showBlogPostModal(postId) {
+            try {
+                const { data: post, error } = await supabaseClient
+                    .from('content_posts')
+                    .select('*')
+                    .eq('id', postId)
+                    .single();
+
+                if (error || !post) {
+                    showToast('Could not load article', 'error');
+                    return;
+                }
+
+                // Create modal
+                let modal = document.getElementById('blog-post-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'blog-post-modal';
+                    modal.className = 'blog-modal-overlay';
+                    document.body.appendChild(modal);
+                }
+
+                const date = post.published_at
+                    ? new Date(post.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : '';
+
+                modal.innerHTML = `
+                    <div class="blog-modal">
+                        <button class="blog-modal-close" onclick="closeBlogModal()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6L18 18"/>
+                            </svg>
+                        </button>
+                        ${post.hero_image_url ? `
+                            <div class="blog-hero-image">
+                                <img src="${post.hero_image_url}" alt="${escapeHtml(post.title)}">
+                            </div>
+                        ` : ''}
+                        <div class="blog-modal-content">
+                            <h1 class="blog-title">${escapeHtml(post.title)}</h1>
+                            ${date ? `<p class="blog-date">${date}</p>` : ''}
+                            <div class="blog-body">${post.body_html || marked(post.body || '')}</div>
+                            ${post.social_snippets ? `
+                                <div class="blog-share">
+                                    <span>Share:</span>
+                                    <button onclick="shareBlog('twitter', '${encodeURIComponent(post.title)}')" title="Share on Twitter">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                    </button>
+                                    <button onclick="shareBlog('linkedin', '${encodeURIComponent(post.title)}')" title="Share on LinkedIn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                                    </button>
+                                    <button onclick="shareBlog('facebook', '${encodeURIComponent(post.title)}')" title="Share on Facebook">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+                modal.classList.add('active');
+
+            } catch (error) {
+                console.error('Failed to load blog post:', error);
+                showToast('Could not load article', 'error');
+            }
+        }
+
+        function closeBlogModal() {
+            const modal = document.getElementById('blog-post-modal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function shareBlog(platform, title) {
+            const url = encodeURIComponent(window.location.href);
+            const urls = {
+                twitter: `https://twitter.com/intent/tweet?text=${title}&url=${url}`,
+                linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+                facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`
+            };
+            if (urls[platform]) {
+                window.open(urls[platform], '_blank', 'width=600,height=400');
+            }
+        }
+
+        // Simple markdown parser (basic)
+        function marked(text) {
+            if (!text) return '';
+            return text
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^/, '<p>').replace(/$/, '</p>');
+        }
+
+        function renderBusinessInfo() {
+            const container = document.getElementById('business-info');
+            const info = currentApp.business_info || {};
+            let html = '<div class="info-grid">';
+            let hasInfo = false;
+
+            // Hours
+            if (info.hours) {
+                hasInfo = true;
+                html += `
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                            </svg>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Hours</div>
+                            <div class="info-value">${escapeHtml(info.hours)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Phone
+            if (info.phone) {
+                hasInfo = true;
+                html += `
+                    <a href="tel:${info.phone}" class="info-item clickable">
+                        <div class="info-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Phone</div>
+                            <div class="info-value">${escapeHtml(info.phone)}</div>
+                        </div>
+                    </a>
+                `;
+            }
+
+            // Email
+            if (info.email) {
+                hasInfo = true;
+                html += `
+                    <a href="mailto:${info.email}" class="info-item clickable">
+                        <div class="info-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Email</div>
+                            <div class="info-value">${escapeHtml(info.email)}</div>
+                        </div>
+                    </a>
+                `;
+            }
+
+            // Address
+            if (info.address) {
+                hasInfo = true;
+                const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(info.address)}`;
+                html += `
+                    <a href="${mapsUrl}" target="_blank" class="info-item clickable">
+                        <div class="info-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Address</div>
+                            <div class="info-value">${escapeHtml(info.address)}</div>
+                        </div>
+                    </a>
+                `;
+            }
+
+            html += '</div>';
+            container.innerHTML = hasInfo ? html : '';
+        }
+
+        function renderSocialLinks() {
+            const container = document.getElementById('social-links');
+            const social = currentApp.business_info?.social || {};
+            let html = '';
+
+            const icons = {
+                instagram: '<svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>',
+                facebook: '<svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+                twitter: '<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+                tiktok: '<svg viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>',
+                youtube: '<svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
+                snapchat: '<svg viewBox="0 0 24 24"><path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03a1.67 1.67 0 0 1-.371-.045c-.436-.088-.929-.18-1.526-.18-.209 0-.42.015-.614.045-.479.061-1.018.27-1.658.539-.914.376-2.049.851-3.622.851-1.544 0-2.679-.475-3.592-.851-.641-.27-1.18-.479-1.658-.539a3.59 3.59 0 0 0-.615-.045c-.597 0-1.09.091-1.526.18a1.64 1.64 0 0 1-.359.045c-.3 0-.494-.149-.569-.42-.061-.18-.105-.361-.136-.539-.044-.195-.104-.479-.164-.57-1.873-.284-2.906-.702-3.146-1.271a.486.486 0 0 1-.044-.225.478.478 0 0 1 .419-.509c3.265-.539 4.731-3.878 4.791-4.014l.016-.015c.181-.345.21-.645.12-.869-.195-.449-.884-.674-1.333-.809a2.996 2.996 0 0 1-.345-.12c-.823-.329-1.228-.719-1.213-1.168 0-.359.285-.689.735-.838a1.02 1.02 0 0 1 .509-.09c.12 0 .3.016.464.104.374.181.733.286 1.033.301.199 0 .326-.045.401-.09-.008-.165-.018-.33-.03-.51l-.003-.06c-.104-1.628-.23-3.654.3-4.847C7.859 1.069 11.216.793 12.206.793z"/></svg>',
+                pinterest: '<svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345c-.091.378-.293 1.194-.332 1.361-.053.218-.174.265-.402.159-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/></svg>',
+                website: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'
+            };
+
+            for (const [platform, url] of Object.entries(social)) {
+                if (url && icons[platform]) {
+                    html += `<a href="${url}" target="_blank" rel="noopener" class="social-link" title="${platform}">${icons[platform]}</a>`;
+                }
+            }
+
+            container.innerHTML = html;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Format phone number to E.164 format for Twilio
+        // Converts "(555) 123-4567" → "+15551234567"
+        function formatPhoneE164(phone, defaultCountryCode = '1') {
+            if (!phone) return null;
+
+            // Strip all non-digit characters except leading +
+            const hasPlus = phone.trim().startsWith('+');
+            let digits = phone.replace(/\D/g, '');
+
+            if (!digits) return null;
+
+            // Handle different cases
+            if (hasPlus) {
+                // Already has country code, just clean it
+                return '+' + digits;
+            } else if (digits.length === 10) {
+                // US/Canada 10-digit number - add +1
+                return '+' + defaultCountryCode + digits;
+            } else if (digits.length === 11 && digits.startsWith('1')) {
+                // US/Canada with leading 1 - add +
+                return '+' + digits;
+            } else if (digits.length > 10) {
+                // Assume international number with country code
+                return '+' + digits;
+            } else {
+                // Short number - add default country code
+                return '+' + defaultCountryCode + digits;
+            }
+        }
+
+        function showError(title, message) {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('landing-container').style.display = 'none';
+            document.getElementById('error-title').textContent = title;
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-screen').classList.add('active');
+        }
+
+        function showSuccess() {
+            document.getElementById('landing-container').style.display = 'none';
+            document.getElementById('signup-modal').classList.remove('active');
+            document.getElementById('success-screen').classList.add('active');
+            if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+            // Auto-redirect to app after 2.5 seconds
+            setTimeout(() => {
+                window.location.href = `/customer-app/app.html?slug=${appSlug}`;
+            }, 2500);
+        }
+
+        // PIN input handling
+        function setupPinInputs(selector) {
+            const inputs = document.querySelectorAll(selector);
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                    if (e.target.value && index < inputs.length - 1) inputs[index + 1].focus();
+                });
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) inputs[index - 1].focus();
+                });
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const digits = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 4);
+                    digits.split('').forEach((d, i) => { if (inputs[i]) inputs[i].value = d; });
+                    if (digits.length > 0) inputs[Math.min(digits.length, 3)].focus();
+                });
+                input.addEventListener('focus', () => input.select());
+            });
+        }
+
+        setupPinInputs('.signup-pin');
+        setupPinInputs('.login-pin');
+
+        // Modal controls
+        document.getElementById('join-btn').addEventListener('click', () => document.getElementById('signup-modal').classList.add('active'));
+        document.getElementById('login-btn').addEventListener('click', () => document.getElementById('login-modal').classList.add('active'));
+        document.getElementById('close-signup').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('signup-modal').classList.remove('active'); });
+        document.getElementById('close-login').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('login-modal').classList.remove('active'); });
+        document.querySelectorAll('.modal-backdrop').forEach(m => m.addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); }));
+
+        // Signup form
+        document.getElementById('join-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            const pinDigits = document.querySelectorAll('.signup-pin');
+            const pin = Array.from(pinDigits).map(d => d.value).join('');
+
+            if (pin.length !== 4) {
+                document.getElementById('pin-error').classList.add('visible');
+                btn.disabled = false;
+                btn.textContent = 'Join Now';
+                return;
+            }
+            document.getElementById('pin-error').classList.remove('visible');
+
+            // Verify CAPTCHA
+            if (!signupTurnstileToken) {
+                alert('Please complete the security check');
+                btn.disabled = false;
+                btn.textContent = 'Join Now';
+                return;
+            }
+
+            try {
+                const phoneRaw = document.getElementById('phone').value.trim();
+                const phoneFormatted = phoneRaw ? formatPhoneE164(phoneRaw) : null;
+
+                const { data: result, error } = await supabaseClient.rpc('customer_app_signup', {
+                    p_app_id: currentApp.id,
+                    p_first_name: document.getElementById('first-name').value.trim(),
+                    p_last_name: document.getElementById('last-name').value.trim(),
+                    p_email: document.getElementById('email').value.trim().toLowerCase(),
+                    p_phone: phoneFormatted,
+                    p_pin_hash: await hashPin(pin)
+                });
+
+                if (error) throw error;
+                const signupResult = result && result[0] ? result[0] : result;
+                if (!signupResult || !signupResult.success) throw new Error(signupResult?.error_message || 'Signup failed');
+
+                localStorage.setItem('app_auth_token', generateToken(signupResult.member_id, currentApp.id));
+                localStorage.setItem('app_member_id', signupResult.member_id);
+                localStorage.setItem('app_slug', appSlug);
+                document.getElementById('earned-points').textContent = signupResult.welcome_points || 50;
+                showSuccess();
+            } catch (error) {
+                alert(error.message || 'Failed to join. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Join Now';
+            }
+        });
+
+        // Login form
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const pin = Array.from(document.querySelectorAll('.login-pin')).map(d => d.value).join('');
+
+            if (!email || pin.length !== 4) {
+                document.getElementById('login-error').classList.add('visible');
+                return;
+            }
+            document.getElementById('login-error').classList.remove('visible');
+
+            const btn = document.getElementById('login-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+
+            try {
+                const { data, error } = await supabaseClient.rpc('verify_app_member_login', {
+                    p_app_id: currentApp.id,
+                    p_email: email,
+                    p_pin_hash: await hashPin(pin)
+                });
+
+                if (error) throw error;
+                const result = data && typeof data === 'object' ? (Array.isArray(data) ? data[0] : data) : null;
+                if (!result || !result.success) throw new Error(result?.error_message || 'Invalid email or PIN');
+
+                localStorage.setItem('app_auth_token', generateToken(result.member_id, currentApp.id));
+                localStorage.setItem('app_member_id', result.member_id);
+                localStorage.setItem('app_slug', appSlug);
+                window.location.href = `/customer-app/app.html?slug=${appSlug}`;
+            } catch (error) {
+                document.getElementById('login-error').textContent = error.message || 'Invalid email or PIN';
+                document.getElementById('login-error').classList.add('visible');
+                btn.disabled = false;
+                btn.textContent = 'Log In';
+            }
+        });
+
+        document.getElementById('open-app-btn').addEventListener('click', () => {
+            window.location.href = `/customer-app/app.html?slug=${appSlug}`;
+        });
+
+        async function hashPin(pin) {
+            const data = new TextEncoder().encode(pin + 'automata_salt');
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function generateToken(memberId, appId) {
+            return btoa(JSON.stringify({ member_id: memberId, app_id: appId, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
+        }
+
+        // ===== Language Selector =====
+        const SUPPORTED_LANGUAGES = {
+            en: { code: 'EN', name: 'English', flag: '🇺🇸' },
+            es: { code: 'ES', name: 'Español', flag: '🇪🇸' },
+            fr: { code: 'FR', name: 'Français', flag: '🇫🇷' },
+            de: { code: 'DE', name: 'Deutsch', flag: '🇩🇪' },
+            it: { code: 'IT', name: 'Italiano', flag: '🇮🇹' },
+            pt: { code: 'PT', name: 'Português', flag: '🇧🇷' },
+            zh: { code: 'ZH', name: '中文', flag: '🇨🇳' },
+            ar: { code: 'AR', name: 'العربية', flag: '🇸🇦' }
+        };
+
+        // Simple translations for customer app UI
+        const TRANSLATIONS = {
+            en: {
+                memberSince: 'Member since',
+                points: 'Points',
+                visits: 'Visits',
+                recentActivity: 'Recent Activity',
+                hours: 'Hours',
+                phone: 'Phone',
+                email: 'Email',
+                address: 'Address',
+                getPoints: 'Get <strong>{points}</strong> points free when you join',
+                signUp: 'Sign Up',
+                logIn: 'Log In',
+                welcomeBack: 'Welcome Back',
+                enterEmailPin: 'Enter your email and PIN',
+                createAccount: 'Create Account',
+                startEarning: 'Start earning rewards today',
+                welcomePoints: '+{points} Welcome Points',
+                joinBonus: 'Join today and get a head start!',
+                firstName: 'First Name',
+                lastName: 'Last Name',
+                createPin: 'Create a 4-digit PIN',
+                pinHelper: "You'll use this to log in quickly",
+                joinNow: 'Join Now',
+                cancel: 'Cancel',
+                welcomeFamily: 'Welcome to the family!',
+                accountCreated: 'Your account has been created',
+                pointsEarned: 'points earned',
+                openApp: 'Open App'
+            },
+            es: {
+                memberSince: 'Miembro desde',
+                points: 'Puntos',
+                visits: 'Visitas',
+                recentActivity: 'Actividad Reciente',
+                hours: 'Horario',
+                phone: 'Teléfono',
+                email: 'Correo',
+                address: 'Dirección',
+                getPoints: 'Obtén <strong>{points}</strong> puntos gratis al unirte',
+                signUp: 'Registrarse',
+                logIn: 'Iniciar Sesión',
+                welcomeBack: 'Bienvenido',
+                enterEmailPin: 'Ingresa tu correo y PIN',
+                createAccount: 'Crear Cuenta',
+                startEarning: 'Empieza a ganar recompensas hoy',
+                welcomePoints: '+{points} Puntos de Bienvenida',
+                joinBonus: '¡Únete hoy y obtén una ventaja!',
+                firstName: 'Nombre',
+                lastName: 'Apellido',
+                createPin: 'Crea un PIN de 4 dígitos',
+                pinHelper: 'Lo usarás para iniciar sesión rápidamente',
+                joinNow: 'Unirse Ahora',
+                cancel: 'Cancelar',
+                welcomeFamily: '¡Bienvenido a la familia!',
+                accountCreated: 'Tu cuenta ha sido creada',
+                pointsEarned: 'puntos ganados',
+                openApp: 'Abrir App'
+            },
+            fr: {
+                memberSince: 'Membre depuis',
+                points: 'Points',
+                visits: 'Visites',
+                recentActivity: 'Activité Récente',
+                hours: 'Horaires',
+                phone: 'Téléphone',
+                email: 'Email',
+                address: 'Adresse',
+                getPoints: 'Obtenez <strong>{points}</strong> points gratuits en rejoignant',
+                signUp: "S'inscrire",
+                logIn: 'Connexion',
+                welcomeBack: 'Bon Retour',
+                enterEmailPin: 'Entrez votre email et PIN',
+                createAccount: 'Créer un Compte',
+                startEarning: 'Commencez à gagner des récompenses',
+                welcomePoints: '+{points} Points de Bienvenue',
+                joinBonus: "Rejoignez aujourd'hui et prenez de l'avance!",
+                firstName: 'Prénom',
+                lastName: 'Nom',
+                createPin: 'Créez un PIN à 4 chiffres',
+                pinHelper: 'Vous utiliserez ceci pour vous connecter rapidement',
+                joinNow: 'Rejoindre',
+                cancel: 'Annuler',
+                welcomeFamily: 'Bienvenue dans la famille!',
+                accountCreated: 'Votre compte a été créé',
+                pointsEarned: 'points gagnés',
+                openApp: "Ouvrir l'App"
+            },
+            de: {
+                memberSince: 'Mitglied seit',
+                points: 'Punkte',
+                visits: 'Besuche',
+                recentActivity: 'Letzte Aktivität',
+                hours: 'Öffnungszeiten',
+                phone: 'Telefon',
+                email: 'E-Mail',
+                address: 'Adresse',
+                getPoints: 'Erhalte <strong>{points}</strong> Punkte gratis beim Beitritt',
+                signUp: 'Registrieren',
+                logIn: 'Anmelden',
+                welcomeBack: 'Willkommen zurück',
+                enterEmailPin: 'Gib deine E-Mail und PIN ein',
+                createAccount: 'Konto erstellen',
+                startEarning: 'Beginne heute Prämien zu sammeln',
+                welcomePoints: '+{points} Willkommenspunkte',
+                joinBonus: 'Tritt heute bei und starte durch!',
+                firstName: 'Vorname',
+                lastName: 'Nachname',
+                createPin: 'Erstelle eine 4-stellige PIN',
+                pinHelper: 'Damit meldest du dich schnell an',
+                joinNow: 'Jetzt beitreten',
+                cancel: 'Abbrechen',
+                welcomeFamily: 'Willkommen in der Familie!',
+                accountCreated: 'Dein Konto wurde erstellt',
+                pointsEarned: 'Punkte verdient',
+                openApp: 'App öffnen'
+            },
+            it: {
+                memberSince: 'Membro dal',
+                points: 'Punti',
+                visits: 'Visite',
+                recentActivity: 'Attività Recente',
+                hours: 'Orario',
+                phone: 'Telefono',
+                email: 'Email',
+                address: 'Indirizzo',
+                getPoints: 'Ottieni <strong>{points}</strong> punti gratis iscrivendoti',
+                signUp: 'Iscriviti',
+                logIn: 'Accedi',
+                welcomeBack: 'Bentornato',
+                enterEmailPin: 'Inserisci email e PIN',
+                createAccount: 'Crea Account',
+                startEarning: 'Inizia a guadagnare premi oggi',
+                welcomePoints: '+{points} Punti di Benvenuto',
+                joinBonus: 'Iscriviti oggi e inizia subito!',
+                firstName: 'Nome',
+                lastName: 'Cognome',
+                createPin: 'Crea un PIN a 4 cifre',
+                pinHelper: 'Lo userai per accedere rapidamente',
+                joinNow: 'Iscriviti Ora',
+                cancel: 'Annulla',
+                welcomeFamily: 'Benvenuto nella famiglia!',
+                accountCreated: 'Il tuo account è stato creato',
+                pointsEarned: 'punti guadagnati',
+                openApp: "Apri l'App"
+            },
+            pt: {
+                memberSince: 'Membro desde',
+                points: 'Pontos',
+                visits: 'Visitas',
+                recentActivity: 'Atividade Recente',
+                hours: 'Horário',
+                phone: 'Telefone',
+                email: 'Email',
+                address: 'Endereço',
+                getPoints: 'Ganhe <strong>{points}</strong> pontos grátis ao se cadastrar',
+                signUp: 'Cadastrar',
+                logIn: 'Entrar',
+                welcomeBack: 'Bem-vindo de volta',
+                enterEmailPin: 'Digite seu email e PIN',
+                createAccount: 'Criar Conta',
+                startEarning: 'Comece a ganhar recompensas hoje',
+                welcomePoints: '+{points} Pontos de Boas-vindas',
+                joinBonus: 'Cadastre-se hoje e saia na frente!',
+                firstName: 'Nome',
+                lastName: 'Sobrenome',
+                createPin: 'Crie um PIN de 4 dígitos',
+                pinHelper: 'Você usará isso para entrar rapidamente',
+                joinNow: 'Cadastrar Agora',
+                cancel: 'Cancelar',
+                welcomeFamily: 'Bem-vindo à família!',
+                accountCreated: 'Sua conta foi criada',
+                pointsEarned: 'pontos ganhos',
+                openApp: 'Abrir App'
+            },
+            zh: {
+                memberSince: '会员自',
+                points: '积分',
+                visits: '访问',
+                recentActivity: '最近活动',
+                hours: '营业时间',
+                phone: '电话',
+                email: '邮箱',
+                address: '地址',
+                getPoints: '注册即可获得 <strong>{points}</strong> 积分',
+                signUp: '注册',
+                logIn: '登录',
+                welcomeBack: '欢迎回来',
+                enterEmailPin: '输入您的邮箱和PIN码',
+                createAccount: '创建账户',
+                startEarning: '立即开始赚取奖励',
+                welcomePoints: '+{points} 欢迎积分',
+                joinBonus: '今天加入，抢先一步！',
+                firstName: '名',
+                lastName: '姓',
+                createPin: '创建4位PIN码',
+                pinHelper: '用于快速登录',
+                joinNow: '立即加入',
+                cancel: '取消',
+                welcomeFamily: '欢迎加入！',
+                accountCreated: '您的账户已创建',
+                pointsEarned: '获得积分',
+                openApp: '打开应用'
+            },
+            ar: {
+                memberSince: 'عضو منذ',
+                points: 'النقاط',
+                visits: 'الزيارات',
+                recentActivity: 'النشاط الأخير',
+                hours: 'ساعات العمل',
+                phone: 'الهاتف',
+                email: 'البريد الإلكتروني',
+                address: 'العنوان',
+                getPoints: 'احصل على <strong>{points}</strong> نقطة مجانية عند الانضمام',
+                signUp: 'إنشاء حساب',
+                logIn: 'تسجيل الدخول',
+                welcomeBack: 'مرحباً بعودتك',
+                enterEmailPin: 'أدخل بريدك الإلكتروني ورمز PIN',
+                createAccount: 'إنشاء حساب',
+                startEarning: 'ابدأ في كسب المكافآت اليوم',
+                welcomePoints: '+{points} نقاط ترحيب',
+                joinBonus: 'انضم اليوم واحصل على بداية رائعة!',
+                firstName: 'الاسم الأول',
+                lastName: 'اسم العائلة',
+                createPin: 'أنشئ رمز PIN من 4 أرقام',
+                pinHelper: 'ستستخدمه لتسجيل الدخول بسرعة',
+                joinNow: 'انضم الآن',
+                cancel: 'إلغاء',
+                welcomeFamily: 'مرحباً بك في العائلة!',
+                accountCreated: 'تم إنشاء حسابك',
+                pointsEarned: 'نقاط مكتسبة',
+                openApp: 'فتح التطبيق'
+            }
+        };
+
+        let currentLanguage = 'en';
+
+        function detectLanguage() {
+            // Priority: 1. Saved preference, 2. Business default, 3. Browser language, 4. English
+            const saved = localStorage.getItem('app_language');
+            if (saved && SUPPORTED_LANGUAGES[saved]) return saved;
+
+            // Business default (can be set in app settings)
+            const businessLang = currentApp?.settings?.default_language;
+            if (businessLang && SUPPORTED_LANGUAGES[businessLang]) return businessLang;
+
+            // Browser language
+            const browserLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0].toLowerCase();
+            if (SUPPORTED_LANGUAGES[browserLang]) return browserLang;
+
+            return 'en';
+        }
+
+        function setLanguage(lang) {
+            if (!SUPPORTED_LANGUAGES[lang]) lang = 'en';
+            currentLanguage = lang;
+            localStorage.setItem('app_language', lang);
+
+            // Update UI
+            document.getElementById('current-lang').textContent = SUPPORTED_LANGUAGES[lang].code;
+
+            // Update selected state in dropdown
+            document.querySelectorAll('.language-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.lang === lang);
+            });
+
+            // Apply translations (basic implementation)
+            applyTranslations();
+
+            // Handle RTL for Arabic
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        }
+
+        function applyTranslations() {
+            const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
+            const welcomePoints = currentApp?.settings?.welcome_points || 50;
+
+            // Text-only updates (using textContent)
+            const textUpdates = {
+                '#stat-label-points': t.points,
+                '#stat-label-visits': t.visits,
+                '#activity-header': t.recentActivity,
+                '#join-btn-text': t.signUp,
+                '#login-btn-text': t.logIn,
+                '#login-modal-title': t.welcomeBack,
+                '#login-modal-subtitle': t.enterEmailPin,
+                '#login-email-label': t.email,
+                '#login-submit-btn': t.logIn,
+                '#close-login': t.cancel,
+                '#signup-modal-title': t.createAccount,
+                '#signup-modal-subtitle': t.startEarning,
+                '#bonus-subtitle': t.joinBonus,
+                '#pin-helper': t.pinHelper,
+                '#submit-btn': t.joinNow,
+                '#close-signup': t.cancel,
+                '#success-title': t.welcomeFamily,
+                '#success-subtitle': t.accountCreated,
+                '#success-points-label': t.pointsEarned,
+                '#open-app-btn-text': t.openApp
+            };
+
+            // Apply text updates
+            for (const [selector, text] of Object.entries(textUpdates)) {
+                const el = document.querySelector(selector);
+                if (el) el.textContent = text;
+            }
+
+            // Labels with required asterisks (using innerHTML)
+            const labelUpdates = {
+                '#first-name-label': t.firstName + ' <span class="required">*</span>',
+                '#last-name-label': t.lastName + ' <span class="required">*</span>',
+                '#email-label': t.email + ' <span class="required">*</span>',
+                '#phone-label': t.phone + ' <span id="phone-required"></span>',
+                '#pin-label': t.createPin + ' <span class="required">*</span>'
+            };
+
+            for (const [selector, html] of Object.entries(labelUpdates)) {
+                const el = document.querySelector(selector);
+                if (el) el.innerHTML = html;
+            }
+
+            // Update phone required indicator if needed
+            if (currentApp?.settings?.require_phone) {
+                const phoneReq = document.getElementById('phone-required');
+                if (phoneReq) phoneReq.innerHTML = '<span class="required">*</span>';
+            }
+
+            // Update member since badge
+            const memberSinceText = document.getElementById('member-since-text');
+            if (memberSinceText) {
+                memberSinceText.textContent = t.memberSince + ' Feb 2025';
+            }
+
+            // Update welcome badge with points (HTML)
+            const welcomeBadge = document.getElementById('welcome-badge-text');
+            if (welcomeBadge) {
+                welcomeBadge.innerHTML = t.getPoints.replace('{points}', welcomePoints);
+            }
+
+            // Update bonus amount
+            const bonusAmount = document.getElementById('bonus-amount');
+            if (bonusAmount) {
+                bonusAmount.textContent = t.welcomePoints.replace('{points}', welcomePoints);
+            }
+        }
+
+        let languageInitialized = false;
+
+        function initializeLanguage() {
+            if (languageInitialized) {
+                // Already initialized, just apply translations with new app data
+                applyTranslations();
+                return;
+            }
+
+            const btn = document.getElementById('language-btn');
+            const dropdown = document.getElementById('language-dropdown');
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+
+            document.querySelectorAll('.language-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    setLanguage(opt.dataset.lang);
+                    dropdown.classList.remove('active');
+                });
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                dropdown.classList.remove('active');
+            });
+
+            // Initialize with detected language
+            setLanguage(detectLanguage());
+            languageInitialized = true;
+        }
+
+        init();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</body>
+</html>

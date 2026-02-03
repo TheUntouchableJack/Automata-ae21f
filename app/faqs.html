@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ Manager - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="support.css?v=1">
+    <link rel="stylesheet" href="faqs.css?v=1">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+</head>
+<body>
+    <div class="app-layout">
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <div class="page-breadcrumb">
+                            <a href="support.html">Support</a>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>FAQs</span>
+                        </div>
+                        <h1 class="page-title">FAQ Manager</h1>
+                        <p class="page-subtitle">Create and manage frequently asked questions for your customers</p>
+                    </div>
+                    <div class="page-header-actions">
+                        <button class="btn btn-primary" id="add-faq-btn">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span>Add FAQ</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Selector -->
+            <div class="container">
+                <div class="app-selector-bar" id="app-selector-bar">
+                    <label for="app-select">Select App:</label>
+                    <select id="app-select" class="filter-select">
+                        <option value="">Select an app...</option>
+                    </select>
+                </div>
+            </div>
+
+            <section class="faqs-section">
+                <div class="container">
+                    <!-- Category Tabs -->
+                    <div class="category-tabs" id="category-tabs">
+                        <button class="category-tab active" data-category="all">All</button>
+                        <button class="category-tab" data-category="getting_started">Getting Started</button>
+                        <button class="category-tab" data-category="rewards">Rewards</button>
+                        <button class="category-tab" data-category="points">Points</button>
+                        <button class="category-tab" data-category="account">Account</button>
+                        <button class="category-tab" data-category="general">General</button>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-container" id="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+
+                    <!-- FAQ List -->
+                    <div class="faq-list" id="faq-list" style="display: none;">
+                        <!-- FAQs will be inserted here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="empty-state" style="display: none;">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <circle cx="24" cy="24" r="18" stroke="currentColor" stroke-width="2"/>
+                                <path d="M18 18C18.5 16 20 14 24 14C28 14 30 16.5 30 19.5C30 22.5 27 24 24 24V28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="24" cy="34" r="2" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 id="empty-title">No FAQs yet</h3>
+                        <p id="empty-desc">Add your first FAQ to help customers find answers quickly.</p>
+                        <div class="empty-state-actions">
+                            <button class="btn btn-primary" id="empty-add-btn">Add Your First FAQ</button>
+                        </div>
+                    </div>
+
+                    <!-- No App Selected State -->
+                    <div class="empty-state" id="no-app-state">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <rect x="10" y="8" width="28" height="32" rx="4" stroke="currentColor" stroke-width="2"/>
+                                <line x1="24" y1="36" x2="24.01" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Select an App</h3>
+                        <p>Choose a loyalty app above to manage its FAQs.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add/Edit FAQ Modal -->
+    <div class="modal-overlay" id="faq-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-title">Add FAQ</h2>
+                <button class="modal-close" id="modal-close">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="faq-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="faq-question">Question</label>
+                        <input type="text" id="faq-question" placeholder="e.g., How do I earn points?" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="faq-answer">Answer</label>
+                        <textarea id="faq-answer" rows="4" placeholder="Provide a clear, helpful answer..." required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="faq-category">Category</label>
+                            <select id="faq-category">
+                                <option value="general">General</option>
+                                <option value="getting_started">Getting Started</option>
+                                <option value="rewards">Rewards</option>
+                                <option value="points">Points</option>
+                                <option value="account">Account</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="faq-order">Display Order</label>
+                            <input type="number" id="faq-order" value="0" min="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="faq-active" checked>
+                            <span>Active (visible to customers)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="modal-submit">Save FAQ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>Delete FAQ?</h2>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this FAQ? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="delete-cancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=4"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="sidebar.js?v=16"></script>
+    <script src="faqs.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+/**
+ * Embed Widgets Styles
+ * Styling for dynamic Automata widgets in article content
+ */
+
+/* Base embed container */
+.automata-embed {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 32px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.automata-embed:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Desktop: horizontal layout */
+@media (min-width: 640px) {
+    .automata-embed {
+        flex-direction: row;
+        align-items: flex-start;
+        padding: 28px 32px;
+    }
+}
+
+/* Embed icon */
+.automata-embed .embed-icon {
+    font-size: 48px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+    .automata-embed .embed-icon {
+        font-size: 56px;
+        margin-right: 8px;
+    }
+}
+
+/* App preview badge (alternative to icon) */
+.automata-embed .app-preview-badge {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+/* Embed content */
+.automata-embed .embed-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.automata-embed .embed-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+
+.automata-embed .embed-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+}
+
+/* Feature list */
+.automata-embed .embed-features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.automata-embed .embed-features li {
+    font-size: 0.85rem;
+    color: #475569;
+    background: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Feature badges (alternative style) */
+.automata-embed .embed-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.automata-embed .feature-badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #7c3aed;
+    background: rgba(124, 58, 237, 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+/* CTA button */
+.automata-embed .embed-cta {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.automata-embed .embed-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.automata-embed .embed-cta:active {
+    transform: translateY(0);
+}
+
+@media (min-width: 640px) {
+    .automata-embed .embed-cta {
+        align-self: center;
+        margin-left: auto;
+    }
+}
+
+/* Custom request form */
+.automata-embed.custom-request-card {
+    background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+    border-color: #fcd34d;
+}
+
+.custom-request-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.custom-request-form textarea,
+.custom-request-form input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    resize: vertical;
+}
+
+.custom-request-form textarea:focus,
+.custom-request-form input:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.custom-request-form button {
+    width: 100%;
+}
+
+.automata-embed .embed-note {
+    font-size: 0.8rem;
+    color: #92400e;
+    margin: 8px 0 0 0;
+    text-align: center;
+}
+
+/* Request success state */
+.request-success {
+    text-align: center;
+    padding: 24px;
+}
+
+.request-success .success-icon {
+    width: 48px;
+    height: 48px;
+    background: #22c55e;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 12px;
+}
+
+.request-success p {
+    color: #15803d;
+    font-weight: 500;
+}
+
+/* CTA embed (standalone button) */
+.cta-embed {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 24px 0;
+    text-align: center;
+}
+
+.cta-embed:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.embed-cta-link {
+    display: inline-block;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 14px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.embed-cta-primary {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+}
+
+.embed-cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+}
+
+.embed-cta-secondary {
+    background: #1e293b;
+    color: white;
+}
+
+.embed-cta-secondary:hover {
+    background: #334155;
+}
+
+.embed-cta-outline {
+    background: transparent;
+    color: #7c3aed;
+    border: 2px solid #7c3aed;
+}
+
+.embed-cta-outline:hover {
+    background: rgba(124, 58, 237, 0.05);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .automata-embed {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-color: #334155;
+    }
+
+    .automata-embed .embed-title {
+        color: #f1f5f9;
+    }
+
+    .automata-embed .embed-desc {
+        color: #94a3b8;
+    }
+
+    .automata-embed .embed-features li {
+        background: #1e293b;
+        border-color: #475569;
+        color: #cbd5e1;
+    }
+
+    .custom-request-form textarea,
+    .custom-request-form input {
+        background: #1e293b;
+        border-color: #475569;
+        color: #f1f5f9;
+    }
+
+    .automata-embed.custom-request-card {
+        background: linear-gradient(135deg, #422006 0%, #1c1917 100%);
+        border-color: #78350f;
+    }
+
+    .automata-embed .embed-note {
+        color: #fcd34d;
+    }
+}
+
+/* Print styles */
+@media print {
+    .automata-embed {
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+    }
+
+    .automata-embed .embed-cta {
+        display: none;
+    }
+
+    .custom-request-form {
+        display: none;
+    }
+}

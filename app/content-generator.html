@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Generator - Automata</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="embed-widgets.css">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <style>
+        /* Content Generator Styles */
+        .generator-layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 24px;
+            min-height: calc(100vh - 180px);
+        }
+
+        @media (max-width: 1024px) {
+            .generator-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Sidebar - Topic Selection */
+        .topic-sidebar {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            height: fit-content;
+            position: sticky;
+            top: 24px;
+        }
+
+        .topic-sidebar h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topic-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .topic-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: var(--color-bg-secondary);
+            border: 2px solid transparent;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .topic-item:hover {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+        }
+
+        .topic-item.selected {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+        }
+
+        .topic-item.generating {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .topic-item-info {
+            flex: 1;
+        }
+
+        .topic-item-title {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--color-text);
+            margin-bottom: 2px;
+        }
+
+        .topic-item-topic {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .topic-item-status {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+        }
+
+        .topic-item-status.ready {
+            background: rgba(124, 58, 237, 0.1);
+            color: var(--color-primary);
+        }
+
+        .topic-item-status.generating {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .topic-item-status.draft {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-muted);
+        }
+
+        .topic-item-status.published {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-accent);
+        }
+
+        .generate-btn-container {
+            text-align: center;
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-generate.generating {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        /* Right Panel - Preview & Editor */
+        .preview-panel {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .preview-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .preview-tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: none;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .preview-tab:hover {
+            background: var(--color-bg-secondary);
+        }
+
+        .preview-tab.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preview-body {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        /* Empty state for preview */
+        .preview-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: var(--color-text-muted);
+        }
+
+        .preview-empty-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--color-bg-secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-empty h3 {
+            font-size: 1.25rem;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        /* Article Preview */
+        .article-preview {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .article-preview-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .article-preview-topic {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-primary);
+            background: var(--color-primary-subtle);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+        }
+
+        .article-preview-title {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 16px;
+        }
+
+        .article-preview-excerpt {
+            font-size: 1.125rem;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .article-preview-content {
+            font-size: 1.0625rem;
+            line-height: 1.8;
+        }
+
+        .article-preview-content h2 {
+            font-size: 1.5rem;
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+
+        .article-preview-content h3 {
+            font-size: 1.25rem;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        .article-preview-content p {
+            margin-bottom: 1.25em;
+        }
+
+        .article-preview-content ul,
+        .article-preview-content ol {
+            margin-bottom: 1.25em;
+            padding-left: 1.5em;
+        }
+
+        .article-preview-content li {
+            margin-bottom: 0.5em;
+        }
+
+        .article-preview-content blockquote {
+            border-left: 4px solid var(--color-primary);
+            padding-left: 20px;
+            margin: 24px 0;
+            font-style: italic;
+            color: var(--color-text-secondary);
+        }
+
+        /* Quality Score Card */
+        .quality-score-card {
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .quality-score-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .quality-score-header h4 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-muted);
+        }
+
+        .quality-score-badge {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .quality-score-badge.excellent {
+            color: var(--color-accent);
+        }
+
+        .quality-score-badge.good {
+            color: #f59e0b;
+        }
+
+        .quality-score-badge.needs-work {
+            color: var(--color-error);
+        }
+
+        .quality-metrics {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .quality-metric {
+            text-align: center;
+        }
+
+        .quality-metric-score {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .quality-metric-label {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        /* Editor Tab */
+        .article-editor {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .editor-field {
+            margin-bottom: 24px;
+        }
+
+        .editor-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .editor-field input,
+        .editor-field textarea {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 15px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+        }
+
+        .editor-field input:focus,
+        .editor-field textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .editor-field textarea {
+            min-height: 400px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* SEO Tab */
+        .seo-preview {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .seo-google-preview {
+            background: white;
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            margin-bottom: 24px;
+        }
+
+        .seo-google-preview h5 {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .seo-preview-url {
+            font-size: 14px;
+            color: #1a0dab;
+            margin-bottom: 4px;
+        }
+
+        .seo-preview-title {
+            font-size: 18px;
+            color: #1a0dab;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .seo-preview-title:hover {
+            text-decoration: underline;
+        }
+
+        .seo-preview-desc {
+            font-size: 14px;
+            color: #4d5156;
+            line-height: 1.5;
+        }
+
+        /* Generate Modal */
+        .generate-modal {
+            max-width: 500px;
+        }
+
+        .generate-progress {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .generate-progress-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .generate-progress h3 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+
+        .generate-progress p {
+            color: var(--color-text-muted);
+        }
+
+        .generate-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .generate-step:last-child {
+            border-bottom: none;
+        }
+
+        .generate-step-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 14px;
+        }
+
+        .generate-step-icon.pending {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-muted);
+        }
+
+        .generate-step-icon.active {
+            background: rgba(124, 58, 237, 0.1);
+            color: var(--color-primary);
+        }
+
+        .generate-step-icon.completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-accent);
+        }
+
+        .generate-step-text {
+            flex: 1;
+        }
+
+        .generate-step-text.active {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .generate-step-text.pending {
+            color: var(--color-text-muted);
+        }
+
+        /* Custom topic input */
+        .custom-topic-section {
+            padding-top: 24px;
+            border-top: 1px solid var(--color-border);
+            margin-top: 16px;
+        }
+
+        .custom-topic-section h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .custom-topic-input {
+            display: flex;
+            gap: 8px;
+        }
+
+        .custom-topic-input input {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .custom-topic-input input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .custom-topic-input button {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .custom-topic-input button:hover {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title">Content Generator</h1>
+                        <p class="page-subtitle">AI-powered blog articles with quality control</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="generator-layout">
+                    <!-- Left: Topic Selection -->
+                    <aside class="topic-sidebar">
+                        <h3>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 4H17M3 8H12M3 12H17M3 16H12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Content Queue
+                        </h3>
+
+                        <div class="topic-list" id="topic-list">
+                            <!-- Topics will be populated by JS -->
+                        </div>
+
+                        <div class="generate-btn-container">
+                            <button class="btn-generate" id="generate-btn" disabled>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 3V17M10 3L6 7M10 3L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span id="generate-btn-text">Select a Topic</span>
+                            </button>
+                        </div>
+
+                        <!-- Custom Topic -->
+                        <div class="custom-topic-section">
+                            <h4>Write About Something Else</h4>
+                            <div class="custom-topic-input">
+                                <input type="text" id="custom-topic" placeholder="Enter a topic...">
+                                <button id="add-custom-topic">Add</button>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Right: Preview Panel -->
+                    <div class="preview-panel">
+                        <div class="preview-header">
+                            <div class="preview-tabs">
+                                <button class="preview-tab active" data-tab="preview">Preview</button>
+                                <button class="preview-tab" data-tab="editor">Edit</button>
+                                <button class="preview-tab" data-tab="seo">SEO</button>
+                            </div>
+                            <div class="preview-actions" id="preview-actions" style="display: none;">
+                                <button class="btn btn-secondary" id="save-draft-btn">Save Draft</button>
+                                <button class="btn btn-primary" id="publish-btn">Publish to Blog</button>
+                            </div>
+                        </div>
+
+                        <div class="preview-body" id="preview-body">
+                            <!-- Empty State -->
+                            <div class="preview-empty" id="preview-empty">
+                                <div class="preview-empty-icon">
+                                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                                        <rect x="8" y="6" width="24" height="28" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M14 14H26M14 20H26M14 26H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <h3>No Article Selected</h3>
+                                <p>Select a topic from the queue and generate an article to preview it here.</p>
+                            </div>
+
+                            <!-- Preview Tab Content -->
+                            <div id="preview-content" style="display: none;">
+                                <!-- Quality Score -->
+                                <div class="quality-score-card" id="quality-card">
+                                    <div class="quality-score-header">
+                                        <h4>Quality Score</h4>
+                                        <span class="quality-score-badge excellent" id="total-score">--</span>
+                                    </div>
+                                    <div class="quality-metrics">
+                                        <div class="quality-metric">
+                                            <div class="quality-metric-score" id="score-specificity">--</div>
+                                            <div class="quality-metric-label">Specificity</div>
+                                        </div>
+                                        <div class="quality-metric">
+                                            <div class="quality-metric-score" id="score-voice">--</div>
+                                            <div class="quality-metric-label">Voice</div>
+                                        </div>
+                                        <div class="quality-metric">
+                                            <div class="quality-metric-score" id="score-value">--</div>
+                                            <div class="quality-metric-label">Value</div>
+                                        </div>
+                                        <div class="quality-metric">
+                                            <div class="quality-metric-score" id="score-hook">--</div>
+                                            <div class="quality-metric-label">Hook</div>
+                                        </div>
+                                        <div class="quality-metric">
+                                            <div class="quality-metric-score" id="score-human">--</div>
+                                            <div class="quality-metric-label">Human</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Article Preview -->
+                                <article class="article-preview" id="article-preview">
+                                    <div class="article-preview-meta">
+                                        <span class="article-preview-topic" id="article-topic"></span>
+                                    </div>
+                                    <h1 class="article-preview-title" id="article-title"></h1>
+                                    <p class="article-preview-excerpt" id="article-excerpt"></p>
+                                    <div class="article-preview-content" id="article-content"></div>
+                                </article>
+                            </div>
+
+                            <!-- Editor Tab Content -->
+                            <div id="editor-content" style="display: none;">
+                                <div class="article-editor">
+                                    <div class="editor-field">
+                                        <label>Title</label>
+                                        <input type="text" id="edit-title">
+                                    </div>
+                                    <div class="editor-field">
+                                        <label>Excerpt</label>
+                                        <textarea id="edit-excerpt" rows="3"></textarea>
+                                    </div>
+                                    <div class="editor-field">
+                                        <label>Content (Markdown)</label>
+                                        <textarea id="edit-content"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SEO Tab Content -->
+                            <div id="seo-content" style="display: none;">
+                                <div class="seo-preview">
+                                    <div class="seo-google-preview">
+                                        <h5>Google Search Preview</h5>
+                                        <div class="seo-preview-url" id="seo-url">automata.app/blog/article-slug</div>
+                                        <div class="seo-preview-title" id="seo-title">Article Title Here</div>
+                                        <div class="seo-preview-desc" id="seo-desc">Article description will appear here...</div>
+                                    </div>
+
+                                    <div class="editor-field">
+                                        <label>Meta Title (max 60 chars)</label>
+                                        <input type="text" id="seo-meta-title" maxlength="60">
+                                    </div>
+                                    <div class="editor-field">
+                                        <label>Meta Description (max 160 chars)</label>
+                                        <textarea id="seo-meta-desc" rows="3" maxlength="160"></textarea>
+                                    </div>
+                                    <div class="editor-field">
+                                        <label>URL Slug</label>
+                                        <input type="text" id="seo-slug">
+                                    </div>
+                                    <div class="editor-field">
+                                        <label>Tags (comma-separated)</label>
+                                        <input type="text" id="seo-tags">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Generate Modal -->
+    <div class="modal-overlay" id="generate-modal">
+        <div class="modal generate-modal">
+            <div class="modal-header">
+                <h2>Generating Article</h2>
+            </div>
+            <div class="modal-body">
+                <div class="generate-progress">
+                    <div class="generate-progress-spinner"></div>
+                    <h3 id="generate-status">Writing your article...</h3>
+                    <p id="generate-message">This usually takes 30-60 seconds</p>
+                </div>
+
+                <div id="generate-steps">
+                    <div class="generate-step" id="step-research">
+                        <div class="generate-step-icon pending">1</div>
+                        <span class="generate-step-text pending">Researching topic</span>
+                    </div>
+                    <div class="generate-step" id="step-outline">
+                        <div class="generate-step-icon pending">2</div>
+                        <span class="generate-step-text pending">Creating outline</span>
+                    </div>
+                    <div class="generate-step" id="step-write">
+                        <div class="generate-step-icon pending">3</div>
+                        <span class="generate-step-text pending">Writing content</span>
+                    </div>
+                    <div class="generate-step" id="step-quality">
+                        <div class="generate-step-icon pending">4</div>
+                        <span class="generate-step-text pending">Quality check</span>
+                    </div>
+                    <div class="generate-step" id="step-seo">
+                        <div class="generate-step-icon pending">5</div>
+                        <span class="generate-step-text pending">Optimizing SEO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=4"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="sidebar.js?v=16"></script>
+    <script src="content-generator.js?v=2"></script>
+</body>
+</html>

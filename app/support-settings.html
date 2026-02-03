@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Settings - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="support.css?v=2">
+    <link rel="stylesheet" href="settings.css?v=2">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+</head>
+<body>
+    <div class="app-layout">
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <div class="page-breadcrumb">
+                            <a href="support.html">Support</a>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Settings</span>
+                        </div>
+                        <h1 class="page-title">Support Settings</h1>
+                        <p class="page-subtitle">Configure AI support and customer service options</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Selector -->
+            <div class="container">
+                <div class="app-selector-bar" id="app-selector-bar">
+                    <label for="app-select">Select App:</label>
+                    <select id="app-select" class="filter-select">
+                        <option value="">Select an app...</option>
+                    </select>
+                </div>
+            </div>
+
+            <section class="settings-section">
+                <div class="container">
+                    <!-- Loading State -->
+                    <div class="loading-container" id="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+
+                    <!-- Settings Content -->
+                    <div class="settings-content" id="settings-content" style="display: none;">
+
+                        <!-- AI Support Toggle -->
+                        <div class="settings-card">
+                            <div class="settings-card-header">
+                                <div class="settings-card-icon ai">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                                        <circle cx="8" cy="14" r="2"/>
+                                        <circle cx="16" cy="14" r="2"/>
+                                    </svg>
+                                </div>
+                                <div class="settings-card-info">
+                                    <h3>AI Support Agent</h3>
+                                    <p>Enable 24/7 AI-powered customer support</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="ai-enabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="settings-card-body" id="ai-settings-body">
+                                <p class="settings-description">
+                                    When enabled, customers can chat with an AI agent that answers questions about your business,
+                                    points, rewards, and more. The AI uses your FAQ and Knowledge Base to provide accurate answers.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- AI Autonomy Mode -->
+                        <div class="settings-card" id="autonomy-card">
+                            <div class="settings-card-header">
+                                <div class="settings-card-icon autonomy">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                        <path d="M9 12l2 2 4-4"/>
+                                    </svg>
+                                </div>
+                                <div class="settings-card-info">
+                                    <h3>AI Autonomy Mode</h3>
+                                    <p>Control how independently the AI operates</p>
+                                </div>
+                            </div>
+                            <div class="settings-card-body">
+                                <div class="autonomy-options">
+                                    <label class="autonomy-option">
+                                        <input type="radio" name="autonomy-mode" value="auto_pilot">
+                                        <div class="autonomy-option-content">
+                                            <div class="autonomy-option-header">
+                                                <span class="autonomy-badge auto">Auto Pilot</span>
+                                                <span class="autonomy-recommended">Recommended</span>
+                                            </div>
+                                            <p>AI responds automatically to customers. You get notified of conversations and can review them anytime.</p>
+                                        </div>
+                                    </label>
+                                    <label class="autonomy-option">
+                                        <input type="radio" name="autonomy-mode" value="manual_approve">
+                                        <div class="autonomy-option-content">
+                                            <div class="autonomy-option-header">
+                                                <span class="autonomy-badge manual">Manual Approve</span>
+                                            </div>
+                                            <p>AI drafts responses but waits for your approval before sending. Best for sensitive businesses.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Escalation Settings -->
+                        <div class="settings-card" id="escalation-card">
+                            <div class="settings-card-header">
+                                <div class="settings-card-icon escalation">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                    </svg>
+                                </div>
+                                <div class="settings-card-info">
+                                    <h3>Escalation Rules</h3>
+                                    <p>When should AI transfer to a human?</p>
+                                </div>
+                            </div>
+                            <div class="settings-card-body">
+                                <div class="form-group">
+                                    <label for="escalation-keywords">Escalation Keywords</label>
+                                    <p class="form-hint">AI will offer to connect with a human when customers use these words (comma-separated)</p>
+                                    <input type="text" id="escalation-keywords" placeholder="manager, refund, complaint, human, speak to someone">
+                                </div>
+                                <div class="form-group">
+                                    <label for="max-ai-turns">Max AI Turns Before Escalation</label>
+                                    <p class="form-hint">If the customer isn't satisfied after this many exchanges, offer human support</p>
+                                    <input type="number" id="max-ai-turns" min="2" max="20" value="5">
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="escalate-negative-sentiment" checked>
+                                        <span>Escalate when negative sentiment is detected</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="escalate-low-confidence" checked>
+                                        <span>Escalate when AI confidence is low</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Hours -->
+                        <div class="settings-card" id="hours-card">
+                            <div class="settings-card-header">
+                                <div class="settings-card-icon hours">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                </div>
+                                <div class="settings-card-info">
+                                    <h3>Business Hours</h3>
+                                    <p>Set when human support is available</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="business-hours-enabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="settings-card-body" id="business-hours-body">
+                                <div class="hours-grid">
+                                    <div class="hours-row">
+                                        <span class="hours-day">Monday - Friday</span>
+                                        <div class="hours-inputs">
+                                            <input type="time" id="weekday-start" value="09:00">
+                                            <span>to</span>
+                                            <input type="time" id="weekday-end" value="17:00">
+                                        </div>
+                                    </div>
+                                    <div class="hours-row">
+                                        <span class="hours-day">Saturday</span>
+                                        <div class="hours-inputs">
+                                            <input type="time" id="saturday-start" value="10:00">
+                                            <span>to</span>
+                                            <input type="time" id="saturday-end" value="14:00">
+                                        </div>
+                                    </div>
+                                    <div class="hours-row">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="sunday-closed" checked>
+                                            <span>Closed on Sunday</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-top: 1.5rem;">
+                                    <label for="timezone">Timezone</label>
+                                    <select id="timezone">
+                                        <option value="America/New_York">Eastern Time (ET)</option>
+                                        <option value="America/Chicago">Central Time (CT)</option>
+                                        <option value="America/Denver">Mountain Time (MT)</option>
+                                        <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                        <option value="Europe/London">London (GMT)</option>
+                                        <option value="Europe/Paris">Paris (CET)</option>
+                                        <option value="Asia/Tokyo">Tokyo (JST)</option>
+                                        <option value="Australia/Sydney">Sydney (AEST)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- After Hours Message -->
+                        <div class="settings-card" id="after-hours-card">
+                            <div class="settings-card-header">
+                                <div class="settings-card-icon message">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                    </svg>
+                                </div>
+                                <div class="settings-card-info">
+                                    <h3>After Hours Message</h3>
+                                    <p>Message shown when human support isn't available</p>
+                                </div>
+                            </div>
+                            <div class="settings-card-body">
+                                <div class="form-group">
+                                    <textarea id="after-hours-message" rows="3" placeholder="Thanks for reaching out! Our team is currently offline, but our AI assistant is here to help. If you need human support, we'll get back to you during business hours."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Welcome Message -->
+                        <div class="settings-card">
+                            <div class="settings-card-header">
+                                <div class="settings-card-icon welcome">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                                    </svg>
+                                </div>
+                                <div class="settings-card-info">
+                                    <h3>AI Welcome Message</h3>
+                                    <p>First message customers see when starting a chat</p>
+                                </div>
+                            </div>
+                            <div class="settings-card-body">
+                                <div class="form-group">
+                                    <textarea id="welcome-message" rows="3" placeholder="Hi! I'm your AI assistant. I can help with questions about your points, rewards, and account. How can I help you today?"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="settings-actions">
+                            <button class="btn btn-primary btn-lg" id="save-settings" onclick="saveSettings()">
+                                Save Settings
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- No App Selected State -->
+                    <div class="empty-state" id="no-app-state">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <rect x="10" y="8" width="28" height="32" rx="4" stroke="currentColor" stroke-width="2"/>
+                                <line x1="24" y1="36" x2="24.01" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Select an App</h3>
+                        <p>Choose a loyalty app above to configure its support settings.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js"></script>
+    <script src="auth.js?v=4"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="sidebar.js?v=16"></script>
+    <script src="support-settings.js?v=1"></script>
+</body>
+</html>

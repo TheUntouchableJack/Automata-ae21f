@@ -1,0 +1,40 @@
+{
+    "name": "Royalty Rewards",
+    "short_name": "Royalty",
+    "description": "Your loyalty and rewards app",
+    "start_url": "/customer-app/app.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#7c3aed",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": ["lifestyle", "shopping"],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Scan to Earn",
+            "short_name": "Scan",
+            "description": "Scan QR code to earn points",
+            "url": "/customer-app/scan.html"
+        },
+        {
+            "name": "View Rewards",
+            "short_name": "Rewards",
+            "description": "Browse available rewards",
+            "url": "/customer-app/app.html#rewards"
+        }
+    ]
+}
