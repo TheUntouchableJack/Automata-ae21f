@@ -721,3 +721,411 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
+-- 16. ROADMAP ITEMS TABLE (Public product roadmap)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS roadmap_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL DEFAULT 'feature', -- 'feature', 'improvement', 'integration', 'bug'
+    status TEXT NOT NULL DEFAULT 'ideas', -- 'ideas', 'in_progress', 'deployed'
+    is_public BOOLEAN DEFAULT false, -- Only show on frontend if true
+    votes INTEGER DEFAULT 0,
+    display_order INTEGER DEFAULT 0,
+    deployed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE roadmap_items ENABLE ROW LEVEL SECURITY;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_roadmap_items_status ON roadmap_items(status);
+CREATE INDEX IF NOT EXISTS idx_roadmap_items_is_public ON roadmap_items(is_public);
+
+-- Public can view public items
+CREATE POLICY "Public can view public roadmap items" ON roadmap_items
+    FOR SELECT USING (is_public = true);
+
+-- Admins can view all items
+CREATE POLICY "Admins can view all roadmap items" ON roadmap_items
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- Admins can insert roadmap items
+CREATE POLICY "Admins can create roadmap items" ON roadmap_items
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- Admins can update roadmap items
+CREATE POLICY "Admins can update roadmap items" ON roadmap_items
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- Admins can delete roadmap items
+CREATE POLICY "Admins can delete roadmap items" ON roadmap_items
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- Auto-update updated_at
+CREATE TRIGGER update_roadmap_items_updated_at
+    BEFORE UPDATE ON roadmap_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- 17. FEATURE REQUESTS TABLE (User submissions)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS feature_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL DEFAULT 'feature', -- 'feature', 'improvement', 'integration', 'bug'
+    email TEXT, -- optional contact email
+    submitted_by UUID REFERENCES profiles(id), -- null if anonymous
+    status TEXT DEFAULT 'pending', -- 'pending', 'approved', 'rejected', 'converted'
+    admin_notes TEXT,
+    converted_to_roadmap_id UUID REFERENCES roadmap_items(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE feature_requests ENABLE ROW LEVEL SECURITY;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_feature_requests_status ON feature_requests(status);
+CREATE INDEX IF NOT EXISTS idx_feature_requests_submitted_by ON feature_requests(submitted_by);
+
+-- Anyone can submit feature requests (including anonymous)
+CREATE POLICY "Anyone can submit feature requests" ON feature_requests
+    FOR INSERT WITH CHECK (true);
+
+-- Users can view their own submissions
+CREATE POLICY "Users can view own feature requests" ON feature_requests
+    FOR SELECT USING (
+        submitted_by = auth.uid()
+    );
+
+-- Admins can view all feature requests
+CREATE POLICY "Admins can view all feature requests" ON feature_requests
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- Admins can update feature requests
+CREATE POLICY "Admins can update feature requests" ON feature_requests
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- Admins can delete feature requests
+CREATE POLICY "Admins can delete feature requests" ON feature_requests
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- =====================================================
+-- 18. ROADMAP VOTES TABLE (Track user votes)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS roadmap_votes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    roadmap_item_id UUID NOT NULL REFERENCES roadmap_items(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profiles(id), -- null for anonymous votes via localStorage
+    session_id TEXT, -- for anonymous vote tracking
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(roadmap_item_id, user_id),
+    UNIQUE(roadmap_item_id, session_id)
+);
+
+-- Enable RLS
+ALTER TABLE roadmap_votes ENABLE ROW LEVEL SECURITY;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_roadmap_votes_item_id ON roadmap_votes(roadmap_item_id);
+CREATE INDEX IF NOT EXISTS idx_roadmap_votes_user_id ON roadmap_votes(user_id);
+
+-- Anyone can vote
+CREATE POLICY "Anyone can create votes" ON roadmap_votes
+    FOR INSERT WITH CHECK (true);
+
+-- Users can view their own votes
+CREATE POLICY "Users can view own votes" ON roadmap_votes
+    FOR SELECT USING (
+        user_id = auth.uid() OR user_id IS NULL
+    );
+
+-- Users can delete their own votes (unvote)
+CREATE POLICY "Users can delete own votes" ON roadmap_votes
+    FOR DELETE USING (
+        user_id = auth.uid()
+    );
+
+-- =====================================================
+-- 19. APP SETTINGS TABLE (Global app configuration)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    description TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+
+-- Only admins can view/modify settings
+CREATE POLICY "Admins can view settings" ON app_settings
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+CREATE POLICY "Admins can update settings" ON app_settings
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+CREATE POLICY "Admins can insert settings" ON app_settings
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+        )
+    );
+
+-- Insert default notification settings
+INSERT INTO app_settings (key, value, description) VALUES
+    ('notification_webhook_url', '""'::jsonb, 'Webhook URL for feature request notifications (Slack, Discord, Zapier, etc.)'),
+    ('admin_email', '""'::jsonb, 'Admin email address for notifications')
+ON CONFLICT (key) DO NOTHING;
+
+-- =====================================================
+-- 20. FEATURE REQUEST NOTIFICATION FUNCTION & TRIGGER
+-- =====================================================
+
+-- Enable pg_net extension for HTTP requests (run this first in Supabase SQL Editor)
+-- CREATE EXTENSION IF NOT EXISTS pg_net;
+
+-- Function to send notification when feature request is submitted
+CREATE OR REPLACE FUNCTION notify_feature_request()
+RETURNS TRIGGER AS $$
+DECLARE
+    webhook_url TEXT;
+    payload JSONB;
+    submitter_email TEXT;
+BEGIN
+    -- Get webhook URL from settings
+    SELECT value::text INTO webhook_url
+    FROM app_settings
+    WHERE key = 'notification_webhook_url';
+
+    -- Remove quotes from JSON string
+    webhook_url := TRIM(BOTH '"' FROM webhook_url);
+
+    -- Skip if no webhook configured
+    IF webhook_url IS NULL OR webhook_url = '' THEN
+        RETURN NEW;
+    END IF;
+
+    -- Get submitter email if available
+    IF NEW.submitted_by IS NOT NULL THEN
+        SELECT email INTO submitter_email FROM profiles WHERE id = NEW.submitted_by;
+    ELSE
+        submitter_email := NEW.email;
+    END IF;
+
+    -- Build payload (Slack-compatible format)
+    payload := jsonb_build_object(
+        'text', '🚀 *New Feature Request*',
+        'blocks', jsonb_build_array(
+            jsonb_build_object(
+                'type', 'header',
+                'text', jsonb_build_object(
+                    'type', 'plain_text',
+                    'text', '🚀 New Feature Request'
+                )
+            ),
+            jsonb_build_object(
+                'type', 'section',
+                'fields', jsonb_build_array(
+                    jsonb_build_object('type', 'mrkdwn', 'text', '*Title:*\n' || NEW.title),
+                    jsonb_build_object('type', 'mrkdwn', 'text', '*Category:*\n' || COALESCE(NEW.category, 'feature'))
+                )
+            ),
+            jsonb_build_object(
+                'type', 'section',
+                'text', jsonb_build_object(
+                    'type', 'mrkdwn',
+                    'text', '*Description:*\n' || COALESCE(NEW.description, '_No description provided_')
+                )
+            ),
+            jsonb_build_object(
+                'type', 'context',
+                'elements', jsonb_build_array(
+                    jsonb_build_object('type', 'mrkdwn', 'text', '📧 From: ' || COALESCE(submitter_email, '_Anonymous_'))
+                )
+            )
+        )
+    );
+
+    -- Send webhook notification using pg_net
+    -- Note: Requires pg_net extension enabled in Supabase
+    PERFORM net.http_post(
+        url := webhook_url,
+        headers := '{"Content-Type": "application/json"}'::jsonb,
+        body := payload::text
+    );
+
+    RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Log error but don't fail the insert
+        RAISE WARNING 'Failed to send feature request notification: %', SQLERRM;
+        RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger for new feature requests
+DROP TRIGGER IF EXISTS on_feature_request_created ON feature_requests;
+CREATE TRIGGER on_feature_request_created
+    AFTER INSERT ON feature_requests
+    FOR EACH ROW EXECUTE FUNCTION notify_feature_request();
+
+-- =====================================================
+-- 21. RATE LIMITS TABLE (Track request rates)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    identifier TEXT NOT NULL, -- IP address, user_id, or session_id
+    action_type TEXT NOT NULL, -- 'feature_request', 'waitlist', 'ai_analysis', 'business_analysis', 'vote'
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS (but allow all operations - tracking happens server-side)
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+
+-- Index for fast lookups
+CREATE INDEX IF NOT EXISTS idx_rate_limits_lookup
+    ON rate_limits(identifier, action_type, created_at DESC);
+
+-- Allow inserts for tracking
+CREATE POLICY "Anyone can insert rate limit records" ON rate_limits
+    FOR INSERT WITH CHECK (true);
+
+-- Allow reads for checking limits
+CREATE POLICY "Anyone can view rate limits" ON rate_limits
+    FOR SELECT USING (true);
+
+-- Cleanup old records (older than 24 hours)
+CREATE OR REPLACE FUNCTION cleanup_old_rate_limits()
+RETURNS void AS $$
+BEGIN
+    DELETE FROM rate_limits WHERE created_at < NOW() - INTERVAL '24 hours';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if action is rate limited
+-- Returns TRUE if rate limited (too many requests), FALSE if allowed
+CREATE OR REPLACE FUNCTION check_rate_limit(
+    p_identifier TEXT,
+    p_action_type TEXT,
+    p_max_requests INTEGER,
+    p_window_minutes INTEGER
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    request_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO request_count
+    FROM rate_limits
+    WHERE identifier = p_identifier
+      AND action_type = p_action_type
+      AND created_at > NOW() - (p_window_minutes || ' minutes')::INTERVAL;
+
+    RETURN request_count >= p_max_requests;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to record a rate limit attempt
+CREATE OR REPLACE FUNCTION record_rate_limit(
+    p_identifier TEXT,
+    p_action_type TEXT
+)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO rate_limits (identifier, action_type)
+    VALUES (p_identifier, p_action_type);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Combined function: check and record in one call
+-- Returns TRUE if allowed (and records the attempt), FALSE if rate limited
+CREATE OR REPLACE FUNCTION check_and_record_rate_limit(
+    p_identifier TEXT,
+    p_action_type TEXT,
+    p_max_requests INTEGER,
+    p_window_minutes INTEGER
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    is_limited BOOLEAN;
+BEGIN
+    -- Check if currently rate limited
+    is_limited := check_rate_limit(p_identifier, p_action_type, p_max_requests, p_window_minutes);
+
+    -- If not limited, record this attempt
+    IF NOT is_limited THEN
+        PERFORM record_rate_limit(p_identifier, p_action_type);
+    END IF;
+
+    -- Return TRUE if allowed (not limited), FALSE if blocked
+    RETURN NOT is_limited;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

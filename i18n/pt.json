@@ -7,7 +7,7 @@
         "pricing": "Preços",
         "blog": "Blog",
         "login": "Entrar",
-        "joinWaitlist": "Entrar na Lista",
+        "joinWaitlist": "Entrar na Beta",
         "projects": "Projetos",
         "customers": "Clientes",
         "dashboard": "Painel",
@@ -21,7 +21,8 @@
         "freePlan": "Plano Gratuito",
         "admin": "Admin",
         "launchPlan": "Plano de Lançamento",
-        "intelligence": "Inteligência"
+        "intelligence": "Inteligência",
+        "support": "Suporte"
     },
     "launchPlan": {
         "title": "Plano de Lançamento",
@@ -41,7 +42,7 @@
             "Mulher"
         ],
         "subtitle": "Cada aniversário lembrado. Cada visita acompanhada. Cada cliente fiel agradecido — automaticamente.",
-        "joinWaitlist": "Entrar na Lista",
+        "joinWaitlist": "Entrar na Beta",
         "seeHowItWorks": "Veja Como Funciona",
         "stats": {
             "fasterSetup": "Configuração Rápida",
@@ -185,48 +186,61 @@
     },
     "pricing": {
         "tag": "Preços",
-        "title": "Preços simples. Sem surpresas.",
-        "subtitle": "Comece grátis, atualize quando estiver pronto. Sem cartão de crédito.",
+        "title": "Preços simples e transparentes",
+        "subtitle": "Comece grátis. Atualize quando estiver pronto para crescer.",
         "popular": "Mais Popular",
         "perMonth": "/mês",
+        "forever": "para sempre",
         "noCreditCard": "Sem cartão de crédito",
-        "annualNote": "Economize 20% com faturamento anual. <a href=\"/pricing.html\">Veja todos os detalhes</a>",
-        "starter": {
-            "name": "Iniciante",
+        "freeTrial": "14 dias de teste grátis",
+        "annualNote": "Economize 20% com faturamento anual.",
+        "viewFullPricing": "Ver todos os detalhes de preços e oferta vitalícia AppSumo →",
+        "free": {
+            "name": "Grátis",
             "desc": "Experimente",
-            "period": "gratuito para sempre",
-            "f1": "Até 100 clientes",
-            "f2": "3 automações",
-            "f3": "Suporte da comunidade",
-            "cta": "Comece Grátis"
+            "f1": "Até 50 membros",
+            "f2": "Automações com 1 clique",
+            "f3": "Check-ins por código QR",
+            "cta": "Iniciar Beta Grátis"
         },
-        "pro": {
-            "name": "Pro",
-            "desc": "Para empresas em crescimento",
-            "f1": "Até 5.000 clientes",
-            "f2": "Automações ilimitadas",
+        "starter": {
+            "name": "Starter",
+            "desc": "Para pequenos negócios",
+            "f1": "Até 500 membros",
+            "f2": "30 insights de IA/mês",
+            "f3": "Programa de fidelidade com IA",
+            "cta": "Entrar na Beta"
+        },
+        "growth": {
+            "name": "Growth",
+            "desc": "Para negócios em crescimento",
+            "f1": "Até 2.000 membros",
+            "f2": "100 insights de IA/mês",
             "f3": "Suporte prioritário",
-            "cta": "Iniciar Teste Grátis"
+            "cta": "Entrar na Beta"
         },
         "scale": {
-            "name": "Escala",
-            "desc": "Para equipes maiores",
-            "f1": "Até 25.000 clientes",
-            "f2": "Tudo ilimitado",
-            "f3": "Suporte dedicado",
-            "cta": "Iniciar Teste Grátis"
+            "name": "Scale",
+            "desc": "Para múltiplas unidades",
+            "f1": "Membros ilimitados",
+            "f2": "Insights de IA ilimitados",
+            "f3": "Marca branca",
+            "cta": "Entrar na Beta"
         },
-        "enterprise": {
-            "title": "Precisa de mais poder?",
-            "desc": "Para organizações com mais de 25.000 clientes, integrações personalizadas ou requisitos de conformidade.",
-            "cta": "Saiba mais sobre Empresarial"
+        "royaltyPro": {
+            "name": "Royalty Pro",
+            "desc": "Para titulares de oferta vitalícia",
+            "f1": "Insights de IA ilimitados",
+            "f2": "Marca branca",
+            "f3": "Cancele a qualquer momento",
+            "cta": "Adicionar Royalty Pro"
         }
     },
     "cta": {
         "title": "Seja o Primeiro a Automatizar Relacionamentos Com Clientes",
         "subtitle": "Entre na lista de espera e tenha acesso antecipado a automações baseadas em IA.",
         "emailPlaceholder": "Digite seu email",
-        "joinWaitlist": "Entrar na Lista",
+        "joinWaitlist": "Entrar na Beta",
         "note": "Avisaremos quando lançarmos."
     },
     "footer": {
@@ -241,12 +255,29 @@
         "copyright": "© 2026 Automata. Todos os direitos reservados."
     },
     "dashboard": {
-        "title": "Seus Projetos",
-        "subtitle": "Gerencie seus projetos de automação",
+        "title": "Painel",
+        "subtitle": "Seu programa de fidelidade em um relance",
+        "refresh": "Atualizar",
         "newProject": "Novo Projeto",
         "noProjects": "Nenhum projeto ainda",
         "noProjectsDesc": "Crie seu primeiro projeto para começar a automatizar",
-        "createFirst": "Crie Seu Primeiro Projeto"
+        "createFirst": "Crie Seu Primeiro Projeto",
+        "totalMembers": "Membros Totais",
+        "todayCheckins": "Check-ins de Hoje",
+        "newThisWeek": "Novos Esta Semana",
+        "pointsGiven": "Pontos Dados Esta Semana",
+        "memberGrowth": "Crescimento de Membros",
+        "tierDistribution": "Distribuição por Nível",
+        "recentActivity": "Atividade Recente",
+        "viewAll": "Ver Tudo",
+        "quickStats": "Estatísticas Rápidas",
+        "activeMembers": "Membros Ativos (30d)",
+        "totalVisits": "Visitas Totais",
+        "avgVisits": "Média Visitas/Membro",
+        "referrals": "Indicações",
+        "noAppTitle": "Crie Seu Programa de Fidelidade",
+        "noAppDesc": "Configure seu primeiro app para começar a rastrear membros, visitas e recompensas.",
+        "createApp": "Criar App"
     },
     "aiFeed": {
         "title": "Feed de Inteligência IA",
@@ -270,6 +301,7 @@
         "title": "Inteligência AI",
         "subtitle": "Insights e recomendações baseadas em IA para seu negócio",
         "analyze": "Analisar Meu Negócio",
+        "analyzeNow": "Analisar Agora",
         "pending": "Ações Pendentes",
         "implemented": "Implementado",
         "highImpact": "Alto Impacto",
@@ -278,10 +310,37 @@
         "emptyTitle": "Nenhuma recomendação ainda",
         "emptyDesc": "Clique em \"Analisar Meu Negócio\" para obter insights baseados nos dados da sua organização.",
         "acceptCreate": "Aceitar e Criar",
-        "viewAll": "Ver Tudo"
+        "viewAll": "Ver Tudo",
+        "firstLogin": {
+            "title": "Construindo seu programa de fidelidade...",
+            "step1": "Analisando seu negócio",
+            "step2": "Selecionando recompensas ideais",
+            "step3": "Configurando automações",
+            "step4": "Configurando assistente AI"
+        },
+        "appReady": {
+            "title": "Seu app de fidelidade está pronto!",
+            "subtitle": "Royalty AI construiu seu programa. Visualize ou personalize os detalhes.",
+            "preview": "Visualizar",
+            "customize": "Personalizar",
+            "letsGo": "Vamos lá!"
+        },
+        "autonomy": {
+            "title": "Como o Royalty AI deve gerenciar seu programa?",
+            "autoPilot": "Piloto automático",
+            "autoPilotDesc": "AI age automaticamente, você é notificado",
+            "manualApprove": "Aprovação manual",
+            "manualApproveDesc": "AI propõe ações, você aprova cada uma"
+        },
+        "appCreationError": "Falha ao criar seu app de fidelidade",
+        "createManually": "Criar Manualmente"
+    },
+    "projects": {
+        "recommended": "Projetos Recomendados"
     },
     "project": {
         "overview": "Visão Geral",
+        "content": "Conteúdo",
         "automations": "Automações",
         "apps": "Apps",
         "customers": "Clientes",
@@ -386,7 +445,9 @@
         "next": "Próximo",
         "previous": "Anterior",
         "page": "Página",
-        "of": "de"
+        "of": "de",
+        "recommended": "Recomendado",
+        "tryAgain": "Tentar Novamente"
     },
     "onboarding": {
         "title": "Conte-nos sobre seu negócio",
@@ -507,6 +568,80 @@
             "success": "Obrigado! Sua sugestão foi enviada para revisão."
         }
     },
+    "support": {
+        "title": "Suporte",
+        "subtitle": "Gerencie tickets de clientes e suporte IA",
+        "manageFaqs": "Gerenciar FAQs",
+        "knowledgeBase": "Base de Conhecimento",
+        "settings": "Configurações",
+        "openTickets": "Tickets Abertos",
+        "pendingResponse": "Resposta Pendente",
+        "escalated": "Escalados",
+        "aiResolutionRate": "Taxa Resolução IA",
+        "satisfaction": "Satisfação",
+        "selectApp": "Selecionar App:",
+        "all": "Todos",
+        "open": "Aberto",
+        "escalatedTab": "Escalados",
+        "pendingCustomer": "Aguardando Cliente",
+        "resolved": "Resolvido",
+        "search": "Buscar tickets...",
+        "allTypes": "Todos os Tipos",
+        "question": "Pergunta",
+        "bugReport": "Relatório de Bug",
+        "featureRequest": "Solicitação",
+        "complaint": "Reclamação",
+        "feedback": "Feedback",
+        "allPriorities": "Todas Prioridades",
+        "urgent": "Urgente",
+        "high": "Alta",
+        "normal": "Normal",
+        "low": "Baixa",
+        "ticket": "Ticket",
+        "customer": "Cliente",
+        "subject": "Assunto",
+        "type": "Tipo",
+        "priority": "Prioridade",
+        "status": "Status",
+        "lastUpdate": "Última Atualização",
+        "previous": "Anterior",
+        "next": "Próximo",
+        "noTickets": "Sem tickets de suporte",
+        "noTicketsDesc": "Quando clientes enviarem tickets, aparecerão aqui.",
+        "setupFaqs": "Configurar FAQs",
+        "conversation": "Conversa",
+        "reply": "Responder",
+        "typeResponse": "Digite sua resposta...",
+        "internalNote": "Nota interna (não visível para o cliente)",
+        "aiSuggest": "Sugestão IA",
+        "sendReply": "Enviar Resposta",
+        "markPending": "Marcar Pendente",
+        "resolve": "Resolver Ticket",
+        "closeTicket": "Fechar Ticket",
+        "email": "Email",
+        "created": "Criado",
+        "aiHandled": "Gerenciado por IA",
+        "yes": "Sim",
+        "notifications": "Notificações",
+        "markAllRead": "Marcar tudo como lido",
+        "noNotifications": "Sem novas notificações",
+        "myMessages": "Minhas Mensagens",
+        "noMessages": "Nenhuma mensagem ainda",
+        "noMessagesDesc": "Quando você nos contatar ou conversar com o suporte, suas conversas aparecerão aqui.",
+        "ticketStatus": {
+            "open": "Aberto",
+            "escalated": "Com a Equipe",
+            "awaiting_response": "Aguardando Resposta",
+            "in_progress": "Em Andamento",
+            "pending_customer": "Sua Resposta Necessária",
+            "resolved": "Resolvido",
+            "closed": "Fechado"
+        },
+        "chatHistory": "Histórico do Chat",
+        "escalatedToTeam": "Encaminhado para a Equipe",
+        "typeReply": "Digite uma resposta...",
+        "supportThread": "Conversa de Suporte"
+    },
     "rateLimit": {
         "tooMany": "Muitas {action}. Por favor, tente novamente em {time}.",
         "remaining": "Você tem {count} {action} restantes nesta hora.",
@@ -547,7 +682,9 @@
             "emailHelper": "Entre em contato com o suporte para alterar seu email",
             "phone": "Número de Telefone",
             "phoneHelper": "Opcional",
-            "saveChanges": "Salvar Alterações"
+            "saveChanges": "Salvar Alterações",
+            "advancedMode": "Modo Avançado",
+            "advancedModeDesc": "Mostrar navegação avançada (Projetos, Apps, Roteiro, Plano de Lançamento). Ative se você gerencia múltiplos projetos ou precisa de recursos avançados."
         },
         "security": {
             "title": "Alterar Senha",
@@ -589,17 +726,22 @@
         },
         "plan": {
             "title": "Plano Atual",
-            "subtitle": "Gerencie sua assinatura e faturamento",
+            "subtitle": "Ver sua assinatura e uso",
             "currentPlan": "Plano Atual",
             "features": "Recursos",
-            "projects": "Projetos",
+            "members": "Membros",
+            "aiInsights": "Insights de IA/mês",
             "automations": "Automações",
-            "customers": "Clientes",
-            "teamMembers": "Membros da Equipe",
+            "whiteLabel": "Marca branca",
+            "included": "Incluído",
+            "notIncluded": "Não incluído",
             "unlimited": "Ilimitado",
             "upgrade": "Atualizar Plano",
             "redeem": "Resgatar Código",
-            "billingNote": "Gerenciamento de faturamento em breve"
+            "royaltyPro": "Royalty Pro",
+            "royaltyProActive": "Ativo",
+            "addRoyaltyPro": "Adicionar Royalty Pro",
+            "billingNote": "14 dias de teste grátis, depois faturamento mensal ou anual. Cancele a qualquer momento."
         },
         "activity": {
             "title": "Registro de Atividades",
@@ -752,6 +894,61 @@
             "download": "Baixar",
             "print": "Imprimir",
             "tips": "Dicas para compartilhar seu app"
+        },
+        "help": {
+            "title": "Central de Ajuda",
+            "greeting": "Como podemos ajudar?",
+            "searchPlaceholder": "Buscar ajuda...",
+            "faqs": "FAQs",
+            "articles": "Artigos",
+            "contact": "Contato",
+            "faqsTitle": "Perguntas Frequentes",
+            "articlesTitle": "Artigos de Ajuda",
+            "contactTitle": "Fale Conosco",
+            "noFaqs": "Nenhuma FAQ disponível",
+            "noArticles": "Nenhum artigo disponível",
+            "checkBack": "Volte em breve!",
+            "searchResults": "Resultados da Busca",
+            "noResults": "Nenhum resultado encontrado",
+            "tryDifferent": "Tente palavras diferentes ou",
+            "contactUs": "fale conosco",
+            "clear": "Limpar",
+            "subjectGeneral": "Pergunta Geral",
+            "subjectPoints": "Pontos e Recompensas",
+            "subjectAccount": "Problema na Conta",
+            "subjectBug": "Reportar um Bug",
+            "subjectFeedback": "Feedback",
+            "messagePlaceholder": "Descreva seu problema ou pergunta...",
+            "sendMessage": "Enviar Mensagem",
+            "sending": "Enviando...",
+            "messageSent": "Mensagem enviada! Responderemos em breve.",
+            "sendFailed": "Falha ao enviar. Tente novamente.",
+            "wasHelpful": "Este artigo foi útil?",
+            "yes": "Sim",
+            "no": "Não",
+            "thanksFeedback": "Obrigado pelo seu feedback!"
         }
+    },
+    "auth": {
+        "welcomeBack": "Bem-vindo de volta",
+        "signInSubtitle": "Entre na sua conta para continuar",
+        "email": "E-mail",
+        "password": "Senha",
+        "emailPlaceholder": "voce@exemplo.com",
+        "passwordPlaceholder": "Digite sua senha",
+        "signIn": "Entrar",
+        "noAccount": "Não tem uma conta?",
+        "signUp": "Cadastre-se",
+        "backToHome": "Voltar ao início",
+        "captchaError": "Por favor complete a verificação CAPTCHA.",
+        "createAccount": "Criar uma conta",
+        "signUpSubtitle": "Comece a automatizar o relacionamento com seus clientes",
+        "firstName": "Nome",
+        "lastName": "Sobrenome",
+        "firstNamePlaceholder": "João",
+        "lastNamePlaceholder": "Silva",
+        "createPasswordPlaceholder": "Crie uma senha",
+        "createAccountBtn": "Criar conta",
+        "hasAccount": "Já tem uma conta?"
     }
 }

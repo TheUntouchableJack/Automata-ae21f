@@ -1,5 +1,5 @@
 // ===== Danger Confirmation Modal =====
-// A reusable modal for destructive actions with flames animation and evil laugh
+// A reusable modal for destructive actions with EXPLODING CATS and meows
 
 const DangerModal = (function() {
     let modalElement = null;
@@ -140,8 +140,8 @@ const DangerModal = (function() {
         const confirmBtn = document.getElementById('danger-confirm-btn');
         confirmBtn.disabled = true;
         confirmBtn.innerHTML = `
-            <div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div>
-            <span>Destroying...</span>
+            <span style="font-size: 16px;">🐱💥</span>
+            <span>Releasing cats...</span>
         `;
 
         // Close modal first
@@ -168,129 +168,242 @@ const DangerModal = (function() {
         `;
     }
 
-    // Play destruction animation with flames and evil laugh
+    // Play destruction animation with EXPLODING CATS and meows
     async function playDestructionAnimation() {
         return new Promise((resolve) => {
             // Add shake effect
             document.body.classList.add('shaking');
 
-            // Play evil laugh
-            playEvilLaugh();
+            // Play chaotic meowing
+            playCatMeows();
 
-            // Show flames
+            // Show explosions overlay
             flamesOverlay.classList.add('active');
-            createFlames();
+            createExplosions();
 
-            // Show skull
-            const skull = document.createElement('div');
-            skull.className = 'skull-icon';
-            skull.innerHTML = '💀';
-            document.body.appendChild(skull);
+            // Launch exploding cats from center
+            launchExplodingCats();
 
             // Clean up after animation
             setTimeout(() => {
                 document.body.classList.remove('shaking');
                 flamesOverlay.classList.remove('active');
                 document.getElementById('flames-container').innerHTML = '';
-                skull.remove();
+                // Remove any lingering cats
+                document.querySelectorAll('.exploding-cat').forEach(cat => cat.remove());
                 resolve();
             }, 2500);
         });
     }
 
-    // Create flame elements
-    function createFlames() {
-        const container = document.getElementById('flames-container');
-        container.innerHTML = '';
+    // Launch cats that explode outward from center
+    function launchExplodingCats() {
+        const catEmojis = ['🐱', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐈', '🐈‍⬛'];
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
 
-        // Create main flames along the bottom
-        const flameCount = Math.floor(window.innerWidth / 80);
-        for (let i = 0; i < flameCount; i++) {
-            const flame = document.createElement('div');
-            flame.className = 'flame';
-            flame.style.left = `${(i / flameCount) * 100}%`;
-            flame.style.width = `${80 + Math.random() * 60}px`;
-            flame.style.height = `${150 + Math.random() * 150}px`;
-            flame.style.animationDelay = `${Math.random() * 0.3}s`;
-            flame.style.animationDuration = `${0.3 + Math.random() * 0.4}s`;
-            container.appendChild(flame);
-        }
+        // Create explosion bursts
+        for (let burst = 0; burst < 3; burst++) {
+            setTimeout(() => {
+                // Each burst launches cats in all directions
+                for (let i = 0; i < 12; i++) {
+                    const cat = document.createElement('div');
+                    cat.className = 'exploding-cat';
+                    cat.innerHTML = catEmojis[Math.floor(Math.random() * catEmojis.length)];
+                    cat.style.cssText = `
+                        position: fixed;
+                        left: ${centerX}px;
+                        top: ${centerY}px;
+                        font-size: ${30 + Math.random() * 40}px;
+                        z-index: 100001;
+                        pointer-events: none;
+                        transform: translate(-50%, -50%);
+                        transition: all ${0.5 + Math.random() * 0.5}s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                    `;
+                    document.body.appendChild(cat);
 
-        // Create embers
-        for (let i = 0; i < 50; i++) {
-            const ember = document.createElement('div');
-            ember.className = 'ember';
-            ember.style.left = `${Math.random() * 100}%`;
-            ember.style.bottom = '0';
-            ember.style.animationDelay = `${Math.random() * 2}s`;
-            ember.style.animationDuration = `${1 + Math.random() * 1.5}s`;
-            ember.style.background = ['#ff4500', '#ff6b35', '#ffa500', '#ffd700'][Math.floor(Math.random() * 4)];
-            container.appendChild(ember);
+                    // Calculate explosion trajectory
+                    const angle = (i / 12) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+                    const distance = 200 + Math.random() * 400;
+                    const targetX = centerX + Math.cos(angle) * distance;
+                    const targetY = centerY + Math.sin(angle) * distance;
+                    const rotation = (Math.random() - 0.5) * 720;
+
+                    // Trigger explosion animation
+                    requestAnimationFrame(() => {
+                        cat.style.left = `${targetX}px`;
+                        cat.style.top = `${targetY}px`;
+                        cat.style.transform = `translate(-50%, -50%) rotate(${rotation}deg) scale(${0.3 + Math.random() * 0.7})`;
+                        cat.style.opacity = '0';
+                    });
+
+                    // Remove after animation
+                    setTimeout(() => cat.remove(), 1500);
+                }
+            }, burst * 400);
         }
     }
 
-    // Play evil laugh using Web Audio API
-    function playEvilLaugh() {
+    // Create explosion particles
+    function createExplosions() {
+        const container = document.getElementById('flames-container');
+        container.innerHTML = '';
+
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        // Create explosion flash
+        const flash = document.createElement('div');
+        flash.style.cssText = `
+            position: fixed;
+            left: ${centerX}px;
+            top: ${centerY}px;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle, #fff 0%, #ffff00 30%, #ff6600 60%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            animation: explosionFlash 0.5s ease-out forwards;
+            z-index: 100000;
+        `;
+        container.appendChild(flash);
+
+        // Create explosion particles
+        const colors = ['#ff6600', '#ff9900', '#ffcc00', '#ff3300', '#ffff00', '#ff0066'];
+        for (let i = 0; i < 80; i++) {
+            const particle = document.createElement('div');
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = 100 + Math.random() * 400;
+            const size = 4 + Math.random() * 12;
+
+            particle.style.cssText = `
+                position: fixed;
+                left: ${centerX}px;
+                top: ${centerY}px;
+                width: ${size}px;
+                height: ${size}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                animation: explosionParticle ${0.5 + Math.random() * 1}s ease-out forwards;
+                --tx: ${Math.cos(angle) * velocity}px;
+                --ty: ${Math.sin(angle) * velocity}px;
+                z-index: 99999;
+            `;
+            container.appendChild(particle);
+        }
+
+        // Create sparkles
+        for (let i = 0; i < 30; i++) {
+            setTimeout(() => {
+                const sparkle = document.createElement('div');
+                sparkle.innerHTML = '✨';
+                sparkle.style.cssText = `
+                    position: fixed;
+                    left: ${centerX + (Math.random() - 0.5) * 300}px;
+                    top: ${centerY + (Math.random() - 0.5) * 300}px;
+                    font-size: ${20 + Math.random() * 20}px;
+                    animation: sparkle 0.6s ease-out forwards;
+                    z-index: 99998;
+                `;
+                container.appendChild(sparkle);
+            }, Math.random() * 800);
+        }
+
+        // Inject explosion animations if not already present
+        if (!document.getElementById('explosion-styles')) {
+            const style = document.createElement('style');
+            style.id = 'explosion-styles';
+            style.textContent = `
+                @keyframes explosionFlash {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(100); opacity: 0; }
+                }
+                @keyframes explosionParticle {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); opacity: 0; }
+                }
+                @keyframes sparkle {
+                    0% { transform: scale(0) rotate(0deg); opacity: 1; }
+                    50% { transform: scale(1.5) rotate(180deg); opacity: 1; }
+                    100% { transform: scale(0) rotate(360deg); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Play a single clear "Meow" sound
+    function playCatMeows() {
         try {
             // Create audio context if not exists
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
 
-            // Generate evil laugh sound
-            const duration = 2;
-            const sampleRate = audioContext.sampleRate;
-            const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
-            const data = buffer.getChannelData(0);
+            // Play one clear meow
+            playMeow(500, 0.4);
 
-            // Create a creepy laugh pattern
-            const laughPatterns = [
-                { start: 0, duration: 0.3, freq: 150 },
-                { start: 0.35, duration: 0.25, freq: 140 },
-                { start: 0.65, duration: 0.3, freq: 130 },
-                { start: 1.0, duration: 0.25, freq: 120 },
-                { start: 1.3, duration: 0.4, freq: 110 },
-                { start: 1.75, duration: 0.25, freq: 100 }
-            ];
+        } catch (e) {
+            console.log('Could not play cat meow:', e);
+        }
+    }
 
-            for (let i = 0; i < data.length; i++) {
-                const t = i / sampleRate;
-                let sample = 0;
+    // Generate a single "Meow" sound
+    function playMeow(baseFreq, duration) {
+        if (!audioContext) return;
 
-                for (const pattern of laughPatterns) {
-                    if (t >= pattern.start && t < pattern.start + pattern.duration) {
-                        const localT = (t - pattern.start) / pattern.duration;
-                        const envelope = Math.sin(localT * Math.PI); // Simple envelope
-                        const vibrato = Math.sin(t * 6 * Math.PI) * 10; // Vibrato
-                        const freq = pattern.freq + vibrato + (localT * -20); // Pitch drop
+        const sampleRate = audioContext.sampleRate;
+        const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+        const data = buffer.getChannelData(0);
 
-                        // Mix of frequencies for richer sound
-                        sample += envelope * 0.3 * Math.sin(2 * Math.PI * freq * t);
-                        sample += envelope * 0.2 * Math.sin(2 * Math.PI * freq * 1.5 * t);
-                        sample += envelope * 0.1 * Math.sin(2 * Math.PI * freq * 2 * t);
+        for (let i = 0; i < data.length; i++) {
+            const t = i / sampleRate;
+            const progress = t / duration;
 
-                        // Add some noise for raspiness
-                        sample += envelope * 0.1 * (Math.random() * 2 - 1);
-                    }
-                }
-
-                data[i] = sample * 0.5; // Master volume
+            // Envelope: quick attack, sustain, decay
+            let envelope;
+            if (progress < 0.05) {
+                envelope = progress / 0.05; // Quick attack
+            } else if (progress < 0.6) {
+                envelope = 1.0; // Sustain
+            } else {
+                envelope = 1.0 - ((progress - 0.6) / 0.4); // Decay
             }
 
-            const source = audioContext.createBufferSource();
-            source.buffer = buffer;
+            // Classic meow frequency sweep: "me" (rise) then "ow" (fall)
+            let freq;
+            if (progress < 0.25) {
+                // "Me-" rising quickly
+                freq = baseFreq + (progress / 0.25) * 300;
+            } else {
+                // "-ow" falling
+                freq = (baseFreq + 300) - ((progress - 0.25) / 0.75) * 400;
+            }
 
-            // Add reverb-like effect with delay
-            const gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.7;
+            // Slight vibrato for realism
+            const vibrato = Math.sin(t * 25 * Math.PI) * 15;
+            freq += vibrato;
 
-            source.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+            // Generate sound with harmonics for richer tone
+            let sample = 0;
+            sample += Math.sin(2 * Math.PI * freq * t) * 0.5;
+            sample += Math.sin(2 * Math.PI * freq * 2 * t) * 0.3;
+            sample += Math.sin(2 * Math.PI * freq * 3 * t) * 0.15;
 
-            source.start();
-        } catch (e) {
-            console.log('Could not play evil laugh:', e);
+            data[i] = sample * envelope * 0.5;
         }
+
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.7;
+
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        source.start();
     }
 
     // Close the modal

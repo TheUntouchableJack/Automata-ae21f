@@ -7,7 +7,7 @@
         "pricing": "定价",
         "blog": "博客",
         "login": "登录",
-        "joinWaitlist": "加入等候名单",
+        "joinWaitlist": "加入测试版",
         "projects": "项目",
         "customers": "客户",
         "dashboard": "仪表板",
@@ -21,7 +21,8 @@
         "freePlan": "免费计划",
         "admin": "管理员",
         "launchPlan": "发布计划",
-        "intelligence": "智能分析"
+        "intelligence": "智能分析",
+        "support": "支持"
     },
     "launchPlan": {
         "title": "发布计划",
@@ -41,7 +42,7 @@
             "女性"
         ],
         "subtitle": "每个生日都被记住。每次到访都有跟进。每位忠实客户都被感谢——全自动完成。",
-        "joinWaitlist": "加入等候名单",
+        "joinWaitlist": "加入测试版",
         "seeHowItWorks": "了解工作原理",
         "stats": {
             "fasterSetup": "更快设置",
@@ -185,48 +186,61 @@
     },
     "pricing": {
         "tag": "定价",
-        "title": "简单定价。没有意外。",
-        "subtitle": "免费开始，准备好再升级。无需信用卡。",
+        "title": "简单透明的定价",
+        "subtitle": "免费开始。准备好成长时再升级。",
         "popular": "最受欢迎",
         "perMonth": "/月",
+        "forever": "永久",
         "noCreditCard": "无需信用卡",
-        "annualNote": "年付享8折优惠。<a href=\"/pricing.html\">查看完整详情</a>",
-        "starter": {
-            "name": "入门版",
+        "freeTrial": "14天免费试用",
+        "annualNote": "年付享8折优惠。",
+        "viewFullPricing": "查看完整价格详情和AppSumo终身优惠 →",
+        "free": {
+            "name": "免费版",
             "desc": "免费试用",
-            "period": "永久免费",
-            "f1": "最多100位客户",
-            "f2": "3个自动化",
-            "f3": "社区支持",
-            "cta": "免费开始"
+            "f1": "最多50名会员",
+            "f2": "一键自动化",
+            "f3": "二维码签到",
+            "cta": "开始免费Beta"
         },
-        "pro": {
-            "name": "专业版",
+        "starter": {
+            "name": "Starter",
+            "desc": "适合小型企业",
+            "f1": "最多500名会员",
+            "f2": "每月30条AI洞察",
+            "f3": "AI构建会员计划",
+            "cta": "加入Beta"
+        },
+        "growth": {
+            "name": "Growth",
             "desc": "适合成长型企业",
-            "f1": "最多5,000位客户",
-            "f2": "无限自动化",
+            "f1": "最多2,000名会员",
+            "f2": "每月100条AI洞察",
             "f3": "优先支持",
-            "cta": "开始免费试用"
+            "cta": "加入Beta"
         },
         "scale": {
-            "name": "规模版",
-            "desc": "适合大型团队",
-            "f1": "最多25,000位客户",
-            "f2": "一切无限",
-            "f3": "专属支持",
-            "cta": "开始免费试用"
+            "name": "Scale",
+            "desc": "适合多店铺",
+            "f1": "无限会员",
+            "f2": "无限AI洞察",
+            "f3": "白标品牌",
+            "cta": "加入Beta"
         },
-        "enterprise": {
-            "title": "需要更多功能？",
-            "desc": "适合拥有25,000+客户、需要自定义集成或合规要求的组织。",
-            "cta": "了解企业版"
+        "royaltyPro": {
+            "name": "Royalty Pro",
+            "desc": "适合终身优惠持有者",
+            "f1": "无限AI洞察",
+            "f2": "白标品牌",
+            "f3": "随时取消",
+            "cta": "添加Royalty Pro"
         }
     },
     "cta": {
         "title": "成为第一个自动化客户关系的人",
         "subtitle": "加入等候名单，抢先体验AI驱动的自动化。",
         "emailPlaceholder": "输入您的电子邮件",
-        "joinWaitlist": "加入等候名单",
+        "joinWaitlist": "加入测试版",
         "note": "我们会在上线时通知您。"
     },
     "footer": {
@@ -241,12 +255,29 @@
         "copyright": "© 2026 Automata。保留所有权利。"
     },
     "dashboard": {
-        "title": "您的项目",
-        "subtitle": "管理您的自动化项目",
+        "title": "仪表板",
+        "subtitle": "一目了然您的忠诚度计划",
+        "refresh": "刷新",
         "newProject": "新项目",
         "noProjects": "暂无项目",
         "noProjectsDesc": "创建您的第一个项目以开始自动化",
-        "createFirst": "创建您的第一个项目"
+        "createFirst": "创建您的第一个项目",
+        "totalMembers": "会员总数",
+        "todayCheckins": "今日签到",
+        "newThisWeek": "本周新增",
+        "pointsGiven": "本周发放积分",
+        "memberGrowth": "会员增长",
+        "tierDistribution": "等级分布",
+        "recentActivity": "最近活动",
+        "viewAll": "查看全部",
+        "quickStats": "快速统计",
+        "activeMembers": "活跃会员 (30天)",
+        "totalVisits": "访问总数",
+        "avgVisits": "平均访问/会员",
+        "referrals": "推荐",
+        "noAppTitle": "创建您的忠诚度计划",
+        "noAppDesc": "设置您的第一个应用，开始追踪会员、访问和奖励。",
+        "createApp": "创建应用"
     },
     "aiFeed": {
         "title": "AI智能推送",
@@ -270,6 +301,7 @@
         "title": "AI智能分析",
         "subtitle": "为您的业务提供AI驱动的洞察和建议",
         "analyze": "分析我的业务",
+        "analyzeNow": "立即分析",
         "pending": "待处理操作",
         "implemented": "已实施",
         "highImpact": "高影响",
@@ -278,10 +310,37 @@
         "emptyTitle": "暂无建议",
         "emptyDesc": "点击\"分析我的业务\"获取基于您组织数据的洞察。",
         "acceptCreate": "接受并创建",
-        "viewAll": "查看全部"
+        "viewAll": "查看全部",
+        "firstLogin": {
+            "title": "正在构建您的会员计划...",
+            "step1": "分析您的业务",
+            "step2": "选择最佳奖励",
+            "step3": "配置自动化",
+            "step4": "配置AI助手"
+        },
+        "appReady": {
+            "title": "您的会员应用已准备就绪！",
+            "subtitle": "Royalty AI 已构建您的计划。预览或自定义详情。",
+            "preview": "预览",
+            "customize": "自定义",
+            "letsGo": "开始吧！"
+        },
+        "autonomy": {
+            "title": "Royalty AI 应如何管理您的计划？",
+            "autoPilot": "自动驾驶",
+            "autoPilotDesc": "AI自动执行，您收到通知",
+            "manualApprove": "手动审批",
+            "manualApproveDesc": "AI提出建议，您逐一审批"
+        },
+        "appCreationError": "创建会员应用失败",
+        "createManually": "手动创建"
+    },
+    "projects": {
+        "recommended": "推荐项目"
     },
     "project": {
         "overview": "概览",
+        "content": "内容",
         "automations": "自动化",
         "apps": "应用",
         "customers": "客户",
@@ -386,7 +445,9 @@
         "next": "下一步",
         "previous": "上一步",
         "page": "页",
-        "of": "/"
+        "of": "/",
+        "recommended": "推荐",
+        "tryAgain": "重试"
     },
     "onboarding": {
         "title": "告诉我们您的业务",
@@ -507,6 +568,80 @@
             "success": "谢谢！您的建议已提交审核。"
         }
     },
+    "support": {
+        "title": "支持",
+        "subtitle": "管理客户工单和AI支持",
+        "manageFaqs": "管理常见问题",
+        "knowledgeBase": "知识库",
+        "settings": "设置",
+        "openTickets": "待处理工单",
+        "pendingResponse": "等待回复",
+        "escalated": "已升级",
+        "aiResolutionRate": "AI解决率",
+        "satisfaction": "满意度",
+        "selectApp": "选择应用:",
+        "all": "全部",
+        "open": "开放",
+        "escalatedTab": "已升级",
+        "pendingCustomer": "等待客户",
+        "resolved": "已解决",
+        "search": "搜索工单...",
+        "allTypes": "所有类型",
+        "question": "问题",
+        "bugReport": "Bug报告",
+        "featureRequest": "功能请求",
+        "complaint": "投诉",
+        "feedback": "反馈",
+        "allPriorities": "所有优先级",
+        "urgent": "紧急",
+        "high": "高",
+        "normal": "普通",
+        "low": "低",
+        "ticket": "工单",
+        "customer": "客户",
+        "subject": "主题",
+        "type": "类型",
+        "priority": "优先级",
+        "status": "状态",
+        "lastUpdate": "最后更新",
+        "previous": "上一页",
+        "next": "下一页",
+        "noTickets": "暂无支持工单",
+        "noTicketsDesc": "当客户提交工单时，它们将显示在这里。",
+        "setupFaqs": "设置常见问题",
+        "conversation": "对话",
+        "reply": "回复",
+        "typeResponse": "输入您的回复...",
+        "internalNote": "内部备注（客户不可见）",
+        "aiSuggest": "AI建议",
+        "sendReply": "发送回复",
+        "markPending": "标记待处理",
+        "resolve": "解决工单",
+        "closeTicket": "关闭工单",
+        "email": "邮箱",
+        "created": "创建于",
+        "aiHandled": "由AI处理",
+        "yes": "是",
+        "notifications": "通知",
+        "markAllRead": "全部标记为已读",
+        "noNotifications": "暂无新通知",
+        "myMessages": "我的消息",
+        "noMessages": "暂无消息",
+        "noMessagesDesc": "当您联系我们或与支持聊天时，您的对话将显示在此处。",
+        "ticketStatus": {
+            "open": "待处理",
+            "escalated": "已转交团队",
+            "awaiting_response": "等待回复",
+            "in_progress": "处理中",
+            "pending_customer": "需要您的回复",
+            "resolved": "已解决",
+            "closed": "已关闭"
+        },
+        "chatHistory": "聊天记录",
+        "escalatedToTeam": "已转交团队",
+        "typeReply": "输入回复...",
+        "supportThread": "支持对话"
+    },
     "rateLimit": {
         "tooMany": "{action}次数过多。请在{time}后重试。",
         "remaining": "本小时内您还有{count}次{action}。",
@@ -547,7 +682,9 @@
             "emailHelper": "联系客服更改您的邮箱",
             "phone": "电话号码",
             "phoneHelper": "可选",
-            "saveChanges": "保存更改"
+            "saveChanges": "保存更改",
+            "advancedMode": "高级模式",
+            "advancedModeDesc": "显示高级导航（项目、应用、路线图、启动计划）。如果您管理多个项目或需要高级功能，请启用此选项。"
         },
         "security": {
             "title": "更改密码",
@@ -589,17 +726,22 @@
         },
         "plan": {
             "title": "当前计划",
-            "subtitle": "管理您的订阅和账单",
+            "subtitle": "查看您的订阅和使用情况",
             "currentPlan": "当前计划",
             "features": "功能",
-            "projects": "项目",
+            "members": "会员",
+            "aiInsights": "AI洞察/月",
             "automations": "自动化",
-            "customers": "客户",
-            "teamMembers": "团队成员",
+            "whiteLabel": "白标",
+            "included": "已包含",
+            "notIncluded": "未包含",
             "unlimited": "无限制",
             "upgrade": "升级计划",
             "redeem": "兑换代码",
-            "billingNote": "账单管理即将推出"
+            "royaltyPro": "Royalty Pro",
+            "royaltyProActive": "已激活",
+            "addRoyaltyPro": "添加Royalty Pro",
+            "billingNote": "14天免费试用，之后按月或按年计费。随时取消。"
         },
         "activity": {
             "title": "活动日志",
@@ -752,6 +894,61 @@
             "download": "下载",
             "print": "打印",
             "tips": "分享应用的技巧"
+        },
+        "help": {
+            "title": "帮助中心",
+            "greeting": "我们如何帮助您？",
+            "searchPlaceholder": "搜索帮助...",
+            "faqs": "常见问题",
+            "articles": "文章",
+            "contact": "联系我们",
+            "faqsTitle": "常见问题解答",
+            "articlesTitle": "帮助文章",
+            "contactTitle": "联系我们",
+            "noFaqs": "暂无常见问题",
+            "noArticles": "暂无文章",
+            "checkBack": "请稍后再来！",
+            "searchResults": "搜索结果",
+            "noResults": "未找到结果",
+            "tryDifferent": "尝试不同的关键词或",
+            "contactUs": "联系我们",
+            "clear": "清除",
+            "subjectGeneral": "一般问题",
+            "subjectPoints": "积分和奖励",
+            "subjectAccount": "账户问题",
+            "subjectBug": "报告错误",
+            "subjectFeedback": "反馈",
+            "messagePlaceholder": "描述您的问题...",
+            "sendMessage": "发送消息",
+            "sending": "发送中...",
+            "messageSent": "消息已发送！我们会尽快回复。",
+            "sendFailed": "发送失败，请重试。",
+            "wasHelpful": "这篇文章对您有帮助吗？",
+            "yes": "是",
+            "no": "否",
+            "thanksFeedback": "感谢您的反馈！"
         }
+    },
+    "auth": {
+        "welcomeBack": "欢迎回来",
+        "signInSubtitle": "登录您的账户以继续",
+        "email": "电子邮件",
+        "password": "密码",
+        "emailPlaceholder": "you@example.com",
+        "passwordPlaceholder": "输入您的密码",
+        "signIn": "登录",
+        "noAccount": "没有账户？",
+        "signUp": "注册",
+        "backToHome": "返回首页",
+        "captchaError": "请完成验证码验证。",
+        "createAccount": "创建账户",
+        "signUpSubtitle": "开始自动化您的客户关系",
+        "firstName": "名",
+        "lastName": "姓",
+        "firstNamePlaceholder": "明",
+        "lastNamePlaceholder": "李",
+        "createPasswordPlaceholder": "创建密码",
+        "createAccountBtn": "创建账户",
+        "hasAccount": "已有账户？"
     }
 }

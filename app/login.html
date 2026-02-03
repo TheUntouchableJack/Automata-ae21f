@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In - Automata</title>
+    <title>Log In - Royalty</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../i18n/i18n.css">
+    <!-- Cloudflare Turnstile CAPTCHA -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         html, body {
             min-height: 100vh;
@@ -17,13 +19,12 @@
             background: var(--color-bg-secondary) !important;
         }
 
-        body {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
         .auth-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             max-width: 420px;
             padding: 24px;
@@ -91,7 +92,7 @@
 
         .form-field input:focus {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
         }
 
         .form-field input::placeholder {
@@ -215,52 +216,18 @@
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
+
+        .lang-selector.compact {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+        }
     </style>
 </head>
 <body>
     <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <a href="/" class="logo">
-                    <span class="logo-icon">A</span>
-                    <span class="logo-text">Automata</span>
-                </a>
-                <h1>Welcome back</h1>
-                <p>Sign in to your account to continue</p>
-            </div>
-
-            <div class="success-message" id="success-message">
-                <h3>Welcome back!</h3>
-                <p>Redirecting to your dashboard...</p>
-            </div>
-
-            <form class="auth-form" id="login-form">
-                <div class="error-message" id="error-message"></div>
-
-                <div class="form-field">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block" id="submit-btn">
-                    Sign In
-                </button>
-            </form>
-
-            <div class="auth-footer">
-                <p>Don't have an account? <a href="/app/signup.html">Sign up</a></p>
-            </div>
-        </div>
-
-        <a href="/" class="back-link">Back to home</a>
-
         <!-- Language Selector -->
-        <div class="lang-selector compact" style="margin-top: 16px;">
+        <div class="lang-selector compact">
             <button class="lang-selector-btn" type="button" aria-label="Change language">
                 <span class="lang-selector-current">EN</span>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -278,15 +245,66 @@
                 <a href="#" class="lang-option" data-lang="ar">AR</a>
             </div>
         </div>
+
+        <div class="auth-card">
+            <div class="auth-header">
+                <a href="/" class="logo">
+                    <span class="logo-icon">R</span>
+                    <span class="logo-text">Royalty</span>
+                </a>
+                <h1 data-i18n="auth.welcomeBack">Welcome back</h1>
+                <p data-i18n="auth.signInSubtitle">Sign in to your account to continue</p>
+            </div>
+
+            <div class="success-message" id="success-message">
+                <h3>Welcome back!</h3>
+                <p>Redirecting to your dashboard...</p>
+            </div>
+
+            <form class="auth-form" id="login-form">
+                <div class="error-message" id="error-message"></div>
+
+                <div class="form-field">
+                    <label for="email" data-i18n="auth.email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" data-i18n-placeholder="auth.emailPlaceholder" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="password" data-i18n="auth.password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" data-i18n-placeholder="auth.passwordPlaceholder" required>
+                </div>
+
+                <!-- CAPTCHA Widget - Replace YOUR_SITE_KEY with your Cloudflare Turnstile site key -->
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-theme="light"></div>
+                <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px;" data-i18n="auth.captchaError">Please complete the CAPTCHA verification.</div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="auth.signIn">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p><span data-i18n="auth.noAccount">Don't have an account?</span> <a href="/app/signup.html" data-i18n="auth.signUp">Sign up</a></p>
+            </div>
+        </div>
+
+        <a href="/" class="back-link" data-i18n="auth.backToHome">Back to home</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
     <script src="onboarding-storage.js"></script>
-    <script src="auth.js?v=2"></script>
+    <script src="auth.js?v=4"></script>
     <script src="celebrate.js?v=2"></script>
     <script>
+        // CAPTCHA state
+        let turnstileToken = null;
+        function onTurnstileSuccess(token) {
+            turnstileToken = token;
+            document.getElementById('captcha-error').style.display = 'none';
+        }
+
         // Set up form handler FIRST (before any async operations)
         const loginForm = document.getElementById('login-form');
         const errorMessage = document.getElementById('error-message');
@@ -302,6 +320,14 @@
             // Clear previous errors
             errorMessage.classList.remove('visible');
             errorMessage.textContent = '';
+
+            // Validate CAPTCHA (skip if site key not configured)
+            const captchaWidget = document.querySelector('.cf-turnstile');
+            const siteKey = captchaWidget?.getAttribute('data-sitekey');
+            if (siteKey && siteKey !== 'YOUR_SITE_KEY' && !turnstileToken) {
+                document.getElementById('captcha-error').style.display = 'block';
+                return;
+            }
 
             // Show loading state
             submitBtn.classList.add('btn-loading');
@@ -364,11 +390,17 @@
 
         // Handle auth state - including email confirmation redirects
         async function handleAuthOnLoad() {
-            // Check if URL has auth tokens (from email confirmation)
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            const hasAuthTokens = hashParams.has('access_token') || hashParams.has('refresh_token');
+            // Check for PKCE code in query string (modern Supabase flow)
+            const urlParams = new URLSearchParams(window.location.search);
+            const authCode = urlParams.get('code');
 
-            if (hasAuthTokens) {
+            // Check for hash-based tokens (legacy flow)
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const hasHashTokens = hashParams.has('access_token') || hashParams.has('refresh_token');
+
+            const hasAuthParams = authCode || hasHashTokens;
+
+            if (hasAuthParams) {
                 // Show loading state while processing tokens
                 loginForm.style.display = 'none';
                 successMessage.innerHTML = `
@@ -380,15 +412,36 @@
                 successMessage.classList.add('visible');
             }
 
-            // Wait a moment for Supabase to process any URL tokens
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // If we have a PKCE code, exchange it for a session
+            if (authCode) {
+                try {
+                    const { data, error } = await db.auth.exchangeCodeForSession(authCode);
+                    if (error) {
+                        console.error('Code exchange error:', error);
+                        throw error;
+                    }
+                    // Clean the URL immediately after successful exchange
+                    window.history.replaceState({}, '', window.location.pathname);
+                } catch (err) {
+                    console.error('Failed to exchange code for session:', err);
+                    loginForm.style.display = 'block';
+                    successMessage.classList.remove('visible');
+                    errorMessage.textContent = 'Email confirmation failed. Please try signing in or request a new confirmation email.';
+                    errorMessage.classList.add('visible');
+                    window.history.replaceState({}, '', window.location.pathname);
+                    return;
+                }
+            } else if (hasHashTokens) {
+                // Legacy flow - wait for Supabase to process hash tokens
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
 
             // Check for authenticated user
             const user = await getCurrentUser();
 
             if (user) {
                 // User is authenticated!
-                if (hasAuthTokens) {
+                if (hasAuthParams) {
                     // Coming from email confirmation - process onboarding
                     successMessage.innerHTML = `
                         <div style="text-align: center;">
@@ -408,12 +461,12 @@
                     successMessage.innerHTML = `
                         <div style="text-align: center;">
                             <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
-                            <h3 style="color: var(--color-accent); margin-bottom: 8px;">Welcome to Automata!</h3>
+                            <h3 style="color: var(--color-accent); margin-bottom: 8px;">Welcome to Royalty!</h3>
                             <p>${newProjectId ? 'Taking you to your new project...' : 'Redirecting to your dashboard...'}</p>
                         </div>
                     `;
 
-                    // Clean URL and redirect
+                    // Clean URL (hash) and redirect
                     window.history.replaceState({}, '', window.location.pathname);
 
                     setTimeout(() => {
@@ -427,15 +480,15 @@
                     // Already logged in (not from email confirmation)
                     window.location.href = '/app/dashboard.html';
                 }
-            } else if (hasAuthTokens) {
-                // Had tokens but no user - something went wrong
+            } else if (hasAuthParams) {
+                // Had auth params but no user - something went wrong
                 loginForm.style.display = 'block';
                 successMessage.classList.remove('visible');
-                errorMessage.textContent = 'Email confirmation failed. Please try signing in.';
+                errorMessage.textContent = 'Email confirmation failed. Please try signing in or request a new confirmation email.';
                 errorMessage.classList.add('visible');
                 window.history.replaceState({}, '', window.location.pathname);
             }
-            // If no user and no tokens, just show the login form (already visible)
+            // If no user and no auth params, just show the login form (already visible)
         }
 
         handleAuthOnLoad().catch(err => {

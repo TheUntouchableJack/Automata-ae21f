@@ -6,10 +6,10 @@
     <title>Feature Requests - Automata</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="sidebar.css?v=3">
+    <link rel="stylesheet" href="sidebar.css?v=4">
     <style>
         .requests-header {
             display: flex;
@@ -62,7 +62,7 @@
             text-transform: uppercase;
             padding: 3px 8px;
             border-radius: var(--radius-sm);
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(124, 58, 237, 0.1);
             color: var(--color-primary);
         }
         .request-status {
@@ -74,7 +74,7 @@
         .request-status.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
         .request-status.approved { background: rgba(16, 185, 129, 0.1); color: var(--color-accent); }
         .request-status.rejected { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-        .request-status.converted { background: rgba(99, 102, 241, 0.1); color: var(--color-primary); }
+        .request-status.converted { background: rgba(124, 58, 237, 0.1); color: var(--color-primary); }
         .request-description {
             font-size: 14px;
             color: var(--color-text-muted);
@@ -117,7 +117,7 @@
         }
         .btn-reject:hover { background: #ef4444; color: white; }
         .btn-convert {
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(124, 58, 237, 0.1);
             border: 1px solid var(--color-primary);
             color: var(--color-primary);
         }
@@ -192,8 +192,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=3"></script>
-    <script src="sidebar.js?v=11"></script>
+    <script src="auth.js?v=4"></script>
+    <script src="sidebar.js?v=16"></script>
     <script>
         let requests = [];
         let currentFilter = 'all';

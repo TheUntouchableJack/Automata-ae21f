@@ -1,118 +1,121 @@
 // ===== Plan Limits Configuration =====
-// Defines limits for all plan types: free, subscription tiers, and AppSumo lifetime tiers
+// Defines limits for all plan types: free, subscription tiers, AppSumo lifetime tiers, and add-ons
+// Updated Feb 2026 for Royalty launch
+
+// Admin bypass - admins skip plan limits
+let _isPlanAdmin = false;
+
+/**
+ * Set admin status for plan limit bypass
+ * @param {boolean} isAdmin - Whether the current user is an admin
+ */
+function setPlanAdminStatus(isAdmin) {
+    _isPlanAdmin = isAdmin === true;
+}
+
+/**
+ * Check if current user is admin (bypasses plan limits)
+ * @returns {boolean}
+ */
+function isPlanAdmin() {
+    return _isPlanAdmin;
+}
 
 const PLAN_LIMITS = {
-    // Free tier
+    // Free tier - 50 members, no intelligence
     free: {
         name: 'Free',
-        projects: 1,
-        automations: 3,
-        customers: 100,
-        emails_monthly: 500,
-        sms_monthly: 0,
-        ai_analyses: 10,
-        team_members: 1,
-        api_access: false,
-        webhooks: false,
+        members: 50,
+        intelligence_monthly: 0,
+        automations: true,  // 1-click automations included for all
+        ai_setup: false,
+        white_label: false,
         priority_support: false
     },
 
-    // Subscription tiers
+    // Subscription tiers (matches Stripe products)
     subscription: {
-        growth: {
-            name: 'Growth',
-            price_monthly: 39,
-            price_annual: 31,
-            projects: 5,
-            automations: 15,
-            customers: 2000,
-            emails_monthly: 5000,
-            sms_monthly: 0,
-            ai_analyses: 50,
-            team_members: 3,
-            api_access: false,
-            webhooks: false,
+        starter: {
+            name: 'Starter',
+            price_monthly: 49,
+            price_annual: 39, // $468/year = $39/month
+            members: 500,
+            intelligence_monthly: 30,
+            automations: true,
+            ai_setup: true,
+            white_label: false,
             priority_support: false
         },
-        business: {
-            name: 'Business',
-            price_monthly: 99,
-            price_annual: 79,
-            projects: 15,
-            automations: 50,
-            customers: 10000,
-            emails_monthly: 25000,
-            sms_monthly: 0,
-            ai_analyses: 200,
-            team_members: 10,
-            api_access: true,
-            webhooks: true,
+        growth: {
+            name: 'Growth',
+            price_monthly: 149,
+            price_annual: 119, // $1,428/year = $119/month
+            members: 2000,
+            intelligence_monthly: 100,
+            automations: true,
+            ai_setup: true,
+            white_label: false,
             priority_support: true
         },
-        enterprise: {
-            name: 'Enterprise',
-            price_monthly: 249,
-            price_annual: 199,
-            projects: -1, // unlimited
-            automations: -1,
-            customers: 50000,
-            emails_monthly: 100000,
-            sms_monthly: 1000,
-            ai_analyses: -1,
-            team_members: -1,
-            api_access: true,
-            webhooks: true,
-            priority_support: true,
-            dedicated_support: true,
-            sla: true
+        scale: {
+            name: 'Scale',
+            price_monthly: 399,
+            price_annual: 319, // $3,828/year = $319/month
+            members: -1, // unlimited
+            intelligence_monthly: -1, // unlimited
+            automations: true,
+            ai_setup: true,
+            white_label: true,
+            priority_support: true
         }
     },
 
-    // AppSumo lifetime tiers
+    // AppSumo lifetime tiers - AI setup + automations, NO intelligence
     appsumo: {
         1: {
             name: 'Lifetime Tier 1',
             badge: 'AppSumo',
-            projects: 3,
-            automations: 10,
-            customers: 1000,
-            emails_monthly: 3000,
-            sms_monthly: 0,
-            ai_analyses: 30,
-            team_members: 2,
-            api_access: false,
-            webhooks: false,
-            priority_support: false
+            price_paid: 59,
+            members: 500,
+            intelligence_monthly: 0, // No intelligence - need Royalty Pro
+            automations: true,
+            ai_setup: true,
+            white_label: false,
+            priority_support: false,
+            can_upgrade_to_pro: true
         },
         2: {
             name: 'Lifetime Tier 2',
             badge: 'AppSumo',
-            projects: 10,
-            automations: 30,
-            customers: 5000,
-            emails_monthly: 15000,
-            sms_monthly: 0,
-            ai_analyses: 100,
-            team_members: 5,
-            api_access: true,
-            webhooks: false,
-            priority_support: true
+            price_paid: 118,
+            members: 2000,
+            intelligence_monthly: 0,
+            automations: true,
+            ai_setup: true,
+            white_label: false,
+            priority_support: true,
+            can_upgrade_to_pro: true
         },
         3: {
             name: 'Lifetime Tier 3',
             badge: 'AppSumo',
-            projects: 25,
-            automations: -1, // unlimited
-            customers: 15000,
-            emails_monthly: 50000,
-            sms_monthly: 0,
-            ai_analyses: 300,
-            team_members: 10,
-            api_access: true,
-            webhooks: true,
+            price_paid: 177,
+            members: -1, // unlimited
+            intelligence_monthly: 0,
+            automations: true,
+            ai_setup: true,
+            white_label: false, // Need Royalty Pro for white-label
             priority_support: true,
-            white_label: true
+            can_upgrade_to_pro: true
         }
+    },
+
+    // Royalty Pro add-on for LTD users
+    royalty_pro: {
+        name: 'Royalty Pro',
+        price_monthly: 39,
+        intelligence_monthly: -1, // unlimited
+        white_label: true
     }
 };
 
@@ -120,7 +123,7 @@ const PLAN_LIMITS = {
 
 /**
  * Get limits for an organization based on their plan
- * @param {Object} org - Organization object with plan_type, appsumo_tier, subscription_tier
+ * @param {Object} org - Organization object with plan_type, appsumo_tier, subscription_tier, has_royalty_pro
  * @returns {Object} Plan limits
  */
 function getOrgLimits(org) {
@@ -140,12 +143,22 @@ function getOrgLimits(org) {
 function getPlanLimits(org) {
     if (!org) return PLAN_LIMITS.free;
 
+    let baseLimits;
+
     switch (org.plan_type) {
         case 'appsumo_lifetime':
-            return PLAN_LIMITS.appsumo[org.appsumo_tier] || PLAN_LIMITS.appsumo[1];
+            baseLimits = { ...PLAN_LIMITS.appsumo[org.appsumo_tier] } || { ...PLAN_LIMITS.appsumo[1] };
+
+            // Apply Royalty Pro add-on if active
+            if (org.has_royalty_pro) {
+                baseLimits.intelligence_monthly = PLAN_LIMITS.royalty_pro.intelligence_monthly;
+                baseLimits.white_label = PLAN_LIMITS.royalty_pro.white_label;
+                baseLimits.has_royalty_pro = true;
+            }
+            return baseLimits;
 
         case 'subscription':
-            return PLAN_LIMITS.subscription[org.subscription_tier] || PLAN_LIMITS.subscription.growth;
+            return PLAN_LIMITS.subscription[org.subscription_tier] || PLAN_LIMITS.subscription.starter;
 
         case 'free':
         default:
@@ -194,8 +207,24 @@ function getUsageStatus(percent) {
  * @returns {Object} { allowed: boolean, message?: string, upgradeRequired?: boolean }
  */
 function checkLimit(org, usage, limitType, increment = 1) {
+    // Admins bypass plan limits
+    if (_isPlanAdmin) {
+        return { allowed: true, adminBypass: true };
+    }
+
     const limits = getOrgLimits(org);
     const limit = limits[limitType];
+
+    // Feature not available at all (e.g., intelligence for free users)
+    if (limit === 0 && limitType === 'intelligence_monthly') {
+        return {
+            allowed: false,
+            message: getIntelligenceUpgradeMessage(org),
+            upgradeRequired: true,
+            current: 0,
+            limit: 0
+        };
+    }
 
     // Unlimited
     if (limit === -1) {
@@ -235,13 +264,9 @@ function checkLimit(org, usage, limitType, increment = 1) {
  */
 function formatLimitName(limitType) {
     const names = {
-        projects: 'projects',
-        automations: 'automations',
-        customers: 'customers',
-        emails_monthly: 'monthly emails',
-        sms_monthly: 'monthly SMS',
-        ai_analyses: 'AI analyses',
-        team_members: 'team members'
+        members: 'members',
+        intelligence_monthly: 'AI insights this month',
+        automations: 'automations'
     };
     return names[limitType] || limitType;
 }
@@ -253,7 +278,10 @@ function getLimitMessage(limitType, limit, planType) {
     const name = formatLimitName(limitType);
 
     if (planType === 'appsumo_lifetime') {
-        return `You've reached your ${name} limit (${formatLimit(limit)}). Stack another AppSumo code or upgrade to a subscription for more capacity.`;
+        if (limitType === 'intelligence_monthly') {
+            return 'Add Royalty Pro ($39/mo) to unlock unlimited AI Intelligence.';
+        }
+        return `You've reached your ${name} limit (${formatLimit(limit)}). Stack another AppSumo code to increase your limits.`;
     }
 
     if (planType === 'subscription') {
@@ -264,39 +292,53 @@ function getLimitMessage(limitType, limit, planType) {
 }
 
 /**
+ * Get intelligence upgrade message based on plan type
+ */
+function getIntelligenceUpgradeMessage(org) {
+    if (org.plan_type === 'appsumo_lifetime') {
+        return 'AI Intelligence is available with Royalty Pro ($39/mo). Get unlimited insights and white-label branding.';
+    }
+    return 'Upgrade to Starter ($49/mo) to unlock AI Intelligence with 30 insights per month.';
+}
+
+/**
  * Get upgrade options based on current plan
  */
 function getUpgradeOptions(org) {
     const options = [];
 
     if (org.plan_type === 'appsumo_lifetime') {
-        // AppSumo users can stack codes or switch to subscription
+        // LTD users can add Royalty Pro or stack codes
+        if (!org.has_royalty_pro) {
+            options.push({
+                type: 'royalty_pro',
+                label: 'Add Royalty Pro',
+                description: '$39/month - Unlimited Intelligence + White-label',
+                action: 'upgrade',
+                tier: 'royalty_pro',
+                featured: true
+            });
+        }
         if (org.appsumo_tier < 3) {
             options.push({
                 type: 'stack_code',
                 label: 'Stack Another Code',
-                description: 'Redeem another AppSumo code to increase your limits',
+                description: 'Redeem another AppSumo code to increase member limits',
                 action: 'redeem'
             });
         }
-        options.push({
-            type: 'subscription',
-            label: 'Switch to Monthly',
-            description: 'Get unlimited growth with a monthly subscription',
-            action: 'upgrade'
-        });
     } else if (org.plan_type === 'subscription') {
         // Subscription users can upgrade tiers
         const upgrades = {
-            growth: { tier: 'business', name: 'Business', price: 99 },
-            business: { tier: 'enterprise', name: 'Enterprise', price: 249 }
+            starter: { tier: 'growth', name: 'Growth', price: 149 },
+            growth: { tier: 'scale', name: 'Scale', price: 399 }
         };
         const upgrade = upgrades[org.subscription_tier];
         if (upgrade) {
             options.push({
                 type: 'upgrade_tier',
                 label: `Upgrade to ${upgrade.name}`,
-                description: `$${upgrade.price}/month - More projects, automations, and customers`,
+                description: `$${upgrade.price}/month - More members and insights`,
                 action: 'upgrade',
                 tier: upgrade.tier
             });
@@ -305,10 +347,11 @@ function getUpgradeOptions(org) {
         // Free users
         options.push({
             type: 'subscription',
-            label: 'Upgrade to Growth',
-            description: '$39/month - 5 projects, 2,000 customers, 5,000 emails',
+            label: 'Upgrade to Starter',
+            description: '$49/month - 500 members, 30 AI insights',
             action: 'upgrade',
-            tier: 'growth'
+            tier: 'starter',
+            featured: true
         });
         options.push({
             type: 'appsumo',
@@ -327,68 +370,126 @@ function getUpgradeOptions(org) {
 function formatUsageForDashboard(org, usage) {
     const limits = getOrgLimits(org);
 
+    const metrics = [
+        {
+            key: 'members',
+            label: 'Members',
+            used: usage.members_count || 0,
+            limit: limits.members,
+            percent: getUsagePercent(usage.members_count || 0, limits.members),
+            status: getUsageStatus(getUsagePercent(usage.members_count || 0, limits.members)),
+            icon: 'users'
+        }
+    ];
+
+    // Only show intelligence metric if user has access
+    if (limits.intelligence_monthly !== 0) {
+        metrics.push({
+            key: 'intelligence',
+            label: 'AI Insights This Month',
+            used: usage.intelligence_used || 0,
+            limit: limits.intelligence_monthly,
+            percent: getUsagePercent(usage.intelligence_used || 0, limits.intelligence_monthly),
+            status: getUsageStatus(getUsagePercent(usage.intelligence_used || 0, limits.intelligence_monthly)),
+            icon: 'brain',
+            resets: true
+        });
+    }
+
     return {
         plan: {
             name: limits.name,
             type: org.plan_type,
-            badge: limits.badge || null
+            badge: limits.badge || null,
+            has_royalty_pro: limits.has_royalty_pro || false
         },
-        metrics: [
-            {
-                key: 'projects',
-                label: 'Projects',
-                used: usage.projects_count || 0,
-                limit: limits.projects,
-                percent: getUsagePercent(usage.projects_count || 0, limits.projects),
-                status: getUsageStatus(getUsagePercent(usage.projects_count || 0, limits.projects)),
-                icon: 'folder'
-            },
-            {
-                key: 'automations',
-                label: 'Automations',
-                used: usage.automations_count || 0,
-                limit: limits.automations,
-                percent: getUsagePercent(usage.automations_count || 0, limits.automations),
-                status: getUsageStatus(getUsagePercent(usage.automations_count || 0, limits.automations)),
-                icon: 'zap'
-            },
-            {
-                key: 'customers',
-                label: 'Customers',
-                used: usage.customers_count || 0,
-                limit: limits.customers,
-                percent: getUsagePercent(usage.customers_count || 0, limits.customers),
-                status: getUsageStatus(getUsagePercent(usage.customers_count || 0, limits.customers)),
-                icon: 'users'
-            },
-            {
-                key: 'emails',
-                label: 'Emails This Month',
-                used: usage.emails_sent || 0,
-                limit: limits.emails_monthly,
-                percent: getUsagePercent(usage.emails_sent || 0, limits.emails_monthly),
-                status: getUsageStatus(getUsagePercent(usage.emails_sent || 0, limits.emails_monthly)),
-                icon: 'mail',
-                resets: true
-            },
-            {
-                key: 'ai_analyses',
-                label: 'AI Analyses',
-                used: usage.ai_analyses_used || 0,
-                limit: limits.ai_analyses,
-                percent: getUsagePercent(usage.ai_analyses_used || 0, limits.ai_analyses),
-                status: getUsageStatus(getUsagePercent(usage.ai_analyses_used || 0, limits.ai_analyses)),
-                icon: 'brain',
-                resets: true
-            }
-        ],
+        metrics: metrics,
         features: {
-            api_access: limits.api_access,
-            webhooks: limits.webhooks,
+            automations: limits.automations,
+            ai_setup: limits.ai_setup,
+            white_label: limits.white_label,
             priority_support: limits.priority_support,
-            team_members: limits.team_members
+            intelligence: limits.intelligence_monthly !== 0
         }
     };
+}
+
+/**
+ * Check if organization can use Intelligence features (sync - basic check)
+ */
+function canUseIntelligenceSync(org) {
+    const limits = getOrgLimits(org);
+    return limits.intelligence_monthly !== 0;
+}
+
+/**
+ * Check Intelligence quota with usage (async - full check)
+ * @param {string|object} orgIdOrObj - Organization ID or organization object
+ * @returns {Promise<{allowed: boolean, used: number, limit: number}>}
+ */
+async function canUseIntelligence(orgIdOrObj) {
+    // Handle both org ID and org object
+    let org = orgIdOrObj;
+    if (typeof orgIdOrObj === 'string') {
+        // Fetch org from Supabase
+        if (typeof supabase !== 'undefined') {
+            const { data } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('id', orgIdOrObj)
+                .single();
+            org = data;
+        } else {
+            return { allowed: false, used: 0, limit: 0 };
+        }
+    }
+
+    if (!org) {
+        return { allowed: false, used: 0, limit: 0 };
+    }
+
+    const limits = getOrgLimits(org);
+    const monthlyLimit = limits.intelligence_monthly;
+
+    // Free tier or no intelligence access
+    if (monthlyLimit === 0) {
+        return { allowed: false, used: 0, limit: 0 };
+    }
+
+    // Unlimited intelligence
+    if (monthlyLimit === -1) {
+        return { allowed: true, used: 0, limit: -1 };
+    }
+
+    // Check current month's usage
+    let used = 0;
+    if (typeof supabase !== 'undefined') {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count } = await supabase
+            .from('ai_recommendations')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', org.id)
+            .gte('created_at', startOfMonth.toISOString());
+
+        used = count || 0;
+    }
+
+    return {
+        allowed: used < monthlyLimit,
+        used,
+        limit: monthlyLimit
+    };
+}
+
+/**
+ * Check if organization has white-label access
+ */
+function hasWhiteLabel(org) {
+    const limits = getOrgLimits(org);
+    return limits.white_label === true;
 }
 
 // Export for use in other files
@@ -403,4 +504,9 @@ if (typeof window !== 'undefined') {
     window.formatUsageForDashboard = formatUsageForDashboard;
     window.formatLimitName = formatLimitName;
     window.isUnlimited = isUnlimited;
+    window.setPlanAdminStatus = setPlanAdminStatus;
+    window.isPlanAdmin = isPlanAdmin;
+    window.canUseIntelligence = canUseIntelligence;
+    window.canUseIntelligenceSync = canUseIntelligenceSync;
+    window.hasWhiteLabel = hasWhiteLabel;
 }

@@ -11,87 +11,44 @@ let customerTags = [];
 let csvData = null;
 let columnMapping = {};
 let deleteCustomerId = null;
+let isSubmitting = false;  // Guard against double-submit
 
 async function initCustomers() {
     // Require authentication
     currentUser = await requireAuth();
     if (!currentUser) return;
 
-    // Load user info
-    await loadUserInfo();
+    // Load user info and organization in parallel
+    const [userInfo, orgData] = await Promise.all([
+        AppUtils.loadUserInfo(currentUser.id, currentUser.email),
+        AppUtils.loadOrganization(supabase, currentUser.id)
+    ]);
 
-    // Load organization
-    await loadOrganization();
+    currentOrganization = orgData.organization;
 
-    // Load custom fields
-    await loadCustomFields();
+    // Initialize sidebar with user data (including role for admin features)
+    if (typeof AppSidebar !== 'undefined') {
+        AppSidebar.init({
+            name: userInfo.fullName,
+            email: currentUser.email,
+            organization: currentOrganization,
+            role: orgData.role,
+            isAdmin: userInfo.profile?.is_admin === true
+        });
+    }
 
-    // Load customers
-    await loadCustomers();
+    // Load custom fields and customers in parallel
+    await Promise.all([
+        loadCustomFields(),
+        loadCustomers()
+    ]);
 
     // Setup event listeners
     setupEventListeners();
 }
 
-// ===== Load Organization =====
-async function loadOrganization() {
-    try {
-        const { data: memberships, error: memberError } = await supabase
-            .from('organization_members')
-            .select('organization_id, role')
-            .eq('user_id', currentUser.id)
-            .limit(1);
-
-        if (memberError) throw memberError;
-
-        if (!memberships || memberships.length === 0) {
-            console.error('No organization membership found');
-            return;
-        }
-
-        const { data: org, error: orgError } = await supabase
-            .from('organizations')
-            .select('id, name, slug')
-            .eq('id', memberships[0].organization_id)
-            .single();
-
-        if (orgError) throw orgError;
-
-        currentOrganization = org;
-    } catch (error) {
-        console.error('Error loading organization:', error);
-    }
-}
-
-// ===== Load User Info =====
-async function loadUserInfo() {
-    const profile = await getUserProfile(currentUser.id);
-
-    const userAvatar = document.getElementById('user-avatar');
-    const userName = document.getElementById('user-name');
-
-    if (profile && (profile.first_name || profile.last_name)) {
-        const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-        const initials = getInitials(profile.first_name, profile.last_name);
-        userAvatar.textContent = initials;
-        userName.textContent = fullName;
-    } else {
-        const initials = currentUser.email.substring(0, 2).toUpperCase();
-        userAvatar.textContent = initials;
-        userName.textContent = currentUser.email.split('@')[0];
-    }
-}
-
-function getInitials(firstName, lastName) {
-    if (firstName && lastName) {
-        return (firstName[0] + lastName[0]).toUpperCase();
-    } else if (firstName) {
-        return firstName.substring(0, 2).toUpperCase();
-    } else if (lastName) {
-        return lastName.substring(0, 2).toUpperCase();
-    }
-    return '?';
-}
+// Use shared utilities for loadOrganization, loadUserInfo, getInitials
+// See: /app/utils.js
 
 // ===== Load Custom Fields =====
 async function loadCustomFields() {
@@ -129,11 +86,12 @@ async function loadCustomers() {
         const tagFilter = document.getElementById('tag-filter').value;
         const sourceFilter = document.getElementById('source-filter').value;
 
-        // Build query
+        // Build query (exclude soft-deleted)
         let query = supabase
             .from('customers')
             .select('*', { count: 'exact' })
             .eq('organization_id', currentOrganization.id)
+            .is('deleted_at', null)
             .order('created_at', { ascending: false })
             .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
@@ -183,29 +141,11 @@ async function loadCustomers() {
 async function updateStats() {
     document.getElementById('total-customers').textContent = totalCustomers.toLocaleString();
 
-    // Get new this month count
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
     try {
-        const { count: newCount } = await supabase
-            .from('customers')
-            .select('*', { count: 'exact', head: true })
-            .eq('organization_id', currentOrganization.id)
-            .gte('created_at', startOfMonth.toISOString());
-
-        document.getElementById('new-this-month').textContent = (newCount || 0).toLocaleString();
-
-        // Get with email count
-        const { count: emailCount } = await supabase
-            .from('customers')
-            .select('*', { count: 'exact', head: true })
-            .eq('organization_id', currentOrganization.id)
-            .not('email', 'is', null)
-            .neq('email', '');
-
-        document.getElementById('with-email').textContent = (emailCount || 0).toLocaleString();
+        // Use optimized single-query stats (replaces 2 sequential queries)
+        const stats = await AppUtils.getCustomerStats(supabase, currentOrganization.id);
+        document.getElementById('new-this-month').textContent = stats.newThisMonth.toLocaleString();
+        document.getElementById('with-email').textContent = stats.withEmail.toLocaleString();
     } catch (error) {
         console.error('Error loading stats:', error);
     }
@@ -213,22 +153,15 @@ async function updateStats() {
 
 async function loadTags() {
     try {
-        const { data } = await supabase
-            .from('customers')
-            .select('tags')
-            .eq('organization_id', currentOrganization.id);
-
-        const allTags = new Set();
-        data?.forEach(c => {
-            c.tags?.forEach(tag => allTags.add(tag));
-        });
+        // Use optimized tag aggregation (replaces full table scan)
+        const allTags = await AppUtils.getUniqueTags(supabase, currentOrganization.id);
 
         const tagFilter = document.getElementById('tag-filter');
         const currentValue = tagFilter.value;
         tagFilter.innerHTML = '<option value="">All Tags</option>';
 
-        Array.from(allTags).sort().forEach(tag => {
-            tagFilter.innerHTML += `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`;
+        allTags.forEach(tag => {
+            tagFilter.innerHTML += `<option value="${AppUtils.escapeHtml(tag)}">${AppUtils.escapeHtml(tag)}</option>`;
         });
 
         tagFilter.value = currentValue;
@@ -326,23 +259,7 @@ function updatePagination() {
 
 // ===== Event Listeners =====
 function setupEventListeners() {
-    // User menu
-    const userMenuBtn = document.getElementById('user-menu-btn');
-    const userDropdown = document.getElementById('user-dropdown');
-
-    userMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        userDropdown.classList.toggle('active');
-    });
-
-    document.addEventListener('click', () => {
-        userDropdown.classList.remove('active');
-    });
-
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-        await signOut();
-    });
+    // User menu and logout are now handled by sidebar.js
 
     // Search and filters
     let searchTimeout;
@@ -588,20 +505,70 @@ function removeTag(tag) {
 
 window.removeTag = removeTag;
 
+// ===== Customer Validation =====
+function validateCustomerData(data) {
+    // At least one identifier required (name, email, or phone)
+    const hasName = data.firstName || data.lastName;
+    const hasEmail = data.email;
+    const hasPhone = data.phone;
+
+    if (!hasName && !hasEmail && !hasPhone) {
+        return { valid: false, error: 'Please provide at least a name, email, or phone' };
+    }
+
+    // Email format validation
+    if (data.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(data.email)) {
+            return { valid: false, error: 'Please enter a valid email address' };
+        }
+    }
+
+    // Name length validation
+    if (data.firstName && data.firstName.length > 50) {
+        return { valid: false, error: 'First name is too long (max 50 characters)' };
+    }
+    if (data.lastName && data.lastName.length > 50) {
+        return { valid: false, error: 'Last name is too long (max 50 characters)' };
+    }
+
+    return { valid: true };
+}
+
 async function handleSaveCustomer(e) {
     e.preventDefault();
+
+    // Prevent double-submit
+    if (isSubmitting) return;
+    isSubmitting = true;
 
     const submitBtn = document.getElementById('customer-submit-btn');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
     submitBtn.textContent = 'Saving...';
 
+    // Gather form data for validation
+    const firstName = document.getElementById('customer-first-name').value.trim();
+    const lastName = document.getElementById('customer-last-name').value.trim();
+    const email = document.getElementById('customer-email').value.trim();
+    const phone = document.getElementById('customer-phone').value.trim();
+
+    // Validate input
+    const validation = validateCustomerData({ firstName, lastName, email, phone });
+    if (!validation.valid) {
+        showToast(validation.error, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        isSubmitting = false;
+        return;
+    }
+
     const customerData = {
         organization_id: currentOrganization.id,
-        first_name: document.getElementById('customer-first-name').value.trim() || null,
-        last_name: document.getElementById('customer-last-name').value.trim() || null,
-        email: document.getElementById('customer-email').value.trim() || null,
-        phone: document.getElementById('customer-phone').value.trim() || null,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        email: email || null,
+        phone: phone || null,
         company: document.getElementById('customer-company').value.trim() || null,
         tags: customerTags,
         source: editingCustomerId ? undefined : 'manual'
@@ -621,6 +588,9 @@ async function handleSaveCustomer(e) {
     });
     customerData.custom_data = customData;
 
+    // Capture previous data for update logging
+    const existingCustomer = editingCustomerId ? customers.find(c => c.id === editingCustomerId) : null;
+
     try {
         if (editingCustomerId) {
             delete customerData.organization_id;
@@ -630,11 +600,27 @@ async function handleSaveCustomer(e) {
                 .update(customerData)
                 .eq('id', editingCustomerId);
             if (error) throw error;
+
+            // Log customer update
+            const customerName = [customerData.first_name, customerData.last_name].filter(Boolean).join(' ') || customerData.email;
+            AuditLog.logCustomerUpdate(
+                currentOrganization.id,
+                editingCustomerId,
+                customerName,
+                existingCustomer,
+                customerData,
+                ['first_name', 'last_name', 'email', 'phone', 'company', 'tags', 'custom_data']
+            );
         } else {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('customers')
-                .insert([customerData]);
+                .insert([customerData])
+                .select()
+                .single();
             if (error) throw error;
+
+            // Log customer creation
+            AuditLog.logCustomerCreate(currentOrganization.id, data);
         }
 
         celebrateSubtle();
@@ -643,10 +629,11 @@ async function handleSaveCustomer(e) {
 
     } catch (error) {
         console.error('Error saving customer:', error);
-        alert('Error saving customer. Please try again.');
+        showToast('Error saving customer', 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
+        isSubmitting = false;  // Reset guard
     }
 }
 
@@ -659,30 +646,52 @@ function editCustomer(id) {
 
 window.editCustomer = editCustomer;
 
-// ===== Delete Customer =====
+// ===== Delete Customer (Soft Delete with 1-hour Undo) =====
 function confirmDeleteCustomer(id) {
-    // Find the customer to get their name
+    // Find the customer to get their name and data for logging
     const customer = customers.find(c => c.id === id);
-    const customerName = customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.email : 'this customer';
+    const customerName = customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.email : 'Customer';
 
     DangerModal.show({
         title: 'Delete Customer',
         itemName: customerName,
-        warningText: 'This action will permanently delete this customer and all their associated data. This cannot be undone.',
-        confirmPhrase: 'YES DELETE THIS CUSTOMER',
-        confirmButtonText: 'Delete Forever',
+        warningText: 'This customer will be deleted. You can undo this within 1 hour.',
+        confirmPhrase: 'DELETE THIS CUSTOMER',
+        confirmButtonText: 'Delete Customer',
         onConfirm: async () => {
             try {
-                const { error } = await supabase
-                    .from('customers')
-                    .delete()
-                    .eq('id', id);
+                // Log deletion before the soft delete
+                if (customer && typeof AuditLog !== 'undefined') {
+                    await AuditLog.logCustomerDelete(currentOrganization.id, customer);
+                }
 
-                if (error) throw error;
-                loadCustomers();
+                // Soft delete - sets deleted_at timestamp
+                const result = await SoftDelete.delete('customers', id, {
+                    userId: currentUser?.id
+                });
+
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                // Reload customers list
+                await loadCustomers();
+
+                // Show undo toast
+                UndoToast.show({
+                    message: `"${customerName}" deleted`,
+                    entityType: 'customers',
+                    entityId: id,
+                    entityName: customerName,
+                    onUndo: async () => {
+                        // Reload customers list after restore
+                        await loadCustomers();
+                    }
+                });
+
             } catch (error) {
                 console.error('Error deleting customer:', error);
-                alert('Error deleting customer. Please try again.');
+                showToast('Error deleting customer', 'error');
             }
         }
     });
@@ -854,12 +863,14 @@ async function showReviewStep() {
 
         if (emails.length > 0) {
             try {
-                const { data } = await supabase
+                const { data, error } = await supabase
                     .from('customers')
                     .select('email')
                     .eq('organization_id', currentOrganization.id)
+                    .is('deleted_at', null)  // Exclude soft-deleted customers
                     .in('email', emails);
 
+                if (error) throw error;
                 existingCount = data?.length || 0;
             } catch (error) {
                 console.error('Error checking existing emails:', error);
@@ -904,9 +915,32 @@ function renderPreviewTable() {
 }
 
 async function handleCsvImport() {
+    // Prevent double-submit
+    if (isSubmitting) return;
+
     const importBtn = document.getElementById('csv-import-btn');
     importBtn.disabled = true;
     importBtn.textContent = 'Importing...';
+
+    // Validate CSV data exists
+    if (!csvData?.data?.length) {
+        alert('No CSV data to import. Please upload a file first.');
+        importBtn.disabled = false;
+        importBtn.textContent = 'Import Customers';
+        return;
+    }
+
+    // Validate at least one column is mapped
+    const mappedColumns = Object.entries(columnMapping).filter(([_, v]) => v);
+    if (mappedColumns.length === 0) {
+        alert('Please map at least one column before importing.');
+        importBtn.disabled = false;
+        importBtn.textContent = 'Import Customers';
+        return;
+    }
+
+    // Mark as submitting after validation
+    isSubmitting = true;
 
     const updateExisting = document.getElementById('update-existing').checked;
 
@@ -920,12 +954,17 @@ async function handleCsvImport() {
                 .filter(e => e && e.trim());
 
             if (emails.length > 0) {
-                const { data } = await supabase
+                const { data, error } = await supabase
                     .from('customers')
                     .select('id, email')
                     .eq('organization_id', currentOrganization.id)
+                    .is('deleted_at', null)  // Exclude soft-deleted customers
                     .in('email', emails);
 
+                if (error) {
+                    console.error('Error fetching existing emails:', error);
+                    throw new Error('Failed to check existing customers');
+                }
                 data?.forEach(c => existingEmails.set(c.email.toLowerCase(), c.id));
             }
         }
@@ -967,24 +1006,30 @@ async function handleCsvImport() {
             if (error) throw error;
         }
 
-        // Update existing customers
-        for (const customer of toUpdate) {
-            const { id, organization_id, source, ...updateData } = customer;
-            const { error } = await supabase
-                .from('customers')
-                .update(updateData)
-                .eq('id', id);
-            if (error) throw error;
+        // Update existing customers using batch update (fixes N+1 pattern)
+        if (toUpdate.length > 0) {
+            const result = await AppUtils.batchUpdateCustomers(supabase, toUpdate);
+            if (!result.success) {
+                throw new Error(result.error || 'Batch update failed');
+            }
         }
 
         // Record import
+        const filename = document.getElementById('file-name').textContent;
         await supabase.from('csv_imports').insert([{
             organization_id: currentOrganization.id,
-            filename: document.getElementById('file-name').textContent,
+            filename: filename,
             row_count: csvData.data.length,
             column_mapping: columnMapping,
             imported_by: currentUser.id
         }]);
+
+        // Log the bulk import
+        AuditLog.logCustomerBulkImport(
+            currentOrganization.id,
+            toInsert.length + toUpdate.length,
+            filename
+        );
 
         // Show complete step
         document.getElementById('import-step-review').style.display = 'none';
@@ -1000,16 +1045,14 @@ async function handleCsvImport() {
         alert('Error importing customers. Please try again.');
         importBtn.disabled = false;
         importBtn.textContent = 'Import Customers';
+        isSubmitting = false;  // Reset guard on error
     }
 }
 
 // ===== Utility Functions =====
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// Use AppUtils.escapeHtml for HTML escaping
+const escapeHtml = AppUtils.escapeHtml;
+const getInitials = AppUtils.getInitials;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initCustomers);

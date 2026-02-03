@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Intelligence - Automata</title>
+    <title>AI Intelligence - Royalty</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="sidebar.css?v=3">
-    <link rel="stylesheet" href="intelligence.css?v=1">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="intelligence.css?v=2">
     <link rel="stylesheet" href="../i18n/i18n.css">
 </head>
 <body>
@@ -148,8 +148,29 @@
                                 <circle cx="11" cy="11" r="8"/>
                                 <path d="M21 21l-4.35-4.35"/>
                             </svg>
-                            Analyze Now
+                            <span data-i18n="intelligence.analyzeNow">Analyze Now</span>
                         </button>
+                    </div>
+
+                    <!-- Upgrade Banner (shown when limit reached) -->
+                    <div class="intelligence-upgrade" id="intelligence-upgrade" style="display: none;">
+                        <div class="upgrade-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                            </svg>
+                        </div>
+                        <h3 id="upgrade-title">Unlock AI Intelligence</h3>
+                        <p id="upgrade-desc">Get AI-powered insights to grow your loyalty program. Upgrade to access smart recommendations.</p>
+                        <div class="upgrade-usage" id="upgrade-usage">
+                            <span class="usage-label">This month:</span>
+                            <span class="usage-value" id="usage-count">0 / 0 insights used</span>
+                        </div>
+                        <a href="/app/settings.html#plan" class="btn btn-primary btn-upgrade">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                            </svg>
+                            <span>Upgrade Plan</span>
+                        </a>
                     </div>
 
                     <!-- Recommendations List -->
@@ -161,14 +182,96 @@
         </main>
     </div>
 
+    <!-- First Login Loading Modal -->
+    <div class="first-login-modal" id="first-login-modal" style="display: none;">
+        <div class="first-login-content">
+            <div class="first-login-logo">
+                <span class="logo-icon">R</span>
+            </div>
+            <h2 data-i18n="intelligence.firstLogin.title">Building your loyalty program...</h2>
+            <div class="first-login-steps">
+                <div class="step-item" data-step="1">
+                    <span class="step-icon active"></span>
+                    <span class="step-text" data-i18n="intelligence.firstLogin.step1">Analyzing your business</span>
+                </div>
+                <div class="step-item" data-step="2">
+                    <span class="step-icon pending"></span>
+                    <span class="step-text" data-i18n="intelligence.firstLogin.step2">Selecting optimal rewards</span>
+                </div>
+                <div class="step-item" data-step="3">
+                    <span class="step-icon pending"></span>
+                    <span class="step-text" data-i18n="intelligence.firstLogin.step3">Setting up automations</span>
+                </div>
+                <div class="step-item" data-step="4">
+                    <span class="step-icon pending"></span>
+                    <span class="step-text" data-i18n="intelligence.firstLogin.step4">Configuring AI assistant</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Ready Banner (hidden by default, shown after first login) -->
+    <div class="app-ready-banner" id="app-ready-banner" style="display: none;">
+        <div class="container">
+            <div class="app-ready-content">
+                <div class="app-ready-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                    </svg>
+                </div>
+                <div class="app-ready-text">
+                    <h2 data-i18n="intelligence.appReady.title">Your loyalty app is ready!</h2>
+                    <p data-i18n="intelligence.appReady.subtitle">Royalty AI built your program. Preview it or customize the details.</p>
+                </div>
+                <div class="app-ready-actions">
+                    <a href="#" id="preview-app-btn" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <span data-i18n="intelligence.appReady.preview">Preview App</span>
+                    </a>
+                    <a href="/app/apps.html" class="btn btn-secondary" data-i18n="intelligence.appReady.customize">Customize</a>
+                </div>
+            </div>
+            <div class="autonomy-toggle">
+                <h3 data-i18n="intelligence.autonomy.title">How should Royalty AI run your program?</h3>
+                <div class="autonomy-options">
+                    <label class="autonomy-option">
+                        <input type="radio" name="autonomy" value="auto_pilot" checked>
+                        <span class="option-content">
+                            <strong data-i18n="intelligence.autonomy.autoPilot">Auto-pilot</strong>
+                            <span class="option-desc" data-i18n="intelligence.autonomy.autoPilotDesc">AI acts automatically, you get notified</span>
+                            <span class="option-badge recommended" data-i18n="common.recommended">Recommended</span>
+                        </span>
+                    </label>
+                    <label class="autonomy-option">
+                        <input type="radio" name="autonomy" value="manual_approve">
+                        <span class="option-content">
+                            <strong data-i18n="intelligence.autonomy.manualApprove">Manual approval</strong>
+                            <span class="option-desc" data-i18n="intelligence.autonomy.manualApproveDesc">AI proposes actions, you approve each one</span>
+                        </span>
+                    </label>
+                </div>
+                <button class="btn btn-primary btn-large" id="save-autonomy-btn">
+                    <span data-i18n="intelligence.appReady.letsGo">Let's Go!</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="auth.js?v=3"></script>
+    <script src="auth.js?v=4"></script>
+    <script src="plan-limits.js?v=2"></script>
     <script src="utils.js?v=3"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="audit-log.js?v=1"></script>
-    <script src="sidebar.js?v=11"></script>
-    <script src="intelligence.js?v=1"></script>
+    <script src="sidebar.js?v=16"></script>
+    <script src="intelligence.js?v=5"></script>
 </body>
 </html>

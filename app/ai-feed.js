@@ -1,6 +1,12 @@
 // ===== AI Intelligence Feed =====
 // AI-powered recommendations that CREATE projects + automations in one click
 // 2026-level intuitive - AI recommends, user accepts, system builds
+//
+// BUSINESS MODEL NOTE: Royalty is visits-based loyalty, NOT purchases/payments.
+// - Customers earn points by visiting (scanning QR codes), not by purchasing
+// - No in-app sales or payment processing
+// - Do NOT recommend product pricing, purchase incentives, or checkout-related features
+// - Focus on: visits, engagement, retention, referrals, milestones, birthdays
 
 const AIFeed = (function() {
     let organizationId = null;
@@ -123,7 +129,7 @@ const AIFeed = (function() {
             projectDesc: 'Show gratitude to your customers',
             automation: {
                 name: 'Thank You Notes',
-                description: 'Send personalized thank you messages after purchases',
+                description: 'Send personalized thank you messages after visits',
                 type: 'email',
                 frequency: 'daily',
                 icon: 'thank_you',
@@ -476,7 +482,7 @@ const AIFeed = (function() {
                 organization_id: organizationId,
                 recommendation_type: 'opportunity',
                 title: 'Celebrate Customer Birthdays',
-                description: `Birthday emails have 481% higher transaction rates than regular promotions. With ${data.customers.total} customers, this is low-hanging fruit.`,
+                description: `Birthday messages have 481% higher engagement rates than regular communications. With ${data.customers.total} customers, this builds lasting loyalty.`,
                 confidence_score: 0.90,
                 potential_impact: 'high',
                 suggested_action: 'Create birthday rewards automation',

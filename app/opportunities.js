@@ -170,6 +170,13 @@ async function generateOpportunities(project) {
     const analyzeBtn = document.getElementById('analyze-btn');
     const analyzingState = document.getElementById('analyzing-state');
 
+    // Check rate limiting for business analysis
+    if (window.RateLimiter && window.RateLimiter.isRateLimited('business_analysis')) {
+        const errorMsg = window.RateLimiter.getRateLimitErrorMessage('business_analysis');
+        alert(errorMsg);
+        return;
+    }
+
     analyzeBtn.disabled = true;
     analyzeBtn.innerHTML = `
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="spin">
@@ -178,6 +185,11 @@ async function generateOpportunities(project) {
         Analyzing...
     `;
     analyzingState.style.display = 'flex';
+
+    // Record rate limit attempt
+    if (window.RateLimiter) {
+        window.RateLimiter.recordRateLimit('business_analysis');
+    }
 
     try {
         // Get existing opportunities to avoid duplicates

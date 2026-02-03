@@ -6,11 +6,11 @@
     <title>Project - Automata</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="sidebar.css?v=3">
-    <link rel="stylesheet" href="project.css?v=8">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="project.css?v=11">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <link rel="stylesheet" href="coaching.css">
@@ -55,6 +55,7 @@
                 <div class="container">
                     <div class="tabs">
                         <button class="tab active" data-tab="overview" data-i18n="project.overview">Overview</button>
+                        <button class="tab" data-tab="content" data-i18n="project.content">Content</button>
                         <button class="tab" data-tab="automations" data-i18n="project.automations">Automations</button>
                         <button class="tab" data-tab="apps" data-i18n="project.apps">Apps</button>
                         <button class="tab" data-tab="customers" data-i18n="project.customers">Customers</button>
@@ -307,6 +308,165 @@
                                         <button class="btn btn-secondary" id="show-more-btn">Show More Opportunities</button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content Tab -->
+                    <div class="tab-content" id="content-tab" style="display: none;">
+                        <!-- Content Strategy Header -->
+                        <div class="content-strategy-header">
+                            <div class="content-strategy-info">
+                                <h3>AI Content Engine</h3>
+                                <p>Generate and publish content automatically with AI-powered quality gates</p>
+                            </div>
+                            <button class="btn btn-primary" id="generate-strategy-btn">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 2V4M10 16V18M4 10H2M18 10H16M15.66 15.66L14.24 14.24M15.66 4.34L14.24 5.76M4.34 15.66L5.76 14.24M4.34 4.34L5.76 5.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                Generate Strategy
+                            </button>
+                        </div>
+
+                        <!-- Content Strategy Settings -->
+                        <div class="content-settings-grid">
+                            <!-- Left Column: Strategy Setup -->
+                            <div class="content-settings-section">
+                                <div class="section-header">
+                                    <h4>Content Strategy</h4>
+                                    <button class="btn btn-secondary btn-sm" id="save-content-settings-btn">Save Settings</button>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="strategy-prompt">Content Goals</label>
+                                    <textarea id="strategy-prompt" class="textarea-lg" placeholder="What do you want your content to achieve? e.g., Build thought leadership in the coffee industry, educate customers about specialty brewing methods, drive newsletter signups..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="brand-voice">Brand Voice</label>
+                                    <textarea id="brand-voice" placeholder="How should your content sound? e.g., Friendly and conversational, knowledgeable but not pretentious, enthusiastic about quality..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="target-audience">Target Audience</label>
+                                    <textarea id="target-audience" placeholder="Who are you writing for? e.g., Coffee enthusiasts aged 25-45, local professionals, people curious about specialty coffee..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="content-pillars">Content Pillars (one per line)</label>
+                                    <textarea id="content-pillars" placeholder="Main topics to cover:&#10;Brewing tips and techniques&#10;Coffee origins and sourcing&#10;Community events&#10;Behind the scenes"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Publishing Settings -->
+                            <div class="content-settings-section">
+                                <div class="section-header">
+                                    <h4>Publishing Settings</h4>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="publish-frequency">Publishing Frequency</label>
+                                    <select id="publish-frequency">
+                                        <option value="daily">Daily</option>
+                                        <option value="twice_weekly">Twice Weekly</option>
+                                        <option value="weekly" selected>Weekly</option>
+                                        <option value="biweekly">Biweekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Preferred Days</label>
+                                    <div class="days-selector">
+                                        <label class="day-checkbox"><input type="checkbox" name="preferred-day" value="monday" checked> Mon</label>
+                                        <label class="day-checkbox"><input type="checkbox" name="preferred-day" value="tuesday"> Tue</label>
+                                        <label class="day-checkbox"><input type="checkbox" name="preferred-day" value="wednesday"> Wed</label>
+                                        <label class="day-checkbox"><input type="checkbox" name="preferred-day" value="thursday"> Thu</label>
+                                        <label class="day-checkbox"><input type="checkbox" name="preferred-day" value="friday"> Fri</label>
+                                        <label class="day-checkbox"><input type="checkbox" name="preferred-day" value="saturday"> Sat</label>
+                                        <label class="day-checkbox"><input type="checkbox" name="preferred-day" value="sunday"> Sun</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="quality-threshold">Quality Gate Threshold</label>
+                                    <div class="threshold-input">
+                                        <input type="range" id="quality-threshold" min="50" max="100" value="80">
+                                        <span class="threshold-value" id="threshold-value">80</span>
+                                    </div>
+                                    <p class="form-hint">Content scoring below this threshold will require manual review</p>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="toggle-label">
+                                        <input type="checkbox" id="auto-publish">
+                                        <span class="toggle-switch"></span>
+                                        <span>Auto-publish approved content</span>
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="toggle-label">
+                                        <input type="checkbox" id="require-review" checked>
+                                        <span class="toggle-switch"></span>
+                                        <span>Always require human review</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Content Pipeline -->
+                        <div class="content-pipeline-section">
+                            <div class="section-header">
+                                <h4>Content Pipeline</h4>
+                                <button class="btn btn-primary" id="generate-post-btn">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    Generate New Post
+                                </button>
+                            </div>
+
+                            <!-- Pipeline Stats -->
+                            <div class="pipeline-stats" id="pipeline-stats">
+                                <div class="stat-card">
+                                    <span class="stat-value" id="stat-drafts">0</span>
+                                    <span class="stat-label">Drafts</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-value" id="stat-pending">0</span>
+                                    <span class="stat-label">Pending Review</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-value" id="stat-scheduled">0</span>
+                                    <span class="stat-label">Scheduled</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-value" id="stat-published">0</span>
+                                    <span class="stat-label">Published</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-value" id="stat-avg-quality">-</span>
+                                    <span class="stat-label">Avg Quality</span>
+                                </div>
+                            </div>
+
+                            <!-- Pipeline List -->
+                            <div class="pipeline-list" id="pipeline-list">
+                                <!-- Posts will be loaded here -->
+                            </div>
+
+                            <div class="empty-state" id="empty-pipeline" style="display: none;">
+                                <div class="empty-state-icon">
+                                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                                        <rect x="6" y="8" width="28" height="24" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M6 14H34" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M14 20H26M14 26H22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <h3>No content yet</h3>
+                                <p>Set up your content strategy and generate your first AI-powered post</p>
+                                <button class="btn btn-primary" id="empty-generate-btn">Generate First Post</button>
                             </div>
                         </div>
                     </div>
@@ -564,7 +724,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="auth.js?v=3"></script>
+    <script src="auth.js?v=4"></script>
     <script src="utils.js?v=3"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="danger-modal.js?v=1"></script>
@@ -576,7 +736,7 @@
     <script src="audit-log.js?v=1"></script>
     <script src="soft-delete.js?v=1"></script>
     <script src="undo-toast.js?v=1"></script>
-    <script src="sidebar.js?v=11"></script>
-    <script src="project.js?v=18"></script>
+    <script src="sidebar.js?v=16"></script>
+    <script src="project.js?v=23"></script>
 </body>
 </html>

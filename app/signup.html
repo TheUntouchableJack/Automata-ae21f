@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Automata</title>
+    <title>Sign Up - Royalty</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../i18n/i18n.css">
+    <!-- Cloudflare Turnstile CAPTCHA -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         html, body {
             min-height: 100vh;
@@ -17,13 +19,12 @@
             background: var(--color-bg-secondary) !important;
         }
 
-        body {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
         .auth-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             max-width: 420px;
             padding: 24px;
@@ -93,7 +94,7 @@
 
         .form-field input:focus {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
         }
 
         .form-field input::placeholder {
@@ -180,7 +181,7 @@
         }
 
         .invite-notice {
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(124, 58, 237, 0.1);
             color: var(--color-primary);
             padding: 12px 16px;
             border-radius: var(--radius-md);
@@ -316,7 +317,7 @@
         /* Onboarding Summary Styles */
         .onboarding-summary {
             background: var(--gradient-subtle);
-            border: 1px solid rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.15);
             border-radius: var(--radius-lg);
             padding: 20px;
             margin-bottom: 24px;
@@ -381,18 +382,44 @@
             font-size: 12px;
             color: var(--color-text-muted);
         }
+
+        .lang-selector.compact {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+        }
     </style>
 </head>
 <body>
     <div class="auth-container">
+        <!-- Language Selector -->
+        <div class="lang-selector compact">
+            <button class="lang-selector-btn" type="button" aria-label="Change language">
+                <span class="lang-selector-current">EN</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="lang-dropdown">
+                <a href="#" class="lang-option active" data-lang="en">EN</a>
+                <a href="#" class="lang-option" data-lang="es">ES</a>
+                <a href="#" class="lang-option" data-lang="fr">FR</a>
+                <a href="#" class="lang-option" data-lang="de">DE</a>
+                <a href="#" class="lang-option" data-lang="it">IT</a>
+                <a href="#" class="lang-option" data-lang="pt">PT</a>
+                <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                <a href="#" class="lang-option" data-lang="ar">AR</a>
+            </div>
+        </div>
+
         <div class="auth-card" id="auth-card">
             <div class="auth-header">
                 <a href="/" class="logo">
-                    <span class="logo-icon">A</span>
-                    <span class="logo-text">Automata</span>
+                    <span class="logo-icon">R</span>
+                    <span class="logo-text">Royalty</span>
                 </a>
-                <h1>Create an account</h1>
-                <p>Start automating your customer relationships</p>
+                <h1 data-i18n="auth.createAccount">Create an account</h1>
+                <p data-i18n="auth.signUpSubtitle">Start automating your customer relationships</p>
             </div>
 
             <!-- Onboarding Summary (shown if coming from onboarding flow) -->
@@ -415,23 +442,23 @@
 
                 <div class="name-fields">
                     <div class="form-field">
-                        <label for="first-name">First Name</label>
-                        <input type="text" id="first-name" name="first_name" placeholder="John" required>
+                        <label for="first-name" data-i18n="auth.firstName">First Name</label>
+                        <input type="text" id="first-name" name="first_name" placeholder="John" data-i18n-placeholder="auth.firstNamePlaceholder" required>
                     </div>
                     <div class="form-field">
-                        <label for="last-name">Last Name</label>
-                        <input type="text" id="last-name" name="last_name" placeholder="Doe" required>
+                        <label for="last-name" data-i18n="auth.lastName">Last Name</label>
+                        <input type="text" id="last-name" name="last_name" placeholder="Doe" data-i18n-placeholder="auth.lastNamePlaceholder" required>
                     </div>
                 </div>
 
                 <div class="form-field">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                    <label for="email" data-i18n="auth.email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" data-i18n-placeholder="auth.emailPlaceholder" required>
                 </div>
 
                 <div class="form-field">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Create a password" required>
+                    <label for="password" data-i18n="auth.password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Create a password" data-i18n-placeholder="auth.createPasswordPlaceholder" required>
 
                     <div class="password-strength" id="password-strength" style="display: none;">
                         <div class="strength-meter">
@@ -483,46 +510,37 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block" id="submit-btn">
+                <!-- CAPTCHA Widget - Replace YOUR_SITE_KEY with your Cloudflare Turnstile site key -->
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-theme="light"></div>
+                <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px;" data-i18n="auth.captchaError">Please complete the CAPTCHA verification.</div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="auth.createAccountBtn">
                     Create Account
                 </button>
             </form>
 
             <div class="auth-footer" id="auth-footer">
-                <p>Already have an account? <a href="/app/login.html">Sign in</a></p>
+                <p><span data-i18n="auth.hasAccount">Already have an account?</span> <a href="/app/login.html" data-i18n="auth.signIn">Sign in</a></p>
             </div>
         </div>
 
-        <a href="/" class="back-link">Back to home</a>
-
-        <!-- Language Selector -->
-        <div class="lang-selector compact" style="margin-top: 16px;">
-            <button class="lang-selector-btn" type="button" aria-label="Change language">
-                <span class="lang-selector-current">EN</span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            <div class="lang-dropdown">
-                <a href="#" class="lang-option active" data-lang="en">EN</a>
-                <a href="#" class="lang-option" data-lang="es">ES</a>
-                <a href="#" class="lang-option" data-lang="fr">FR</a>
-                <a href="#" class="lang-option" data-lang="de">DE</a>
-                <a href="#" class="lang-option" data-lang="it">IT</a>
-                <a href="#" class="lang-option" data-lang="pt">PT</a>
-                <a href="#" class="lang-option" data-lang="zh">ZH</a>
-                <a href="#" class="lang-option" data-lang="ar">AR</a>
-            </div>
-        </div>
+        <a href="/" class="back-link" data-i18n="auth.backToHome">Back to home</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="../i18n/i18n.js"></script>
     <script src="onboarding-storage.js"></script>
-    <script src="auth.js?v=2"></script>
+    <script src="auth.js?v=4"></script>
     <script src="celebrate.js?v=2"></script>
     <script>
+        // CAPTCHA state
+        let turnstileToken = null;
+        function onTurnstileSuccess(token) {
+            turnstileToken = token;
+            document.getElementById('captcha-error').style.display = 'none';
+        }
+
         // Redirect if already logged in
         redirectIfAuthenticated();
 
@@ -678,6 +696,14 @@
                 return;
             }
 
+            // Validate CAPTCHA (skip if site key not configured)
+            const captchaWidget = document.querySelector('.cf-turnstile');
+            const siteKey = captchaWidget?.getAttribute('data-sitekey');
+            if (siteKey && siteKey !== 'YOUR_SITE_KEY' && !turnstileToken) {
+                document.getElementById('captcha-error').style.display = 'block';
+                return;
+            }
+
             // Show loading state
             submitBtn.classList.add('btn-loading');
             submitBtn.disabled = true;
@@ -691,7 +717,8 @@
                         data: {
                             first_name: firstName,
                             last_name: lastName
-                        }
+                        },
+                        emailRedirectTo: window.location.origin + '/app/login.html'
                     }
                 });
 
@@ -748,7 +775,7 @@
                 // Success!
                 submitBtn.classList.remove('btn-loading');
                 submitBtn.classList.add('btn-success');
-                submitBtn.textContent = 'Welcome to Automata!';
+                submitBtn.textContent = 'Welcome to Royalty!';
                 authCard.classList.add('success');
 
                 // Celebrate!

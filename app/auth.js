@@ -51,6 +51,26 @@ async function signIn(email, password) {
         return { user: null, error: { message: 'Supabase not initialized. Please refresh the page.' } };
     }
 
+    // ===== RATE LIMITING =====
+    // 5 login attempts per 15 minutes per email
+    try {
+        const { data: allowed, error: rlError } = await db.rpc('check_and_record_rate_limit', {
+            p_identifier: email.toLowerCase(),
+            p_action_type: 'login',
+            p_max_attempts: 5,
+            p_window_minutes: 15
+        });
+
+        if (!rlError && allowed === false) {
+            return {
+                user: null,
+                error: { message: 'Too many login attempts. Please wait 15 minutes and try again.' }
+            };
+        }
+    } catch (e) {
+        console.warn('Rate limit check failed, continuing:', e);
+    }
+
     const { data, error } = await db.auth.signInWithPassword({
         email,
         password
@@ -72,6 +92,26 @@ async function signIn(email, password) {
  * @returns {Promise<{user: object|null, error: object|null}>}
  */
 async function signUp(email, password, firstName, lastName) {
+    // ===== RATE LIMITING =====
+    // 10 signup attempts per hour per email
+    try {
+        const { data: allowed, error: rlError } = await db.rpc('check_and_record_rate_limit', {
+            p_identifier: email.toLowerCase(),
+            p_action_type: 'signup',
+            p_max_attempts: 10,
+            p_window_minutes: 60
+        });
+
+        if (!rlError && allowed === false) {
+            return {
+                user: null,
+                error: { message: 'Too many signup attempts. Please wait an hour and try again.' }
+            };
+        }
+    } catch (e) {
+        console.warn('Rate limit check failed, continuing:', e);
+    }
+
     const { data, error } = await db.auth.signUp({
         email,
         password,
@@ -79,7 +119,8 @@ async function signUp(email, password, firstName, lastName) {
             data: {
                 first_name: firstName,
                 last_name: lastName
-            }
+            },
+            emailRedirectTo: window.location.origin + '/app/login.html'
         }
     });
 
@@ -153,7 +194,13 @@ async function requireAuth() {
 async function redirectIfAuthenticated() {
     const user = await getCurrentUser();
     if (user) {
-        window.location.href = '/app/dashboard.html';
+        // Check if this is a new signup with onboarding data
+        const hasOnboarding = localStorage.getItem('royalty_onboarding');
+        if (hasOnboarding) {
+            window.location.href = '/app/intelligence.html?firstLogin=true';
+        } else {
+            window.location.href = '/app/dashboard.html';
+        }
     }
 }
 
@@ -165,4 +212,47 @@ if (db) {
             localStorage.removeItem('automata_user_profile');
         }
     });
+
+    // Handle PKCE code exchange on page load (for email confirmation redirects)
+    // This runs once when auth.js loads to process any pending auth codes
+    (async function handleAuthCodeOnLoad() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+
+        // Only process if we have a code and haven't already processed it
+        if (authCode && !sessionStorage.getItem('auth_code_processed')) {
+            sessionStorage.setItem('auth_code_processed', 'true');
+
+            try {
+                const { data, error } = await db.auth.exchangeCodeForSession(authCode);
+
+                if (error) {
+                    console.error('Auth code exchange error:', error);
+                    sessionStorage.removeItem('auth_code_processed');
+                } else {
+                    // Clean the URL to remove the code
+                    const cleanUrl = window.location.pathname + window.location.hash;
+                    window.history.replaceState({}, '', cleanUrl);
+
+                    // Check if this is a new signup with onboarding data
+                    const hasOnboarding = localStorage.getItem('royalty_onboarding');
+                    if (hasOnboarding) {
+                        // New user from landing page - go to Intelligence to build their app
+                        window.location.href = '/app/intelligence.html?firstLogin=true';
+                    } else if (!window.location.pathname.includes('login.html')) {
+                        // Returning user - go to dashboard
+                        window.location.href = '/app/dashboard.html';
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to exchange auth code:', err);
+                sessionStorage.removeItem('auth_code_processed');
+            }
+
+            // Clear the processed flag after a delay
+            setTimeout(() => {
+                sessionStorage.removeItem('auth_code_processed');
+            }, 5000);
+        }
+    })();
 }

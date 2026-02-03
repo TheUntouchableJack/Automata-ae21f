@@ -7,7 +7,7 @@
         "pricing": "Pricing",
         "blog": "Blog",
         "login": "Log In",
-        "joinWaitlist": "Join Waitlist",
+        "joinWaitlist": "Join our Beta",
         "projects": "Projects",
         "customers": "Customers",
         "dashboard": "Dashboard",
@@ -21,19 +21,20 @@
         "freePlan": "Free Plan",
         "admin": "Admin",
         "launchPlan": "Launch Plan",
-        "intelligence": "Intelligence"
+        "intelligence": "Intelligence",
+        "support": "Support"
     },
     "launchPlan": {
         "title": "Launch Plan",
         "subtitle": "Go-to-market strategy and platform launches"
     },
     "hero": {
-        "badge": "Now in Beta — Join the waitlist",
+        "badge": "Now in Beta — Join our Beta",
         "titleLine1": "One {word}.",
         "titleLine2": "Thousands of Relationships.",
         "rotatingWords": ["Person", "Founder", "Entrepreneur", "Owner", "Creator", "Mother", "Woman"],
         "subtitle": "Every birthday remembered. Every visit followed up. Every loyal customer thanked — automatically.",
-        "joinWaitlist": "Join the Waitlist",
+        "joinWaitlist": "Join our Beta",
         "seeHowItWorks": "See How It Works",
         "stats": {
             "fasterSetup": "Faster Setup",
@@ -177,48 +178,61 @@
     },
     "pricing": {
         "tag": "Pricing",
-        "title": "Simple pricing. No surprises.",
-        "subtitle": "Start free, upgrade when you're ready. No credit card required.",
+        "title": "Simple, transparent pricing",
+        "subtitle": "Start free. Upgrade when you're ready to grow.",
         "popular": "Most Popular",
         "perMonth": "/month",
+        "forever": "forever",
         "noCreditCard": "No credit card required",
+        "freeTrial": "14-day free trial",
         "annualNote": "Save 20% with annual billing. <a href=\"/pricing.html\">See full details</a>",
+        "viewFullPricing": "View full pricing details & AppSumo lifetime deal →",
+        "free": {
+            "name": "Free",
+            "desc": "Try it out",
+            "f1": "Up to 50 members",
+            "f2": "1-click automations",
+            "f3": "QR code check-ins",
+            "cta": "Start Free Beta"
+        },
         "starter": {
             "name": "Starter",
-            "desc": "Try it out",
-            "period": "forever free",
-            "f1": "Up to 100 customers",
-            "f2": "3 automations",
-            "f3": "Community support",
-            "cta": "Get Started Free"
+            "desc": "For small businesses",
+            "f1": "Up to 500 members",
+            "f2": "30 AI insights/month",
+            "f3": "AI-built loyalty program",
+            "cta": "Join Beta"
         },
-        "pro": {
-            "name": "Pro",
+        "growth": {
+            "name": "Growth",
             "desc": "For growing businesses",
-            "f1": "Up to 5,000 customers",
-            "f2": "Unlimited automations",
+            "f1": "Up to 2,000 members",
+            "f2": "100 AI insights/month",
             "f3": "Priority support",
-            "cta": "Start Free Trial"
+            "cta": "Join Beta"
         },
         "scale": {
             "name": "Scale",
-            "desc": "For larger teams",
-            "f1": "Up to 25,000 customers",
-            "f2": "Unlimited everything",
-            "f3": "Dedicated support",
-            "cta": "Start Free Trial"
+            "desc": "For multi-location",
+            "f1": "Unlimited members",
+            "f2": "Unlimited AI insights",
+            "f3": "White-label branding",
+            "cta": "Join Beta"
         },
-        "enterprise": {
-            "title": "Need more power?",
-            "desc": "For organizations with 25,000+ customers, custom integrations, or compliance requirements.",
-            "cta": "Learn about Enterprise"
+        "royaltyPro": {
+            "name": "Royalty Pro",
+            "desc": "For lifetime deal holders",
+            "f1": "Unlimited AI insights",
+            "f2": "White-label branding",
+            "f3": "Cancel anytime",
+            "cta": "Add Royalty Pro"
         }
     },
     "cta": {
         "title": "Be the First to Automate Your Customer Relationships",
-        "subtitle": "Join the waitlist and get early access to AI-powered automations.",
+        "subtitle": "Join our Beta and get early access to AI-powered automations.",
         "emailPlaceholder": "Enter your email",
-        "joinWaitlist": "Join Waitlist",
+        "joinWaitlist": "Join our Beta",
         "note": "We'll notify you when we launch."
     },
     "footer": {
@@ -233,12 +247,29 @@
         "copyright": "© 2026 Automata. All rights reserved."
     },
     "dashboard": {
-        "title": "Your Projects",
-        "subtitle": "Manage your automation projects",
+        "title": "Dashboard",
+        "subtitle": "Your loyalty program at a glance",
+        "refresh": "Refresh",
         "newProject": "New Project",
         "noProjects": "No projects yet",
         "noProjectsDesc": "Create your first project to start automating",
-        "createFirst": "Create Your First Project"
+        "createFirst": "Create Your First Project",
+        "totalMembers": "Total Members",
+        "todayCheckins": "Today's Check-ins",
+        "newThisWeek": "New This Week",
+        "pointsGiven": "Points Given This Week",
+        "memberGrowth": "Member Growth",
+        "tierDistribution": "Tier Distribution",
+        "recentActivity": "Recent Activity",
+        "viewAll": "View All",
+        "quickStats": "Quick Stats",
+        "activeMembers": "Active Members (30d)",
+        "totalVisits": "Total Visits",
+        "avgVisits": "Avg Visits/Member",
+        "referrals": "Referrals",
+        "noAppTitle": "Create Your Loyalty Program",
+        "noAppDesc": "Set up your first customer app to start tracking members, visits, and rewards.",
+        "createApp": "Create App"
     },
     "aiFeed": {
         "title": "AI Intelligence Feed",
@@ -262,6 +293,7 @@
         "title": "AI Intelligence",
         "subtitle": "AI-powered insights and recommendations for your business",
         "analyze": "Analyze My Business",
+        "analyzeNow": "Analyze Now",
         "pending": "Pending Actions",
         "implemented": "Implemented",
         "highImpact": "High Impact",
@@ -270,10 +302,37 @@
         "emptyTitle": "No recommendations yet",
         "emptyDesc": "Click \"Analyze My Business\" to get AI-powered insights based on your organization data.",
         "acceptCreate": "Accept & Create",
-        "viewAll": "View All"
+        "viewAll": "View All",
+        "firstLogin": {
+            "title": "Building your loyalty program...",
+            "step1": "Analyzing your business",
+            "step2": "Selecting optimal rewards",
+            "step3": "Setting up automations",
+            "step4": "Configuring AI assistant"
+        },
+        "appReady": {
+            "title": "Your loyalty app is ready!",
+            "subtitle": "Royalty AI built your program. Preview it or customize the details.",
+            "preview": "Preview App",
+            "customize": "Customize",
+            "letsGo": "Let's Go!"
+        },
+        "autonomy": {
+            "title": "How should Royalty AI run your program?",
+            "autoPilot": "Auto-pilot",
+            "autoPilotDesc": "AI acts automatically, you get notified",
+            "manualApprove": "Manual approval",
+            "manualApproveDesc": "AI proposes actions, you approve each one"
+        },
+        "appCreationError": "Failed to create your loyalty app",
+        "createManually": "Create Manually"
+    },
+    "projects": {
+        "recommended": "Recommended Projects"
     },
     "project": {
         "overview": "Overview",
+        "content": "Content",
         "automations": "Automations",
         "apps": "Apps",
         "customers": "Customers",
@@ -378,7 +437,9 @@
         "next": "Next",
         "previous": "Previous",
         "page": "Page",
-        "of": "of"
+        "of": "of",
+        "recommended": "Recommended",
+        "tryAgain": "Try Again"
     },
     "onboarding": {
         "title": "Tell us about your business",
@@ -499,6 +560,130 @@
             "success": "Thank you! Your suggestion has been submitted for review."
         }
     },
+    "support": {
+        "title": "Support",
+        "subtitle": "Manage customer tickets and AI support",
+        "manageFaqs": "Manage FAQs",
+        "knowledgeBase": "Knowledge Base",
+        "settings": "Settings",
+        "openTickets": "Open Tickets",
+        "pendingResponse": "Pending Response",
+        "escalated": "Escalated",
+        "aiResolutionRate": "AI Resolution Rate",
+        "satisfaction": "Satisfaction",
+        "selectApp": "Select App:",
+        "all": "All",
+        "open": "Open",
+        "escalatedTab": "Escalated",
+        "pendingCustomer": "Pending Customer",
+        "resolved": "Resolved",
+        "search": "Search tickets...",
+        "allTypes": "All Types",
+        "question": "Question",
+        "bugReport": "Bug Report",
+        "featureRequest": "Feature Request",
+        "complaint": "Complaint",
+        "feedback": "Feedback",
+        "allPriorities": "All Priorities",
+        "urgent": "Urgent",
+        "high": "High",
+        "normal": "Normal",
+        "low": "Low",
+        "ticket": "Ticket",
+        "customer": "Customer",
+        "subject": "Subject",
+        "type": "Type",
+        "priority": "Priority",
+        "status": "Status",
+        "lastUpdate": "Last Update",
+        "previous": "Previous",
+        "next": "Next",
+        "noTickets": "No support tickets",
+        "noTicketsDesc": "When customers submit tickets, they'll appear here.",
+        "setupFaqs": "Set Up FAQs",
+        "conversation": "Conversation",
+        "reply": "Reply",
+        "typeResponse": "Type your response...",
+        "internalNote": "Internal note (not visible to customer)",
+        "aiSuggest": "AI Suggest",
+        "sendReply": "Send Reply",
+        "markPending": "Mark Pending",
+        "resolve": "Resolve Ticket",
+        "closeTicket": "Close Ticket",
+        "email": "Email",
+        "created": "Created",
+        "aiHandled": "AI Handled",
+        "yes": "Yes",
+        "notifications": "Notifications",
+        "markAllRead": "Mark all read",
+        "noNotifications": "No new notifications",
+        "myMessages": "My Messages",
+        "noMessages": "No messages yet",
+        "noMessagesDesc": "When you contact us or chat with support, your conversations will appear here.",
+        "ticketStatus": {
+            "open": "Open",
+            "escalated": "With Team",
+            "awaiting_response": "Awaiting Reply",
+            "in_progress": "In Progress",
+            "pending_customer": "Your Reply Needed",
+            "resolved": "Resolved",
+            "closed": "Closed"
+        },
+        "chatHistory": "Chat History",
+        "escalatedToTeam": "Escalated to Team",
+        "typeReply": "Type a reply...",
+        "supportThread": "Support Thread"
+    },
+    "supportSettings": {
+        "title": "Support Settings",
+        "subtitle": "Configure AI support and customer service options",
+        "selectApp": "Select an App",
+        "selectAppDesc": "Choose a loyalty app above to configure its support settings.",
+        "aiSupport": {
+            "title": "AI Support Agent",
+            "desc": "Enable 24/7 AI-powered customer support",
+            "info": "When enabled, customers can chat with an AI agent that answers questions about your business, points, rewards, and more. The AI uses your FAQ and Knowledge Base to provide accurate answers."
+        },
+        "autonomy": {
+            "title": "AI Autonomy Mode",
+            "desc": "Control how independently the AI operates",
+            "autoPilot": "Auto Pilot",
+            "autoPilotDesc": "AI responds automatically to customers. You get notified of conversations and can review them anytime.",
+            "manualApprove": "Manual Approve",
+            "manualApproveDesc": "AI drafts responses but waits for your approval before sending. Best for sensitive businesses.",
+            "recommended": "Recommended"
+        },
+        "escalation": {
+            "title": "Escalation Rules",
+            "desc": "When should AI transfer to a human?",
+            "keywords": "Escalation Keywords",
+            "keywordsHint": "AI will offer to connect with a human when customers use these words (comma-separated)",
+            "maxTurns": "Max AI Turns Before Escalation",
+            "maxTurnsHint": "If the customer isn't satisfied after this many exchanges, offer human support",
+            "negativeSentiment": "Escalate when negative sentiment is detected",
+            "lowConfidence": "Escalate when AI confidence is low"
+        },
+        "hours": {
+            "title": "Business Hours",
+            "desc": "Set when human support is available",
+            "weekdays": "Monday - Friday",
+            "saturday": "Saturday",
+            "sundayClosed": "Closed on Sunday",
+            "timezone": "Timezone"
+        },
+        "afterHours": {
+            "title": "After Hours Message",
+            "desc": "Message shown when human support isn't available"
+        },
+        "welcome": {
+            "title": "AI Welcome Message",
+            "desc": "First message customers see when starting a chat"
+        },
+        "save": "Save Settings",
+        "saving": "Saving...",
+        "saved": "Settings saved",
+        "error": "Error saving settings"
+    },
     "rateLimit": {
         "tooMany": "Too many {action}. Please try again in {time}.",
         "remaining": "You have {count} {action} remaining this hour.",
@@ -539,7 +724,9 @@
             "emailHelper": "Contact support to change your email",
             "phone": "Phone Number",
             "phoneHelper": "Optional",
-            "saveChanges": "Save Changes"
+            "saveChanges": "Save Changes",
+            "advancedMode": "Advanced Mode",
+            "advancedModeDesc": "Show advanced navigation (Projects, Apps, Roadmap, Launch Plan). Turn this on if you manage multiple projects or need power user features."
         },
         "security": {
             "title": "Change Password",
@@ -581,17 +768,22 @@
         },
         "plan": {
             "title": "Current Plan",
-            "subtitle": "Manage your subscription and billing",
+            "subtitle": "View your subscription and usage",
             "currentPlan": "Current Plan",
             "features": "Features",
-            "projects": "Projects",
+            "members": "Members",
+            "aiInsights": "AI Insights/month",
             "automations": "Automations",
-            "customers": "Customers",
-            "teamMembers": "Team Members",
+            "whiteLabel": "White-label",
+            "included": "Included",
+            "notIncluded": "Not included",
             "unlimited": "Unlimited",
             "upgrade": "Upgrade Plan",
             "redeem": "Redeem Code",
-            "billingNote": "Billing management coming soon"
+            "royaltyPro": "Royalty Pro",
+            "royaltyProActive": "Active",
+            "addRoyaltyPro": "Add Royalty Pro",
+            "billingNote": "14-day free trial, then billed monthly or annually. Cancel anytime."
         },
         "activity": {
             "title": "Activity Log",
@@ -744,6 +936,61 @@
             "download": "Download",
             "print": "Print",
             "tips": "Tips for sharing your app"
+        },
+        "help": {
+            "title": "Help Center",
+            "greeting": "How can we help?",
+            "searchPlaceholder": "Search for help...",
+            "faqs": "FAQs",
+            "articles": "Articles",
+            "contact": "Contact",
+            "faqsTitle": "Frequently Asked Questions",
+            "articlesTitle": "Help Articles",
+            "contactTitle": "Contact Us",
+            "noFaqs": "No FAQs available",
+            "noArticles": "No articles available",
+            "checkBack": "Check back soon!",
+            "searchResults": "Search Results",
+            "noResults": "No results found",
+            "tryDifferent": "Try different keywords or",
+            "contactUs": "contact us",
+            "clear": "Clear",
+            "subjectGeneral": "General Question",
+            "subjectPoints": "Points & Rewards",
+            "subjectAccount": "Account Issue",
+            "subjectBug": "Report a Bug",
+            "subjectFeedback": "Feedback",
+            "messagePlaceholder": "Describe your issue or question...",
+            "sendMessage": "Send Message",
+            "sending": "Sending...",
+            "messageSent": "Message sent! We'll get back to you soon.",
+            "sendFailed": "Failed to send message. Please try again.",
+            "wasHelpful": "Was this article helpful?",
+            "yes": "Yes",
+            "no": "No",
+            "thanksFeedback": "Thanks for your feedback!"
         }
+    },
+    "auth": {
+        "welcomeBack": "Welcome back",
+        "signInSubtitle": "Sign in to your account to continue",
+        "email": "Email",
+        "password": "Password",
+        "emailPlaceholder": "you@example.com",
+        "passwordPlaceholder": "Enter your password",
+        "signIn": "Sign In",
+        "noAccount": "Don't have an account?",
+        "signUp": "Sign up",
+        "backToHome": "Back to home",
+        "captchaError": "Please complete the CAPTCHA verification.",
+        "createAccount": "Create an account",
+        "signUpSubtitle": "Start automating your customer relationships",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "firstNamePlaceholder": "John",
+        "lastNamePlaceholder": "Doe",
+        "createPasswordPlaceholder": "Create a password",
+        "createAccountBtn": "Create Account",
+        "hasAccount": "Already have an account?"
     }
 }

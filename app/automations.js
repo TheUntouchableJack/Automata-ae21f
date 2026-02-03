@@ -7,23 +7,41 @@ let currentFilter = 'all';
 let searchQuery = '';
 let selectedIcon = 'workflow';
 let selectedTemplateId = null;
+let isSubmitting = false;  // Guard against double-submit
+
+// Pagination state
+let currentPage = 1;
+const ITEMS_PER_PAGE = 12;
 
 async function initAutomations() {
     // Require authentication
     currentUser = await requireAuth();
     if (!currentUser) return;
 
-    // Load user info
-    await loadUserInfo();
+    // Load user info and organization in parallel (optimized)
+    const [userInfo, orgData] = await Promise.all([
+        AppUtils.loadUserInfo(currentUser.id, currentUser.email),
+        AppUtils.loadOrganization(supabase, currentUser.id)
+    ]);
 
-    // Load organization
-    await loadOrganization();
+    currentOrganization = orgData.organization;
 
-    // Load projects for the dropdown
-    await loadProjects();
+    // Initialize sidebar with user data (including role for admin features)
+    if (typeof AppSidebar !== 'undefined') {
+        AppSidebar.init({
+            name: userInfo.fullName,
+            email: currentUser.email,
+            organization: currentOrganization,
+            role: orgData.role,
+            isAdmin: userInfo.profile?.is_admin === true
+        });
+    }
 
-    // Load automations
-    await loadAutomations();
+    // Load projects and automations in parallel (optimized)
+    await Promise.all([
+        loadProjects(),
+        loadAutomations()
+    ]);
 
     // Setup event listeners
     setupEventListeners();
@@ -35,35 +53,8 @@ async function initAutomations() {
     populateIconPicker();
 }
 
-// ===== Load Organization =====
-async function loadOrganization() {
-    try {
-        const { data: memberships, error: memberError } = await supabase
-            .from('organization_members')
-            .select('organization_id, role')
-            .eq('user_id', currentUser.id)
-            .limit(1);
-
-        if (memberError) throw memberError;
-
-        if (!memberships || memberships.length === 0) {
-            console.error('No organization membership found');
-            return;
-        }
-
-        const { data: org, error: orgError } = await supabase
-            .from('organizations')
-            .select('id, name, slug')
-            .eq('id', memberships[0].organization_id)
-            .single();
-
-        if (orgError) throw orgError;
-
-        currentOrganization = org;
-    } catch (error) {
-        console.error('Error loading organization:', error);
-    }
-}
+// Use shared utilities for loadOrganization
+// See: /app/utils.js
 
 // ===== Load Projects =====
 async function loadProjects() {
@@ -103,35 +94,8 @@ function populateProjectDropdowns() {
     }
 }
 
-// ===== Load User Info =====
-async function loadUserInfo() {
-    const profile = await getUserProfile(currentUser.id);
-
-    const userAvatar = document.getElementById('user-avatar');
-    const userName = document.getElementById('user-name');
-
-    if (profile && (profile.first_name || profile.last_name)) {
-        const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-        const initials = getInitials(profile.first_name, profile.last_name);
-        userAvatar.textContent = initials;
-        userName.textContent = fullName;
-    } else {
-        const initials = currentUser.email.substring(0, 2).toUpperCase();
-        userAvatar.textContent = initials;
-        userName.textContent = currentUser.email.split('@')[0];
-    }
-}
-
-function getInitials(firstName, lastName) {
-    if (firstName && lastName) {
-        return (firstName[0] + lastName[0]).toUpperCase();
-    } else if (firstName) {
-        return firstName.substring(0, 2).toUpperCase();
-    } else if (lastName) {
-        return lastName.substring(0, 2).toUpperCase();
-    }
-    return '?';
-}
+// Use shared utilities for loadUserInfo and getInitials
+// See: /app/utils.js
 
 // ===== Load Automations =====
 async function loadAutomations() {
@@ -145,18 +109,23 @@ async function loadAutomations() {
     }
 
     try {
-        // Load all automations for the organization via projects
+        // Load automations for the organization via projects (exclude soft-deleted)
+        // Limit to 1000 to prevent unbounded queries at scale
         const { data: automations, error } = await supabase
             .from('automations')
             .select(`
                 *,
-                projects (
+                projects!inner (
                     id,
                     name,
-                    industry
+                    industry,
+                    organization_id
                 )
             `)
-            .order('created_at', { ascending: false });
+            .eq('projects.organization_id', currentOrganization.id)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false })
+            .limit(1000);
 
         if (error) throw error;
 
@@ -189,6 +158,7 @@ function updateCounts() {
 function renderAutomations() {
     const grid = document.getElementById('automations-grid');
     const emptyState = document.getElementById('empty-state');
+    const paginationContainer = document.getElementById('pagination');
 
     // Filter automations
     let filtered = allAutomations;
@@ -221,14 +191,28 @@ function renderAutomations() {
     if (filtered.length === 0) {
         grid.style.display = 'none';
         emptyState.style.display = 'block';
+        if (paginationContainer) paginationContainer.style.display = 'none';
         updateEmptyState();
         return;
     }
 
+    // Pagination calculations
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    // Ensure current page is valid
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    // Get items for current page
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedItems = filtered.slice(startIndex, endIndex);
+
     emptyState.style.display = 'none';
     grid.style.display = 'grid';
 
-    grid.innerHTML = filtered.map(automation => {
+    grid.innerHTML = paginatedItems.map(automation => {
         const isArchived = automation.is_archived;
         const statusClass = isArchived ? 'archived' : (automation.is_active ? 'active' : 'inactive');
         const statusText = isArchived ? 'Archived' : (automation.is_active ? 'Active' : 'Inactive');
@@ -264,6 +248,133 @@ function renderAutomations() {
             </div>
         `;
     }).join('');
+
+    // Render pagination
+    renderPagination(totalItems, totalPages);
+}
+
+// ===== Pagination Functions =====
+function renderPagination(totalItems, totalPages) {
+    const paginationContainer = document.getElementById('pagination');
+    if (!paginationContainer) return;
+
+    // Hide pagination if only one page
+    if (totalPages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+
+    paginationContainer.style.display = 'flex';
+
+    const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+    const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
+
+    // Generate page numbers with ellipsis for large page counts
+    let pageNumbers = '';
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+        // Show all pages
+        for (let i = 1; i <= totalPages; i++) {
+            pageNumbers += `<button class="pagination-page ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+    } else {
+        // Show pages with ellipsis
+        if (currentPage <= 3) {
+            for (let i = 1; i <= 4; i++) {
+                pageNumbers += `<button class="pagination-page ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            pageNumbers += '<span class="pagination-ellipsis">...</span>';
+            pageNumbers += `<button class="pagination-page" data-page="${totalPages}">${totalPages}</button>`;
+        } else if (currentPage >= totalPages - 2) {
+            pageNumbers += `<button class="pagination-page" data-page="1">1</button>`;
+            pageNumbers += '<span class="pagination-ellipsis">...</span>';
+            for (let i = totalPages - 3; i <= totalPages; i++) {
+                pageNumbers += `<button class="pagination-page ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+        } else {
+            pageNumbers += `<button class="pagination-page" data-page="1">1</button>`;
+            pageNumbers += '<span class="pagination-ellipsis">...</span>';
+            for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                pageNumbers += `<button class="pagination-page ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            pageNumbers += '<span class="pagination-ellipsis">...</span>';
+            pageNumbers += `<button class="pagination-page" data-page="${totalPages}">${totalPages}</button>`;
+        }
+    }
+
+    paginationContainer.innerHTML = `
+        <div class="pagination-info">
+            Showing ${startItem}-${endItem} of ${totalItems}
+        </div>
+        <div class="pagination-controls">
+            <button class="pagination-btn" id="pagination-prev" ${currentPage === 1 ? 'disabled' : ''}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Previous
+            </button>
+            <div class="pagination-pages">
+                ${pageNumbers}
+            </div>
+            <button class="pagination-btn" id="pagination-next" ${currentPage === totalPages ? 'disabled' : ''}>
+                Next
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    // Add event listeners for pagination controls
+    setupPaginationListeners();
+}
+
+function setupPaginationListeners() {
+    const prevBtn = document.getElementById('pagination-prev');
+    const nextBtn = document.getElementById('pagination-next');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderAutomations();
+                scrollToTop();
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            currentPage++;
+            renderAutomations();
+            scrollToTop();
+        });
+    }
+
+    // Page number buttons
+    document.querySelectorAll('.pagination-page').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const page = parseInt(btn.dataset.page);
+            if (page !== currentPage) {
+                currentPage = page;
+                renderAutomations();
+                scrollToTop();
+            }
+        });
+    });
+}
+
+function scrollToTop() {
+    const grid = document.getElementById('automations-grid');
+    if (grid) {
+        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// Reset to page 1 when filter or search changes
+function resetPagination() {
+    currentPage = 1;
 }
 
 function getAutomationIcon(automation) {
@@ -352,7 +463,7 @@ async function archiveAutomation(id) {
 
     } catch (error) {
         console.error('Error archiving automation:', error);
-        alert('Error archiving automation. Please try again.');
+        showToast('Error archiving automation', 'error');
     }
 }
 
@@ -378,34 +489,56 @@ async function restoreAutomation(id) {
 
     } catch (error) {
         console.error('Error restoring automation:', error);
-        alert('Error restoring automation. Please try again.');
+        showToast('Error restoring automation', 'error');
     }
 }
 
 window.restoreAutomation = restoreAutomation;
 
-// ===== Delete Automation (Permanent) =====
+// ===== Delete Automation (Soft Delete with 1-hour Undo) =====
 function deleteAutomation(id, name) {
+    // Get automation data before deleting (for potential restore)
+    const automation = allAutomations.find(a => a.id === id);
+
     DangerModal.show({
         title: 'Delete Automation',
         itemName: name,
-        warningText: 'This will permanently delete this automation and all its generated content. This action cannot be undone.',
-        confirmPhrase: 'YES DELETE THIS AUTOMATION',
-        confirmButtonText: 'Delete Forever',
+        warningText: 'This automation will be deleted. You can undo this within 1 hour.',
+        confirmPhrase: 'DELETE THIS AUTOMATION',
+        confirmButtonText: 'Delete Automation',
         onConfirm: async () => {
             try {
-                const { error } = await supabase
-                    .from('automations')
-                    .delete()
-                    .eq('id', id);
+                // Soft delete - sets deleted_at timestamp
+                const result = await SoftDelete.delete('automations', id, {
+                    userId: currentUser?.id
+                });
 
-                if (error) throw error;
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
 
                 // Remove from local data
                 allAutomations = allAutomations.filter(a => a.id !== id);
-
                 updateCounts();
                 renderAutomations();
+
+                // Show undo toast
+                UndoToast.show({
+                    message: `"${name}" deleted`,
+                    entityType: 'automations',
+                    entityId: id,
+                    entityName: name,
+                    onUndo: async (restoredData) => {
+                        // Add back to local data and re-render
+                        if (restoredData) {
+                            allAutomations.push(restoredData);
+                        } else if (automation) {
+                            allAutomations.push(automation);
+                        }
+                        updateCounts();
+                        renderAutomations();
+                    }
+                });
 
             } catch (error) {
                 console.error('Error deleting automation:', error);
@@ -419,38 +552,26 @@ window.deleteAutomation = deleteAutomation;
 
 // ===== Event Listeners =====
 function setupEventListeners() {
-    // User menu toggle
-    const userMenuBtn = document.getElementById('user-menu-btn');
-    const userDropdown = document.getElementById('user-dropdown');
+    // User menu and logout are now handled by sidebar.js
 
-    userMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        userDropdown.classList.toggle('active');
-    });
-
-    document.addEventListener('click', () => {
-        userDropdown.classList.remove('active');
-    });
-
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-        await signOut();
-    });
-
-    // Filter tabs
-    document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            currentFilter = tab.dataset.filter;
-            renderAutomations();
-        });
-    });
-
-    // Search
-    document.getElementById('search-input').addEventListener('input', (e) => {
-        searchQuery = e.target.value;
+    // Filter tabs with event delegation (optimized)
+    AppUtils.delegate('.filters', 'click', '.filter-tab', (event, tab) => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        resetPagination();
         renderAutomations();
+    });
+
+    // Search with debouncing (optimized - prevents re-render on every keystroke)
+    const debouncedSearch = AppUtils.debounce((value) => {
+        searchQuery = value;
+        resetPagination();
+        renderAutomations();
+    }, 250);
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        debouncedSearch(e.target.value);
     });
 
     // New Automation button
@@ -681,6 +802,10 @@ window.selectTemplate = selectTemplate;
 async function handleCreateFromScratch(e) {
     e.preventDefault();
 
+    // Prevent double-submit
+    if (isSubmitting) return;
+    isSubmitting = true;
+
     const btn = document.getElementById('create-scratch-btn');
     const originalText = btn.textContent;
     btn.disabled = true;
@@ -726,11 +851,16 @@ async function handleCreateFromScratch(e) {
         alert('Error creating automation. Please try again.');
         btn.disabled = false;
         btn.textContent = originalText;
+        isSubmitting = false;  // Reset guard on error
     }
 }
 
 async function handleCreateFromTemplate(e) {
     e.preventDefault();
+
+    // Prevent double-submit
+    if (isSubmitting) return;
+    isSubmitting = true;
 
     const btn = document.getElementById('create-template-btn');
     const originalText = btn.textContent;
@@ -779,16 +909,13 @@ async function handleCreateFromTemplate(e) {
         alert('Error creating automation. Please try again.');
         btn.disabled = false;
         btn.textContent = originalText;
+        isSubmitting = false;  // Reset guard on error
     }
 }
 
 // ===== Utility Functions =====
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// Use shared utilities
+const escapeHtml = AppUtils.escapeHtml;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initAutomations);

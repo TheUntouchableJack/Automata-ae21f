@@ -27,6 +27,12 @@ const Coaching = (function() {
                 title: 'Customer Database',
                 description: 'Import and manage your customer list here.',
                 position: 'bottom'
+            },
+            {
+                target: '.nav-link[href*="apps"], [data-nav="apps"]',
+                title: 'Customer Apps',
+                description: 'Build loyalty programs, rewards clubs, and more for your customers!',
+                position: 'bottom'
             }
         ],
         project: [
@@ -68,8 +74,66 @@ const Coaching = (function() {
                 description: 'Review your settings, then publish to activate the automation.',
                 position: 'left'
             }
+        ],
+        apps: [
+            {
+                target: '.template-cards, .template-card',
+                title: 'Start with a Template',
+                description: 'Choose from pre-built app templates like Loyalty Programs, Rewards Clubs, or VIP Memberships.',
+                position: 'bottom'
+            },
+            {
+                target: '#new-app-btn',
+                title: 'Or Create Custom',
+                description: 'Build a custom app from scratch with exactly the features you need.',
+                position: 'bottom'
+            },
+            {
+                target: '#apps-grid, .apps-grid',
+                title: 'Your Apps',
+                description: 'All your customer-facing apps appear here. Click any app to edit it.',
+                position: 'top'
+            }
+        ],
+        appBuilder: [
+            {
+                target: '.wizard-steps, .step-indicator',
+                title: 'Step-by-Step Builder',
+                description: 'Follow these steps to configure your customer app.',
+                position: 'bottom'
+            },
+            {
+                target: '.features-section, .feature-toggles',
+                title: 'Choose Features',
+                description: 'Enable or disable features like points, leaderboards, and rewards.',
+                position: 'right'
+            },
+            {
+                target: '.branding-section, .brand-settings',
+                title: 'Match Your Brand',
+                description: 'Customize colors and upload your logo to match your brand.',
+                position: 'left'
+            },
+            {
+                target: '.phone-mockup, .preview-section',
+                title: 'Live Preview',
+                description: 'See how your app looks on a phone in real-time as you make changes.',
+                position: 'left'
+            },
+            {
+                target: '.qr-section, #generate-qr-btn',
+                title: 'Share with QR Code',
+                description: 'Generate a QR code for customers to scan and join your app.',
+                position: 'bottom'
+            }
         ]
     };
+
+    // Active tooltips tracking
+    let activeTooltips = [];
+
+    // Active banners tracking
+    let activeBanners = [];
 
     /**
      * Check if a tour has been completed
@@ -371,6 +435,225 @@ const Coaching = (function() {
         TOURS[name] = steps;
     }
 
+    /**
+     * Show a tooltip near a target element
+     */
+    function showTooltip(targetSelector, content, options = {}) {
+        const target = document.querySelector(targetSelector);
+        if (!target) return null;
+
+        const tipId = options.id || targetSelector;
+
+        // Check if already dismissed
+        if (isDismissed(tipId)) return null;
+
+        // Remove existing tooltip on this target
+        const existing = activeTooltips.find(t => t.id === tipId);
+        if (existing) {
+            existing.element?.remove();
+            activeTooltips = activeTooltips.filter(t => t.id !== tipId);
+        }
+
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'coaching-inline-tooltip';
+        tooltip.setAttribute('data-tip-id', tipId);
+        tooltip.innerHTML = `
+            <div class="coaching-inline-tooltip-content">
+                ${content}
+                ${options.dismissible !== false ?
+                    `<button class="coaching-inline-tooltip-dismiss" data-tip-id="${tipId}">Got it</button>` :
+                    ''
+                }
+            </div>
+            <div class="coaching-inline-tooltip-arrow"></div>
+        `;
+
+        // Position based on options
+        const position = options.position || 'top';
+        tooltip.setAttribute('data-position', position);
+
+        // Add dismiss handler
+        const dismissBtn = tooltip.querySelector('.coaching-inline-tooltip-dismiss');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+                dismissTooltip(tipId);
+            });
+        }
+
+        // Add to DOM
+        target.style.position = target.style.position || 'relative';
+        target.appendChild(tooltip);
+
+        // Track
+        activeTooltips.push({ id: tipId, element: tooltip });
+
+        return tooltip;
+    }
+
+    /**
+     * Dismiss a tooltip permanently
+     */
+    function dismissTooltip(tipId) {
+        // Remove from DOM
+        const tooltip = document.querySelector(`.coaching-inline-tooltip[data-tip-id="${tipId}"]`);
+        if (tooltip) {
+            tooltip.remove();
+        }
+
+        // Remove from tracking
+        activeTooltips = activeTooltips.filter(t => t.id !== tipId);
+
+        // Save to dismissed list
+        try {
+            const dismissed = JSON.parse(localStorage.getItem('automata_coaching_dismissed') || '[]');
+            if (!dismissed.includes(tipId)) {
+                dismissed.push(tipId);
+                localStorage.setItem('automata_coaching_dismissed', JSON.stringify(dismissed));
+            }
+        } catch (e) {
+            console.warn('Could not save tooltip dismissal:', e);
+        }
+    }
+
+    /**
+     * Check if a tooltip/banner has been dismissed
+     */
+    function isDismissed(id) {
+        try {
+            const dismissed = JSON.parse(localStorage.getItem('automata_coaching_dismissed') || '[]');
+            return dismissed.includes(id);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Show a feature announcement banner
+     */
+    function showBanner(message, options = {}) {
+        const bannerId = options.id || 'banner-' + Date.now();
+
+        // Check if already dismissed
+        if (isDismissed(bannerId)) return null;
+
+        // Remove existing banner with same ID
+        const existing = document.querySelector(`.coaching-banner[data-banner-id="${bannerId}"]`);
+        if (existing) {
+            existing.remove();
+        }
+
+        // Create banner
+        const banner = document.createElement('div');
+        banner.className = 'coaching-banner' + (options.type ? ` coaching-banner-${options.type}` : '');
+        banner.setAttribute('data-banner-id', bannerId);
+        banner.innerHTML = `
+            <div class="coaching-banner-content">
+                ${options.icon ? `<span class="coaching-banner-icon">${options.icon}</span>` : ''}
+                <span class="coaching-banner-message">${message}</span>
+                ${options.action ?
+                    `<a href="${escapeHtml(options.action.href)}" class="coaching-banner-action">${escapeHtml(options.action.text)}</a>` :
+                    ''
+                }
+            </div>
+            <button class="coaching-banner-close" data-banner-id="${bannerId}" aria-label="Dismiss">&times;</button>
+        `;
+
+        // Add dismiss handler
+        const closeBtn = banner.querySelector('.coaching-banner-close');
+        closeBtn.addEventListener('click', () => {
+            dismissBanner(bannerId);
+        });
+
+        // Insert at appropriate location
+        const main = document.querySelector('main, .main-content, .app-content');
+        if (main) {
+            main.insertBefore(banner, main.firstChild);
+        } else {
+            document.body.insertBefore(banner, document.body.firstChild);
+        }
+
+        // Track
+        activeBanners.push({ id: bannerId, element: banner });
+
+        return banner;
+    }
+
+    /**
+     * Dismiss a banner permanently
+     */
+    function dismissBanner(bannerId) {
+        const banner = document.querySelector(`.coaching-banner[data-banner-id="${bannerId}"]`);
+        if (banner) {
+            banner.classList.add('coaching-banner-dismissing');
+            setTimeout(() => banner.remove(), 300);
+        }
+
+        // Remove from tracking
+        activeBanners = activeBanners.filter(b => b.id !== bannerId);
+
+        // Save to dismissed list
+        try {
+            const dismissed = JSON.parse(localStorage.getItem('automata_coaching_dismissed') || '[]');
+            if (!dismissed.includes(bannerId)) {
+                dismissed.push(bannerId);
+                localStorage.setItem('automata_coaching_dismissed', JSON.stringify(dismissed));
+            }
+        } catch (e) {
+            console.warn('Could not save banner dismissal:', e);
+        }
+    }
+
+    /**
+     * Track first-time page visit
+     */
+    function trackFirstVisit(pageId) {
+        try {
+            const visits = JSON.parse(localStorage.getItem('automata_coaching_visits') || '{}');
+            if (!visits[pageId]) {
+                visits[pageId] = new Date().toISOString();
+                localStorage.setItem('automata_coaching_visits', JSON.stringify(visits));
+                return true; // First visit
+            }
+            return false; // Repeat visit
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if this is a first visit to a page
+     */
+    function isFirstVisit(pageId) {
+        try {
+            const visits = JSON.parse(localStorage.getItem('automata_coaching_visits') || '{}');
+            return !visits[pageId];
+        } catch (e) {
+            return true;
+        }
+    }
+
+    /**
+     * Reset all dismissals (for testing)
+     */
+    function resetDismissals() {
+        try {
+            localStorage.removeItem('automata_coaching_dismissed');
+            localStorage.removeItem('automata_coaching_visits');
+        } catch (e) {
+            console.warn('Could not reset dismissals:', e);
+        }
+    }
+
+    /**
+     * Escape HTML helper
+     */
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+
     // Public API
     return {
         showTour,
@@ -378,7 +661,15 @@ const Coaching = (function() {
         markCompleted,
         resetTours,
         isActive,
-        addTour
+        addTour,
+        showTooltip,
+        dismissTooltip,
+        showBanner,
+        dismissBanner,
+        trackFirstVisit,
+        isFirstVisit,
+        isDismissed,
+        resetDismissals
     };
 })();
 

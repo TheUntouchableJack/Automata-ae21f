@@ -3,14 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog - Automata</title>
-    <meta name="description" content="Explore automation ideas and strategies for various industries. AI-powered insights for food, health, technology, and more.">
+    <title>Blog - Automata | AI-Powered Automation Insights</title>
+    <meta name="description" content="Explore automation strategies, customer engagement insights, and AI-powered marketing ideas. Practical guides for growing your business.">
+    <link rel="canonical" href="https://automata.app/blog/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Automata Blog | Automation Insights">
+    <meta property="og:description" content="Explore automation strategies and AI-powered marketing ideas for growing your business.">
+    <meta property="og:url" content="https://automata.app/blog/">
+    <meta property="og:image" content="https://automata.app/og-blog.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Automata Blog | Automation Insights">
+    <meta name="twitter:description" content="Explore automation strategies and AI-powered marketing ideas.">
+    <meta name="twitter:image" content="https://automata.app/og-blog.png">
+
+    <!-- Fonts & Styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="blog.css">
     <link rel="stylesheet" href="../i18n/i18n.css">
+
+    <!-- JSON-LD Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "Automata Blog",
+        "description": "Automation strategies and AI-powered marketing insights",
+        "url": "https://automata.app/blog/",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Automata",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://automata.app/logo.png"
+            }
+        }
+    }
+    </script>
 </head>
 <body>
     <div class="blog-layout">
@@ -24,7 +59,7 @@
 
                 <nav class="blog-nav">
                     <a href="/">Home</a>
-                    <a href="/blog/">Blog</a>
+                    <a href="/blog/" class="active">Blog</a>
                     <a href="/app/login.html">Log In</a>
                     <!-- Language Selector -->
                     <div class="lang-selector">
@@ -53,22 +88,21 @@
         <section class="blog-hero">
             <div class="container">
                 <h1>Automation Insights</h1>
-                <p>Explore ideas and strategies for automating customer relationships across industries</p>
+                <p>Practical strategies for growing your business with AI-powered customer engagement</p>
             </div>
         </section>
 
-        <!-- Filter -->
+        <!-- Topic Filter -->
         <section class="filter-section">
             <div class="container">
                 <div class="filter-tabs" id="filter-tabs">
-                    <button class="filter-tab active" data-industry="all">All</button>
-                    <button class="filter-tab" data-industry="food">Food</button>
-                    <button class="filter-tab" data-industry="health">Health</button>
-                    <button class="filter-tab" data-industry="service">Services</button>
-                    <button class="filter-tab" data-industry="politics">Politics</button>
-                    <button class="filter-tab" data-industry="technology">Technology</button>
-                    <button class="filter-tab" data-industry="retail">Retail</button>
-                    <button class="filter-tab" data-industry="education">Education</button>
+                    <button class="filter-tab active" data-topic="all">All</button>
+                    <button class="filter-tab" data-topic="getting-started">Getting Started</button>
+                    <button class="filter-tab" data-topic="automation">Automation</button>
+                    <button class="filter-tab" data-topic="customer-engagement">Customer Engagement</button>
+                    <button class="filter-tab" data-topic="industry-playbooks">Industry Playbooks</button>
+                    <button class="filter-tab" data-topic="ai-insights">AI Insights</button>
+                    <button class="filter-tab" data-topic="case-studies">Case Studies</button>
                 </div>
             </div>
         </section>
@@ -93,7 +127,23 @@
                         </svg>
                     </div>
                     <h2>No posts yet</h2>
-                    <p>Check back soon for automation insights and industry strategies</p>
+                    <p>Check back soon for automation insights and strategies</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Subscribe Section -->
+        <section class="subscribe-section">
+            <div class="container">
+                <div class="subscribe-card">
+                    <div class="subscribe-content">
+                        <h2>Get automation tips in your inbox</h2>
+                        <p>Weekly insights on customer engagement, AI, and growing your business. No spam, unsubscribe anytime.</p>
+                    </div>
+                    <form class="subscribe-form" id="subscribe-form">
+                        <input type="email" placeholder="Your email address" required>
+                        <button type="submit" class="btn btn-primary">Subscribe</button>
+                    </form>
                 </div>
             </div>
         </section>
@@ -108,6 +158,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="blog.js"></script>
+    <script src="blog.js?v=2"></script>
 </body>
 </html>

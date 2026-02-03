@@ -6,10 +6,10 @@
     <title>Roadmap - Automata</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="sidebar.css?v=3">
+    <link rel="stylesheet" href="sidebar.css?v=4">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <style>
         /* Roadmap Styles */
@@ -34,8 +34,8 @@
 
         /* Admin Banner */
         .admin-banner {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 1px solid rgba(124, 58, 237, 0.3);
             border-radius: var(--radius-md);
             padding: 12px 20px;
             margin: 0 24px 24px;
@@ -155,7 +155,7 @@
 
         .roadmap-card:hover {
             border-color: var(--color-primary);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
         }
 
         .roadmap-card:last-child { margin-bottom: 0; }
@@ -293,7 +293,7 @@
             margin-bottom: 8px;
         }
 
-        .card-category.feature { background: rgba(99, 102, 241, 0.1); color: var(--color-primary); }
+        .card-category.feature { background: rgba(124, 58, 237, 0.1); color: var(--color-primary); }
         .card-category.improvement { background: rgba(16, 185, 129, 0.1); color: var(--color-accent); }
         .card-category.integration { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
         .card-category.bug { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
@@ -341,13 +341,13 @@
         .vote-btn:hover {
             border-color: var(--color-primary);
             color: var(--color-primary);
-            background: rgba(99, 102, 241, 0.05);
+            background: rgba(124, 58, 237, 0.05);
         }
 
         .vote-btn.voted {
             border-color: var(--color-primary);
             color: var(--color-primary);
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(124, 58, 237, 0.1);
         }
 
         .vote-btn svg { width: 14px; height: 14px; }
@@ -654,9 +654,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="auth.js?v=3"></script>
+    <script src="auth.js?v=4"></script>
     <script src="rate-limiter.js?v=1"></script>
-    <script src="sidebar.js?v=11"></script>
+    <script src="sidebar.js?v=16"></script>
     <script>
         // ===== Roadmap Page =====
         let currentUser = null;
@@ -685,7 +685,8 @@
                     name: fullName,
                     email: currentUser.email,
                     organization: currentOrganization,
-                    role: currentUserRole
+                    role: currentUserRole,
+                    isAdmin: userProfile?.is_admin === true
                 });
             }
 

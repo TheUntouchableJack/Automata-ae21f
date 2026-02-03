@@ -1,5 +1,11 @@
 // ===== AI Intelligence Page =====
 // Full-featured AI recommendations with filtering, stats, and one-click implementation
+//
+// BUSINESS MODEL NOTE: Royalty is visits-based loyalty, NOT purchases/payments.
+// - Customers earn points by visiting (scanning QR codes), not by purchasing
+// - No in-app sales or payment processing
+// - Do NOT recommend product pricing, purchase incentives, or checkout-related features
+// - Focus on: visits, engagement, retention, referrals, milestones, birthdays
 
 const IntelligencePage = (function() {
     let organizationId = null;
@@ -125,7 +131,7 @@ const IntelligencePage = (function() {
             projectDesc: 'Show gratitude to your customers',
             automation: {
                 name: 'Thank You Notes',
-                description: 'Send personalized thank you messages after purchases',
+                description: 'Send personalized thank you messages after visits',
                 type: 'email',
                 frequency: 'daily',
                 icon: 'thank_you',
@@ -133,6 +139,52 @@ const IntelligencePage = (function() {
             }
         }
     };
+
+    // Track created app for the banner
+    let createdAppSlug = null;
+
+    // Track if banner listeners are already attached (prevents listener leak)
+    let bannerListenersAttached = false;
+
+    // ===== SECURITY: Validate and sanitize onboarding data from localStorage =====
+    // Prevents XSS via localStorage tampering
+    function validateOnboardingData(rawData) {
+        if (!rawData || typeof rawData !== 'string') {
+            return { isValid: false, data: null };
+        }
+
+        try {
+            const parsed = JSON.parse(rawData);
+
+            // Validate structure
+            if (typeof parsed !== 'object' || parsed === null) {
+                return { isValid: false, data: null };
+            }
+
+            // Validate and sanitize businessPrompt (limit length, trim)
+            let businessPrompt = '';
+            if (typeof parsed.businessPrompt === 'string') {
+                // Limit to 500 chars and trim
+                businessPrompt = parsed.businessPrompt.trim().substring(0, 500);
+            }
+
+            // Validate context - only extract known safe fields
+            let context = {};
+            if (parsed.context && typeof parsed.context === 'object') {
+                if (typeof parsed.context.industry === 'string') {
+                    // Whitelist valid industries
+                    const validIndustries = ['food', 'retail', 'health', 'service', 'technology', 'education', ''];
+                    const industry = parsed.context.industry.trim().substring(0, 100);
+                    context.industry = validIndustries.includes(industry) ? industry : '';
+                }
+            }
+
+            return { isValid: true, data: { businessPrompt, context } };
+        } catch (e) {
+            console.error('Invalid onboarding data format:', e);
+            return { isValid: false, data: null };
+        }
+    }
 
     // Initialize the page
     async function init() {
@@ -143,6 +195,15 @@ const IntelligencePage = (function() {
             return;
         }
         currentUserId = user.id;
+
+        // Check for first login flow
+        const urlParams = new URLSearchParams(window.location.search);
+        const isFirstLogin = urlParams.get('firstLogin') === 'true';
+
+        if (isFirstLogin) {
+            // Clear the URL param
+            history.replaceState(null, '', '/app/intelligence.html');
+        }
 
         // Get organization and user info
         const [memberResult, userInfoResult, orgResult] = await Promise.all([
@@ -179,18 +240,368 @@ const IntelligencePage = (function() {
                 name: userInfo?.full_name || user.email,
                 email: user.email,
                 organization: orgData?.organizations || { name: 'My Organization' },
-                role: member.role
+                role: member.role,
+                isAdmin: userInfo?.is_admin === true
             });
         }
 
         // Setup event listeners
         setupEventListeners();
 
-        // Load recommendations
-        await loadRecommendations();
+        // Check for first login flow AFTER we have organizationId
+        const urlParams = new URLSearchParams(window.location.search);
+        const isFirstLogin = urlParams.get('firstLogin') === 'true' ||
+                             localStorage.getItem('royalty_onboarding');
 
-        // Update stats
+        if (isFirstLogin && organizationId) {
+            await runFirstLoginFlow();
+        } else {
+            // Normal flow - load recommendations
+            await loadRecommendations();
+            updateStats();
+        }
+    }
+
+    // First login flow - show loading modal, create app, show banner
+    async function runFirstLoginFlow() {
+        const modal = document.getElementById('first-login-modal');
+        if (!modal) return;
+
+        // ===== QA FIX: Prevent duplicate app creation on refresh =====
+        const inProgress = sessionStorage.getItem('royalty_app_creation_in_progress');
+        if (inProgress === 'true') {
+            console.log('App creation already in progress, skipping');
+            return;
+        }
+
+        // Check if app already exists from onboarding (handles refresh after creation)
+        try {
+            const { data: existingApp } = await supabase
+                .from('customer_apps')
+                .select('id, slug')
+                .eq('organization_id', organizationId)
+                .filter('settings->>created_from', 'eq', 'onboarding')
+                .limit(1)
+                .single();
+
+            if (existingApp) {
+                console.log('Onboarding app already exists:', existingApp.slug);
+                createdAppSlug = existingApp.slug;
+                localStorage.removeItem('royalty_onboarding');
+                showAppReadyBanner();
+                loadRecommendations();
+                updateStats();
+                return;
+            }
+        } catch (e) {
+            // No existing app found, continue with creation
+        }
+
+        // Mark as in progress
+        sessionStorage.setItem('royalty_app_creation_in_progress', 'true');
+
+        // Show modal
+        modal.style.display = 'flex';
+
+        const steps = modal.querySelectorAll('.step-item');
+        const stepDelay = 800; // 0.8s per step
+        let appCreationResult = null;
+
+        // Animate through steps
+        for (let i = 0; i < steps.length; i++) {
+            // Wait for step delay
+            await new Promise(r => setTimeout(r, stepDelay));
+
+            const currentIcon = steps[i].querySelector('.step-icon');
+
+            // On step 3 (Setting up automations), actually create the app
+            if (i === 2) {
+                appCreationResult = await createLoyaltyAppFromOnboarding();
+
+                // ===== ERROR HANDLING: Show error if app creation failed =====
+                if (!appCreationResult.success) {
+                    // Mark step as failed
+                    currentIcon.classList.remove('pending', 'active');
+                    currentIcon.classList.add('error');
+
+                    // Hide modal and show error
+                    await new Promise(r => setTimeout(r, 500));
+                    modal.style.display = 'none';
+                    sessionStorage.removeItem('royalty_app_creation_in_progress');
+                    showAppCreationError(appCreationResult.error);
+                    return;
+                }
+            }
+
+            // Mark current step as complete
+            currentIcon.classList.remove('pending', 'active');
+            currentIcon.classList.add('complete');
+
+            // Mark next step as active (if exists)
+            if (i < steps.length - 1) {
+                const nextIcon = steps[i + 1].querySelector('.step-icon');
+                nextIcon.classList.remove('pending');
+                nextIcon.classList.add('active');
+            }
+        }
+
+        // Small delay before hiding modal
+        await new Promise(r => setTimeout(r, 500));
+
+        // Fade out modal
+        modal.style.opacity = '0';
+        await new Promise(r => setTimeout(r, 300));
+        modal.style.display = 'none';
+
+        // Clear flags and onboarding data
+        sessionStorage.removeItem('royalty_app_creation_in_progress');
+        localStorage.removeItem('royalty_onboarding');
+
+        // Only show banner if app was created successfully
+        if (appCreationResult?.success) {
+            showAppReadyBanner();
+        }
+
+        // Load recommendations in background
+        loadRecommendations();
         updateStats();
+    }
+
+    // ===== ERROR HANDLING: Show error banner when app creation fails =====
+    function showAppCreationError(errorMessage) {
+        const container = document.querySelector('.app-main') || document.querySelector('main');
+        if (!container) {
+            alert('Failed to create your loyalty app. Please try again.');
+            return;
+        }
+
+        // Remove existing error banners
+        container.querySelectorAll('.app-error-banner').forEach(el => el.remove());
+
+        const banner = document.createElement('div');
+        banner.className = 'app-error-banner';
+        banner.innerHTML = `
+            <div class="error-banner-content">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span data-i18n="intelligence.appCreationError">Failed to create your loyalty app</span>
+                <button class="btn btn-secondary btn-sm" onclick="location.reload()">
+                    <span data-i18n="common.tryAgain">Try Again</span>
+                </button>
+                <a href="/app/apps.html" class="btn btn-ghost btn-sm" data-i18n="intelligence.createManually">Create Manually</a>
+            </div>
+        `;
+
+        container.insertBefore(banner, container.firstChild);
+
+        // Apply translations if i18n is available
+        if (typeof I18n !== 'undefined') {
+            I18n.applyTranslations();
+        }
+    }
+
+    // Create loyalty app from onboarding data
+    // Returns: { success: boolean, app?: object, error?: string }
+    async function createLoyaltyAppFromOnboarding() {
+        // ===== SECURITY: Verify organizationId before any database operations =====
+        if (!organizationId) {
+            console.error('Cannot create app: organizationId is null');
+            return { success: false, error: 'missing_org_id' };
+        }
+
+        // ===== SECURITY: Verify organization still exists and user has access =====
+        try {
+            const { data: orgCheck, error: orgError } = await supabase
+                .from('organization_members')
+                .select('organization_id')
+                .eq('user_id', currentUserId)
+                .eq('organization_id', organizationId)
+                .single();
+
+            if (orgError || !orgCheck) {
+                console.error('Organization verification failed:', orgError);
+                return { success: false, error: 'org_verification_failed' };
+            }
+        } catch (verifyErr) {
+            console.error('Error verifying organization:', verifyErr);
+            return { success: false, error: 'org_verification_error' };
+        }
+
+        // ===== SECURITY: Use validated/sanitized onboarding data =====
+        const rawData = localStorage.getItem('royalty_onboarding');
+        const { isValid, data } = validateOnboardingData(rawData);
+
+        let businessPrompt = '';
+        let industry = '';
+
+        if (isValid && data) {
+            businessPrompt = data.businessPrompt;
+            industry = data.context?.industry || '';
+        }
+
+        // Generate a unique slug
+        const slug = 'app-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+        // Create the app
+        try {
+            const { data: app, error } = await supabase
+                .from('customer_apps')
+                .insert({
+                    organization_id: organizationId,
+                    name: businessPrompt ? extractBusinessName(businessPrompt) : 'My Loyalty Program',
+                    slug: slug,
+                    app_type: 'loyalty',
+                    description: businessPrompt || 'AI-powered loyalty program',
+                    branding: {
+                        primary_color: '#7c3aed',
+                        secondary_color: '#a855f7',
+                        logo_text: 'R'
+                    },
+                    features: {
+                        points: true,
+                        tiers: true,
+                        rewards: true,
+                        referrals: true,
+                        leaderboard: true
+                    },
+                    settings: {
+                        points_per_visit: 10,
+                        created_from: 'onboarding',
+                        business_context: businessPrompt,
+                        industry: industry
+                    },
+                    ai_autonomy_mode: 'auto_pilot',
+                    is_active: true
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error creating app:', error);
+                return { success: false, error: error.message };
+            }
+
+            createdAppSlug = app.slug;
+            console.log('Created loyalty app:', app.slug);
+
+            // Create default rewards (non-blocking error)
+            await createDefaultRewards(app.id);
+
+            return { success: true, app };
+
+        } catch (err) {
+            console.error('Error in createLoyaltyAppFromOnboarding:', err);
+            return { success: false, error: err.message || 'Unknown error' };
+        }
+    }
+
+    // Extract business name from prompt
+    function extractBusinessName(prompt) {
+        // Look for patterns like "I run a X" or "my X"
+        const patterns = [
+            /i (?:run|own|have|manage) (?:a |an )?([^.,:]+)/i,
+            /my ([^.,:]+)/i,
+            /(?:a |an )?([^.,:]+) (?:in|based|located)/i
+        ];
+
+        for (const pattern of patterns) {
+            const match = prompt.match(pattern);
+            if (match && match[1]) {
+                // Clean up and capitalize
+                let name = match[1].trim();
+                if (name.length > 50) name = name.substring(0, 47) + '...';
+                return name.charAt(0).toUpperCase() + name.slice(1);
+            }
+        }
+
+        return 'My Loyalty Program';
+    }
+
+    // Create default rewards for the app
+    async function createDefaultRewards(appId) {
+        const defaultRewards = [
+            { name: 'Free Item', description: 'Redeem for a free item of your choice', points_cost: 100, tier_required: 'bronze' },
+            { name: '10% Off', description: 'Get 10% off your next visit', points_cost: 50, tier_required: 'bronze' },
+            { name: 'VIP Treatment', description: 'Special VIP experience', points_cost: 250, tier_required: 'silver' },
+            { name: 'Birthday Bonus', description: 'Double points on your birthday', points_cost: 0, tier_required: 'bronze' }
+        ];
+
+        try {
+            await supabase
+                .from('app_rewards')
+                .insert(defaultRewards.map(r => ({
+                    ...r,
+                    app_id: appId,
+                    is_active: true
+                })));
+        } catch (err) {
+            console.error('Error creating default rewards:', err);
+        }
+    }
+
+    // Show the app ready banner
+    function showAppReadyBanner() {
+        const banner = document.getElementById('app-ready-banner');
+        if (!banner) return;
+
+        banner.style.display = 'flex';
+
+        // Set preview link
+        const previewBtn = document.getElementById('preview-app-btn');
+        if (previewBtn && createdAppSlug) {
+            previewBtn.href = `/customer-app/index.html?app=${createdAppSlug}`;
+        }
+
+        // ===== CODE QUALITY FIX: Only attach listeners once (prevents listener leak) =====
+        if (bannerListenersAttached) return;
+        bannerListenersAttached = true;
+
+        // Use event delegation on banner container
+        banner.addEventListener('click', async (event) => {
+            const saveBtn = event.target.closest('#save-autonomy-btn');
+            if (!saveBtn) return;
+
+            // ===== QA FIX: Double-click prevention =====
+            if (saveBtn.disabled) return;
+            saveBtn.disabled = true;
+
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+
+            try {
+                const selectedMode = document.querySelector('input[name="autonomy"]:checked')?.value || 'auto_pilot';
+
+                // Update the app
+                if (createdAppSlug) {
+                    const { error } = await supabase
+                        .from('customer_apps')
+                        .update({ ai_autonomy_mode: selectedMode })
+                        .eq('slug', createdAppSlug);
+
+                    if (error) throw error;
+                }
+
+                // Success - close banner with celebration
+                if (typeof celebrate === 'function') {
+                    celebrate();
+                }
+
+                banner.style.opacity = '0';
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                    banner.style.opacity = '1';
+                }, 300);
+
+            } catch (err) {
+                console.error('Error saving autonomy mode:', err);
+                // Re-enable button on error
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+            }
+        });
     }
 
     // Setup event listeners
@@ -479,12 +890,53 @@ const IntelligencePage = (function() {
         if (list) list.style.display = 'none';
     }
 
+    // Show upgrade state
+    function showUpgradeState(used, limit, isFreePlan) {
+        const loading = document.getElementById('intelligence-loading');
+        const empty = document.getElementById('intelligence-empty');
+        const list = document.getElementById('recommendations-list');
+        const upgrade = document.getElementById('intelligence-upgrade');
+
+        if (loading) loading.style.display = 'none';
+        if (empty) empty.style.display = 'none';
+        if (list) list.style.display = 'none';
+        if (upgrade) {
+            upgrade.style.display = 'block';
+
+            // Update title and description based on plan type
+            const title = document.getElementById('upgrade-title');
+            const desc = document.getElementById('upgrade-desc');
+            const usageDiv = document.getElementById('upgrade-usage');
+            const usageCount = document.getElementById('usage-count');
+
+            if (isFreePlan) {
+                if (title) title.textContent = 'Unlock AI Intelligence';
+                if (desc) desc.textContent = 'Get AI-powered insights to grow your loyalty program. Upgrade to access smart recommendations.';
+                if (usageDiv) usageDiv.style.display = 'none';
+            } else {
+                if (title) title.textContent = 'Monthly Limit Reached';
+                if (desc) desc.textContent = 'You\'ve used all your AI insights for this month. Upgrade for more or wait until next month.';
+                if (usageDiv) usageDiv.style.display = 'inline-flex';
+                if (usageCount) usageCount.textContent = `${used} / ${limit} insights used`;
+            }
+        }
+    }
+
     // Handle analyze button
     async function handleAnalyze() {
         if (isAnalyzing) return;
 
         const analyzeBtn = document.getElementById('analyze-btn');
         if (!analyzeBtn) return;
+
+        // Check if user can use intelligence
+        if (typeof canUseIntelligence === 'function') {
+            const canUse = await canUseIntelligence(organizationId);
+            if (!canUse.allowed) {
+                showUpgradeState(canUse.used || 0, canUse.limit || 0, canUse.limit === 0);
+                return;
+            }
+        }
 
         isAnalyzing = true;
         const originalContent = analyzeBtn.innerHTML;
@@ -656,7 +1108,7 @@ const IntelligencePage = (function() {
                 organization_id: organizationId,
                 recommendation_type: 'opportunity',
                 title: 'Celebrate Customer Birthdays',
-                description: `Birthday emails have 481% higher transaction rates than regular promotions. With ${data.customers.total} customers, this is low-hanging fruit.`,
+                description: `Birthday messages have 481% higher engagement rates than regular communications. With ${data.customers.total} customers, this builds lasting loyalty.`,
                 confidence_score: 0.90,
                 potential_impact: 'high',
                 suggested_action: 'Create birthday rewards automation',

@@ -39,10 +39,26 @@ async function initAutomation() {
     }
 
     // Load user info
-    await loadUserInfo();
+    const userProfile = await loadUserInfo();
 
     // Load automation
     await loadAutomation(automationId);
+
+    // Initialize sidebar with user data (including role for admin features)
+    if (typeof AppSidebar !== 'undefined') {
+        // Get user role for admin features
+        const orgData = typeof AppUtils !== 'undefined'
+            ? await AppUtils.loadOrganization(supabase, currentUser.id)
+            : { role: null };
+
+        AppSidebar.init({
+            name: userProfile?.fullName || currentUser.email.split('@')[0],
+            email: currentUser.email,
+            organization: currentProject ? { name: currentProject.name } : null,
+            role: orgData.role,
+            isAdmin: userProfile?.profile?.is_admin === true
+        });
+    }
 
     // Setup event listeners
     setupEventListeners();
@@ -67,19 +83,17 @@ function showAutomationCoachingTour() {
 async function loadUserInfo() {
     const profile = await getUserProfile(currentUser.id);
 
-    const userAvatar = document.getElementById('user-avatar');
-    const userName = document.getElementById('user-name');
-
+    let fullName = '';
     if (profile && (profile.first_name || profile.last_name)) {
-        const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-        const initials = getInitials(profile.first_name, profile.last_name);
-        userAvatar.textContent = initials;
-        userName.textContent = fullName;
+        fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
     } else {
-        const initials = currentUser.email.substring(0, 2).toUpperCase();
-        userAvatar.textContent = initials;
-        userName.textContent = currentUser.email.split('@')[0];
+        fullName = currentUser.email.split('@')[0];
     }
+
+    return {
+        profile,
+        fullName
+    };
 }
 
 function getInitials(firstName, lastName) {
@@ -106,7 +120,8 @@ async function loadAutomation(automationId) {
                 projects (
                     id,
                     name,
-                    industry
+                    industry,
+                    organization_id
                 )
             `)
             .eq('id', automationId)
@@ -159,6 +174,9 @@ async function loadAutomation(automationId) {
 
         // Load posts
         await loadPosts(automationId);
+
+        // Load connected app (if any)
+        await loadConnectedApp();
 
         loading.style.display = 'none';
         document.getElementById('posts-tab').style.display = 'block';
@@ -230,7 +248,7 @@ function renderPosts(posts) {
                     <div class="post-meta">
                         <span class="post-status ${post.status}">${post.status}</span>
                         <span>${createdDate}</span>
-                        ${post.industry ? `<span>${post.industry}</span>` : ''}
+                        ${post.industry ? `<span>${escapeHtml(post.industry)}</span>` : ''}
                     </div>
                 </div>
                 <div class="post-actions">
@@ -304,23 +322,7 @@ function removeTag(containerId, value, type) {
 
 // ===== Event Listeners =====
 function setupEventListeners() {
-    // User menu toggle
-    const userMenuBtn = document.getElementById('user-menu-btn');
-    const userDropdown = document.getElementById('user-dropdown');
-
-    userMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        userDropdown.classList.toggle('active');
-    });
-
-    document.addEventListener('click', () => {
-        userDropdown.classList.remove('active');
-    });
-
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-        await signOut();
-    });
+    // User menu and logout are now handled by sidebar.js
 
     // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
@@ -372,6 +374,23 @@ function setupEventListeners() {
             document.getElementById('keyword-field').focus();
         }
     });
+
+    // Customer App connection buttons
+    document.getElementById('create-new-app-btn')?.addEventListener('click', () => {
+        // Redirect to app builder with automation context
+        window.location.href = `/app/app-builder.html?linkAutomation=${currentAutomation.id}`;
+    });
+
+    document.getElementById('connect-existing-app-btn')?.addEventListener('click', showAppSelector);
+
+    document.getElementById('edit-app-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentAutomation?.app_id) {
+            window.location.href = `/app/app-builder.html#${currentAutomation.app_id}`;
+        }
+    });
+
+    document.getElementById('disconnect-app-btn')?.addEventListener('click', disconnectApp);
 }
 
 // ===== Tab Switching =====
@@ -397,9 +416,17 @@ async function toggleAutomation(isActive) {
         currentAutomation.is_active = isActive;
         updateStatusBadge(isActive);
 
+        // Log the toggle action
+        AuditLog.logAutomationToggle(
+            currentProject.organization_id,
+            currentAutomation.id,
+            currentAutomation.name,
+            isActive
+        );
+
     } catch (error) {
         console.error('Error toggling automation:', error);
-        alert('Error updating automation. Please try again.');
+        showToast('Error updating automation', 'error');
         document.getElementById('automation-toggle').checked = !isActive;
     }
 }
@@ -449,11 +476,11 @@ async function handleGenerate() {
         // Reload posts
         await loadPosts(currentAutomation.id);
 
-        alert('Post generated! (Placeholder - AI integration coming soon)');
+        showToast('Post generated! (AI integration coming soon)', 'success');
 
     } catch (error) {
         console.error('Error generating post:', error);
-        alert('Error generating post. Please try again.');
+        showToast('Error generating post', 'error');
     } finally {
         generateBtn.disabled = false;
         generateBtn.innerHTML = originalText;
@@ -485,34 +512,54 @@ async function publishPost(postId) {
 
     } catch (error) {
         console.error('Error publishing post:', error);
-        alert('Error publishing post. Please try again.');
+        showToast('Error publishing post', 'error');
     }
 }
 
 window.publishPost = publishPost;
 
-// ===== Delete Post =====
+// ===== Delete Post (Soft Delete with 1-hour Undo) =====
 function deletePost(postId) {
+    // Find post name for display
+    const postsContainer = document.getElementById('posts-list');
+    const postCard = postsContainer?.querySelector(`[data-post-id="${postId}"]`);
+    const postTitle = postCard?.querySelector('.post-title')?.textContent || 'Blog post';
+
     DangerModal.show({
         title: 'Delete Blog Post',
-        itemName: 'This blog post',
-        warningText: 'This will permanently delete this blog post. This action cannot be undone.',
-        confirmPhrase: 'YES DELETE THIS POST',
+        itemName: postTitle,
+        warningText: 'This post will be deleted. You can undo this within 1 hour.',
+        confirmPhrase: 'DELETE THIS POST',
         confirmButtonText: 'Delete Post',
         onConfirm: async () => {
             try {
-                const { error } = await supabase
-                    .from('blog_posts')
-                    .delete()
-                    .eq('id', postId);
+                // Soft delete - sets deleted_at timestamp
+                const result = await SoftDelete.delete('blog_posts', postId, {
+                    userId: currentUser?.id
+                });
 
-                if (error) throw error;
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
 
+                // Reload posts
                 await loadPosts(currentAutomation.id);
+
+                // Show undo toast
+                UndoToast.show({
+                    message: `"${postTitle}" deleted`,
+                    entityType: 'blog_posts',
+                    entityId: postId,
+                    entityName: postTitle,
+                    onUndo: async () => {
+                        // Reload posts after restore
+                        await loadPosts(currentAutomation.id);
+                    }
+                });
 
             } catch (error) {
                 console.error('Error deleting post:', error);
-                alert('Error deleting post. Please try again.');
+                showToast('Error deleting post', 'error');
             }
         }
     });
@@ -534,6 +581,13 @@ async function handleSaveDetails(e) {
     const description = document.getElementById('settings-description').value.trim();
     const frequency = document.getElementById('settings-frequency').value;
 
+    // Capture previous data for audit log
+    const previousData = {
+        name: currentAutomation.name,
+        description: currentAutomation.description,
+        frequency: currentAutomation.frequency
+    };
+
     try {
         const { error } = await supabase
             .from('automations')
@@ -546,6 +600,18 @@ async function handleSaveDetails(e) {
         document.getElementById('breadcrumb-automation').textContent = name;
         document.getElementById('automation-title').textContent = name;
         document.getElementById('automation-description').textContent = description;
+
+        const newData = { name, description, frequency };
+
+        // Log the update
+        AuditLog.logAutomationUpdate(
+            currentProject.organization_id,
+            currentAutomation.id,
+            name,
+            previousData,
+            newData,
+            ['name', 'description', 'frequency']
+        );
 
         currentAutomation.name = name;
         currentAutomation.description = description;
@@ -561,7 +627,7 @@ async function handleSaveDetails(e) {
 
     } catch (error) {
         console.error('Error saving details:', error);
-        alert('Error saving details. Please try again.');
+        showToast('Error saving details', 'error');
         saveBtn.disabled = false;
         saveBtn.textContent = originalText;
     }
@@ -577,6 +643,9 @@ async function handleSaveBlogSettings(e) {
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
 
+    // Capture previous data for audit log
+    const previousSettings = { ...blogSettings };
+
     blogSettings.tone = document.getElementById('settings-tone').value;
     blogSettings.length = document.getElementById('settings-length').value;
 
@@ -590,6 +659,16 @@ async function handleSaveBlogSettings(e) {
 
         if (error) throw error;
 
+        // Log the update
+        AuditLog.logAutomationUpdate(
+            currentProject.organization_id,
+            currentAutomation.id,
+            currentAutomation.name,
+            { settings: previousSettings },
+            { settings: blogSettings },
+            ['settings']
+        );
+
         // Celebrate!
         celebrateSubtle();
         saveBtn.textContent = 'Saved!';
@@ -600,7 +679,7 @@ async function handleSaveBlogSettings(e) {
 
     } catch (error) {
         console.error('Error saving blog settings:', error);
-        alert('Error saving blog settings. Please try again.');
+        showToast('Error saving blog settings', 'error');
         saveBtn.disabled = false;
         saveBtn.textContent = originalText;
     }
@@ -608,6 +687,10 @@ async function handleSaveBlogSettings(e) {
 
 // ===== Delete Automation =====
 function handleDeleteAutomation() {
+    // Capture automation data before deletion
+    const automationData = { ...currentAutomation };
+    delete automationData.projects; // Remove nested project data
+
     DangerModal.show({
         title: 'Delete Automation',
         itemName: currentAutomation.name,
@@ -616,6 +699,12 @@ function handleDeleteAutomation() {
         confirmButtonText: 'Delete Forever',
         onConfirm: async () => {
             try {
+                // Log deletion before the actual delete
+                await AuditLog.logAutomationDelete(
+                    currentProject.organization_id,
+                    automationData
+                );
+
                 const { error } = await supabase
                     .from('automations')
                     .delete()
@@ -630,16 +719,196 @@ function handleDeleteAutomation() {
 
             } catch (error) {
                 console.error('Error deleting automation:', error);
-                alert('Error deleting automation. Please try again.');
+                showToast('Error deleting automation', 'error');
             }
         }
     });
 }
 
+// ===== Customer App Connection =====
+async function loadConnectedApp() {
+    if (!currentAutomation?.app_id) {
+        document.getElementById('connected-app').style.display = 'none';
+        document.getElementById('no-app-connected').style.display = 'block';
+        return;
+    }
+
+    try {
+        const { data: app, error } = await supabase
+            .from('customer_apps')
+            .select('id, name, slug')
+            .eq('id', currentAutomation.app_id)
+            .single();
+
+        if (error || !app) {
+            document.getElementById('connected-app').style.display = 'none';
+            document.getElementById('no-app-connected').style.display = 'block';
+            return;
+        }
+
+        // Show connected app
+        document.getElementById('connected-app-name').textContent = app.name;
+        document.getElementById('connected-app-url').textContent = `automata.app/a/${app.slug}`;
+        document.getElementById('edit-app-btn').href = `/app/app-builder.html#${app.id}`;
+        document.getElementById('connected-app').style.display = 'block';
+        document.getElementById('no-app-connected').style.display = 'none';
+
+    } catch (error) {
+        console.error('Error loading connected app:', error);
+        document.getElementById('connected-app').style.display = 'none';
+        document.getElementById('no-app-connected').style.display = 'block';
+    }
+}
+
+async function showAppSelector() {
+    try {
+        // Get organization ID from project
+        const orgId = currentProject.organization_id;
+
+        // Fetch available apps
+        const { data: apps, error } = await supabase
+            .from('customer_apps')
+            .select('id, name, slug, app_type')
+            .eq('organization_id', orgId)
+            .is('deleted_at', null)
+            .order('name');
+
+        if (error) throw error;
+
+        if (!apps || apps.length === 0) {
+            showToast('No customer apps found. Create one first.', 'info');
+            return;
+        }
+
+        // Create a simple modal to select an app
+        const modalHtml = `
+            <div class="modal-overlay app-selector-modal" id="app-selector-modal">
+                <div class="modal" style="max-width: 480px;">
+                    <div class="modal-header">
+                        <h2>Connect App</h2>
+                        <button class="modal-close" id="app-selector-close">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+                            Select an app to connect to this automation:
+                        </p>
+                        <div class="app-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            ${apps.map(app => `
+                                <button class="app-list-item" data-app-id="${app.id}" style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 12px;
+                                    padding: 12px 16px;
+                                    background: var(--color-bg);
+                                    border: 1px solid var(--color-border);
+                                    border-radius: var(--radius-md);
+                                    cursor: pointer;
+                                    text-align: left;
+                                    transition: all 0.2s;
+                                ">
+                                    <span style="font-size: 24px;">📱</span>
+                                    <div>
+                                        <div style="font-weight: 600;">${escapeHtml(app.name)}</div>
+                                        <div style="font-size: 13px; color: var(--color-text-secondary);">
+                                            automata.app/a/${escapeHtml(app.slug)}
+                                        </div>
+                                    </div>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = document.getElementById('app-selector-modal');
+
+        // Close on X click or overlay
+        document.getElementById('app-selector-close').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) modal.remove();
+        });
+
+        // Handle app selection
+        modal.querySelectorAll('.app-list-item').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const appId = btn.dataset.appId;
+                await connectApp(appId);
+                modal.remove();
+            });
+
+            // Hover effect
+            btn.addEventListener('mouseenter', () => {
+                btn.style.borderColor = 'var(--color-primary)';
+                btn.style.background = 'rgba(124, 58, 237, 0.05)';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.borderColor = 'var(--color-border)';
+                btn.style.background = 'var(--color-bg)';
+            });
+        });
+
+    } catch (error) {
+        console.error('Error loading apps:', error);
+        showToast('Error loading apps', 'error');
+    }
+}
+
+async function connectApp(appId) {
+    try {
+        const { error } = await supabase
+            .from('automations')
+            .update({ app_id: appId })
+            .eq('id', currentAutomation.id);
+
+        if (error) throw error;
+
+        currentAutomation.app_id = appId;
+        await loadConnectedApp();
+
+        // Celebrate
+        if (typeof celebrateSubtle === 'function') celebrateSubtle();
+
+    } catch (error) {
+        console.error('Error connecting app:', error);
+        showToast('Error connecting app', 'error');
+    }
+}
+
+async function disconnectApp() {
+    if (!confirm('Disconnect this app from the automation?')) return;
+
+    try {
+        const { error } = await supabase
+            .from('automations')
+            .update({ app_id: null })
+            .eq('id', currentAutomation.id);
+
+        if (error) throw error;
+
+        currentAutomation.app_id = null;
+        await loadConnectedApp();
+
+    } catch (error) {
+        console.error('Error disconnecting app:', error);
+        showToast('Error disconnecting app', 'error');
+    }
+}
+
 // ===== Utility Functions =====
 function escapeHtml(text) {
+    // Use AppUtils if available (preferred), otherwise fallback to DOM method
+    if (typeof AppUtils !== 'undefined' && typeof AppUtils.escapeHtml === 'function') {
+        return AppUtils.escapeHtml(text);
+    }
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = text || '';
     return div.innerHTML;
 }
 

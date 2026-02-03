@@ -7,15 +7,27 @@ const AppSidebar = (function() {
     let userDropdownOpen = false;
     let mobileOpen = false;
 
+    // Notification badge count (updated async)
+    let notificationCount = 0;
+
     // Navigation items configuration
+    // adminOnly: true = only visible to admin/owner users
+    // smbOnly: true = only visible to non-admin users (SMB view)
     const navItems = [
         {
             section: 'main',
             items: [
+                // Dashboard - visible to all, serves as reporting for SMB users
+                { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Dashboard' },
+                // Intelligence - AI brain, visible to all
                 { id: 'intelligence', icon: 'brain', href: '/app/intelligence.html', labelKey: 'nav.intelligence', label: 'Intelligence' },
-                { id: 'projects', icon: 'folder', href: '/app/dashboard.html', labelKey: 'nav.projects', label: 'Projects' },
-                { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps' },
+                // Projects - admin only (SMB users see Dashboard instead)
+                { id: 'projects', icon: 'folder', href: '/app/dashboard.html', labelKey: 'nav.projects', label: 'Projects', adminOnly: true },
+                // Apps - admin only (SMB users manage their single program)
+                { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', adminOnly: true },
+                // Automations - visible to all
                 { id: 'automations', icon: 'zap', href: '/app/automations.html', labelKey: 'nav.automations', label: 'Automations' },
+                // Customers - visible to all
                 { id: 'customers', icon: 'users', href: '/app/customers.html', labelKey: 'nav.customers', label: 'Customers' },
             ]
         },
@@ -25,7 +37,10 @@ const AppSidebar = (function() {
             label: 'Management',
             items: [
                 { id: 'outgoing', icon: 'send', href: '/app/outgoing.html', labelKey: 'nav.outgoing', label: 'Outgoing' },
+                // Roadmap visible to ALL users - customers can give feedback!
                 { id: 'roadmap', icon: 'map', href: '/app/roadmap.html', labelKey: 'nav.roadmap', label: 'Roadmap' },
+                // Support - manage customer tickets, FAQs, and AI support (with notification badge)
+                { id: 'support', icon: 'headset', href: '/app/support.html', labelKey: 'nav.support', label: 'Support', hasBadge: true },
             ]
         },
         {
@@ -119,10 +134,19 @@ const AppSidebar = (function() {
             <path d="M12 2a10 10 0 0 1 10 10"></path>
             <circle cx="12" cy="12" r="3"></circle>
         </svg>`,
+        headset: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3v5z"></path>
+            <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3v5z"></path>
+        </svg>`,
         layout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="3" y1="9" x2="21" y2="9"></line>
             <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>`,
+        edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
         </svg>`
     };
 
@@ -135,9 +159,10 @@ const AppSidebar = (function() {
     }
 
     // Get current page ID from URL
-    function getCurrentPageId() {
+    function getCurrentPageId(isAdmin) {
         const path = window.location.pathname;
-        if (path.includes('dashboard')) return 'projects'; // Dashboard page shows projects
+        // Dashboard page - always highlight 'dashboard' nav item
+        if (path.includes('dashboard')) return 'dashboard';
         if (path.includes('project.html')) return 'projects'; // Individual project pages
         if (path.includes('intelligence')) return 'intelligence';
         if (path.includes('automations.html')) return 'automations';
@@ -149,6 +174,7 @@ const AppSidebar = (function() {
         if (path.includes('roadmap')) return 'roadmap';
         if (path.includes('settings')) return 'settings';
         if (path.includes('launch-plan')) return 'launch-plan';
+        if (path.includes('content-generator')) return 'content-generator';
         return 'dashboard';
     }
 
@@ -164,20 +190,30 @@ const AppSidebar = (function() {
 
     // Render sidebar HTML
     function render(container, userData = {}) {
-        const currentPage = getCurrentPageId();
         const userName = userData.name || userData.full_name || 'User';
         const userEmail = userData.email || '';
         const userInitials = getUserInitials(userName);
         const orgName = userData.organization?.name || 'My Organization';
         const orgInitial = orgName.charAt(0).toUpperCase();
         const userRole = userData.role || '';
-        const isAdmin = userRole === 'owner' || userRole === 'admin';
+
+        // Check if user is a super admin (is_admin flag in profiles table)
+        const isSuperAdmin = userData.isAdmin === true;
+
+        // Check advanced mode from userData (priority) or localStorage (fallback)
+        // SMB users should see simplified view unless they enable Advanced Mode
+        const advancedModeFromStorage = localStorage.getItem('advancedMode') === 'true';
+        const isAdvanced = userData.advancedMode !== undefined ? userData.advancedMode : advancedModeFromStorage;
+
+        // Show admin items if: super admin OR advanced mode is enabled
+        const showAdminItems = isSuperAdmin || isAdvanced;
+        const currentPage = getCurrentPageId(showAdminItems);
 
         let navHTML = '';
 
         navItems.forEach((section, sectionIndex) => {
-            // Skip admin-only sections if user is not admin
-            if (section.adminOnly && !isAdmin) {
+            // Skip admin-only sections if advanced mode is not enabled
+            if (section.adminOnly && !showAdminItems) {
                 return;
             }
 
@@ -188,13 +224,20 @@ const AppSidebar = (function() {
 
             // Section items
             section.items.forEach(item => {
-                // Skip admin-only items if user is not admin
-                if (item.adminOnly && !isAdmin) {
+                // Skip admin-only items if advanced mode is not enabled
+                if (item.adminOnly && !showAdminItems) {
                     return;
                 }
 
                 // Determine if this item is active
                 const isActive = item.id === currentPage;
+
+                // Add notification badge if this item supports it
+                // Shows as dot when collapsed, number when expanded
+                const badgeHTML = item.hasBadge
+                    ? `<span class="sidebar-item-badge" id="sidebar-badge-${item.id}" style="display: none;">0</span>
+                       <span class="sidebar-item-badge-dot" id="sidebar-badge-dot-${item.id}" style="display: none;"></span>`
+                    : '';
 
                 navHTML += `
                     <a href="${item.href}"
@@ -203,6 +246,7 @@ const AppSidebar = (function() {
                        data-tooltip="${getText(item.labelKey, item.label)}">
                         <span class="sidebar-item-icon">${icons[item.icon]}</span>
                         <span class="sidebar-item-text" data-i18n="${item.labelKey}">${getText(item.labelKey, item.label)}</span>
+                        ${badgeHTML}
                     </a>
                 `;
             });
@@ -219,7 +263,7 @@ const AppSidebar = (function() {
                 <button class="mobile-menu-toggle" id="mobile-menu-toggle">
                     ${icons.menu}
                 </button>
-                <div class="sidebar-logo-text" style="opacity: 1; margin-left: 12px;">Automata</div>
+                <div class="sidebar-logo-text" style="opacity: 1; margin-left: 12px;">Royalty</div>
             </div>
 
             <!-- Sidebar Overlay (mobile) -->
@@ -229,8 +273,8 @@ const AppSidebar = (function() {
             <aside class="app-sidebar" id="app-sidebar">
                 <!-- Logo -->
                 <div class="sidebar-header">
-                    <div class="sidebar-logo">A</div>
-                    <span class="sidebar-logo-text">Automata</span>
+                    <div class="sidebar-logo">R</div>
+                    <span class="sidebar-logo-text">Royalty</span>
                 </div>
 
                 <!-- Organization Selector -->
@@ -368,8 +412,8 @@ const AppSidebar = (function() {
                 option.addEventListener('click', (e) => {
                     e.preventDefault();
                     const lang = option.dataset.lang;
-                    if (lang && typeof i18n !== 'undefined') {
-                        i18n.setLanguage(lang);
+                    if (lang && typeof I18n !== 'undefined') {
+                        I18n.setLanguage(lang);
                         updateLanguageDisplay();
                         langDropdown.classList.remove('active');
                     }
@@ -393,6 +437,55 @@ const AppSidebar = (function() {
                 langDropdown.classList.remove('active');
             }
         });
+    }
+
+    // Update notification badge
+    async function updateNotificationBadge(organizationId) {
+        if (!organizationId || typeof supabase === 'undefined') return;
+
+        try {
+            const { data, error } = await supabase.rpc('get_unread_notification_count', {
+                p_organization_id: organizationId
+            });
+
+            if (error) {
+                console.warn('Failed to fetch notification count:', error);
+                return;
+            }
+
+            notificationCount = data || 0;
+
+            // Update the support badge (expanded view)
+            const badge = document.getElementById('sidebar-badge-support');
+            const badgeDot = document.getElementById('sidebar-badge-dot-support');
+
+            if (badge) {
+                if (notificationCount > 0) {
+                    badge.textContent = notificationCount > 99 ? '99+' : notificationCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+
+            // Update the dot indicator (collapsed view)
+            if (badgeDot) {
+                badgeDot.style.display = notificationCount > 0 ? 'block' : 'none';
+            }
+        } catch (err) {
+            console.warn('Error updating notification badge:', err);
+        }
+    }
+
+    // Poll for notification updates
+    function startNotificationPolling(organizationId, intervalMs = 30000) {
+        // Initial fetch
+        updateNotificationBadge(organizationId);
+
+        // Poll every 30 seconds
+        setInterval(() => {
+            updateNotificationBadge(organizationId);
+        }, intervalMs);
     }
 
     // Update language display
@@ -437,13 +530,15 @@ const AppSidebar = (function() {
         render(appLayout, userData);
 
         // Update language display when language changes
-        document.addEventListener('languageChanged', updateLanguageDisplay);
+        window.addEventListener('i18n:changed', updateLanguageDisplay);
     }
 
     return {
         init,
         render,
-        updateLanguageDisplay
+        updateLanguageDisplay,
+        updateNotificationBadge,
+        startNotificationPolling
     };
 })();
 

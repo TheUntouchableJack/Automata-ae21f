@@ -6,11 +6,11 @@
     <title>Settings - Automata</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="sidebar.css?v=3">
-    <link rel="stylesheet" href="settings.css?v=1">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="settings.css?v=2">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
 </head>
@@ -147,6 +147,19 @@
                                             </button>
                                         </div>
                                     </form>
+
+                                    <!-- Advanced Mode Toggle -->
+                                    <div class="settings-divider"></div>
+                                    <div class="advanced-mode-section">
+                                        <div class="advanced-mode-header">
+                                            <h4 data-i18n="settings.profile.advancedMode">Advanced Mode</h4>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="advanced-mode-toggle">
+                                                <span class="toggle-slider-sm"></span>
+                                            </label>
+                                        </div>
+                                        <p class="settings-card-subtitle" data-i18n="settings.profile.advancedModeDesc">Show advanced navigation (Projects, Apps, Roadmap, Launch Plan). Turn this on if you manage multiple projects or need power user features.</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -233,18 +246,177 @@
                                             <div class="plan-info">
                                                 <span class="plan-label" data-i18n="settings.plan.currentPlan">Current Plan</span>
                                                 <h3 class="plan-name" id="plan-name">Free</h3>
+                                                <span class="plan-status" id="plan-status"></span>
                                             </div>
                                         </div>
                                         <div class="plan-features" id="plan-features">
                                             <!-- Populated by JS -->
                                         </div>
-                                        <div class="plan-actions">
-                                            <a href="/pricing.html" class="btn btn-primary">
-                                                <span data-i18n="settings.plan.upgradePlan">Upgrade Plan</span>
-                                            </a>
-                                            <p class="billing-note" data-i18n="settings.plan.billingNote">Billing management coming soon</p>
+                                    </div>
+                                </div>
+
+                                <!-- Upgrade Options (shown for free/lower tier users) -->
+                                <div class="settings-card" id="upgrade-section">
+                                    <h3>Upgrade Your Plan</h3>
+                                    <p class="settings-card-subtitle">Get more features and capacity. Start with a 14-day free trial.</p>
+
+                                    <!-- Billing Toggle -->
+                                    <div class="billing-toggle-container">
+                                        <span class="billing-label" data-billing="monthly">Monthly</span>
+                                        <label class="billing-toggle">
+                                            <input type="checkbox" id="billing-toggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <span class="billing-label" data-billing="annual">Annual <span class="save-badge">Save 20%</span></span>
+                                    </div>
+
+                                    <div class="upgrade-plans" id="upgrade-plans">
+                                        <!-- Starter Plan -->
+                                        <div class="upgrade-plan-card" data-plan="starter">
+                                            <div class="plan-card-header">
+                                                <h4>Starter</h4>
+                                                <p class="plan-tagline">For small businesses</p>
+                                            </div>
+                                            <div class="plan-price">
+                                                <span class="price-amount" data-monthly="49" data-annual="39">$49</span>
+                                                <span class="price-period">/month</span>
+                                            </div>
+                                            <ul class="plan-features-list">
+                                                <li>500 members</li>
+                                                <li>30 AI insights/month</li>
+                                                <li>AI-built loyalty program</li>
+                                                <li>Email support</li>
+                                            </ul>
+                                            <button class="btn btn-primary btn-block checkout-btn" data-plan="starter">
+                                                Start Free Trial
+                                            </button>
+                                        </div>
+
+                                        <!-- Growth Plan -->
+                                        <div class="upgrade-plan-card featured" data-plan="growth">
+                                            <div class="plan-badge">Most Popular</div>
+                                            <div class="plan-card-header">
+                                                <h4>Growth</h4>
+                                                <p class="plan-tagline">For growing businesses</p>
+                                            </div>
+                                            <div class="plan-price">
+                                                <span class="price-amount" data-monthly="149" data-annual="119">$149</span>
+                                                <span class="price-period">/month</span>
+                                            </div>
+                                            <ul class="plan-features-list">
+                                                <li>2,000 members</li>
+                                                <li>100 AI insights/month</li>
+                                                <li>Priority support</li>
+                                                <li>Advanced analytics</li>
+                                            </ul>
+                                            <button class="btn btn-primary btn-block checkout-btn" data-plan="growth">
+                                                Start Free Trial
+                                            </button>
+                                        </div>
+
+                                        <!-- Scale Plan -->
+                                        <div class="upgrade-plan-card" data-plan="scale">
+                                            <div class="plan-card-header">
+                                                <h4>Scale</h4>
+                                                <p class="plan-tagline">For multi-location</p>
+                                            </div>
+                                            <div class="plan-price">
+                                                <span class="price-amount" data-monthly="399" data-annual="319">$399</span>
+                                                <span class="price-period">/month</span>
+                                            </div>
+                                            <ul class="plan-features-list">
+                                                <li>Unlimited members</li>
+                                                <li>Unlimited AI insights</li>
+                                                <li>White-label branding</li>
+                                                <li>Dedicated support</li>
+                                            </ul>
+                                            <button class="btn btn-primary btn-block checkout-btn" data-plan="scale">
+                                                Start Free Trial
+                                            </button>
                                         </div>
                                     </div>
+
+                                    <!-- Royalty Pro Add-on (shown for AppSumo LTD users) -->
+                                    <div class="royalty-pro-upsell" id="royalty-pro-section" style="display: none;">
+                                        <div class="royalty-pro-card">
+                                            <div class="royalty-pro-header">
+                                                <div>
+                                                    <h4>Royalty Pro</h4>
+                                                    <p>Unlock AI Intelligence for your lifetime deal</p>
+                                                </div>
+                                                <div class="royalty-pro-price-tag">
+                                                    <span class="price">$39</span>
+                                                    <span class="period">/month</span>
+                                                </div>
+                                            </div>
+                                            <ul class="royalty-pro-features">
+                                                <li>
+                                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    Unlimited AI insights
+                                                </li>
+                                                <li>
+                                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    White-label branding
+                                                </li>
+                                                <li>
+                                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    Cancel anytime
+                                                </li>
+                                            </ul>
+                                            <button class="btn btn-primary btn-block checkout-btn" data-plan="royalty_pro">
+                                                Add Royalty Pro
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <p class="billing-note">14-day free trial, then billed monthly or annually. Cancel anytime.</p>
+                                </div>
+
+                                <!-- Manage Subscription (shown for paying users) -->
+                                <div class="settings-card" id="manage-subscription-section" style="display: none;">
+                                    <h3>Manage Subscription</h3>
+                                    <p class="settings-card-subtitle">Update payment method, view invoices, or change your plan</p>
+
+                                    <!-- Cancellation Notice (shown when subscription is scheduled to cancel) -->
+                                    <div class="cancel-notice" id="cancel-notice" style="display: none;">
+                                        <div class="cancel-notice-icon">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                            </svg>
+                                        </div>
+                                        <div class="cancel-notice-content">
+                                            <p class="cancel-notice-title">Your subscription is scheduled to end</p>
+                                            <p class="cancel-notice-date">You'll have full access until <strong id="cancel-date"></strong></p>
+                                        </div>
+                                        <button class="btn btn-primary" id="reactivate-btn">Keep My Plan</button>
+                                    </div>
+
+                                    <div class="manage-subscription-actions">
+                                        <button class="btn btn-secondary" id="manage-billing-btn">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                                <line x1="1" y1="10" x2="23" y2="10"/>
+                                            </svg>
+                                            Manage Billing
+                                        </button>
+                                        <button class="btn btn-ghost btn-danger-text" id="cancel-subscription-btn">
+                                            Cancel Subscription
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Redeem AppSumo Code -->
+                                <div class="settings-card" id="redeem-section">
+                                    <h3>Have an AppSumo Code?</h3>
+                                    <p class="settings-card-subtitle">Redeem your lifetime deal code to unlock permanent access</p>
+                                    <a href="/app/redeem.html" class="btn btn-secondary">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                        </svg>
+                                        Redeem AppSumo Code
+                                    </a>
                                 </div>
                             </div>
 
@@ -360,17 +532,40 @@
         </main>
     </div>
 
+    <!-- Checkout Modal (Embedded Stripe Checkout) -->
+    <div class="checkout-modal-overlay" id="checkout-modal" style="display: none;">
+        <div class="checkout-modal">
+            <div class="checkout-modal-header">
+                <h3>Complete Your Subscription</h3>
+                <button class="checkout-close-btn" id="checkout-close-btn" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="checkout-modal-body" id="checkout-container">
+                <!-- Stripe Embedded Checkout mounts here -->
+                <div class="checkout-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading checkout...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+    <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js"></script>
-    <script src="auth.js?v=3"></script>
+    <script src="auth.js?v=4"></script>
     <script src="utils.js?v=3"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="danger-modal.js?v=1"></script>
     <script src="plan-limits.js?v=1"></script>
     <script src="audit-log.js?v=1"></script>
-    <script src="sidebar.js?v=11"></script>
-    <script src="settings.js?v=6"></script>
+    <script src="sidebar.js?v=16"></script>
+    <script src="settings.js?v=7"></script>
 </body>
 </html>

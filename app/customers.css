@@ -23,7 +23,7 @@
 
 .nav-link.active {
     color: var(--color-primary);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(124, 58, 237, 0.1);
 }
 
 /* Page Header Actions */
@@ -102,7 +102,7 @@
 
 .search-box input:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .filter-actions {
@@ -215,7 +215,7 @@
     padding: 4px 10px;
     font-size: 12px;
     font-weight: 500;
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(124, 58, 237, 0.1);
     color: var(--color-primary);
     border-radius: var(--radius-full);
 }
@@ -361,7 +361,7 @@
 
 .tags-input-container:focus-within {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .tags-list {
@@ -422,7 +422,7 @@
 
 .upload-zone.drag-over {
     border-color: var(--color-primary);
-    background: rgba(99, 102, 241, 0.05);
+    background: rgba(124, 58, 237, 0.05);
 }
 
 .upload-icon {

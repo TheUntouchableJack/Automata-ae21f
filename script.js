@@ -39,7 +39,13 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // ===== Navbar Background on Scroll =====
 const navbar = document.querySelector('.navbar');
 
+// Throttled scroll handler (optimized - fires at most once per 50ms)
+let lastScrollTime = 0;
 window.addEventListener('scroll', () => {
+    const now = Date.now();
+    if (now - lastScrollTime < 50) return;
+    lastScrollTime = now;
+
     if (window.pageYOffset > 100) {
         navbar.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
     } else {
@@ -150,7 +156,7 @@ function showSuccessModal() {
                 angle: 60,
                 spread: 80,
                 origin: { x: 0, y: 0.5 },
-                colors: ['#6366f1', '#8b5cf6', '#a855f7', '#10b981', '#f59e0b'],
+                colors: ['#7c3aed', '#a855f7', '#a855f7', '#10b981', '#f59e0b'],
                 zIndex: confettiZIndex
             });
             confetti({
@@ -158,7 +164,7 @@ function showSuccessModal() {
                 angle: 120,
                 spread: 80,
                 origin: { x: 1, y: 0.5 },
-                colors: ['#6366f1', '#8b5cf6', '#a855f7', '#10b981', '#f59e0b'],
+                colors: ['#7c3aed', '#a855f7', '#a855f7', '#10b981', '#f59e0b'],
                 zIndex: confettiZIndex
             });
 
@@ -173,7 +179,7 @@ function showSuccessModal() {
             particleCount: 150,
             spread: 100,
             origin: { y: 0.6 },
-            colors: ['#6366f1', '#8b5cf6', '#a855f7', '#10b981', '#f59e0b'],
+            colors: ['#7c3aed', '#a855f7', '#a855f7', '#10b981', '#f59e0b'],
             scalar: 1.2,
             zIndex: confettiZIndex
         });
@@ -183,7 +189,7 @@ function showSuccessModal() {
                 particleCount: 100,
                 spread: 120,
                 origin: { y: 0.5 },
-                colors: ['#6366f1', '#8b5cf6', '#a855f7', '#10b981', '#f59e0b'],
+                colors: ['#7c3aed', '#a855f7', '#a855f7', '#10b981', '#f59e0b'],
                 scalar: 1.5,
                 zIndex: confettiZIndex
             });
@@ -194,7 +200,7 @@ function showSuccessModal() {
                 particleCount: 80,
                 spread: 150,
                 origin: { y: 0.4 },
-                colors: ['#6366f1', '#8b5cf6', '#a855f7', '#10b981', '#f59e0b'],
+                colors: ['#7c3aed', '#a855f7', '#a855f7', '#10b981', '#f59e0b'],
                 scalar: 1.3,
                 zIndex: confettiZIndex
             });
@@ -221,6 +227,14 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// ===== CAPTCHA State =====
+let turnstileToken = null;
+function onTurnstileSuccess(token) {
+    turnstileToken = token;
+    const captchaError = document.getElementById('captcha-error');
+    if (captchaError) captchaError.style.display = 'none';
+}
+
 // ===== Form Submission =====
 const signupForm = document.getElementById('signup-form');
 
@@ -234,8 +248,31 @@ if (signupForm) {
 
         if (!email) return;
 
-        // Disable button and show loading state
+        // Store original button text for restoration
         const originalText = submitBtn.innerHTML;
+
+        // Validate CAPTCHA (skip if site key not configured)
+        const captchaWidget = document.querySelector('.cf-turnstile');
+        const siteKey = captchaWidget?.getAttribute('data-sitekey');
+        if (siteKey && siteKey !== 'YOUR_SITE_KEY' && !turnstileToken) {
+            const captchaError = document.getElementById('captcha-error');
+            if (captchaError) captchaError.style.display = 'block';
+            return;
+        }
+
+        // Check rate limiting first
+        if (window.RateLimiter && window.RateLimiter.isRateLimited('waitlist')) {
+            const errorMsg = window.RateLimiter.getRateLimitErrorMessage('waitlist');
+            submitBtn.innerHTML = errorMsg;
+            submitBtn.style.background = '#f59e0b';
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.style.background = '';
+            }, 3000);
+            return;
+        }
+
+        // Disable button and show loading state
         submitBtn.disabled = true;
         submitBtn.innerHTML = `
             <svg class="spinner" width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -263,6 +300,11 @@ if (signupForm) {
                     throw new Error('already_registered');
                 }
                 throw error;
+            }
+
+            // Record rate limit attempt on success
+            if (window.RateLimiter) {
+                window.RateLimiter.recordRateLimit('waitlist');
             }
 
             // Success - show modal with confetti
@@ -356,25 +398,42 @@ function animateStats() {
     const statNumbers = document.querySelectorAll('.stat-number');
 
     statNumbers.forEach(stat => {
-        const finalText = stat.textContent;
-        const hasX = finalText.includes('x');
+        const finalText = stat.textContent.trim();
+
+        // Handle specific formats: "60s", "40%", "24/7"
+        if (finalText.includes('/')) {
+            // Don't animate fractions like "24/7" - just keep as-is
+            return;
+        }
+
+        const hasS = finalText.includes('s');
         const hasPercent = finalText.includes('%');
         const finalNum = parseInt(finalText);
 
-        let current = 0;
-        const increment = finalNum / 30;
-        const timer = setInterval(() => {
-            current += increment;
-            if (current >= finalNum) {
-                current = finalNum;
-                clearInterval(timer);
-            }
+        if (isNaN(finalNum)) return;
 
-            let display = Math.round(current);
-            if (hasX) display += 'x';
+        // Animate with easing
+        const duration = 1500;
+        const startTime = performance.now();
+
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease out cubic for smooth deceleration
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(finalNum * eased);
+
+            let display = current.toString();
+            if (hasS) display += 's';
             if (hasPercent) display += '%';
             stat.textContent = display;
-        }, 30);
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+
+        requestAnimationFrame(update);
     });
 }
 
@@ -417,7 +476,6 @@ const painPointsInput = document.getElementById('ctx-pain-points');
 const recommendationsSection = document.getElementById('recommendations-section');
 const recommendationsGrid = document.getElementById('recommendations-grid');
 const recommendationsContext = document.getElementById('recommendations-context');
-const selectionCountEl = document.getElementById('selection-count');
 const continueSignupBtn = document.getElementById('continue-signup-btn');
 
 // Template icon map for recommendations
@@ -464,11 +522,10 @@ function restoreOnboardingData() {
                 painPointsInput.value = data.businessContext.painPoints.join('\n');
             }
         }
-        // If user had recommendations, show them
+        // If user had recommendations, show them as preview
         if (data.aiRecommendations?.length > 0) {
             renderRecommendations(data.aiRecommendations);
             showRecommendationsSection();
-            updateSelectionCount();
         }
     }
 }
@@ -483,6 +540,13 @@ function handleGetRecommendations() {
         businessPromptInput.focus();
         businessPromptInput.classList.add('shake');
         setTimeout(() => businessPromptInput.classList.remove('shake'), 500);
+        return;
+    }
+
+    // Check rate limiting for AI analysis
+    if (window.RateLimiter && window.RateLimiter.isRateLimited('ai_analysis')) {
+        const errorMsg = window.RateLimiter.getRateLimitErrorMessage('ai_analysis');
+        alert(errorMsg);
         return;
     }
 
@@ -514,6 +578,11 @@ function handleGetRecommendations() {
 
     // Simulate brief delay for UX (recommendations are instant since they're local)
     setTimeout(() => {
+        // Record rate limit attempt
+        if (window.RateLimiter) {
+            window.RateLimiter.recordRateLimit('ai_analysis');
+        }
+
         // Get recommendations
         let recommendations = [];
         if (typeof AIRecommendations !== 'undefined') {
@@ -568,217 +637,60 @@ function renderRecommendations(recommendations) {
             technology: 'technology',
             education: 'education'
         };
-        recommendationsContext.textContent = `Based on your ${industryNames[industry] || industry} business`;
+        recommendationsContext.textContent = `Based on your ${industryNames[industry] || industry} business, AI will automatically set up:`;
     }
 
     // Clear existing cards
     recommendationsGrid.innerHTML = '';
 
-    // Get currently selected templates
-    const selectedTemplates = typeof OnboardingStorage !== 'undefined'
-        ? OnboardingStorage.getSelectedTemplates()
-        : [];
-
-    // Render each recommendation
+    // Render each recommendation as preview-only (no selection)
     recommendations.forEach(rec => {
-        const isSelected = selectedTemplates.includes(rec.id);
-        const card = createRecommendationCard(rec, isSelected, selectedTemplates.length);
+        const card = createRecommendationCard(rec);
         recommendationsGrid.appendChild(card);
     });
 
-    // Add "Create Your Own" card at the end
-    const customCard = createCustomAutomationCard();
-    recommendationsGrid.appendChild(customCard);
-
-    updateSelectionCount();
+    // No custom card needed - AI builds what it knows is best
 }
 
-function createRecommendationCard(rec, isSelected, currentCount) {
+function createRecommendationCard(rec) {
     const card = document.createElement('div');
-    card.className = 'recommendation-card' + (isSelected ? ' selected' : '');
+    card.className = 'recommendation-card preview-only';
     card.dataset.templateId = rec.id;
-
-    // Check if disabled (max reached and not selected)
-    const maxReached = currentCount >= 3 && !isSelected;
-    if (maxReached) {
-        card.classList.add('disabled');
-    }
 
     const icon = templateIcons[rec.id] || templateIcons['birthday-rewards'];
 
     card.innerHTML = `
         <div class="recommendation-card-icon">${icon}</div>
-        <span class="recommendation-card-badge">AI Match</span>
+        <span class="recommendation-card-badge">AI Will Build</span>
         <h3 class="recommendation-card-name">${rec.name}</h3>
         <p class="recommendation-card-desc">${rec.description}</p>
         ${rec.reasoning ? `<p class="recommendation-card-reason">"${rec.reasoning}"</p>` : ''}
     `;
 
-    card.addEventListener('click', () => toggleTemplateSelection(card, rec.id));
+    // Preview-only, no click handler needed
 
     return card;
 }
 
-function createCustomAutomationCard() {
-    const card = document.createElement('div');
-    card.className = 'recommendation-card custom-card';
-    card.id = 'custom-automation-card';
-
-    // Get existing custom automation text
-    const existingCustom = typeof OnboardingStorage !== 'undefined'
-        ? OnboardingStorage.getCustomAutomation()
-        : '';
-
-    const hasCustom = existingCustom.trim().length > 0;
-    if (hasCustom) {
-        card.classList.add('selected');
-    }
-
-    // Check if disabled
-    const selectionCount = typeof OnboardingStorage !== 'undefined'
-        ? OnboardingStorage.getSelectionCount()
-        : 0;
-    if (selectionCount >= 3 && !hasCustom) {
-        card.classList.add('disabled');
-    }
-
-    card.innerHTML = `
-        <div class="recommendation-card-icon custom-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-        </div>
-        <span class="recommendation-card-badge custom-badge" data-i18n="onboarding.customBadge">Build Your Own</span>
-        <h3 class="recommendation-card-name" data-i18n="onboarding.customTitle">Need something different?</h3>
-        <p class="recommendation-card-desc" data-i18n="onboarding.customDesc">Describe the automation you need and we'll build it for you.</p>
-        <textarea
-            id="custom-automation-input"
-            class="custom-automation-textarea"
-            placeholder="e.g., Send a reminder 6 weeks after a tattoo appointment for touch-ups..."
-            data-i18n-placeholder="onboarding.customPlaceholder"
-            rows="3"
-        >${existingCustom}</textarea>
-    `;
-
-    // Handle textarea input
-    const textarea = card.querySelector('#custom-automation-input');
-    textarea.addEventListener('input', (e) => {
-        handleCustomAutomationInput(e.target.value, card);
-    });
-
-    // Prevent card click from interfering with textarea
-    textarea.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
-
-    return card;
-}
-
-function handleCustomAutomationInput(value, card) {
-    if (typeof OnboardingStorage === 'undefined') return;
-
-    const hadCustom = OnboardingStorage.getCustomAutomation().trim().length > 0;
-    const hasCustomNow = value.trim().length > 0;
-
-    // Check if we can add this (under the 3 limit)
-    const currentCount = OnboardingStorage.getSelectionCount();
-    const wouldExceedLimit = !hadCustom && hasCustomNow && currentCount >= 3;
-
-    if (wouldExceedLimit) {
-        // Clear the input and show feedback
-        card.querySelector('#custom-automation-input').value = '';
-        card.classList.add('shake');
-        setTimeout(() => card.classList.remove('shake'), 500);
-        return;
-    }
-
-    // Save the custom automation
-    OnboardingStorage.setCustomAutomation(value);
-
-    // Update card state
-    if (hasCustomNow) {
-        card.classList.add('selected');
-    } else {
-        card.classList.remove('selected');
-    }
-
-    updateSelectionCount();
-    updateDisabledStates();
-}
-
-function toggleTemplateSelection(card, templateId) {
-    if (card.classList.contains('disabled')) return;
-
-    if (typeof OnboardingStorage !== 'undefined') {
-        const wasAdded = OnboardingStorage.toggleTemplate(templateId);
-
-        if (card.classList.contains('selected')) {
-            // Was selected, now removed
-            card.classList.remove('selected');
-        } else if (wasAdded !== false) {
-            // Successfully added
-            card.classList.add('selected');
-        }
-
-        updateSelectionCount();
-        updateDisabledStates();
-    }
-}
-
-function updateSelectionCount() {
-    const count = typeof OnboardingStorage !== 'undefined'
-        ? OnboardingStorage.getSelectionCount()
-        : 0;
-
-    if (selectionCountEl) {
-        selectionCountEl.textContent = count;
-    }
-
-    if (continueSignupBtn) {
-        continueSignupBtn.disabled = count === 0;
-    }
-}
-
-function updateDisabledStates() {
-    const selectedTemplates = typeof OnboardingStorage !== 'undefined'
-        ? OnboardingStorage.getSelectedTemplates()
-        : [];
-    const selectionCount = typeof OnboardingStorage !== 'undefined'
-        ? OnboardingStorage.getSelectionCount()
-        : 0;
-    const maxReached = selectionCount >= 3;
-
-    // Update template cards
-    document.querySelectorAll('.recommendation-card:not(.custom-card)').forEach(card => {
-        const id = card.dataset.templateId;
-        const isSelected = selectedTemplates.includes(id);
-
-        if (maxReached && !isSelected) {
-            card.classList.add('disabled');
-        } else {
-            card.classList.remove('disabled');
-        }
-    });
-
-    // Update custom card
-    const customCard = document.getElementById('custom-automation-card');
-    if (customCard) {
-        const hasCustom = typeof OnboardingStorage !== 'undefined'
-            ? OnboardingStorage.getCustomAutomation().trim().length > 0
-            : false;
-
-        if (maxReached && !hasCustom) {
-            customCard.classList.add('disabled');
-            customCard.querySelector('#custom-automation-input')?.setAttribute('disabled', 'true');
-        } else {
-            customCard.classList.remove('disabled');
-            customCard.querySelector('#custom-automation-input')?.removeAttribute('disabled');
-        }
-    }
-}
+// Selection functions removed - preview-only mode now
 
 function handleContinueToSignup() {
-    // Redirect to signup with onboarding context
+    // Save business context to localStorage for the Intelligence page to use
+    const businessPrompt = businessPromptInput?.value?.trim() || '';
+    const context = {
+        industry: industrySelect?.value || '',
+        goals: goalsInput?.value?.split('\n').filter(g => g.trim()) || [],
+        painPoints: painPointsInput?.value?.split('\n').filter(p => p.trim()) || []
+    };
+
+    // Store for post-signup app creation
+    localStorage.setItem('royalty_onboarding', JSON.stringify({
+        businessPrompt,
+        context,
+        timestamp: Date.now()
+    }));
+
+    // Redirect to signup
     window.location.href = '/app/signup.html?onboarding=true';
 }
 

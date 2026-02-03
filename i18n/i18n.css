@@ -87,8 +87,8 @@
 }
 
 .lang-option.active {
-    background: rgba(99, 102, 241, 0.08);
-    color: var(--color-primary, #6366f1);
+    background: rgba(124, 58, 237, 0.08);
+    color: var(--color-primary, #7c3aed);
 }
 
 /* RTL Support */

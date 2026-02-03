@@ -2,11 +2,11 @@
 /* Clean, minimal, professional SaaS aesthetic */
 
 :root {
-    /* Primary Colors - Softer purple palette */
-    --color-primary: #6366f1;
-    --color-primary-dark: #4f46e5;
-    --color-primary-light: #a5b4fc;
-    --color-primary-subtle: rgba(99, 102, 241, 0.08);
+    /* Primary Colors - Royal Purple palette */
+    --color-primary: #7c3aed;
+    --color-primary-dark: #6d28d9;
+    --color-primary-light: #c4b5fd;
+    --color-primary-subtle: rgba(124, 58, 237, 0.08);
 
     /* Secondary & Accent */
     --color-secondary: #1e293b;
@@ -31,11 +31,11 @@
     /* Border Colors */
     --color-border: #e2e8f0;
     --color-border-light: #f1f5f9;
-    --color-border-focus: #6366f1;
+    --color-border-focus: #7c3aed;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    --gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    --gradient-subtle: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
     --gradient-accent: linear-gradient(135deg, #10b981 0%, #34d399 100%);
 
     /* Shadows - Softer, more diffused */
@@ -44,9 +44,9 @@
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.06), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+    --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.15);
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-card-hover: 0 10px 40px rgba(99, 102, 241, 0.12);
+    --shadow-card-hover: 0 10px 40px rgba(124, 58, 237, 0.12);
 
     /* Border Radius - More rounded */
     --radius-sm: 8px;
@@ -58,6 +58,7 @@
 
     /* Typography */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     /* Transitions */
     --transition-fast: 150ms ease;
@@ -159,10 +160,12 @@ a {
 
 /* ===== Typography ===== */
 h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
     font-weight: 600;
     line-height: 1.3;
     color: var(--color-text);
     letter-spacing: -0.02em;
+    text-transform: capitalize;
 }
 
 h1 {
@@ -210,12 +213,12 @@ h4 {
 .btn-primary {
     background: var(--gradient-primary);
     color: white;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
 }
 
 .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
 }
 
 .btn-primary:active {
@@ -540,7 +543,7 @@ h4 {
 
 .automation-card.suggested {
     background: var(--gradient-subtle);
-    border-color: rgba(99, 102, 241, 0.15);
+    border-color: rgba(124, 58, 237, 0.15);
 }
 
 .automation-icon {
@@ -597,6 +600,7 @@ h4 {
 /* ===== Problem/Solution Section ===== */
 .problem-solution {
     padding: 120px 0;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .section-header {
@@ -648,7 +652,7 @@ h4 {
 
 .comparison-card.new-way {
     background: var(--gradient-subtle);
-    border-color: rgba(99, 102, 241, 0.15);
+    border-color: rgba(124, 58, 237, 0.15);
 }
 
 .comparison-header {
@@ -711,7 +715,7 @@ h4 {
 /* ===== Features Section ===== */
 .features {
     padding: 120px 0;
-    background: var(--color-bg-secondary);
+    background: linear-gradient(180deg, #f8fafc 0%, #f5f3ff 50%, #f8fafc 100%);
 }
 
 .features-grid {
@@ -722,16 +726,17 @@ h4 {
 
 .feature-card {
     padding: 32px;
-    background: var(--color-bg);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
     border-radius: var(--radius-xl);
-    border: 1px solid var(--color-border-light);
+    border: 1px solid rgba(124, 58, 237, 0.12);
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.08);
     transition: all var(--transition-base);
 }
 
 .feature-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--color-border);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.15);
+    border-color: rgba(124, 58, 237, 0.25);
 }
 
 .feature-icon {
@@ -759,6 +764,7 @@ h4 {
 /* ===== How It Works Section ===== */
 .how-it-works {
     padding: 120px 0;
+    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
 }
 
 .steps {
@@ -809,7 +815,7 @@ h4 {
 /* ===== Automations Preview Section ===== */
 .automations-preview {
     padding: 120px 0;
-    background: var(--color-bg-secondary);
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .templates-grid-preview {
@@ -821,8 +827,8 @@ h4 {
 .template-card-preview {
     display: block;
     padding: 28px;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border-light);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+    border: 1px solid rgba(124, 58, 237, 0.1);
     border-radius: var(--radius-xl);
     text-decoration: none;
     transition: all var(--transition-base);
@@ -830,9 +836,10 @@ h4 {
 }
 
 .template-card-preview:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--color-border);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.15);
+    border-color: rgba(124, 58, 237, 0.25);
+    border-color: rgba(124, 58, 237, 0.2);
 }
 
 .template-card-preview .btn-automate {
@@ -850,7 +857,7 @@ h4 {
     opacity: 0;
     transform: translateY(-4px);
     transition: all var(--transition-base);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
 }
 
 .template-card-preview:hover .btn-automate {
@@ -859,7 +866,7 @@ h4 {
 }
 
 .template-card-preview .btn-automate:hover {
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
 }
 
 .template-card-icon {
@@ -896,7 +903,7 @@ h4 {
 }
 
 .template-card-badge.featured {
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(124, 58, 237, 0.1);
     color: var(--color-primary);
 }
 
@@ -960,7 +967,7 @@ h4 {
 /* ===== Social Proof Section ===== */
 .social-proof {
     padding: 100px 0;
-    background: var(--color-bg-secondary);
+    background: linear-gradient(180deg, #f1f5f9 0%, #ffffff 100%);
 }
 
 .testimonial-card {
@@ -1116,6 +1123,36 @@ blockquote {
     max-width: 900px;
 }
 
+/* 4-tier pricing layout */
+.pricing-cards-4 {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 1100px;
+}
+
+.pricing-cards-4 .pricing-card {
+    padding: 24px;
+}
+
+.pricing-cards-4 .pricing-features li {
+    font-size: 13px;
+}
+
+.pricing-footer-link {
+    text-align: center;
+    margin-top: 32px;
+    font-size: 14px;
+}
+
+.pricing-footer-link a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.pricing-footer-link a:hover {
+    text-decoration: underline;
+}
+
 .pricing-enterprise-cta {
     display: flex;
     align-items: center;
@@ -1183,15 +1220,32 @@ blockquote {
 
 .pricing-card {
     padding: 36px 32px;
-    background: var(--color-bg);
+    background: linear-gradient(135deg, #ffffff 0%, #fafaff 100%);
     border-radius: var(--radius-xl);
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(124, 58, 237, 0.1);
     position: relative;
+    transition: all 0.3s ease;
+}
+
+.pricing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.12);
+    border-color: rgba(124, 58, 237, 0.2);
 }
 
 .pricing-card.featured {
-    border-color: var(--color-primary);
-    box-shadow: var(--shadow-glow);
+    background: linear-gradient(135deg, #fafaff 0%, #f5f3ff 100%);
+    border: 2px solid var(--color-primary);
+    box-shadow:
+        0 0 0 4px rgba(124, 58, 237, 0.1),
+        0 20px 40px rgba(124, 58, 237, 0.15);
+}
+
+.pricing-card.featured:hover {
+    transform: translateY(-6px);
+    box-shadow:
+        0 0 0 4px rgba(124, 58, 237, 0.15),
+        0 25px 50px rgba(124, 58, 237, 0.2);
 }
 
 .pricing-badge {
@@ -1501,7 +1555,7 @@ blockquote {
 .discovery-input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .discovery-input::placeholder {
@@ -1746,18 +1800,18 @@ blockquote {
 /* Custom Automation Card */
 .recommendation-card.custom-card {
     border-style: dashed;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(139, 92, 246, 0.02) 100%);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.02) 0%, rgba(168, 85, 247, 0.02) 100%);
 }
 
 .recommendation-card.custom-card:hover {
     border-color: var(--color-primary);
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
 }
 
 .recommendation-card.custom-card.selected {
     border-style: solid;
     border-color: var(--color-primary);
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
 }
 
 .recommendation-card.custom-card .custom-icon {
@@ -1786,7 +1840,7 @@ blockquote {
 .custom-automation-textarea:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .custom-automation-textarea:disabled {
@@ -1841,6 +1895,11 @@ blockquote {
         grid-template-columns: repeat(2, 1fr);
         max-width: 700px;
     }
+
+    .pricing-cards-4 {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 700px;
+    }
 }
 
 @media (max-width: 900px) {
@@ -1850,6 +1909,11 @@ blockquote {
     }
 
     .pricing-cards-simple {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+    }
+
+    .pricing-cards-4 {
         grid-template-columns: 1fr;
         max-width: 400px;
     }
@@ -1957,5 +2021,118 @@ blockquote {
     .how-it-works,
     .pricing {
         padding: 80px 0;
+    }
+}
+
+/* ===== Roadmap Preview Section ===== */
+.roadmap-preview {
+    padding: 100px 0;
+    background: var(--color-bg-secondary);
+}
+
+.roadmap-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 48px;
+}
+
+.roadmap-preview-column {
+    background: var(--color-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.roadmap-column-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.roadmap-column-header.ideas {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(124, 58, 237, 0.04) 100%);
+    color: var(--color-primary);
+}
+
+.roadmap-column-header.in-progress {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%);
+    color: var(--color-warning);
+}
+
+.roadmap-column-header.deployed {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%);
+    color: var(--color-accent);
+}
+
+.roadmap-preview-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.roadmap-preview-item:last-child {
+    border-bottom: none;
+}
+
+.roadmap-preview-item p {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-top: 8px;
+}
+
+.roadmap-category {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.roadmap-category.feature {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--color-primary);
+}
+
+.roadmap-category.improvement {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-accent);
+}
+
+.roadmap-category.integration {
+    background: rgba(168, 85, 247, 0.1);
+    color: #a855f7;
+}
+
+.roadmap-category.bug {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+.roadmap-preview-cta {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .roadmap-preview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .roadmap-preview-cta {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .roadmap-preview-cta .btn {
+        width: 100%;
+        max-width: 300px;
     }
 }
