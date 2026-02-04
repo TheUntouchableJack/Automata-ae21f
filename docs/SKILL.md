@@ -31,7 +31,7 @@ Session recaps provide continuity between Claude Code sessions by preserving con
 When the user asks for a recap, include:
 
 ```markdown
-# Automata Session Recap — [DATE]
+# Royalty Session Recap — [DATE]
 
 ## Quick Context for New Sessions
 [1-2 sentence description of the project]
@@ -84,9 +84,9 @@ When the user asks for a recap, include:
 ## Integration with Other Skills
 
 Recaps should reference but not duplicate:
-- `automata-project-description.md` — Core vision
-- `automata-design-system.md` — Visual design
-- `automata-ai-analysis-engine.md` — AI system details
+- `royalty-project-description.md` — Core vision
+- `royalty-design-system.md` — Visual design
+- `royalty-ai-analysis-engine.md` — AI system details
 - Other skill documents as relevant
 
 ## Example Usage

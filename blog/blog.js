@@ -6,7 +6,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Royalty's app_id for the blog (will be set after first newsletter app is created)
 // For dogfooding, we'll use a fixed app_id or fallback to blog_posts table
-let AUTOMATA_APP_ID = null;
+let ROYALTY_APP_ID = null;
 
 // ===== Page Detection =====
 const isPostPage = window.location.pathname.includes('post.html');
@@ -47,7 +47,7 @@ async function detectBlogSource() {
         const { data: app } = await query.limit(1).single();
 
         if (app) {
-            AUTOMATA_APP_ID = app.id;
+            ROYALTY_APP_ID = app.id;
             // Update page title if specific app
             if (appSlug && app.name) {
                 document.title = `${app.name} - Blog`;
@@ -71,10 +71,10 @@ async function loadPosts(topic = 'all') {
     try {
         let posts = [];
 
-        if (AUTOMATA_APP_ID) {
+        if (ROYALTY_APP_ID) {
             // Use newsletter_articles via RPC
             const { data, error } = await supabase.rpc('get_published_articles', {
-                p_app_id: AUTOMATA_APP_ID,
+                p_app_id: ROYALTY_APP_ID,
                 p_language: getCurrentLanguage(),
                 p_topic: topic === 'all' ? null : topic,
                 p_limit: 50
@@ -182,7 +182,7 @@ function extractExcerpt(content) {
     text = text.replace(/`(.+?)`/g, '$1');
 
     // Remove embed tags
-    text = text.replace(/\[automata:[^\]]+\]/g, '');
+    text = text.replace(/\[royalty:[^\]]+\]/g, '');
 
     // Get first meaningful paragraph
     const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 50);
@@ -223,9 +223,9 @@ function setupSubscribeForm() {
         submitBtn.disabled = true;
 
         try {
-            if (AUTOMATA_APP_ID) {
+            if (ROYALTY_APP_ID) {
                 const { error } = await supabase.rpc('subscribe_to_newsletter', {
-                    p_app_id: AUTOMATA_APP_ID,
+                    p_app_id: ROYALTY_APP_ID,
                     p_email: email,
                     p_source: 'blog_footer',
                     p_preferred_language: getCurrentLanguage()
@@ -280,10 +280,10 @@ async function loadPost(slug) {
     try {
         let post = null;
 
-        if (AUTOMATA_APP_ID) {
+        if (ROYALTY_APP_ID) {
             // Use newsletter_articles via RPC
             const { data, error } = await supabase.rpc('get_article_by_slug', {
-                p_app_id: AUTOMATA_APP_ID,
+                p_app_id: ROYALTY_APP_ID,
                 p_slug: slug,
                 p_language: getCurrentLanguage()
             });
@@ -554,7 +554,7 @@ async function loadRelatedPosts(relatedIds) {
 
     try {
         const { data: posts, error } = await supabase
-            .from(AUTOMATA_APP_ID ? 'newsletter_articles' : 'blog_posts')
+            .from(ROYALTY_APP_ID ? 'newsletter_articles' : 'blog_posts')
             .select('*')
             .in('id', relatedIds)
             .eq('status', 'published')
@@ -571,8 +571,8 @@ async function loadRelatedPosts(relatedIds) {
 
 async function loadRelatedByTopic(topic, excludeId) {
     try {
-        const table = AUTOMATA_APP_ID ? 'newsletter_articles' : 'blog_posts';
-        const topicField = AUTOMATA_APP_ID ? 'primary_topic' : 'industry';
+        const table = ROYALTY_APP_ID ? 'newsletter_articles' : 'blog_posts';
+        const topicField = ROYALTY_APP_ID ? 'primary_topic' : 'industry';
 
         const { data: posts, error } = await supabase
             .from(table)

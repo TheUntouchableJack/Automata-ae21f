@@ -1,6 +1,6 @@
 /**
  * Vitest Test Setup
- * Global mocks and utilities for testing Automata
+ * Global mocks and utilities for testing Royalty
  */
 
 import { vi } from 'vitest';

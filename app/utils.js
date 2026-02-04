@@ -2,6 +2,29 @@
 // Centralized functions used across multiple pages
 // Eliminates code duplication and ensures consistency
 
+// One-time localStorage migration from Automata to Royalty branding
+(function migrateLocalStorageKeys() {
+    if (localStorage.getItem('royalty_migration_done')) return;
+    var migrations = [
+        ['automata_user_profile', 'royalty_user_profile'],
+        ['automata_coaching_completed', 'royalty_coaching_completed'],
+        ['automata_coaching_dismissed', 'royalty_coaching_dismissed'],
+        ['automata_coaching_visits', 'royalty_coaching_visits'],
+        ['automata_onboarding', 'royalty_onboarding'],
+        ['automata_launch_plan', 'royalty_launch_plan'],
+        ['automata_selected_template', 'royalty_selected_template'],
+        ['automata_language', 'royalty_language']
+    ];
+    migrations.forEach(function(pair) {
+        var val = localStorage.getItem(pair[0]);
+        if (val && !localStorage.getItem(pair[1])) {
+            localStorage.setItem(pair[1], val);
+        }
+        if (val) localStorage.removeItem(pair[0]);
+    });
+    localStorage.setItem('royalty_migration_done', '1');
+})();
+
 const AppUtils = (function() {
     'use strict';
 

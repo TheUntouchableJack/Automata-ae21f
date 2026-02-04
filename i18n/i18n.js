@@ -15,7 +15,7 @@ const I18n = (function() {
     };
 
     const DEFAULT_LANGUAGE = 'en';
-    const STORAGE_KEY = 'automata_language';
+    const STORAGE_KEY = 'royalty_language';
 
     let currentLanguage = DEFAULT_LANGUAGE;
     let translations = {};

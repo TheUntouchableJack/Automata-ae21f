@@ -1,7 +1,7 @@
 {
-  "name": "automata",
+  "name": "royalty",
   "version": "1.0.0",
-  "description": "Automata MVP - Dashboard & Blog Automation",
+  "description": "Royalty - AI-Powered Loyalty Programs",
   "type": "module",
   "scripts": {
     "dev": "vite",

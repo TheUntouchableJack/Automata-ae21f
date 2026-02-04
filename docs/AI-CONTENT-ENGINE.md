@@ -337,7 +337,7 @@ You are a talented writer crafting content for ${context.business_name}.
 - 1200-1800 words
 - Use subheadings (H2, H3)
 - Include 2-3 specific examples
-- Add relevant internal links where [automata:*] embeds make sense
+- Add relevant internal links where [royalty:*] embeds make sense
 
 Write the complete article now:
 `;
@@ -467,9 +467,9 @@ CREATE INDEX idx_content_log_performance
 
 ### Phase 1 (Now)
 ```
-automata.app/blog/                    # Automata's blog
-automata.app/a/jays-coffee/blog/      # Client blogs
-automata.app/a/jays-coffee/blog/en/fresh-roast-fridays/
+royaltyapp.ai/blog/                    # Royalty's blog
+royaltyapp.ai/a/jays-coffee/blog/      # Client blogs
+royaltyapp.ai/a/jays-coffee/blog/en/fresh-roast-fridays/
 ```
 
 ### Phase 2 (Future)
@@ -521,7 +521,7 @@ const blogRecommendation = {
 |------|---------------------|-------------|
 | **Context Gathering UI** | `app/app-builder.html`, `app/app-builder.js` | Add Step 2.5 for newsletter apps with story/audience/voice questions |
 | **Content Context API** | `app/content-context.js` | Save/load content context, call `save_content_context` RPC |
-| **Public Blog Home** | `blog/app-blog.html` | Render blog home for `automata.app/a/{slug}/blog/` |
+| **Public Blog Home** | `blog/app-blog.html` | Render blog home for `royaltyapp.ai/a/{slug}/blog/` |
 | **Article Page** | `blog/article.html` | Single article view with SEO, schema, embeds |
 
 ### Next Sprint

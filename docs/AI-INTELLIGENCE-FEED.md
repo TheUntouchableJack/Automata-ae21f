@@ -1,4 +1,4 @@
-# Automata AI Intelligence Feed
+# Royalty AI Intelligence Feed
 
 ## Vision (From Jay - Jan 30, 2026)
 > "We want to fully unleash your capabilities and have you grow and scale our business online, along with our clients."
@@ -179,7 +179,7 @@ Agents differ from current AI in key ways:
 - **Memory and learning** - improve based on outcomes
 - **Parallel operation** - multiple agents handling different domains
 
-Potential Automata agents:
+Potential Royalty agents:
 - **Growth Agent** - continuously optimizes customer acquisition
 - **Retention Agent** - monitors and prevents churn
 - **Efficiency Agent** - finds and builds automations

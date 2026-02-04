@@ -1,4 +1,4 @@
-# Automata — Marketing & Conversion Strategy
+# Royalty — Marketing & Conversion Strategy
 
 ## The Mindset
 
@@ -36,7 +36,7 @@ Every piece of content follows this formula:
 1. **Hook** — Pattern interrupt. Say something unexpected.
 2. **Problem** — Articulate their pain better than they can.
 3. **Agitate** — Make the pain feel urgent.
-4. **Solution** — Introduce Automata as the obvious answer.
+4. **Solution** — Introduce Royalty as the obvious answer.
 5. **CTA** — One clear action. Always.
 
 **Content Types:**
@@ -97,14 +97,14 @@ Every piece of content follows this formula:
 
 **Types of Proof (use all)**
 1. **Numbers** — "12,847 automations running" / "2M+ messages sent"
-2. **Logos** — Recognizable businesses using Automata
+2. **Logos** — Recognizable businesses using Royalty
 3. **Testimonials** — Real names, real faces, specific results
 4. **Case Studies** — Deep dives with before/after
 5. **Media Mentions** — "As seen in..."
 6. **Community** — Active users, Discord/Slack, user content
 
 **Testimonial Formula**
-> "Before Automata, [specific pain]. Now, [specific result with numbers]. [Emotional benefit]."
+> "Before Royalty, [specific pain]. Now, [specific result with numbers]. [Emotional benefit]."
 > — Name, Title, Company (with photo)
 
 ### Objection預handling
@@ -113,7 +113,7 @@ Every piece of content follows this formula:
 |-----------|----------|
 | "I don't have time to set this up" | AI proposes everything. You just approve. |
 | "My customers will know it's automated" | Every message is personalized. They'll think you hired a team. |
-| "I'm not technical" | If you can approve an email, you can use Automata. |
+| "I'm not technical" | If you can approve an email, you can use Royalty. |
 | "What if I don't like it?" | Free trial. No credit card. Cancel in one click. |
 | "Is my data safe?" | Bank-level encryption. Your data is yours. Always. |
 
@@ -148,7 +148,7 @@ Within 60 seconds of signing up, they should:
 
 ### Defining the Aha Moment
 
-**Automata's Aha Moment:**
+**Royalty's Aha Moment:**
 > "The moment AI proposes an automation that feels like it read their mind — and they realize they can launch it with one click."
 
 Everything in onboarding leads to this moment. FAST.
@@ -206,7 +206,7 @@ Automation runs → Customer engages → User sees results → User creates more
 - **Dashboard dopamine** — Show metrics improving over time
 - **AI suggestions** — Proactively propose new automations
 - **Milestone celebrations** — "You've sent 1,000 messages!"
-- **Weekly reports** — Email summary of what Automata did for them
+- **Weekly reports** — Email summary of what Royalty did for them
 - **New features** — Drip new capabilities to maintain novelty
 
 ### Churn Prevention
@@ -278,7 +278,7 @@ Action-oriented. Benefit-focused. First person when possible.
 
 ---
 
-## The 10 Commandments of Automata Marketing
+## The 10 Commandments of Royalty Marketing
 
 1. **Clarity over cleverness.** If they don't get it in 5 seconds, we failed.
 2. **Show, don't tell.** Screenshots > descriptions. Demos > promises.
@@ -306,7 +306,7 @@ Action-oriented. Benefit-focused. First person when possible.
 - Relationships at scale without losing the human touch
 
 **Positioning Statement:**
-> Automata is the AI-powered automation platform that lets any business — from solo entrepreneurs to enterprises — scale meaningful customer relationships. Upload your data, let AI propose intelligent automations, approve with one click, and watch applications emerge on top of your automations. People first. Always.
+> Royalty is the AI-powered automation platform that lets any business — from solo entrepreneurs to enterprises — scale meaningful customer relationships. Upload your data, let AI propose intelligent automations, approve with one click, and watch applications emerge on top of your automations. People first. Always.
 
 ---
 

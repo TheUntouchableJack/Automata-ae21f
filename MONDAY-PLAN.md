@@ -92,7 +92,7 @@ const response = await anthropic.messages.create({
 
 ### 2.4 Database: Run Migration
 ```sql
--- From automata-ai-intelligence-feed.md
+-- From royalty-ai-intelligence-feed.md
 CREATE TABLE ai_recommendations (...);
 CREATE TABLE ai_recommendation_outcomes (...);
 ```
@@ -125,7 +125,7 @@ CREATE TABLE ai_recommendation_outcomes (...);
 
 ### 3.2 Prompt Template for Project Proposal
 ```
-You are setting up Automata for a new business.
+You are setting up Royalty for a new business.
 
 BUSINESS INFO:
 - Name: {business_name}

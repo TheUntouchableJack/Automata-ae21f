@@ -171,7 +171,7 @@ When running `/security-audit`, output in this format:
 3. [MEDIUM] Schedule Z for next sprint
 ```
 
-## Already Implemented in Automata
+## Already Implemented in Royalty
 
 - Rate limiter (`app/rate-limiter.js`)
 - XSS prevention (`AppUtils.escapeHtml` in `app/utils.js`)

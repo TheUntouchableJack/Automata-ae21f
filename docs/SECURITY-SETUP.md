@@ -43,7 +43,7 @@ This document tracks security fixes implemented and remaining setup steps.
    - Go to https://dash.cloudflare.com/
    - Navigate to Turnstile
    - Click "Add Widget"
-   - Enter your domain (e.g., `automata.app`)
+   - Enter your domain (e.g., `royaltyapp.ai`)
    - Choose "Managed" mode
    - Copy the Site Key and Secret Key
 

@@ -209,7 +209,7 @@ if (db) {
     db.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
             // Clear any cached data
-            localStorage.removeItem('automata_user_profile');
+            localStorage.removeItem('royalty_user_profile');
         }
     });
 

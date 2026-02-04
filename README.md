@@ -1,4 +1,4 @@
-# Automata — Session Recaps
+# Royalty — Session Recaps
 
 ## Purpose
 
@@ -94,11 +94,11 @@ Each recap should include:
 
 | Document | Purpose |
 |----------|---------|
-| `automata-project-description.md` | Core vision and features |
-| `automata-project-instructions.md` | Development rules |
-| `automata-design-system.md` | Visual design guide |
-| `automata-ai-analysis-engine.md` | AI opportunity system |
-| `automata-qa-security-testing.md` | Testing protocols |
+| `royalty-project-description.md` | Core vision and features |
+| `royalty-project-instructions.md` | Development rules |
+| `royalty-design-system.md` | Visual design guide |
+| `royalty-ai-analysis-engine.md` | AI opportunity system |
+| `royalty-qa-security-testing.md` | Testing protocols |
 
 ## Naming Convention
 

@@ -1,8 +1,8 @@
-# Automata Session Recap — January 28, 2026
+# Royalty Session Recap — January 28, 2026
 
 ## Quick Context for New Sessions
 
-**What is Automata?** An AI-powered automation platform for SMBs/entrepreneurs to scale customer relationships through "bodiless applications" — automations first, apps built on top.
+**What is Royalty?** An AI-powered automation platform for SMBs/entrepreneurs to scale customer relationships through "bodiless applications" — automations first, apps built on top.
 
 **Philosophy:** "People first. Automations amplify human connection, not replace it."
 
@@ -12,9 +12,9 @@
 
 ## Session Overview
 
-This session implemented a comprehensive **Customer Management & AI Opportunities Feature** for the Automata platform, including database schema updates, new pages, enhanced UI, and thorough QA testing.
+This session implemented a comprehensive **Customer Management & AI Opportunities Feature** for the Royalty platform, including database schema updates, new pages, enhanced UI, and thorough QA testing.
 
-Additionally, we created **8 foundational skill documents** that define how Automata should be built, designed, marketed, and tested.
+Additionally, we created **8 foundational skill documents** that define how Royalty should be built, designed, marketed, and tested.
 
 ---
 
@@ -24,15 +24,15 @@ These are the "source of truth" documents. **Read these at the start of any new 
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Project Description | `/mnt/project/automata-project-description.md` | What we're building, core features, roadmap |
-| Project Instructions | `/mnt/project/automata-project-instructions.md` | Development rules, security requirements |
-| Design System | `automata-design-system.md` | Gleb Kuznetsov-inspired aesthetic, colors, typography, components |
-| Marketing Strategy | `automata-marketing-strategy.md` | 7-stage conversion funnel, copywriting rules, metrics |
-| QA & Security | `automata-qa-security-testing.md` | Testing protocols, RLS patterns, debugging methodology |
-| Catastrophe Prevention | `automata-catastrophe-prevention.md` | What we never do, safeguards, blast radius assessment |
-| UX Communication | `automata-ux-communication.md` | Loading states, modals, toasts, feedback patterns |
-| Marketplace | `automata-marketplace.md` | Template marketplace, content-to-product flywheel |
-| AI Analysis Engine | `automata-ai-analysis-engine.md` | Core AI flow, CSV mapping, opportunity generation |
+| Project Description | `/mnt/project/royalty-project-description.md` | What we're building, core features, roadmap |
+| Project Instructions | `/mnt/project/royalty-project-instructions.md` | Development rules, security requirements |
+| Design System | `royalty-design-system.md` | Gleb Kuznetsov-inspired aesthetic, colors, typography, components |
+| Marketing Strategy | `royalty-marketing-strategy.md` | 7-stage conversion funnel, copywriting rules, metrics |
+| QA & Security | `royalty-qa-security-testing.md` | Testing protocols, RLS patterns, debugging methodology |
+| Catastrophe Prevention | `royalty-catastrophe-prevention.md` | What we never do, safeguards, blast radius assessment |
+| UX Communication | `royalty-ux-communication.md` | Loading states, modals, toasts, feedback patterns |
+| Marketplace | `royalty-marketplace.md` | Template marketplace, content-to-product flywheel |
+| AI Analysis Engine | `royalty-ai-analysis-engine.md` | Core AI flow, CSV mapping, opportunity generation |
 
 ---
 
@@ -160,7 +160,7 @@ All tables have **Row Level Security (RLS) enabled** with policies that restrict
 ## File Structure (Current State)
 
 ```
-/Automata
+/Royalty
 ├── index.html              # Landing page (Gleb-inspired redesign)
 ├── styles.css              # Global styles + design system variables
 ├── script.js               # Landing page interactions

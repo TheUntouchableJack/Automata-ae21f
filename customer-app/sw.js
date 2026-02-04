@@ -1,11 +1,11 @@
 /**
- * Automata Customer App Service Worker
+ * Royalty Customer App Service Worker
  * Provides offline support and caching for the PWA
  */
 
-const CACHE_NAME = 'automata-rewards-v1';
-const STATIC_CACHE = 'automata-static-v1';
-const DYNAMIC_CACHE = 'automata-dynamic-v1';
+const CACHE_NAME = 'royalty-rewards-v2';
+const STATIC_CACHE = 'royalty-static-v2';
+const DYNAMIC_CACHE = 'royalty-dynamic-v2';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -169,7 +169,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'Automata Rewards', options)
+        self.registration.showNotification(data.title || 'Royalty Rewards', options)
     );
 });
 

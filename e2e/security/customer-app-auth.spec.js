@@ -264,7 +264,7 @@ test.describe('Customer App Session Security', () => {
         const storageKeys = await page.evaluate(() => Object.keys(localStorage));
 
         // Document: Session should be stored with app-specific key
-        // Keys like 'automata_member_${slug}' expected
+        // Keys like 'royalty_member_${slug}' expected
     });
 
     test('should clear session on logout', async ({ page }) => {
@@ -324,7 +324,7 @@ test.describe('Customer App Session Security', () => {
                 app_id: 'test-app',
                 exp: Math.floor(Date.now() / 1000) - 3600 // Expired 1 hour ago
             }));
-            localStorage.setItem('automata_member_test-app', expiredToken);
+            localStorage.setItem('royalty_member_test-app', expiredToken);
         });
 
         // Navigate to app

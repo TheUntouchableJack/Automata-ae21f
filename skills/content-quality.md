@@ -2,7 +2,7 @@
 
 ## Overview
 
-Use this skill when writing ANY content for Automata or clients. It ensures content reads like a talented publicist wrote it, not AI slop.
+Use this skill when writing ANY content for Royalty or clients. It ensures content reads like a talented publicist wrote it, not AI slop.
 
 **Invoke with:** `/content-quality`
 

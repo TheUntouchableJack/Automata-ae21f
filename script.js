@@ -373,7 +373,7 @@ document.head.appendChild(style);
 // ===== Start Automation Flow =====
 function startAutomation(templateId) {
     // Store the selected template
-    localStorage.setItem('automata_selected_template', templateId);
+    localStorage.setItem('royalty_selected_template', templateId);
 
     // Redirect to signup/login with template context
     // In the future, this could open a modal to collect company info first

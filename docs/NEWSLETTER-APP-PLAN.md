@@ -2,13 +2,13 @@
 
 **Goal:** Build a second app type that enables AI-powered content creation, multi-language publishing, and subscriber management with SEO-optimized interlinking.
 
-**First Customer:** Automata itself (dogfooding)
+**First Customer:** Royalty itself (dogfooding)
 
 ---
 
 ## 1. Strategic Vision
 
-### For Automata's Own Newsletter
+### For Royalty's Own Newsletter
 - **Topic:** Helping businesses understand automation scenarios
 - **Value Prop:** Show real-world examples of how intelligence + apps improve business
 - **Content Types:**
@@ -79,8 +79,8 @@ ALTER TYPE app_type ADD VALUE IF NOT EXISTS 'newsletter';
     "double_optin": true,
     "welcome_email_enabled": true,
     "footer_text": "Unsubscribe anytime...",
-    "from_name": "Automata Blog",
-    "reply_to": "hello@automata.app"
+    "from_name": "Royalty Blog",
+    "reply_to": "hello@royaltyapp.ai"
   }
 }
 ```
@@ -368,8 +368,8 @@ async function generateInterlinks(articleId) {
 
 **Option C: Subdomain**
 ```
-en.blog.automata.app/automation-basics
-es.blog.automata.app/conceptos-basicos
+en.blog.royaltyapp.ai/automation-basics
+es.blog.royaltyapp.ai/conceptos-basicos
 ```
 
 ### hreflang Implementation
@@ -529,15 +529,15 @@ async function selectNextTopic(appId) {
 
 ### Embeddable Widgets
 
-Articles can include dynamic, interactive widgets that showcase Automata features:
+Articles can include dynamic, interactive widgets that showcase Royalty features:
 
 **Automation Cards**
 ```html
 <!-- Embed syntax in article content -->
-[automata:automation type="email-sequence" industry="restaurant"]
+[royalty:automation type="email-sequence" industry="restaurant"]
 
 <!-- Renders as interactive card -->
-<div class="automata-embed automation-card" data-type="email-sequence">
+<div class="royalty-embed automation-card" data-type="email-sequence">
     <div class="card-icon">📧</div>
     <h4>Email Sequence Automation</h4>
     <p>Automatically nurture customers with perfectly-timed follow-ups</p>
@@ -546,7 +546,7 @@ Articles can include dynamic, interactive widgets that showcase Automata feature
         <li>✓ Re-engagement campaigns</li>
         <li>✓ Birthday rewards</li>
     </ul>
-    <button class="cta-button" onclick="openAutomataSignup('email-sequence')">
+    <button class="cta-button" onclick="openRoyaltySignup('email-sequence')">
         Try This Automation →
     </button>
 </div>
@@ -555,10 +555,10 @@ Articles can include dynamic, interactive widgets that showcase Automata feature
 **App Cards**
 ```html
 <!-- Embed syntax -->
-[automata:app type="loyalty" features="points,rewards,tiers"]
+[royalty:app type="loyalty" features="points,rewards,tiers"]
 
 <!-- Renders as app preview -->
-<div class="automata-embed app-card" data-type="loyalty">
+<div class="royalty-embed app-card" data-type="loyalty">
     <div class="app-preview">
         <img src="/images/loyalty-app-preview.png" alt="Loyalty App">
     </div>
@@ -576,10 +576,10 @@ Articles can include dynamic, interactive widgets that showcase Automata feature
 **Custom App Request**
 ```html
 <!-- Embed syntax -->
-[automata:custom-request]
+[royalty:custom-request]
 
 <!-- Renders as request form -->
-<div class="automata-embed custom-request-card">
+<div class="royalty-embed custom-request-card">
     <h4>Need Something Custom?</h4>
     <p>Describe your ideal app and we'll review it</p>
     <form class="custom-request-form">
@@ -596,8 +596,8 @@ Articles can include dynamic, interactive widgets that showcase Automata feature
 ```javascript
 // Parse article content and replace embed tags with rendered widgets
 function parseEmbeds(content) {
-    // Pattern: [automata:type key="value" key2="value2"]
-    const embedPattern = /\[automata:(\w+(?:-\w+)*)\s*([^\]]*)\]/g;
+    // Pattern: [royalty:type key="value" key2="value2"]
+    const embedPattern = /\[royalty:(\w+(?:-\w+)*)\s*([^\]]*)\]/g;
 
     return content.replace(embedPattern, (match, type, attrs) => {
         const attributes = parseAttributes(attrs);
@@ -641,15 +641,15 @@ Embedded widgets include:
     "image": "{og_image_url}",
     "author": {
         "@type": "Organization",
-        "name": "Automata",
-        "url": "https://automata.app"
+        "name": "Royalty",
+        "url": "https://royaltyapp.ai"
     },
     "publisher": {
         "@type": "Organization",
-        "name": "Automata",
+        "name": "Royalty",
         "logo": {
             "@type": "ImageObject",
-            "url": "https://automata.app/logo.png"
+            "url": "https://royaltyapp.ai/logo.png"
         }
     },
     "datePublished": "{published_at}",
@@ -674,13 +674,13 @@ Embedded widgets include:
             "@type": "ListItem",
             "position": 1,
             "name": "Blog",
-            "item": "https://automata.app/blog"
+            "item": "https://royaltyapp.ai/blog"
         },
         {
             "@type": "ListItem",
             "position": 2,
             "name": "{topic}",
-            "item": "https://automata.app/blog/topic/{topic}"
+            "item": "https://royaltyapp.ai/blog/topic/{topic}"
         },
         {
             "@type": "ListItem",
@@ -751,7 +751,7 @@ Embedded widgets include:
 
 ---
 
-## 12. Automata's Own Newsletter Content Plan
+## 12. Royalty's Own Newsletter Content Plan
 
 ### Content Pillars
 
@@ -773,7 +773,7 @@ Embedded widgets include:
    - "Writing Email Sequences That Convert"
 
 5. **Behind the Scenes**
-   - "How We Built Automata (Using Automata)"
+   - "How We Built Royalty (Using Royalty)"
    - "Monthly Product Updates"
 
 ### Initial Series Ideas
@@ -798,7 +798,7 @@ Embedded widgets include:
 
 ## 14. Success Metrics
 
-### For Automata's Newsletter
+### For Royalty's Newsletter
 - Subscriber count growth
 - Open rate (target: >40%)
 - Click rate (target: >5%)
@@ -813,4 +813,4 @@ Embedded widgets include:
 
 ---
 
-*This plan establishes the newsletter/blogger app as a powerful content marketing tool that Automata will use internally while offering to all clients.*
+*This plan establishes the newsletter/blogger app as a powerful content marketing tool that Royalty will use internally while offering to all clients.*

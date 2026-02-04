@@ -1,7 +1,22 @@
 /**
- * Automata Customer App
+ * Royalty Customer App
  * Core JavaScript for the customer-facing PWA
  */
+
+// One-time localStorage migration from Automata to Royalty branding
+(function migrateCustomerStorageKeys() {
+    if (localStorage.getItem('royalty_customer_migration_done')) return;
+    Object.keys(localStorage).forEach(function(key) {
+        if (key.startsWith('automata' + '_member_')) {
+            var newKey = key.replace('automata' + '_member_', 'royalty_member_');
+            if (!localStorage.getItem(newKey)) {
+                localStorage.setItem(newKey, localStorage.getItem(key));
+            }
+            localStorage.removeItem(key);
+        }
+    });
+    localStorage.setItem('royalty_customer_migration_done', '1');
+})();
 
 // ===== Configuration =====
 const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
@@ -242,7 +257,7 @@ function updateAppUI() {
 // ===== Session Management =====
 async function checkSession() {
     // Get token from localStorage
-    const storedToken = localStorage.getItem(`automata_member_${getAppSlug()}`);
+    const storedToken = localStorage.getItem(`royalty_member_${getAppSlug()}`);
     if (!storedToken) {
         if (!isLandingPage()) {
             // Redirect to landing page if not authenticated
@@ -257,7 +272,7 @@ async function checkSession() {
 
         // Check if token expired
         if (tokenData.exp * 1000 < Date.now()) {
-            localStorage.removeItem(`automata_member_${getAppSlug()}`);
+            localStorage.removeItem(`royalty_member_${getAppSlug()}`);
             if (!isLandingPage()) {
                 window.location.href = `/a/${getAppSlug()}`;
             }
@@ -274,7 +289,7 @@ async function checkSession() {
 
     } catch (error) {
         console.error('Session check failed:', error);
-        localStorage.removeItem(`automata_member_${getAppSlug()}`);
+        localStorage.removeItem(`royalty_member_${getAppSlug()}`);
     }
 }
 
@@ -522,7 +537,7 @@ async function handleJoin(formData) {
             welcomePoints = result.welcome_points;
         }
 
-        localStorage.setItem(`automata_member_${getAppSlug()}`, token);
+        localStorage.setItem(`royalty_member_${getAppSlug()}`, token);
 
         // Show success with welcome points info
         const welcomeMsg = welcomePoints > 0
@@ -634,7 +649,7 @@ async function handleLogin(pin) {
             token = generateClientToken(data.member_id);
         }
 
-        localStorage.setItem(`automata_member_${getAppSlug()}`, token);
+        localStorage.setItem(`royalty_member_${getAppSlug()}`, token);
 
         showToast('Welcome back!', 'success');
 
@@ -1024,7 +1039,7 @@ function setupEventListeners() {
     const logoutBtn = document.querySelector('.logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem(`automata_member_${getAppSlug()}`);
+            localStorage.removeItem(`royalty_member_${getAppSlug()}`);
             window.location.href = `/a/${getAppSlug()}`;
         });
     }

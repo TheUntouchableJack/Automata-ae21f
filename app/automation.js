@@ -748,7 +748,7 @@ async function loadConnectedApp() {
 
         // Show connected app
         document.getElementById('connected-app-name').textContent = app.name;
-        document.getElementById('connected-app-url').textContent = `automata.app/a/${app.slug}`;
+        document.getElementById('connected-app-url').textContent = `royaltyapp.ai/a/${app.slug}`;
         document.getElementById('edit-app-btn').href = `/app/app-builder.html#${app.id}`;
         document.getElementById('connected-app').style.display = 'block';
         document.getElementById('no-app-connected').style.display = 'none';
@@ -814,7 +814,7 @@ async function showAppSelector() {
                                     <div>
                                         <div style="font-weight: 600;">${escapeHtml(app.name)}</div>
                                         <div style="font-size: 13px; color: var(--color-text-secondary);">
-                                            automata.app/a/${escapeHtml(app.slug)}
+                                            royaltyapp.ai/a/${escapeHtml(app.slug)}
                                         </div>
                                     </div>
                                 </button>

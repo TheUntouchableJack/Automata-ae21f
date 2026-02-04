@@ -1,4 +1,4 @@
--- Automata MVP Database Schema
+-- Royalty Database Schema
 -- Run this in Supabase SQL Editor
 
 -- =====================================================

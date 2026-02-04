@@ -68,7 +68,7 @@ GIVE HONEST RECOMMENDATION
 
 ### Step 5: Honest Recommendation
 
-> "For Automata's scale (< 100K members per app), **Hybrid approach** is the sweet spot:
+> "For Royalty's scale (< 100K members per app), **Hybrid approach** is the sweet spot:
 > - Fast balance lookups (simple field)
 > - Complete audit trail (transactions table)
 > - Moderate complexity (already implemented!)

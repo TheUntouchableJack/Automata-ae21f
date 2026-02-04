@@ -243,30 +243,30 @@ describe('Token Storage', () => {
         const appSlug = 'test-app';
         const token = generateToken('member-123');
 
-        localStorage.setItem(`automata_member_${appSlug}`, token);
+        localStorage.setItem(`royalty_member_${appSlug}`, token);
 
-        expect(localStorage.getItem(`automata_member_${appSlug}`)).toBe(token);
+        expect(localStorage.getItem(`royalty_member_${appSlug}`)).toBe(token);
     });
 
     it('should clear token on logout', () => {
         const appSlug = 'test-app';
         const token = generateToken('member-123');
 
-        localStorage.setItem(`automata_member_${appSlug}`, token);
-        localStorage.removeItem(`automata_member_${appSlug}`);
+        localStorage.setItem(`royalty_member_${appSlug}`, token);
+        localStorage.removeItem(`royalty_member_${appSlug}`);
 
-        expect(localStorage.getItem(`automata_member_${appSlug}`)).toBeNull();
+        expect(localStorage.getItem(`royalty_member_${appSlug}`)).toBeNull();
     });
 
     it('should keep tokens for different apps separate', () => {
         const token1 = generateToken('member-1', 'app-1');
         const token2 = generateToken('member-2', 'app-2');
 
-        localStorage.setItem('automata_member_app-1', token1);
-        localStorage.setItem('automata_member_app-2', token2);
+        localStorage.setItem('royalty_member_app-1', token1);
+        localStorage.setItem('royalty_member_app-2', token2);
 
-        expect(localStorage.getItem('automata_member_app-1')).toBe(token1);
-        expect(localStorage.getItem('automata_member_app-2')).toBe(token2);
+        expect(localStorage.getItem('royalty_member_app-1')).toBe(token1);
+        expect(localStorage.getItem('royalty_member_app-2')).toBe(token2);
         expect(token1).not.toBe(token2);
     });
 });
@@ -307,10 +307,10 @@ describe('Token Security Concerns', () => {
         // If XSS exists, attacker can steal the token
 
         const token = generateToken('member-123');
-        localStorage.setItem('automata_member_test', token);
+        localStorage.setItem('royalty_member_test', token);
 
         // Simulating XSS attack accessing localStorage
-        const stolenToken = localStorage.getItem('automata_member_test');
+        const stolenToken = localStorage.getItem('royalty_member_test');
 
         expect(stolenToken).toBe(token);
         // Recommendation: Use HttpOnly cookies for session tokens

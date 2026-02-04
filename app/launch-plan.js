@@ -159,7 +159,7 @@
     async function loadLaunchData() {
         // Try to load from localStorage first (for now)
         // In future, could store in org settings JSONB
-        const saved = localStorage.getItem('automata_launch_plan');
+        const saved = localStorage.getItem('royalty_launch_plan');
         if (saved) {
             try {
                 launchData = JSON.parse(saved);
@@ -176,7 +176,7 @@
     }
 
     function saveLaunchData() {
-        localStorage.setItem('automata_launch_plan', JSON.stringify(launchData));
+        localStorage.setItem('royalty_launch_plan', JSON.stringify(launchData));
         showSaveIndicator();
     }
 

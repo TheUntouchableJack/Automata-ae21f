@@ -1,12 +1,12 @@
 /**
  * Embed Widgets System
- * Parses article content and renders dynamic Automata widgets
+ * Parses article content and renders dynamic Royalty widgets
  *
  * Embed Syntax:
- * [automata:automation type="email-sequence" industry="restaurant"]
- * [automata:app type="loyalty" features="points,rewards,tiers"]
- * [automata:custom-request]
- * [automata:cta text="Start Free Trial" href="/signup"]
+ * [royalty:automation type="email-sequence" industry="restaurant"]
+ * [royalty:app type="loyalty" features="points,rewards,tiers"]
+ * [royalty:custom-request]
+ * [royalty:cta text="Start Free Trial" href="/signup"]
  */
 
 // Widget Types and their templates
@@ -104,7 +104,7 @@ function renderAutomationCard(attrs) {
     const industry = attrs.industry ? ` for ${escapeHtml(attrs.industry)}` : '';
 
     return `
-        <div class="automata-embed automation-card" data-type="${escapeHtml(type)}">
+        <div class="royalty-embed automation-card" data-type="${escapeHtml(type)}">
             <div class="embed-icon">${automation.icon}</div>
             <div class="embed-content">
                 <h4 class="embed-title">${escapeHtml(automation.title)}${industry}</h4>
@@ -113,7 +113,7 @@ function renderAutomationCard(attrs) {
                     ${automation.features.map(f => `<li>✓ ${escapeHtml(f)}</li>`).join('')}
                 </ul>
             </div>
-            <button class="embed-cta" onclick="window.openAutomataSignup && window.openAutomataSignup('${escapeHtml(type)}')">
+            <button class="embed-cta" onclick="window.openRoyaltySignup && window.openRoyaltySignup('${escapeHtml(type)}')">
                 Try This Automation →
             </button>
         </div>
@@ -139,7 +139,7 @@ function renderAppCard(attrs) {
     }
 
     return `
-        <div class="automata-embed app-card" data-type="${escapeHtml(type)}">
+        <div class="royalty-embed app-card" data-type="${escapeHtml(type)}">
             <div class="app-preview-badge">${app.icon}</div>
             <div class="embed-content">
                 <h4 class="embed-title">${escapeHtml(app.title)}</h4>
@@ -161,7 +161,7 @@ function renderAppCard(attrs) {
  */
 function renderCustomRequestForm() {
     return `
-        <div class="automata-embed custom-request-card">
+        <div class="royalty-embed custom-request-card">
             <div class="embed-icon">💡</div>
             <div class="embed-content">
                 <h4 class="embed-title">Need Something Custom?</h4>
@@ -188,7 +188,7 @@ function renderCTAButton(attrs) {
     const style = attrs.style || 'primary'; // primary, secondary, outline
 
     return `
-        <div class="automata-embed cta-embed">
+        <div class="royalty-embed cta-embed">
             <a href="${escapeHtml(href)}" class="embed-cta-link embed-cta-${escapeHtml(style)}">
                 ${escapeHtml(text)}
             </a>
@@ -204,8 +204,8 @@ function renderCTAButton(attrs) {
 function parseEmbeds(content) {
     if (!content) return '';
 
-    // Pattern: [automata:type key="value" key2="value2"]
-    const embedPattern = /\[automata:(\w+(?:-\w+)*)\s*([^\]]*)\]/g;
+    // Pattern: [royalty:type key="value" key2="value2"]
+    const embedPattern = /\[royalty:(\w+(?:-\w+)*)\s*([^\]]*)\]/g;
 
     return content.replace(embedPattern, (match, type, attrs) => {
         try {
@@ -236,7 +236,7 @@ function parseEmbeds(content) {
  * Handler for opening signup with automation context
  * @param {string} automationType - The automation type to pre-select
  */
-function openAutomataSignup(automationType) {
+function openRoyaltySignup(automationType) {
     // Store context for signup flow
     sessionStorage.setItem('signup_context', JSON.stringify({
         type: 'automation',
@@ -328,7 +328,7 @@ async function submitCustomRequest(event, form) {
 
 // Expose functions globally
 window.parseEmbeds = parseEmbeds;
-window.openAutomataSignup = openAutomataSignup;
+window.openRoyaltySignup = openRoyaltySignup;
 window.openAppBuilder = openAppBuilder;
 window.submitCustomRequest = submitCustomRequest;
 

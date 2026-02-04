@@ -1,4 +1,4 @@
-# Automata — UX Communication & Feedback Patterns
+# Royalty — UX Communication & Feedback Patterns
 
 ## The Principle
 
@@ -141,7 +141,7 @@ Every interactive element needs hover/active states:
 
 ## Loading States
 
-### The Loading Spinner (Automata Style)
+### The Loading Spinner (Royalty Style)
 
 Fluid, glowing, on-brand:
 
@@ -296,7 +296,7 @@ function PageLoader({ message = 'Loading...' }) {
 
 ## Confirmation Modals
 
-### Modal Component (Automata Style)
+### Modal Component (Royalty Style)
 
 ```jsx
 function Modal({ isOpen, onClose, children, size = 'md' }) {

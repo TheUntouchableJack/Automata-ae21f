@@ -1,4 +1,4 @@
-# Automata — Catastrophic Decision Prevention
+# Royalty — Catastrophic Decision Prevention
 
 ## The Prime Directive
 

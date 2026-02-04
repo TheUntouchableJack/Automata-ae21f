@@ -1,4 +1,4 @@
-# Automata Product Catalog
+# Royalty Product Catalog
 
 **Last Updated:** January 31, 2026
 **Purpose:** Comprehensive reference for development planning and feature roadmap
@@ -20,7 +20,7 @@
 
 ## 1. Product Overview
 
-**Automata MVP** is an AI-powered customer automation platform enabling organizations to scale meaningful customer relationships through:
+**Royalty MVP** is an AI-powered customer automation platform enabling organizations to scale meaningful customer relationships through:
 - Intelligent automations
 - Customer-facing loyalty/rewards apps
 - AI-powered business recommendations
@@ -33,7 +33,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         AUTOMATA                                 │
+│                         ROYALTY                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐        │
@@ -62,7 +62,7 @@
 
 ### Hierarchy
 ```
-Automata (Platform)
+Royalty (Platform)
 └── Organizations (Clients - e.g., Coffee Shop, Gym, Your Blog)
     ├── Projects (Campaigns, Initiatives)
     │   └── Automations (Scheduled content/emails)
@@ -255,4 +255,4 @@ Bronze (default) → Silver → Gold → Platinum (configurable thresholds)
 
 ---
 
-*This catalog is the source of truth for Automata's current state. Update when adding significant features.*
+*This catalog is the source of truth for Royalty's current state. Update when adding significant features.*

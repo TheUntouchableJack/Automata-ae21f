@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     }
 
     // Determine return URL
-    const origin = req.headers.get('origin') || 'https://automata.io'
+    const origin = req.headers.get('origin') || 'https://royaltyapp.ai'
 
     // Create portal session
     const session = await stripe.billingPortal.sessions.create({

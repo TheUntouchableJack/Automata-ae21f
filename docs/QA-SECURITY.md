@@ -1,4 +1,4 @@
-# Automata — QA, Security & Testing Protocol
+# Royalty — QA, Security & Testing Protocol
 
 ## The Mandate
 
@@ -380,7 +380,7 @@ export const options = {
 };
 
 export default function () {
-  const res = http.get('https://api.automata.com/customers', {
+  const res = http.get('https://api.royaltyapp.ai/customers', {
     headers: { Authorization: `Bearer ${__ENV.TEST_TOKEN}` },
   });
   

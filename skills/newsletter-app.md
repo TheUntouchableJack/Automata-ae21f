@@ -4,7 +4,7 @@
 
 This skill guides the creation of newsletter/blogger apps that enable AI-powered content creation, multi-language publishing, and subscriber management with SEO-optimized interlinking.
 
-**First Customer:** Automata (dogfooding our own platform)
+**First Customer:** Royalty (dogfooding our own platform)
 
 ---
 
@@ -12,7 +12,7 @@ This skill guides the creation of newsletter/blogger apps that enable AI-powered
 
 ### What's Planned (Not Yet Built)
 
-This is Automata's second app type after the Loyalty app. The full implementation plan lives in `/NEWSLETTER-APP-PLAN.md`.
+This is Royalty's second app type after the Loyalty app. The full implementation plan lives in `/NEWSLETTER-APP-PLAN.md`.
 
 ---
 
@@ -254,16 +254,16 @@ newsletter_subscribers (
 Articles can include interactive widgets using bracket syntax:
 
 ```markdown
-[automata:automation type="email-sequence" industry="restaurant"]
-[automata:app type="loyalty" features="points,rewards,tiers"]
-[automata:custom-request]
-[automata:cta text="Start Free Trial" href="/signup"]
+[royalty:automation type="email-sequence" industry="restaurant"]
+[royalty:app type="loyalty" features="points,rewards,tiers"]
+[royalty:custom-request]
+[royalty:cta text="Start Free Trial" href="/signup"]
 ```
 
 ### Embed Parser
 ```javascript
 function parseEmbeds(content) {
-    const embedPattern = /\[automata:(\w+(?:-\w+)*)\s*([^\]]*)\]/g;
+    const embedPattern = /\[royalty:(\w+(?:-\w+)*)\s*([^\]]*)\]/g;
 
     return content.replace(embedPattern, (match, type, attrs) => {
         const attributes = parseAttributes(attrs);
@@ -442,7 +442,7 @@ During newsletter app setup, we ask:
 
 ---
 
-## Content Strategy (Automata's Blog)
+## Content Strategy (Royalty's Blog)
 
 ### Honest Approach
 - NO fabricated case studies
@@ -455,7 +455,7 @@ During newsletter app setup, we ask:
 2. **Industry Playbooks** - Restaurant, fitness, professional services
 3. **Feature Deep-Dives** - Intelligence, Customer Apps, Automations
 4. **Tactical Tips** - Actionable advice, best practices
-5. **Behind the Scenes** - How we built Automata
+5. **Behind the Scenes** - How we built Royalty
 
 ### Initial Series
 - "Automation Fundamentals" (5-part beginner series)

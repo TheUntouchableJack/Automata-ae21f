@@ -2,7 +2,7 @@
 // LocalStorage-based persistence for pre-signup onboarding data
 
 const OnboardingStorage = (function() {
-    const STORAGE_KEY = 'automata_onboarding';
+    const STORAGE_KEY = 'royalty_onboarding';
     const EXPIRY_DAYS = 7;
     const VERSION = 1;
 

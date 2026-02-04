@@ -1,4 +1,4 @@
-# Automata Design System
+# Royalty Design System
 
 ## Design Inspiration
 
@@ -254,4 +254,4 @@ When implementing dark mode:
 
 ---
 
-*"Automata exists to amplify human connection — not replace it."*
+*"Royalty exists to amplify human connection — not replace it."*

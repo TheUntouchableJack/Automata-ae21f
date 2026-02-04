@@ -28,7 +28,7 @@ git checkout -b feature/dashboard-charts
 ### Terminal 3: Session C
 ```bash
 git checkout -b feature/branding-cleanup
-# Start Claude Code here - works on Automata → Royalty rebrand
+# Start Claude Code here - works on Royalty → Royalty rebrand
 ```
 
 ---
@@ -148,7 +148,7 @@ git checkout -b fix/support-testing
 - Fix any bugs found
 - **Owns:** Bug fixes only, no new features
 
-### Session 2: Branding (Automata → Royalty)
+### Session 2: Branding (Royalty → Royalty)
 ```bash
 git checkout -b refactor/royalty-rebrand
 ```

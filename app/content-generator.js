@@ -695,7 +695,7 @@ That's the goal: technology that makes you *more* human, not less.
 
 ---
 
-[automata:cta text="See Automation in Action" href="/signup" style="primary"]
+[royalty:cta text="See Automation in Action" href="/signup" style="primary"]
 `;
 
     const qualityScore = {
@@ -794,7 +794,7 @@ function updateSeoPreview() {
 
     document.getElementById('seo-title').textContent = title || 'Article Title';
     document.getElementById('seo-desc').textContent = desc || 'Article description will appear here...';
-    document.getElementById('seo-url').textContent = `automata.app/blog/${slug || 'article-slug'}`;
+    document.getElementById('seo-url').textContent = `royaltyapp.ai/blog/${slug || 'article-slug'}`;
 
     // Update article object
     if (currentArticle) {

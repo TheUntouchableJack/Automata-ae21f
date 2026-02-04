@@ -2,7 +2,7 @@
 
 ## Overview
 
-This skill guides the creation of customer-facing apps that sit on top of Automata automations. These apps provide end-to-end customer experiences like loyalty programs, rewards clubs, and VIP memberships.
+This skill guides the creation of customer-facing apps that sit on top of Royalty automations. These apps provide end-to-end customer experiences like loyalty programs, rewards clubs, and VIP memberships.
 
 ---
 

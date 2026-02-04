@@ -1,4 +1,4 @@
-# Automata Scale Readiness Plan
+# Royalty Scale Readiness Plan
 
 > Last updated: January 30, 2026
 

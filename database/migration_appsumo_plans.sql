@@ -309,12 +309,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Insert some test codes (remove in production or replace with real codes)
 INSERT INTO appsumo_codes (code, tier, notes) VALUES
-    ('AUTOMATA-TEST-T1-001', 1, 'Test Tier 1 code'),
-    ('AUTOMATA-TEST-T1-002', 1, 'Test Tier 1 code'),
-    ('AUTOMATA-TEST-T2-001', 2, 'Test Tier 2 code'),
-    ('AUTOMATA-TEST-T2-002', 2, 'Test Tier 2 code'),
-    ('AUTOMATA-TEST-T3-001', 3, 'Test Tier 3 code'),
-    ('AUTOMATA-TEST-T3-002', 3, 'Test Tier 3 code')
+    ('ROYALTY-TEST-T1-001', 1, 'Test Tier 1 code'),
+    ('ROYALTY-TEST-T1-002', 1, 'Test Tier 1 code'),
+    ('ROYALTY-TEST-T2-001', 2, 'Test Tier 2 code'),
+    ('ROYALTY-TEST-T2-002', 2, 'Test Tier 2 code'),
+    ('ROYALTY-TEST-T3-001', 3, 'Test Tier 3 code'),
+    ('ROYALTY-TEST-T3-002', 3, 'Test Tier 3 code')
 ON CONFLICT (code) DO NOTHING;
 
 -- =====================================================

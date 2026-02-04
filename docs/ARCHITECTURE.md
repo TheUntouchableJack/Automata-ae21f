@@ -1,7 +1,7 @@
-# Automata Architecture & Development Guidelines
+# Royalty Architecture & Development Guidelines
 
 > Last updated: January 2026
-> This document defines coding standards, architectural patterns, and best practices for the Automata codebase.
+> This document defines coding standards, architectural patterns, and best practices for the Royalty codebase.
 
 ---
 
@@ -47,7 +47,7 @@
 ## File Structure
 
 ```
-/Automata
+/Royalty
 ├── index.html              # Landing page
 ├── pricing.html            # Pricing page
 ├── script.js               # Landing page JS

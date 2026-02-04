@@ -55,7 +55,7 @@ Local business owners:
 > "Tell us about your business. Our AI builds your loyalty program, launches it, and tells you exactly what to do to keep customers coming back."
 
 **The Hook (for AppSumo listing):**
-> "Stop losing customers to competitors. Automata's AI analyzes your business, builds a custom loyalty program in 60 seconds, and continuously tells you exactly how to grow repeat business. It's like having a marketing director who works 24/7 for a one-time price."
+> "Stop losing customers to competitors. Royalty's AI analyzes your business, builds a custom loyalty program in 60 seconds, and continuously tells you exactly how to grow repeat business. It's like having a marketing director who works 24/7 for a one-time price."
 
 ---
 
@@ -310,7 +310,7 @@ supabase/functions/
 
 ### Value Justification
 
-"Automata replaces:"
+"Royalty replaces:"
 - Stamp Me / Loyalty app: $50/month
 - Email automation: $30/month
 - Customer analytics: $20/month
@@ -406,13 +406,13 @@ supabase/functions/
 > "You didn't start a business to manage a loyalty program. Our AI handles it while you handle customers."
 
 **Angle 2: Lost Revenue**
-> "The average local business loses 60% of first-time customers forever. Automata's AI brings them back."
+> "The average local business loses 60% of first-time customers forever. Royalty's AI brings them back."
 
 **Angle 3: No Tech Skills**
 > "If you can describe your business, you can launch a loyalty program. Our AI does the rest."
 
 **Angle 4: Continuous Value**
-> "Most loyalty apps set it and forget it. Automata's AI keeps working—analyzing, suggesting, automating—forever."
+> "Most loyalty apps set it and forget it. Royalty's AI keeps working—analyzing, suggesting, automating—forever."
 
 ---
 
@@ -462,7 +462,7 @@ supabase/functions/
 A: No. Your loyalty app works in any mobile browser. Customers just scan a QR code—no download required.
 
 **Q: How is this different from Stamp Me or Square Loyalty?**
-A: Those tools let you SET UP a loyalty program. Automata's AI RUNS it for you—analyzing customer behavior and telling you exactly what to do to grow. It's like having a marketing manager built in.
+A: Those tools let you SET UP a loyalty program. Royalty's AI RUNS it for you—analyzing customer behavior and telling you exactly what to do to grow. It's like having a marketing manager built in.
 
 **Q: What if I already have a loyalty program?**
 A: You can import existing customers and their points. We'll also analyze your data and immediately show you opportunities you're missing.
@@ -474,7 +474,7 @@ A: Yes. It analyzes real patterns—visit frequency, spending, timing—and gene
 A: They scan a QR code at your location. You can also award points manually for purchases. No POS integration required (though we support it).
 
 **Q: Can I customize the branding?**
-A: Yes. Your logo, colors, and business info. Higher tiers include full white-label (your domain, no Automata branding).
+A: Yes. Your logo, colors, and business info. Higher tiers include full white-label (your domain, no Royalty branding).
 
 **Q: What languages are supported?**
 A: English, Spanish, French, German, Italian, Portuguese, Chinese, and Arabic. Your customers can use the app in their preferred language.
@@ -569,7 +569,7 @@ A: Yes, on Tier 3. You can integrate with your existing systems.
 
 2. **Vertical Integration:** Loyalty + AI + Automation in one. Competitors would need to build all three.
 
-3. **Network Effects:** "Powered by Automata" on customer apps = free marketing.
+3. **Network Effects:** "Powered by Royalty" on customer apps = free marketing.
 
 4. **Switching Cost:** Once customers are enrolled and earning points, switching is painful.
 

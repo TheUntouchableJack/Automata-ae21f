@@ -1282,7 +1282,7 @@ function showPersistentError(message, helpLink) {
             </svg>
             <span>${AppUtils.escapeHtml(message)}</span>
             ${helpLink ? `<a href="${AppUtils.escapeHtml(helpLink)}" class="error-banner-link">Go to Settings</a>` : ''}
-            <a href="mailto:support@automata.app" class="error-banner-link">Contact Support</a>
+            <a href="mailto:support@royaltyapp.ai" class="error-banner-link">Contact Support</a>
         </div>
     `;
     banner.style.cssText = `

@@ -2,7 +2,7 @@
 // Lightweight, skippable coaching marks that highlight key UI elements for new users
 
 const Coaching = (function() {
-    const STORAGE_KEY = 'automata_coaching_completed';
+    const STORAGE_KEY = 'royalty_coaching_completed';
     let currentOverlay = null;
     let currentTour = null;
     let currentStepIndex = 0;
@@ -506,10 +506,10 @@ const Coaching = (function() {
 
         // Save to dismissed list
         try {
-            const dismissed = JSON.parse(localStorage.getItem('automata_coaching_dismissed') || '[]');
+            const dismissed = JSON.parse(localStorage.getItem('royalty_coaching_dismissed') || '[]');
             if (!dismissed.includes(tipId)) {
                 dismissed.push(tipId);
-                localStorage.setItem('automata_coaching_dismissed', JSON.stringify(dismissed));
+                localStorage.setItem('royalty_coaching_dismissed', JSON.stringify(dismissed));
             }
         } catch (e) {
             console.warn('Could not save tooltip dismissal:', e);
@@ -521,7 +521,7 @@ const Coaching = (function() {
      */
     function isDismissed(id) {
         try {
-            const dismissed = JSON.parse(localStorage.getItem('automata_coaching_dismissed') || '[]');
+            const dismissed = JSON.parse(localStorage.getItem('royalty_coaching_dismissed') || '[]');
             return dismissed.includes(id);
         } catch (e) {
             return false;
@@ -594,10 +594,10 @@ const Coaching = (function() {
 
         // Save to dismissed list
         try {
-            const dismissed = JSON.parse(localStorage.getItem('automata_coaching_dismissed') || '[]');
+            const dismissed = JSON.parse(localStorage.getItem('royalty_coaching_dismissed') || '[]');
             if (!dismissed.includes(bannerId)) {
                 dismissed.push(bannerId);
-                localStorage.setItem('automata_coaching_dismissed', JSON.stringify(dismissed));
+                localStorage.setItem('royalty_coaching_dismissed', JSON.stringify(dismissed));
             }
         } catch (e) {
             console.warn('Could not save banner dismissal:', e);
@@ -609,10 +609,10 @@ const Coaching = (function() {
      */
     function trackFirstVisit(pageId) {
         try {
-            const visits = JSON.parse(localStorage.getItem('automata_coaching_visits') || '{}');
+            const visits = JSON.parse(localStorage.getItem('royalty_coaching_visits') || '{}');
             if (!visits[pageId]) {
                 visits[pageId] = new Date().toISOString();
-                localStorage.setItem('automata_coaching_visits', JSON.stringify(visits));
+                localStorage.setItem('royalty_coaching_visits', JSON.stringify(visits));
                 return true; // First visit
             }
             return false; // Repeat visit
@@ -626,7 +626,7 @@ const Coaching = (function() {
      */
     function isFirstVisit(pageId) {
         try {
-            const visits = JSON.parse(localStorage.getItem('automata_coaching_visits') || '{}');
+            const visits = JSON.parse(localStorage.getItem('royalty_coaching_visits') || '{}');
             return !visits[pageId];
         } catch (e) {
             return true;
@@ -638,8 +638,8 @@ const Coaching = (function() {
      */
     function resetDismissals() {
         try {
-            localStorage.removeItem('automata_coaching_dismissed');
-            localStorage.removeItem('automata_coaching_visits');
+            localStorage.removeItem('royalty_coaching_dismissed');
+            localStorage.removeItem('royalty_coaching_visits');
         } catch (e) {
             console.warn('Could not reset dismissals:', e);
         }

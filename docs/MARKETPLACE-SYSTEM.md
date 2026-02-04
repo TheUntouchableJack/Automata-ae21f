@@ -1,4 +1,4 @@
-# Automata — Automation Marketplace
+# Royalty — Automation Marketplace
 
 ## The Concept
 
@@ -77,7 +77,7 @@ interface AutomationTemplate {
   segmentationRules?: SegmentRule[];   // Default audience filters
   
   // Metadata
-  author: 'automata' | string;         // Creator (us or community)
+  author: 'royalty' | string;         // Creator (us or community)
   sourceUrl?: string;                  // Link to blog post / case study
   createdAt: Date;
   updatedAt: Date;
@@ -160,7 +160,7 @@ CREATE TABLE automation_templates (
   segmentation_rules JSONB DEFAULT '[]',
   
   -- Metadata
-  author VARCHAR(100) DEFAULT 'automata',
+  author VARCHAR(100) DEFAULT 'royalty',
   source_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -534,7 +534,7 @@ Every blog post with sample automations should include structured data:
 ---
 title: "5 Automations Every Restaurant Needs"
 date: 2024-01-28
-author: "Automata Team"
+author: "Royalty Team"
 ---
 
 # 5 Automations Every Restaurant Needs
@@ -589,7 +589,7 @@ async function extractTemplatesFromContent(markdownContent: string, sourceUrl: s
     templates.push({
       ...templateData,
       sourceUrl,
-      author: 'automata',
+      author: 'royalty',
       status: 'draft', // Review before publishing
     });
   }
@@ -722,7 +722,7 @@ interface TemplateMetrics {
 ## Future: Community Contributions
 
 ### Phase 1 (Current)
-- Automata team creates all templates
+- Royalty team creates all templates
 - Extracted from blog posts and marketing content
 
 ### Phase 2 (Future)

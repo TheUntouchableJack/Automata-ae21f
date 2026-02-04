@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     }
 
     // Determine the origin for redirect URLs
-    const origin = req.headers.get('origin') || 'https://automata.io'
+    const origin = req.headers.get('origin') || 'https://royaltyapp.ai'
 
     // Base session config
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {

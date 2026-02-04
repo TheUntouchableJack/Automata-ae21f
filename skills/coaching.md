@@ -2,7 +2,7 @@
 
 ## Overview
 
-This skill implements a coaching system for guiding first-time users through new features. It provides contextual tooltips, step-by-step tutorials, and progressive disclosure to help users learn Automata's capabilities without overwhelming them.
+This skill implements a coaching system for guiding first-time users through new features. It provides contextual tooltips, step-by-step tutorials, and progressive disclosure to help users learn Royalty's capabilities without overwhelming them.
 
 ## When to Use
 
@@ -553,14 +553,14 @@ Create `/app/coaching-tours.js`:
 
 ```javascript
 /**
- * Pre-built coaching tours for Automata features
+ * Pre-built coaching tours for Royalty features
  */
 
 const COACHING_TOURS = {
     // Dashboard introduction for new users
     'dashboard-intro': {
         id: 'dashboard-intro',
-        name: 'Welcome to Automata',
+        name: 'Welcome to Royalty',
         trigger: 'first_visit',
         steps: [
             {

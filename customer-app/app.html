@@ -4200,11 +4200,11 @@
         async function handleQRCode(qrData) {
             closeScanner();
 
-            // Validate QR code format - expecting: automata://checkin/{app_slug}
+            // Validate QR code format - expecting: royalty://checkin/{app_slug}
             // or simpler: just the app slug for this business
             const expectedFormats = [
-                `automata://checkin/${currentApp.slug}`,
-                `https://app.automata.com/checkin/${currentApp.slug}`,
+                `royalty://checkin/${currentApp.slug}`,
+                `https://royaltyapp.ai/checkin/${currentApp.slug}`,
                 currentApp.slug,
                 currentApp.id
             ];

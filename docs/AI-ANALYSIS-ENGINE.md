@@ -1,8 +1,8 @@
-# Automata — AI Automation Analysis Engine
+# Royalty — AI Automation Analysis Engine
 
 ## The Core Loop
 
-This is the heart of Automata. The moment where data becomes insight, and insight becomes action.
+This is the heart of Royalty. The moment where data becomes insight, and insight becomes action.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -1077,7 +1077,7 @@ Return JSON with:
 ```typescript
 function buildAnalysisPrompt(context: EnhancedAnalysisContext): string {
   return `
-You are an AI automation strategist for Automata, helping businesses scale customer relationships through intelligent automation.
+You are an AI automation strategist for Royalty, helping businesses scale customer relationships through intelligent automation.
 
 ## BUSINESS CONTEXT
 
