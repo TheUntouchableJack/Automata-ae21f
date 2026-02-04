@@ -130,6 +130,24 @@ const AppUtils = (function() {
 
 
     // =========================================
+    // SLUG GENERATION
+    // =========================================
+
+    /**
+     * Generate a URL-safe slug from a name
+     * @param {string} name - Text to slugify
+     * @returns {string} URL-safe slug (max 50 chars)
+     */
+    function generateSlug(name) {
+        return (name || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 50);
+    }
+
+
+    // =========================================
     // DEBOUNCE / THROTTLE
     // =========================================
 
@@ -621,6 +639,9 @@ const AppUtils = (function() {
 
         // HTML/Security
         escapeHtml,
+
+        // Slug
+        generateSlug,
 
         // Performance
         debounce,

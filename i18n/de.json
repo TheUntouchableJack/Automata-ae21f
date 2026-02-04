@@ -379,7 +379,12 @@
         "previewPrintQR": "QR Drucken",
         "previewMobileToggle": "App-Vorschau",
         "previewButton": "Vorschau",
-        "previewHide": "Vorschau ausblenden"
+        "previewHide": "Vorschau ausblenden",
+        "rewardsProgram": "Belohnungsprogramm",
+        "timeJustNow": "gerade eben",
+        "timeMinutesAgo": "vor {n}m",
+        "timeHoursAgo": "vor {n}h",
+        "timeDaysAgo": "vor {n}T"
     },
     "aiFeed": {
         "title": "KI-Intelligenz-Feed",

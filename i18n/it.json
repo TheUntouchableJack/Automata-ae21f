@@ -379,7 +379,12 @@
         "previewPrintQR": "Stampa QR",
         "previewMobileToggle": "Anteprima App",
         "previewButton": "Anteprima",
-        "previewHide": "Nascondi anteprima"
+        "previewHide": "Nascondi anteprima",
+        "rewardsProgram": "Programma Premi",
+        "timeJustNow": "proprio ora",
+        "timeMinutesAgo": "{n}m fa",
+        "timeHoursAgo": "{n}h fa",
+        "timeDaysAgo": "{n}g fa"
     },
     "aiFeed": {
         "title": "Feed Intelligenza IA",

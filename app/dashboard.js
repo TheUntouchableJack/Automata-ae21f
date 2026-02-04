@@ -7,7 +7,7 @@ let isSubmitting = false;  // Guard against double-submit
 let currentApp = null;      // User's loyalty app
 let memberGrowthChart = null;
 let tierDistributionChart = null;
-let currentPeriodDays = 30; // Default chart period
+let currentPeriodDays = 7; // Default chart period (matches 7D active button)
 let isAutoCreating = false; // Guard against double auto-creation
 
 async function initDashboard() {
@@ -353,13 +353,7 @@ async function autoCreateDefaultApp() {
     }
 }
 
-function generateSlug(name) {
-    return (name || '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 50);
-}
+const generateSlug = AppUtils.generateSlug;
 
 // ===== Preview Panel =====
 function showPreviewPanel() {
@@ -370,55 +364,12 @@ function showPreviewPanel() {
     const grid = document.getElementById('dashboard-with-preview');
     if (!previewCol) return;
 
-    // Check if user previously hid the preview
-    const isHidden = localStorage.getItem('previewHidden') === 'true';
-    if (isHidden) {
-        previewCol.style.display = 'none';
-        if (grid) grid.style.gridTemplateColumns = '1fr';
-        if (toggleBtn) toggleBtn.style.display = 'inline-flex';
-    } else {
-        previewCol.style.display = 'flex';
-        if (toggleBtn) toggleBtn.style.display = 'none';
-    }
+    // Always update content (splash, QR, URL, visibility)
+    updatePreviewContent(previewCol, toggleBtn, grid);
 
-    // Render branded splash
-    const splash = document.getElementById('preview-splash');
-    if (splash) {
-        const branding = currentApp.branding || {};
-        const primaryColor = branding.primary_color || '#7c3aed';
-        const logoUrl = branding.logo_url;
-        const appName = currentApp.name || 'My App';
-        const initial = appName.charAt(0).toUpperCase();
-        const previewLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewButton') : 'Preview';
-
-        splash.style.backgroundColor = primaryColor;
-        splash.innerHTML = `
-            <div class="preview-splash-logo">
-                ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(appName)}">` : `<span>${initial}</span>`}
-            </div>
-            <div class="preview-splash-name">${escapeHtml(appName)}</div>
-            <div class="preview-splash-subtitle">Rewards Program</div>
-            <button class="preview-splash-btn" id="preview-splash-btn">${escapeHtml(previewLabel)}</button>
-        `;
-
-        document.getElementById('preview-splash-btn')?.addEventListener('click', () => {
-            window.open(`/customer-app/index.html?preview=true&app_id=${currentApp.id}&published=${currentApp.is_published ? '1' : '0'}`, '_blank');
-        });
-    }
-
-    // Show URL
-    const urlDisplay = document.getElementById('preview-url-display');
-    if (urlDisplay) {
-        const appUrl = `${window.location.origin}/a/${currentApp.slug}`;
-        urlDisplay.textContent = appUrl;
-        urlDisplay.title = appUrl;
-    }
-
-    // Edit button -> app-builder with app ID
-    const editBtn = document.getElementById('preview-edit-btn');
-    if (editBtn && currentApp.id) {
-        editBtn.href = `/app/app-builder.html?id=${currentApp.id}`;
-    }
+    // Only attach event listeners once
+    if (previewCol.dataset.listenersAttached) return;
+    previewCol.dataset.listenersAttached = 'true';
 
     // Open in new tab
     const openTabBtn = document.getElementById('preview-open-tab-btn');
@@ -437,6 +388,10 @@ function showPreviewPanel() {
                 const origText = copyBtn.textContent;
                 copyBtn.textContent = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewCopied') : 'Copied!';
                 setTimeout(() => { copyBtn.textContent = origText; }, 2000);
+            }).catch(() => {
+                if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+                    AppUtils.showToast('Could not copy — please copy the URL manually', 'error');
+                }
             });
         });
     }
@@ -465,8 +420,68 @@ function showPreviewPanel() {
             previewCol.style.display = 'flex';
             if (grid) grid.style.gridTemplateColumns = '';
             toggleBtn.style.display = 'none';
-            previewCol.classList.remove('open');
+            previewCol.classList.add('open');
         });
+    }
+}
+
+// ===== Update Preview Content (safe to call multiple times) =====
+function updatePreviewContent(previewCol, toggleBtn, grid) {
+    if (!currentApp) return;
+
+    if (!previewCol) previewCol = document.getElementById('dashboard-preview-col');
+    if (!toggleBtn) toggleBtn = document.getElementById('preview-toggle-btn');
+    if (!grid) grid = document.getElementById('dashboard-with-preview');
+
+    // Check if user previously hid the preview
+    const isHidden = localStorage.getItem('previewHidden') === 'true';
+    if (isHidden) {
+        previewCol.style.display = 'none';
+        if (grid) grid.style.gridTemplateColumns = '1fr';
+        if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+    } else {
+        previewCol.style.display = 'flex';
+        if (toggleBtn) toggleBtn.style.display = 'none';
+    }
+
+    // Render branded splash
+    const splash = document.getElementById('preview-splash');
+    if (splash) {
+        const branding = currentApp.branding || {};
+        const primaryColor = branding.primary_color || '#7c3aed';
+        const logoUrl = branding.logo_url;
+        const appName = currentApp.name || 'My App';
+        const initial = appName.charAt(0).toUpperCase();
+        const rewardsLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.rewardsProgram') : 'Rewards Program';
+        const previewLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewButton') : 'Preview';
+
+        splash.style.backgroundColor = primaryColor;
+        splash.innerHTML = `
+            <div class="preview-splash-logo">
+                ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(appName)}">` : `<span>${initial}</span>`}
+            </div>
+            <div class="preview-splash-name">${escapeHtml(appName)}</div>
+            <div class="preview-splash-subtitle">${escapeHtml(rewardsLabel)}</div>
+            <button class="preview-splash-btn" id="preview-splash-btn">${escapeHtml(previewLabel)}</button>
+        `;
+
+        document.getElementById('preview-splash-btn')?.addEventListener('click', () => {
+            window.open(`/customer-app/index.html?preview=true&app_id=${currentApp.id}&published=${currentApp.is_published ? '1' : '0'}`, '_blank');
+        });
+    }
+
+    // Show URL
+    const urlDisplay = document.getElementById('preview-url-display');
+    if (urlDisplay) {
+        const appUrl = `${window.location.origin}/a/${currentApp.slug}`;
+        urlDisplay.textContent = appUrl;
+        urlDisplay.title = appUrl;
+    }
+
+    // Edit button -> app-builder with app ID
+    const editBtn = document.getElementById('preview-edit-btn');
+    if (editBtn && currentApp.id) {
+        editBtn.href = `/app/app-builder.html?id=${currentApp.id}`;
     }
 
     // Generate QR code
@@ -486,7 +501,10 @@ function hidePreviewPanel() {
 
     localStorage.setItem('previewHidden', 'true');
 
-    if (previewCol) previewCol.style.display = 'none';
+    if (previewCol) {
+        previewCol.style.display = 'none';
+        previewCol.classList.remove('open');
+    }
     if (grid) grid.style.gridTemplateColumns = '1fr';
     if (toggleBtn) toggleBtn.style.display = 'inline-flex';
 }
@@ -524,16 +542,7 @@ function generatePreviewQR() {
 }
 
 function generatePreviewQRFallback(container, url) {
-    const encodedUrl = encodeURIComponent(url);
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=${encodedUrl}&bgcolor=ffffff&color=1e293b&margin=4`;
-
-    const img = document.createElement('img');
-    img.src = qrApiUrl;
-    img.alt = 'QR Code';
-    img.style.width = '72px';
-    img.style.height = '72px';
-    container.innerHTML = '';
-    container.appendChild(img);
+    container.innerHTML = '<div style="width:72px;height:72px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:8px;font-size:11px;color:var(--color-text-muted);text-align:center;">QR unavailable</div>';
 }
 
 function downloadPreviewQR() {
@@ -565,12 +574,12 @@ function printPreviewQR() {
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
-        <head><title>QR Code - ${currentApp?.name || 'App'}</title></head>
+        <head><title>QR Code - ${escapeHtml(currentApp?.name || 'App')}</title></head>
         <body style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; margin: 0;">
-            <h2 style="margin-bottom: 8px;">${currentApp?.name || 'My App'}</h2>
+            <h2 style="margin-bottom: 8px;">${escapeHtml(currentApp?.name || 'My App')}</h2>
             <p style="color: #666; margin-bottom: 24px;">Scan to join our rewards program</p>
-            <img src="${qrSrc}" style="width: 250px; height: 250px;" />
-            <p style="margin-top: 16px; color: #888; font-size: 14px;">${url}</p>
+            <img src="${escapeHtml(qrSrc)}" style="width: 250px; height: 250px;" />
+            <p style="margin-top: 16px; color: #888; font-size: 14px;">${escapeHtml(url)}</p>
         </body>
         </html>
     `);
@@ -1096,13 +1105,14 @@ function getTimeAgo(timestamp) {
     const now = new Date();
     const date = new Date(timestamp);
     const seconds = Math.floor((now - date) / 1000);
+    const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
 
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 60) return t('dashboard.timeJustNow', 'just now');
+    if (seconds < 3600) return t('dashboard.timeMinutesAgo', '{n}m ago').replace('{n}', Math.floor(seconds / 60));
+    if (seconds < 86400) return t('dashboard.timeHoursAgo', '{n}h ago').replace('{n}', Math.floor(seconds / 3600));
+    if (seconds < 604800) return t('dashboard.timeDaysAgo', '{n}d ago').replace('{n}', Math.floor(seconds / 86400));
 
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 // ===== Setup Chart Period Selector =====

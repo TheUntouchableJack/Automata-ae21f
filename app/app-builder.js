@@ -1047,25 +1047,9 @@ function generateQRCode() {
     }
 }
 
-// Fallback QR code generation using API
+// Fallback when QRCode library is unavailable
 function generateQRCodeFallback(container, url) {
-    // Use a free QR code API as fallback
-    const encodedUrl = encodeURIComponent(url);
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodedUrl}&bgcolor=ffffff&color=1e293b&margin=8`;
-
-    const img = document.createElement('img');
-    img.src = qrApiUrl;
-    img.alt = 'QR Code';
-    img.style.width = '220px';
-    img.style.height = '220px';
-    img.style.borderRadius = '8px';
-
-    img.onerror = () => {
-        container.innerHTML = '<div class="qr-placeholder" style="width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; background: var(--color-bg-secondary); border-radius: 8px; font-size: 12px; color: var(--color-text-muted);">QR code will generate when connected</div>';
-    };
-
-    container.innerHTML = '';
-    container.appendChild(img);
+    container.innerHTML = '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:8px;font-size:12px;color:var(--color-text-muted);">QR unavailable</div>';
 }
 
 function getAppUrl() {
@@ -1196,18 +1180,19 @@ function printQRCode() {
         return;
     }
 
+    const esc = AppUtils.escapeHtml;
     const win = window.open('', '_blank');
     win.document.write(`
         <html>
-        <head><title>QR Code - ${currentApp?.name || 'App'}</title></head>
+        <head><title>QR Code - ${esc(currentApp?.name || 'App')}</title></head>
         <body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;">
             <div style="text-align: center;">
-                <img src="${imgSrc}" style="width: 300px; height: 300px;">
+                <img src="${esc(imgSrc)}" style="width: 300px; height: 300px;">
                 <p style="font-family: sans-serif; font-size: 18px; margin-top: 20px;">
-                    Scan to join ${currentApp?.name || 'our loyalty program'}
+                    Scan to join ${esc(currentApp?.name || 'our loyalty program')}
                 </p>
                 <p style="font-family: monospace; color: #7c3aed;">
-                    ${document.getElementById('qr-url-display').textContent}
+                    ${esc(document.getElementById('qr-url-display').textContent)}
                 </p>
             </div>
         </body>
@@ -1259,13 +1244,7 @@ function updatePreview() {
 }
 
 // ===== Utilities =====
-function generateSlug(name) {
-    return (name || '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 50);
-}
+const generateSlug = AppUtils.generateSlug;
 
 function showError(message) {
     // Use toast if available
@@ -1301,8 +1280,8 @@ function showPersistentError(message, helpLink) {
                 <line x1="12" y1="8" x2="12" y2="12"/>
                 <line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <span>${message}</span>
-            ${helpLink ? `<a href="${helpLink}" class="error-banner-link">Go to Settings</a>` : ''}
+            <span>${AppUtils.escapeHtml(message)}</span>
+            ${helpLink ? `<a href="${AppUtils.escapeHtml(helpLink)}" class="error-banner-link">Go to Settings</a>` : ''}
             <a href="mailto:support@automata.app" class="error-banner-link">Contact Support</a>
         </div>
     `;
@@ -1342,56 +1321,6 @@ function showPersistentError(message, helpLink) {
 
     container.prepend(banner);
 }
-
-// Simple toast implementation
-function showToast(message, type = 'info') {
-    const existing = document.querySelector('.toast-notification');
-    if (existing) existing.remove();
-
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `
-        <span>${message}</span>
-        <button onclick="this.parentElement.remove()">&times;</button>
-    `;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        padding: 16px 24px;
-        background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#7c3aed'};
-        color: white;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 14px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        z-index: 9999;
-        animation: slideIn 0.3s ease;
-    `;
-
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
-
-// Add animation styles
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
 
 // ===== Initialize =====
 document.addEventListener('DOMContentLoaded', initAppBuilder);

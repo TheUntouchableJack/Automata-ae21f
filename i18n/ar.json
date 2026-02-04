@@ -379,7 +379,12 @@
         "previewPrintQR": "طباعة QR",
         "previewMobileToggle": "معاينة التطبيق",
         "previewButton": "معاينة",
-        "previewHide": "إخفاء المعاينة"
+        "previewHide": "إخفاء المعاينة",
+        "rewardsProgram": "برنامج المكافآت",
+        "timeJustNow": "الآن",
+        "timeMinutesAgo": "منذ {n}د",
+        "timeHoursAgo": "منذ {n}س",
+        "timeDaysAgo": "منذ {n}ي"
     },
     "aiFeed": {
         "title": "موجز الذكاء الاصطناعي",

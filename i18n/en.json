@@ -394,7 +394,12 @@
         "previewPrintQR": "Print QR",
         "previewMobileToggle": "Preview App",
         "previewButton": "Preview",
-        "previewHide": "Hide preview"
+        "previewHide": "Hide preview",
+        "rewardsProgram": "Rewards Program",
+        "timeJustNow": "just now",
+        "timeMinutesAgo": "{n}m ago",
+        "timeHoursAgo": "{n}h ago",
+        "timeDaysAgo": "{n}d ago"
     },
     "aiFeed": {
         "title": "AI Intelligence Feed",

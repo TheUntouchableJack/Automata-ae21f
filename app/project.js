@@ -2880,13 +2880,7 @@ function generateKeywords(project, contentStrategy) {
     return [...new Set(keywords)].slice(0, 10);
 }
 
-function generateSlug(title) {
-    return title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 60);
-}
+const generateSlug = AppUtils.generateSlug;
 
 function showGeneratedPostPreview(post, postId) {
     // Create modal for previewing generated content

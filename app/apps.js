@@ -739,13 +739,7 @@ function copyContentUrl(appId) {
 }
 
 // ===== Utility Functions =====
-function generateSlug(name) {
-    return name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 50);
-}
+const generateSlug = AppUtils.generateSlug;
 
 function escapeHtml(text) {
     // Use AppUtils if available (preferred), otherwise fallback to DOM method

@@ -379,7 +379,12 @@
         "previewPrintQR": "打印二维码",
         "previewMobileToggle": "预览应用",
         "previewButton": "预览",
-        "previewHide": "隐藏预览"
+        "previewHide": "隐藏预览",
+        "rewardsProgram": "奖励计划",
+        "timeJustNow": "刚刚",
+        "timeMinutesAgo": "{n}分钟前",
+        "timeHoursAgo": "{n}小时前",
+        "timeDaysAgo": "{n}天前"
     },
     "aiFeed": {
         "title": "AI智能推送",
