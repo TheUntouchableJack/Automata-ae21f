@@ -157,11 +157,14 @@
 ## Feature Status
 
 ### ✅ Built & Working
-- Landing page with waitlist
+- Landing page (rebranded to Royalty, crown logo, GA4 tracking)
 - Owner auth (login, signup, password reset)
 - Organization management
 - Customer apps (loyalty programs)
 - App Builder (6-step wizard)
+- Auto-create loyalty app on first dashboard visit
+- Dashboard preview panel (branded splash, QR code, copy link, hide/show)
+- Customer app preview mode (preview=true with publish status banner)
 - Customer signup flow (atomic RPC)
 - Points & tiers system
 - Rewards catalog & redemption
@@ -177,6 +180,7 @@
 - Audit logging
 - Soft delete with undo
 - Advanced Mode toggle
+- Netlify slug routing (`/a/{slug}` → customer app)
 
 ### 🚧 Planned / In Progress
 - Owner dashboard reporting (ApexCharts)
@@ -200,12 +204,16 @@
 | **Customer App** | `customer-app/app.js` - member dashboard |
 | **AI Feed** | `app/ai-feed.js` - recommendations, one-click actions |
 | **App Builder** | `app/app-builder.js` - 6-step wizard |
+| **Dashboard** | `app/dashboard.js` - metrics, preview panel, auto-create app |
 | **i18n** | `i18n/i18n.js` - translation system |
+| **Dev Server** | `vite.config.js` - Vite config, `/a/{slug}` routing middleware |
+| **Production** | `netlify.toml` - redirects, headers, slug routing |
 
 **Documentation:**
 - `/docs/ARCHITECTURE.md` - Dev guidelines, patterns
 - `/docs/PRODUCT-STRATEGY.md` - Vision, features, business model
 - `/docs/PRODUCT-CATALOG.md` - Complete inventory
+- `/docs/recaps/` - Session recaps (start of each session, read the latest)
 
 ---
 
@@ -217,6 +225,9 @@
 3. **CSS Variables**: Use `--color-*`, `--radius-*`, `--shadow-*` from `styles.css`
 4. **Events**: Use delegation on stable parent elements
 5. **Errors**: Always handle Supabase errors
+6. **Global Scope**: All `<script>` tags share global scope — use unique variable names to avoid `let`/`const` redeclaration errors (e.g., `auth.js` declares `function isAdmin()`, so no other file can use `let isAdmin`)
+7. **Dev Server**: Always use `npm run dev` (Vite, port 5173) — required for `/a/{slug}` URL routing
+8. **No Gradients**: Use solid colors from CSS variables, no gradient backgrounds
 
 ### Security (Non-Negotiable)
 - RLS on ALL tables
@@ -387,7 +398,16 @@ npx skills add <org>/<repo> --yes --agent claude-code
 
 *Moved to `/docs/recaps/` for historical reference.*
 
-**Recent (Feb 1, 2026):**
+**Recent (Feb 4, 2026):**
+- Dashboard preview panel with branded splash, QR code, copy link
+- Auto-create loyalty app on first dashboard visit
+- Fixed App Builder crash (isAdmin global scope collision)
+- Customer app preview mode with publish status banner
+- Netlify slug routing for `/a/{slug}` URLs
+- Full rebrand complete (crown logo, GA4, Space Grotesk, favicons)
+- See `/docs/recaps/2026-02-04-session-recap.md` for full details
+
+**Earlier (Feb 1, 2026):**
 - Rebranded to Royalty (royaltyapp.ai)
 - Updated landing page with loyalty-focused positioning
 - Created AppSumo launch plan ($500K target)
