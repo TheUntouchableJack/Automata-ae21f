@@ -318,6 +318,7 @@ Agent Skills are an open standard (by Anthropic/Vercel) for giving AI agents dom
 | Skill | Source | Purpose |
 |-------|--------|---------|
 | `supabase-postgres-best-practices` | [supabase/agent-skills](https://github.com/supabase/agent-skills) | 30 Postgres optimization rules |
+| `remotion-bits` | [av/remotion-bits](https://github.com/av/remotion-bits) | Motion graphics components & animation building blocks |
 
 **Location:** `.claude/skills/` (symlinks to `.agents/skills/`)
 
@@ -334,6 +335,17 @@ Agent Skills are an open standard (by Anthropic/Vercel) for giving AI agents dom
 | Low-Medium | Monitoring | EXPLAIN ANALYZE, pg_stat_statements, vacuum |
 | Low | Advanced | Full-text search, JSONB indexing |
 
+**Remotion Bits Categories:**
+
+| Category | Components | Use For |
+|----------|-----------|---------|
+| Text | AnimatedText, TypeWriter, CodeBlock | Kinetic typography, reveals, code walkthroughs |
+| Numbers | AnimatedCounter | Stats, metrics, countdowns |
+| Motion | StaggeredMotion | Sequenced element animations |
+| Visual | GradientTransition | Smooth color morphing |
+| Particles | Particles, Spawner, Behavior | Particle effects, snow, confetti |
+| 3D | Scene3D, Step, Element3D | Camera-based 3D presentations |
+
 **Install More Skills:**
 ```bash
 # Interactive
@@ -344,6 +356,25 @@ npx skills add <org>/<repo> --yes --agent claude-code
 ```
 
 **Browse Available:** [github.com/anthropics/agent-skills](https://github.com/anthropics/agent-skills) (registry)
+
+### Motion Graphics Strategy
+
+Two approaches depending on the deliverable:
+
+**Video Production (Remotion)** - For MP4/WebM deliverables:
+- Client proposal videos, marketing content, social media clips
+- Uses `remotion-bits` components: AnimatedText, particles, 3D scenes, gradient transitions
+- Requires a Remotion project (React/TypeScript) — separate from vanilla HTML/CSS/JS apps
+- Render with `npx remotion render` for final output
+- See `remotion-dev/template-prompt-to-motion-graphics` for prompt-to-video pipeline
+
+**Web Animations (CSS/JS)** - For in-app motion in existing sites:
+- Micro-interactions, scroll-triggered effects, page transitions, hover states
+- Use CSS `@keyframes`, `transition`, `animation` properties
+- Use `IntersectionObserver` for scroll-triggered animations
+- Use CSS custom properties (`--var`) for dynamic values
+- Keep animations performant: prefer `transform` and `opacity` (GPU-accelerated)
+- Match brand timing: 200-300ms for micro-interactions, 400-600ms for page transitions
 
 ---
 
