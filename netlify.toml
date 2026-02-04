@@ -29,3 +29,14 @@
   from = "/app/*"
   to = "/app/:splat"
   status = 200
+
+# Customer app slug routing (/a/{slug} → customer-app)
+[[redirects]]
+  from = "/a/:slug/app"
+  to = "/customer-app/app.html?slug=:slug"
+  status = 200
+
+[[redirects]]
+  from = "/a/:slug"
+  to = "/customer-app/index.html?slug=:slug"
+  status = 200

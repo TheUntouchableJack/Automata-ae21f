@@ -136,18 +136,19 @@ async function loadAppForPreview(appId) {
 }
 
 function showPreviewBanner() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isPublished = urlParams.get('published') === '1';
     const banner = document.createElement('div');
     banner.className = 'preview-banner';
-    banner.innerHTML = `
-        <span>Preview Mode</span>
-        <span class="preview-note">This app is not yet published</span>
-    `;
+    banner.innerHTML = isPublished
+        ? '<span>Preview Mode</span>'
+        : '<span>Preview Mode</span><span class="preview-note">This app is not yet published</span>';
     banner.style.cssText = `
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        background: linear-gradient(90deg, #f59e0b, #d97706);
+        background: ${isPublished ? '#7c3aed' : 'linear-gradient(90deg, #f59e0b, #d97706)'};
         color: white;
         text-align: center;
         padding: 8px 16px;

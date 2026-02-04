@@ -114,24 +114,25 @@
             <div class="hero-content">
                 <div class="hero-badge">
                     <span class="badge-dot"></span>
-                    <span>AI-Powered Loyalty for Local Businesses</span>
+                    <span data-i18n="hero.badge">AI-Powered Loyalty for Local Businesses</span>
                 </div>
                 <h1 class="hero-title">
-                    <span id="title-line-1">Build your loyalty program in <span class="gradient-text">60 seconds</span>.</span> <br>
-                    <span class="gradient-text">Run it forever.</span>
+                    <span id="title-line-1"><span data-i18n="hero.titlePart1">Build your loyalty program in </span><span class="gradient-text" data-i18n="hero.titleHighlight">60 seconds</span></span><br>
+                    <span class="gradient-text" data-i18n="hero.titleLine2">Run it forever.</span>
                 </h1>
-                <p class="hero-subtitle">
+                <p class="hero-subtitle" data-i18n="hero.subtitle">
                     Royalty is an AI that builds your loyalty program in 60 seconds—then runs it forever. Customers earn points, you see what's working, and AI tells you exactly how to grow.
                 </p>
 
                 <!-- Discovery Card - Conversational Onboarding -->
                 <div class="discovery-card" id="discovery-card">
-                    <h2 class="discovery-title">Describe your business</h2>
-                    <p class="discovery-subtitle">Our AI will build you a custom loyalty program in 60 seconds.</p>
+                    <h2 class="discovery-title" data-i18n="hero.discoveryTitle">Describe your business</h2>
+                    <p class="discovery-subtitle" data-i18n="hero.discoverySubtitle">Our AI will build you a custom loyalty program in 60 seconds.</p>
 
                     <textarea
                         id="business-prompt"
                         class="discovery-input"
+                        data-i18n-placeholder="hero.discoveryPlaceholder"
                         placeholder="e.g., I run a coffee shop in Austin with 200 regulars. I want to reward loyalty and bring back customers who haven't visited in a while..."
                         rows="3"
                     ></textarea>
@@ -175,17 +176,17 @@
                 <div class="hero-stats">
                     <div class="stat">
                         <span class="stat-number">60s</span>
-                        <span class="stat-label">Setup Time</span>
+                        <span class="stat-label" data-i18n="hero.stats.setupTime">Setup Time</span>
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat">
                         <span class="stat-number">40%</span>
-                        <span class="stat-label">More Repeat Visits</span>
+                        <span class="stat-label" data-i18n="hero.stats.moreRepeatVisits">More Repeat Visits</span>
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat">
                         <span class="stat-number">24/7</span>
-                        <span class="stat-label">AI Running For You</span>
+                        <span class="stat-label" data-i18n="hero.stats.aiRunning">AI Running For You</span>
                     </div>
                 </div>
             </div>
@@ -224,8 +225,8 @@
     <section class="problem-solution">
         <div class="container">
             <div class="section-header">
-                <h2>Most loyalty apps just give you tools. Royalty gives you an employee.</h2>
-                <p>Other apps make you do all the work. Royalty's AI builds your program, runs campaigns, and tells you what's working—automatically.</p>
+                <h2 data-i18n="comparison.title">Most loyalty apps just give you tools. Royalty gives you an employee.</h2>
+                <p data-i18n="comparison.subtitle">Other apps make you do all the work. Royalty's AI builds your program, runs campaigns, and tells you what's working—automatically.</p>
             </div>
             <div class="comparison">
                 <div class="comparison-card old-way">
@@ -235,14 +236,14 @@
                                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                         </span>
-                        <h3>Other Loyalty Apps</h3>
+                        <h3 data-i18n="comparison.oldWay.title">Other Loyalty Apps</h3>
                     </div>
                     <ul class="comparison-list">
-                        <li>You set up everything manually</li>
-                        <li>You decide when to run campaigns</li>
-                        <li>You figure out what's working</li>
-                        <li>Generic punch card, that's it</li>
-                        <li>No insights, no intelligence</li>
+                        <li data-i18n="comparison.oldWay.item1">You set up everything manually</li>
+                        <li data-i18n="comparison.oldWay.item2">You decide when to run campaigns</li>
+                        <li data-i18n="comparison.oldWay.item3">You figure out what's working</li>
+                        <li data-i18n="comparison.oldWay.item4">Generic punch card, that's it</li>
+                        <li data-i18n="comparison.oldWay.item5">No insights, no intelligence</li>
                     </ul>
                 </div>
                 <div class="comparison-card new-way">
@@ -252,14 +253,14 @@
                                 <path d="M5 12L10 17L20 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </span>
-                        <h3>The Royalty Way</h3>
+                        <h3 data-i18n="comparison.newWay.title">The Royalty Way</h3>
                     </div>
                     <ul class="comparison-list">
-                        <li>AI builds your program in 60 seconds</li>
-                        <li>AI runs win-back campaigns automatically</li>
-                        <li>AI tells you exactly what's working</li>
-                        <li>Points, tiers, rewards, referrals—done</li>
-                        <li>Weekly insights: "Here's what I did for you"</li>
+                        <li data-i18n="comparison.newWay.item1">AI builds your program in 60 seconds</li>
+                        <li data-i18n="comparison.newWay.item2">AI runs win-back campaigns automatically</li>
+                        <li data-i18n="comparison.newWay.item3">AI tells you exactly what's working</li>
+                        <li data-i18n="comparison.newWay.item4">Points, tiers, rewards, referrals—done</li>
+                        <li data-i18n="comparison.newWay.item5">Weekly insights: "Here's what I did for you"</li>
                     </ul>
                 </div>
             </div>
@@ -270,9 +271,9 @@
     <section id="features" class="features">
         <div class="container">
             <div class="section-header">
-                <span class="section-tag">Features</span>
-                <h2>Everything your loyalty program needs—powered by AI</h2>
-                <p>From points to insights, Royalty handles it all</p>
+                <span class="section-tag" data-i18n="features.tag">Features</span>
+                <h2 data-i18n="features.title">Everything your loyalty program needs—powered by AI</h2>
+                <p data-i18n="features.subtitle">From points to insights, Royalty handles it all</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card">
@@ -281,8 +282,8 @@
                             <path d="M16 4L20 12L28 13L22 19L24 28L16 24L8 28L10 19L4 13L12 12L16 4Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h3>Points & Rewards</h3>
-                    <p>Customers scan a QR code to earn points. Redeem for rewards you define. No app download required.</p>
+                    <h3 data-i18n="features.pointsRewards.title">Points & Rewards</h3>
+                    <p data-i18n="features.pointsRewards.desc">Customers scan a QR code to earn points. Redeem for rewards you define. No app download required.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" aria-hidden="true">
@@ -291,8 +292,8 @@
                             <path d="M12 16L15 19L20 13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h3>Tier System</h3>
-                    <p>Bronze → Silver → Gold → Platinum. Customers level up automatically. Gamification that works.</p>
+                    <h3 data-i18n="features.tierSystem.title">Tier System</h3>
+                    <p data-i18n="features.tierSystem.desc">Bronze → Silver → Gold → Platinum. Customers level up automatically. Gamification that works.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" aria-hidden="true">
@@ -301,8 +302,8 @@
                             <circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="2.5"/>
                         </svg>
                     </div>
-                    <h3>AI That Runs It</h3>
-                    <p>AI sends win-back offers, birthday rewards, and milestone bonuses—automatically. You get a weekly summary.</p>
+                    <h3 data-i18n="features.aiRuns.title">AI That Runs It</h3>
+                    <p data-i18n="features.aiRuns.desc">AI sends win-back offers, birthday rewards, and milestone bonuses—automatically. You get a weekly summary.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" aria-hidden="true">
@@ -310,8 +311,8 @@
                             <path d="M4 24L12 16L18 22L28 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h3>Smart Insights</h3>
-                    <p>"8 customers haven't visited in 30 days." AI tells you what's happening and what to do about it.</p>
+                    <h3 data-i18n="features.smartInsights.title">Smart Insights</h3>
+                    <p data-i18n="features.smartInsights.desc">"8 customers haven't visited in 30 days." AI tells you what's happening and what to do about it.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" aria-hidden="true">
@@ -320,8 +321,8 @@
                             <path d="M4 12H28M12 4V28" stroke="currentColor" stroke-width="2.5"/>
                         </svg>
                     </div>
-                    <h3>QR Code Check-ins</h3>
-                    <p>Customers scan to earn points. One scan per day. Streak bonuses for regulars. Simple.</p>
+                    <h3 data-i18n="features.qrCheckins.title">QR Code Check-ins</h3>
+                    <p data-i18n="features.qrCheckins.desc">Customers scan to earn points. One scan per day. Streak bonuses for regulars. Simple.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" aria-hidden="true">
@@ -331,8 +332,8 @@
                             <path d="M8 24C8 21 9.5 18 12 18C13 18 14 18.5 15 19M22 24V28M20 26H24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                         </svg>
                     </div>
-                    <h3>Referral Program</h3>
-                    <p>Customers share their unique link. Both parties earn bonus points. Growth on autopilot.</p>
+                    <h3 data-i18n="features.referralProgram.title">Referral Program</h3>
+                    <p data-i18n="features.referralProgram.desc">Customers share their unique link. Both parties earn bonus points. Growth on autopilot.</p>
                 </div>
             </div>
         </div>
@@ -342,40 +343,40 @@
     <section id="how-it-works" class="how-it-works">
         <div class="container">
             <div class="section-header">
-                <span class="section-tag">How It Works</span>
-                <h2>Live in 60 seconds. Running forever.</h2>
-                <p>Describe your business. AI does the rest.</p>
+                <span class="section-tag" data-i18n="howItWorks.tag">How It Works</span>
+                <h2 data-i18n="howItWorks.title">Live in 60 seconds. Running forever.</h2>
+                <p data-i18n="howItWorks.subtitle">Describe your business. AI does the rest.</p>
             </div>
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
                     <div class="step-content">
-                        <h3>Describe Your Business</h3>
-                        <p>"I run a coffee shop in Austin with regulars I want to reward." That's all we need. AI builds your custom loyalty program instantly.</p>
+                        <h3 data-i18n="howItWorks.step1.title">Describe Your Business</h3>
+                        <p data-i18n="howItWorks.step1.desc">"I run a coffee shop in Austin with regulars I want to reward." That's all we need. AI builds your custom loyalty program instantly.</p>
                     </div>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <h3>Share Your QR Code</h3>
-                        <p>Print it, display it at checkout, or share the link. Customers scan to join and start earning points immediately.</p>
+                        <h3 data-i18n="howItWorks.step2.title">Share Your QR Code</h3>
+                        <p data-i18n="howItWorks.step2.desc">Print it, display it at checkout, or share the link. Customers scan to join and start earning points immediately.</p>
                     </div>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <h3>AI Runs Your Program</h3>
-                        <p>Win-back campaigns. Birthday rewards. Streak bonuses. AI handles it all automatically—or asks for approval if you prefer.</p>
+                        <h3 data-i18n="howItWorks.step3.title">AI Runs Your Program</h3>
+                        <p data-i18n="howItWorks.step3.desc">Win-back campaigns. Birthday rewards. Streak bonuses. AI handles it all automatically—or asks for approval if you prefer.</p>
                     </div>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step">
                     <div class="step-number">4</div>
                     <div class="step-content">
-                        <h3>Get Weekly Insights</h3>
-                        <p>"Royalty sent 47 messages this week. 3 customers came back. 2 upgraded to Gold." See exactly what AI is doing for you.</p>
+                        <h3 data-i18n="howItWorks.step4.title">Get Weekly Insights</h3>
+                        <p data-i18n="howItWorks.step4.desc">"Royalty sent 47 messages this week. 3 customers came back. 2 upgraded to Gold." See exactly what AI is doing for you.</p>
                     </div>
                 </div>
             </div>
@@ -386,9 +387,9 @@
     <section id="automations" class="automations-preview">
         <div class="container">
             <div class="section-header">
-                <span class="section-tag">AI Automations</span>
-                <h2>What Royalty runs automatically</h2>
-                <p>Set it once. AI handles the rest—forever.</p>
+                <span class="section-tag" data-i18n="templates.tag">AI Automations</span>
+                <h2 data-i18n="templates.title">What Royalty runs automatically</h2>
+                <p data-i18n="templates.subtitle">Set it once. AI handles the rest—forever.</p>
             </div>
             <div class="templates-grid-preview">
                 <!-- Win-Back Campaign -->
@@ -400,9 +401,9 @@
                             <path d="M16 8L21 3M21 3V8M21 3H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <span class="template-card-badge popular">Auto-Enabled</span>
-                    <h3 class="template-card-name">Win-Back Campaigns</h3>
-                    <p class="template-card-desc">AI detects customers who haven't visited in 14+ days and automatically sends them a personalized offer to come back.</p>
+                    <span class="template-card-badge popular" data-i18n="templates.autoEnabled">Auto-Enabled</span>
+                    <h3 class="template-card-name" data-i18n="templates.winBack.title">Win-Back Campaigns</h3>
+                    <p class="template-card-desc" data-i18n="templates.winBack.desc">AI detects customers who haven't visited in 14+ days and automatically sends them a personalized offer to come back.</p>
                 </div>
 
                 <!-- Birthday Rewards -->
@@ -413,9 +414,9 @@
                             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </div>
-                    <span class="template-card-badge popular">Auto-Enabled</span>
-                    <h3 class="template-card-name">Birthday Rewards</h3>
-                    <p class="template-card-desc">AI sends birthday rewards automatically when customers have a birthday coming up. Never miss a chance to delight.</p>
+                    <span class="template-card-badge popular" data-i18n="templates.autoEnabled">Auto-Enabled</span>
+                    <h3 class="template-card-name" data-i18n="templates.birthday.title">Birthday Rewards</h3>
+                    <p class="template-card-desc" data-i18n="templates.birthday.desc">AI sends birthday rewards automatically when customers have a birthday coming up. Never miss a chance to delight.</p>
                 </div>
 
                 <!-- Streak Bonuses -->
@@ -425,9 +426,9 @@
                             <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <span class="template-card-badge featured">Auto-Enabled</span>
-                    <h3 class="template-card-name">Streak Bonuses</h3>
-                    <p class="template-card-desc">3-day streak? 7-day streak? 30-day streak? AI automatically awards bonus points and celebrates with customers.</p>
+                    <span class="template-card-badge featured" data-i18n="templates.autoEnabled">Auto-Enabled</span>
+                    <h3 class="template-card-name" data-i18n="templates.streakBonuses.title">Streak Bonuses</h3>
+                    <p class="template-card-desc" data-i18n="templates.streakBonuses.desc">3-day streak? 7-day streak? 30-day streak? AI automatically awards bonus points and celebrates with customers.</p>
                 </div>
 
                 <!-- Tier Upgrades -->
@@ -437,9 +438,9 @@
                             <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <span class="template-card-badge new">Auto-Enabled</span>
-                    <h3 class="template-card-name">Tier Motivation</h3>
-                    <p class="template-card-desc">"You're 50 points from Gold!" AI sends encouraging messages when customers are close to leveling up.</p>
+                    <span class="template-card-badge new" data-i18n="templates.autoEnabled">Auto-Enabled</span>
+                    <h3 class="template-card-name" data-i18n="templates.tierMotivation.title">Tier Motivation</h3>
+                    <p class="template-card-desc" data-i18n="templates.tierMotivation.desc">"You're 50 points from Gold!" AI sends encouraging messages when customers are close to leveling up.</p>
                 </div>
 
                 <!-- Milestone Celebrations -->
@@ -449,8 +450,8 @@
                             <path d="M8 21V11M12 21V7M16 21V3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </div>
-                    <h3 class="template-card-name">Milestone Celebrations</h3>
-                    <p class="template-card-desc">10th visit? 50th? 100th? AI celebrates with customers and awards bonus points for loyalty milestones.</p>
+                    <h3 class="template-card-name" data-i18n="templates.milestones.title">Milestone Celebrations</h3>
+                    <p class="template-card-desc" data-i18n="templates.milestones.desc">10th visit? 50th? 100th? AI celebrates with customers and awards bonus points for loyalty milestones.</p>
                 </div>
 
                 <!-- Referral Nudges -->
@@ -462,8 +463,8 @@
                             <path d="M3 19C3 16 5.5 14 9 14C10 14 10.8 14.2 11.5 14.5M17 17V21M15 19H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </div>
-                    <h3 class="template-card-name">Referral Nudges</h3>
-                    <p class="template-card-desc">AI identifies your happiest customers (Gold/Platinum) and nudges them to refer friends for bonus points.</p>
+                    <h3 class="template-card-name" data-i18n="templates.referralNudges.title">Referral Nudges</h3>
+                    <p class="template-card-desc" data-i18n="templates.referralNudges.desc">AI identifies your happiest customers (Gold/Platinum) and nudges them to refer friends for bonus points.</p>
                 </div>
             </div>
         </div>
@@ -473,9 +474,9 @@
     <section class="social-proof">
         <div class="container">
             <div class="section-header">
-                <span class="section-tag">Results</span>
-                <h2>Local businesses love Royalty</h2>
-                <p>See what happens when AI runs your loyalty program</p>
+                <span class="section-tag" data-i18n="testimonials.tag">Results</span>
+                <h2 data-i18n="testimonials.title">Local businesses love Royalty</h2>
+                <p data-i18n="testimonials.subtitle">See what happens when AI runs your loyalty program</p>
             </div>
             <div class="testimonial-card">
                 <div class="quote-icon" aria-hidden="true">
@@ -483,14 +484,14 @@
                         <path d="M14 24C14 19 18 16 22 16V20C20 20 18 21 18 24V28H22V36H14V24ZM30 24C30 19 34 16 38 16V20C36 20 34 21 34 24V28H38V36H30V24Z" fill="currentColor"/>
                     </svg>
                 </div>
-                <blockquote>
+                <blockquote data-i18n="testimonials.quote1.text">
                     "I set up Royalty in literally one minute. Now I get a weekly email showing me which regulars haven't been in, and AI automatically sends them offers. Our repeat visits are up 40% and I didn't do anything."
                 </blockquote>
                 <div class="testimonial-author">
                     <div class="author-avatar">MR</div>
                     <div class="author-info">
-                        <span class="author-name">Maria Rodriguez</span>
-                        <span class="author-title">Owner, Casa del Sol Restaurant</span>
+                        <span class="author-name" data-i18n="testimonials.quote1.author">Maria Rodriguez</span>
+                        <span class="author-title" data-i18n="testimonials.quote1.title">Owner, Casa del Sol Restaurant</span>
                     </div>
                 </div>
             </div>
@@ -501,123 +502,123 @@
     <section id="pricing" class="pricing">
         <div class="container">
             <div class="section-header">
-                <span class="section-tag">Pricing</span>
-                <h2>Simple, transparent pricing</h2>
-                <p>Start free. Upgrade when you're ready to grow.</p>
+                <span class="section-tag" data-i18n="pricing.tag">Pricing</span>
+                <h2 data-i18n="pricing.title">Simple, transparent pricing</h2>
+                <p data-i18n="pricing.subtitle">Start free. Upgrade when you're ready to grow.</p>
             </div>
 
             <div class="pricing-cards pricing-cards-4">
                 <!-- Free -->
                 <div class="pricing-card">
                     <div class="pricing-header">
-                        <h3>Free</h3>
-                        <p>Try it out</p>
+                        <h3 data-i18n="pricing.free.name">Free</h3>
+                        <p data-i18n="pricing.free.desc">Try it out</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price">$0</span>
-                        <span class="period">forever</span>
+                        <span class="period" data-i18n="pricing.forever">forever</span>
                     </div>
                     <ul class="pricing-features">
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>Up to 50 members</span>
+                            <span data-i18n="pricing.free.f1">Up to 50 members</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>1-click automations</span>
+                            <span data-i18n="pricing.free.f2">1-click automations</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>QR code check-ins</span>
+                            <span data-i18n="pricing.free.f3">QR code check-ins</span>
                         </li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block">Start Free Beta</a>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.free.cta">Start Free Beta</a>
                 </div>
 
                 <!-- Starter -->
                 <div class="pricing-card">
                     <div class="pricing-header">
-                        <h3>Starter</h3>
-                        <p>For small businesses</p>
+                        <h3 data-i18n="pricing.starter.name">Starter</h3>
+                        <p data-i18n="pricing.starter.desc">For small businesses</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price">$49</span>
-                        <span class="period">/month</span>
+                        <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>Up to 500 members</span>
+                            <span data-i18n="pricing.starter.f1">Up to 500 members</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>30 AI insights/month</span>
+                            <span data-i18n="pricing.starter.f2">30 AI insights/month</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>AI-built loyalty program</span>
+                            <span data-i18n="pricing.starter.f3">AI-built loyalty program</span>
                         </li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block">Join Beta</a>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.starter.cta">Join Beta</a>
                 </div>
 
                 <!-- Growth - Most Popular -->
                 <div class="pricing-card featured">
-                    <div class="pricing-badge">Most Popular</div>
+                    <div class="pricing-badge" data-i18n="pricing.popular">Most Popular</div>
                     <div class="pricing-header">
-                        <h3>Growth</h3>
-                        <p>For growing businesses</p>
+                        <h3 data-i18n="pricing.growth.name">Growth</h3>
+                        <p data-i18n="pricing.growth.desc">For growing businesses</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price">$149</span>
-                        <span class="period">/month</span>
+                        <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>Up to 2,000 members</span>
+                            <span data-i18n="pricing.growth.f1">Up to 2,000 members</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>100 AI insights/month</span>
+                            <span data-i18n="pricing.growth.f2">100 AI insights/month</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>Priority support</span>
+                            <span data-i18n="pricing.growth.f3">Priority support</span>
                         </li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-primary btn-block">Join Beta</a>
+                    <a href="/app/signup.html" class="btn btn-primary btn-block" data-i18n="pricing.growth.cta">Join Beta</a>
                 </div>
 
                 <!-- Scale -->
                 <div class="pricing-card">
                     <div class="pricing-header">
-                        <h3>Scale</h3>
-                        <p>For multi-location</p>
+                        <h3 data-i18n="pricing.scale.name">Scale</h3>
+                        <p data-i18n="pricing.scale.desc">For multi-location</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price">$399</span>
-                        <span class="period">/month</span>
+                        <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>Unlimited members</span>
+                            <span data-i18n="pricing.scale.f1">Unlimited members</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>Unlimited AI insights</span>
+                            <span data-i18n="pricing.scale.f2">Unlimited AI insights</span>
                         </li>
                         <li>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>White-label branding</span>
+                            <span data-i18n="pricing.scale.f3">White-label branding</span>
                         </li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block">Join Beta</a>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.scale.cta">Join Beta</a>
                 </div>
             </div>
 
-            <p class="pricing-footer-link"><a href="/pricing.html">View full pricing details & AppSumo lifetime deal →</a></p>
+            <p class="pricing-footer-link"><a href="/pricing.html" data-i18n="pricing.viewFullPricing">View full pricing details & AppSumo lifetime deal →</a></p>
         </div>
     </section>
 
@@ -625,22 +626,22 @@
     <section id="cta" class="cta">
         <div class="container">
             <div class="cta-content">
-                <h2>Ready to let AI run your loyalty program?</h2>
-                <p>Join our Beta. Launch February 2026.</p>
+                <h2 data-i18n="cta.title">Ready to let AI run your loyalty program?</h2>
+                <p data-i18n="cta.subtitle">Join our Beta. Launch February 2026.</p>
                 <form class="cta-form" id="signup-form">
                     <!-- CAPTCHA Widget -->
                     <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-theme="light" style="margin-bottom: 12px;"></div>
-                    <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px; text-align: center;">Please complete the CAPTCHA verification.</div>
+                    <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px; text-align: center;" data-i18n="cta.captchaError">Please complete the CAPTCHA verification.</div>
                     <div class="form-group">
-                        <input type="email" placeholder="Enter your email" required>
+                        <input type="email" data-i18n-placeholder="cta.emailPlaceholder" placeholder="Enter your email" required>
                         <button type="submit" class="btn btn-primary">
-                            <span>Join our Beta</span>
+                            <span data-i18n="cta.joinWaitlist">Join our Beta</span>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                                 <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                     </div>
-                    <p class="form-note">Get early access pricing when we launch.</p>
+                    <p class="form-note" data-i18n="cta.note">Get early access pricing when we launch.</p>
                 </form>
             </div>
         </div>
@@ -655,29 +656,29 @@
                         <img src="/logo.svg" alt="Royalty" class="logo-icon">
                         <span class="logo-text">Royalty</span>
                     </a>
-                    <p>AI that builds and runs your loyalty program.</p>
+                    <p data-i18n="footer.tagline">AI that builds and runs your loyalty program.</p>
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
-                        <h4>Product</h4>
-                        <a href="#features">Features</a>
-                        <a href="#how-it-works">How It Works</a>
-                        <a href="#pricing">Pricing</a>
+                        <h4 data-i18n="footer.product">Product</h4>
+                        <a href="#features" data-i18n="footer.features">Features</a>
+                        <a href="#how-it-works" data-i18n="footer.howItWorks">How It Works</a>
+                        <a href="#pricing" data-i18n="nav.pricing">Pricing</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Company</h4>
-                        <a href="#">About</a>
-                        <a href="#">Contact</a>
+                        <h4 data-i18n="footer.company">Company</h4>
+                        <a href="#" data-i18n="footer.about">About</a>
+                        <a href="#" data-i18n="footer.contact">Contact</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Legal</h4>
-                        <a href="#">Privacy</a>
-                        <a href="#">Terms</a>
+                        <h4 data-i18n="footer.legal">Legal</h4>
+                        <a href="#" data-i18n="footer.privacy">Privacy</a>
+                        <a href="#" data-i18n="footer.terms">Terms</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Royalty. All rights reserved.</p>
+                <p data-i18n="footer.copyright">&copy; 2026 Royalty. All rights reserved.</p>
                 <!-- Footer Language Selector -->
                 <div class="lang-selector compact">
                     <button class="lang-selector-btn" type="button" aria-label="Change language">
@@ -710,9 +711,9 @@
                     <path d="M20 32L28 40L44 24" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </div>
-            <h3>You're in the Beta!</h3>
-            <p>We'll email you when Royalty launches with exclusive early access pricing.</p>
-            <button class="btn btn-primary" onclick="closeModal()">Got it</button>
+            <h3 data-i18n="modal.successTitle">You're in the Beta!</h3>
+            <p data-i18n="modal.successDesc">We'll email you when Royalty launches with exclusive early access pricing.</p>
+            <button class="btn btn-primary" onclick="closeModal()" data-i18n="modal.successBtn">Got it</button>
         </div>
     </div>
 
@@ -723,7 +724,7 @@
     <script src="app/templates-library.js"></script>
     <script src="app/ai-recommendations.js"></script>
     <script src="app/rate-limiter.js?v=1"></script>
-    <script src="script.js?v=10"></script>
+    <script src="script.js?v=11"></script>
     <script src="network-bg.js?v=7"></script>
 </body>
 </html>

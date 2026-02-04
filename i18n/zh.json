@@ -29,25 +29,20 @@
         "subtitle": "市场推广策略和平台发布"
     },
     "hero": {
-        "badge": "测试版 — 加入等候名单",
-        "titleLine1": "一个{word}。",
-        "titleLine2": "数千个关系。",
-        "rotatingWords": [
-            "人",
-            "创始人",
-            "企业家",
-            "老板",
-            "创造者",
-            "母亲",
-            "女性"
-        ],
-        "subtitle": "每个生日都被记住。每次到访都有跟进。每位忠实客户都被感谢——全自动完成。",
+        "badge": "AI驱动的本地商家会员系统",
+        "titlePart1": "用",
+        "titleHighlight": "60秒",
+        "titleLine2": "创建会员计划，永久运行。",
+        "subtitle": "Royalty是一款AI，60秒为您创建会员计划——然后永久运营。顾客赚取积分，您了解运营状况，AI精准告诉您如何增长。",
         "joinWaitlist": "加入测试版",
         "seeHowItWorks": "了解工作原理",
+        "discoveryTitle": "描述您的生意",
+        "discoverySubtitle": "我们的AI将在60秒内为您打造定制会员计划。",
+        "discoveryPlaceholder": "例如，我在上海经营一家咖啡店，有200位常客。我想奖励忠诚顾客，并把好久没来的顾客吸引回来...",
         "stats": {
-            "fasterSetup": "更快设置",
-            "timeSaved": "节省时间",
-            "moreEngagement": "更多互动"
+            "setupTime": "搭建时间",
+            "moreRepeatVisits": "更多回头客",
+            "aiRunning": "AI为您运营"
         }
     },
     "preview": {
@@ -62,124 +57,111 @@
         "review": "审核"
     },
     "comparison": {
-        "title": "旧方式已经过时",
-        "subtitle": "传统应用本末倒置。你先开发功能，希望客户会来。Automata颠覆了这一切。",
+        "title": "大多数会员应用只给工具。Royalty给你一个员工。",
+        "subtitle": "其他应用让你做所有工作。Royalty的AI为你创建计划、运行活动，并告诉你什么有效——全自动完成。",
         "oldWay": {
-            "title": "旧方式",
-            "item1": "先开发昂贵的应用",
-            "item2": "希望客户出现",
-            "item3": "手动管理关系",
-            "item4": "自动化是事后考虑",
-            "item5": "通用，一刀切"
+            "title": "其他会员应用",
+            "item1": "一切都要你手动设置",
+            "item2": "你决定何时运行活动",
+            "item3": "你自己分析什么有效",
+            "item4": "通用集点卡，仅此而已",
+            "item5": "没有洞察，没有智能"
         },
         "newWay": {
-            "title": "Automata方式",
-            "item1": "从您的客户开始",
-            "item2": "AI提出自动化建议",
-            "item3": "关系自动扩展",
-            "item4": "应用从成功中诞生",
-            "item5": "为每个客户个性化"
+            "title": "Royalty方式",
+            "item1": "AI在60秒内创建你的计划",
+            "item2": "AI自动运行召回活动",
+            "item3": "AI精准告诉你什么有效",
+            "item4": "积分、等级、奖励、推荐——全搞定",
+            "item5": "每周洞察：\"这是我为你做的\""
         }
     },
     "features": {
         "tag": "功能",
-        "title": "自动化客户关系所需的一切",
-        "subtitle": "强大的工具无缝协作",
-        "dataImport": {
-            "title": "轻松导入数据",
-            "desc": "通过CSV上传客户列表或手动输入。添加对您业务重要的自定义字段。"
+        "title": "会员计划所需的一切——AI驱动",
+        "subtitle": "从积分到洞察，Royalty全面处理",
+        "pointsRewards": {
+            "title": "积分与奖励",
+            "desc": "顾客扫描二维码赚取积分。兑换您定义的奖励。无需下载APP。"
         },
-        "scheduling": {
-            "title": "智能调度",
-            "desc": "每周、每月或基于事件的触发器。AI优化发送时间以获得最大参与度。"
+        "tierSystem": {
+            "title": "等级系统",
+            "desc": "铜牌 → 银牌 → 金牌 → 白金。顾客自动升级。行之有效的游戏化机制。"
         },
-        "aiProposals": {
-            "title": "AI驱动的建议",
-            "desc": "我们的AI分析您的业务和客户，然后建议针对您目标量身定制的自动化。"
+        "aiRuns": {
+            "title": "AI全自动运营",
+            "desc": "AI自动发送召回优惠、生日奖励和里程碑奖金。您每周收到一份总结。"
         },
-        "multiChannel": {
-            "title": "多渠道交付",
-            "desc": "通过电子邮件或短信联系客户。每条消息都使用他们的独特详细信息进行个性化。"
+        "smartInsights": {
+            "title": "智能洞察",
+            "desc": "\"8位顾客已30天未到访。\" AI告诉您正在发生什么以及该怎么做。"
         },
-        "humanLoop": {
-            "title": "人工参与",
-            "desc": "AI提议，您批准。在上线前完全控制每个自动化。"
+        "qrCheckins": {
+            "title": "二维码签到",
+            "desc": "顾客扫码赚积分。每天一次。常客享受连续签到奖励。简单高效。"
         },
-        "analytics": {
-            "title": "实时分析",
-            "desc": "跟踪参与度，衡量增长，查看哪些自动化带来最大价值。"
+        "referralProgram": {
+            "title": "推荐计划",
+            "desc": "顾客分享专属链接。双方都赚取奖励积分。自动化增长。"
         }
     },
     "howItWorks": {
         "tag": "工作原理",
-        "title": "4步从数据到关系",
-        "subtitle": "几分钟内开始，而不是几个月",
+        "title": "60秒上线。永久运行。",
+        "subtitle": "描述您的生意。AI完成其余工作。",
         "step1": {
-            "title": "上传您的客户",
-            "desc": "通过CSV导入现有客户列表或手动添加。包含任何重要数据——生日、位置、偏好。"
+            "title": "描述您的生意",
+            "desc": "\"我在上海开了一家咖啡店，有常客想要奖励。\" 这就够了。AI立即创建您的定制会员计划。"
         },
         "step2": {
-            "title": "告诉我们您的业务",
-            "desc": "分享您的业务类型、目标以及成功对您意味着什么。这些背景帮助我们的AI做出更智能的建议。"
+            "title": "分享您的二维码",
+            "desc": "打印出来，摆在收银台，或分享链接。顾客扫码加入，立即开始赚取积分。"
         },
         "step3": {
-            "title": "审核AI建议",
-            "desc": "我们的AI分析您的数据并提出5-10个定制自动化。审核每个，如需要可编辑，一键批准。"
+            "title": "AI运营您的计划",
+            "desc": "召回活动。生日奖励。连续签到奖金。AI全自动处理——或者根据您的偏好请求审批。"
         },
         "step4": {
-            "title": "观察关系增长",
-            "desc": "自动化按您的时间表运行。客户收到个性化消息。您专注于重要的事——您的业务。"
+            "title": "获取每周洞察",
+            "desc": "\"Royalty本周发送了47条消息。3位顾客回来了。2位升级到金牌。\" 清楚了解AI为您做了什么。"
         }
     },
     "templates": {
-        "tag": "模板",
-        "title": "即用型自动化",
-        "subtitle": "浏览我们经过验证的模板库。几分钟内自定义并启动。",
-        "automate": "自动化",
-        "browseAll": "浏览所有模板",
-        "badges": {
-            "popular": "热门",
-            "featured": "精选",
-            "new": "新"
-        },
-        "industries": {
-            "all": "所有行业",
-            "retail": "零售",
-            "food": "餐饮",
-            "health": "健康",
-            "services": "服务"
+        "tag": "AI自动化",
+        "title": "Royalty自动运行的功能",
+        "subtitle": "设置一次。AI永久处理。",
+        "autoEnabled": "自动启用",
+        "winBack": {
+            "title": "召回活动",
+            "desc": "AI检测到超过14天未到访的顾客，自动发送个性化优惠，吸引他们回来。"
         },
         "birthday": {
             "title": "生日奖励",
-            "desc": "自动向客户发送个性化生日优惠。提高忠诚度和回访率。"
+            "desc": "顾客生日临近时，AI自动发送生日奖励。不错过任何一个让顾客开心的机会。"
         },
-        "loyalty": {
-            "title": "忠诚度积分计划",
-            "desc": "自动奖励回头客。跟踪积分并发送兑换提醒。"
+        "streakBonuses": {
+            "title": "连续签到奖励",
+            "desc": "连续3天？7天？30天？AI自动奖励额外积分，与顾客一起庆祝。"
         },
-        "happyHour": {
-            "title": "欢乐时光提醒",
-            "desc": "通知附近客户欢乐时光优惠。在淡季增加客流量。"
+        "tierMotivation": {
+            "title": "升级激励",
+            "desc": "\"距离金牌还差50积分！\" 当顾客即将升级时，AI发送鼓励消息。"
         },
-        "appointment": {
-            "title": "预约提醒",
-            "desc": "通过自动提醒减少爽约。提前24小时通过短信或电子邮件发送。"
+        "milestones": {
+            "title": "里程碑庆祝",
+            "desc": "第10次到访？第50次？第100次？AI与顾客一起庆祝，并为忠诚里程碑奖励额外积分。"
         },
-        "postVisit": {
-            "title": "访后跟进",
-            "desc": "在客户访问后感谢他们并请求反馈。建立持久的关系。"
-        },
-        "winBack": {
-            "title": "客户召回活动",
-            "desc": "用个性化优惠重新吸引30天以上未访问的客户。"
+        "referralNudges": {
+            "title": "推荐提醒",
+            "desc": "AI识别您最满意的顾客（金牌/白金），鼓励他们推荐朋友以获得额外积分。"
         }
     },
     "testimonials": {
-        "tag": "客户评价",
-        "title": "深受各地企业喜爱",
-        "subtitle": "看看我们的客户怎么说",
+        "tag": "成果",
+        "title": "本地商家喜爱Royalty",
+        "subtitle": "看看AI运营会员计划后会发生什么",
         "quote1": {
-            "text": "我们从手动给50个客户发短信，变成自动与5,000个客户互动——没有雇用任何人。我们的回访率提高了40%。",
+            "text": "\"我花了一分钟就设置好了Royalty。现在我每周收到邮件，告诉我哪些常客好久没来了，AI自动给他们发优惠。我们的回头客增加了40%，而我什么都没做。\"",
             "author": "Maria Rodriguez",
             "title": "Casa del Sol餐厅老板"
         }
@@ -201,6 +183,7 @@
             "f1": "最多50名会员",
             "f2": "一键自动化",
             "f3": "二维码签到",
+            "f4": "积分与奖励",
             "cta": "开始免费Beta"
         },
         "starter": {
@@ -209,6 +192,7 @@
             "f1": "最多500名会员",
             "f2": "每月30条AI洞察",
             "f3": "AI构建会员计划",
+            "f4": "邮件支持",
             "cta": "加入Beta"
         },
         "growth": {
@@ -217,6 +201,7 @@
             "f1": "最多2,000名会员",
             "f2": "每月100条AI洞察",
             "f3": "优先支持",
+            "f4": "高级分析",
             "cta": "加入Beta"
         },
         "scale": {
@@ -225,6 +210,7 @@
             "f1": "无限会员",
             "f2": "无限AI洞察",
             "f3": "白标品牌",
+            "f4": "专属支持",
             "cta": "加入Beta"
         },
         "royaltyPro": {
@@ -237,22 +223,127 @@
         }
     },
     "cta": {
-        "title": "成为第一个自动化客户关系的人",
-        "subtitle": "加入等候名单，抢先体验AI驱动的自动化。",
+        "title": "准备好让AI运营您的会员计划了吗？",
+        "subtitle": "加入我们的Beta。2026年2月发布。",
         "emailPlaceholder": "输入您的电子邮件",
         "joinWaitlist": "加入测试版",
-        "note": "我们会在上线时通知您。"
+        "note": "发布时享受早鸟价格。",
+        "captchaError": "请完成验证码验证。",
+        "processing": "处理中...",
+        "alreadySigned": "已注册！",
+        "errorTryAgain": "出错了，请重试。"
+    },
+    "pricingPage": {
+        "bannerPrefix": "限时优惠：获取",
+        "bannerHighlight": "终身访问权",
+        "bannerSuffix": "，在AppSumo上",
+        "bannerBtn": "查看优惠",
+        "heroTitle": "简单透明的定价",
+        "heroSubtitle": "AI驱动的本地商家会员计划。免费开始，成长时再升级。",
+        "guarantee": "30天退款保证",
+        "monthly": "月付",
+        "annual": "年付",
+        "saveBadge": "节省20%",
+        "comparison": {
+            "title": "详细对比各方案",
+            "subtitle": "关于每个方案您需要了解的一切",
+            "features": "功能",
+            "coreLimits": "核心限制",
+            "members": "会员数",
+            "aiInsights": "每月AI洞察",
+            "loyaltyFeatures": "会员功能",
+            "pointsRewards": "积分与奖励",
+            "qrCheckins": "二维码签到",
+            "tiersVip": "等级与VIP",
+            "referralProgram": "推荐计划",
+            "leaderboard": "排行榜",
+            "aiFeatures": "AI功能",
+            "oneClickAutomations": "一键自动化",
+            "aiBuiltProgram": "AI构建会员计划",
+            "aiIntelligence": "AI智能洞察",
+            "automatedCampaigns": "自动化活动",
+            "brandingSupport": "品牌与支持",
+            "whiteLabel": "白标品牌",
+            "emailSupport": "邮件支持",
+            "prioritySupport": "优先支持",
+            "unlimited": "无限制"
+        },
+        "appsumo": {
+            "limitedTime": "限时优惠",
+            "title": "AppSumo终身优惠",
+            "subtitle": "一次付费，终身使用Royalty。无月费，永远不收。AI构建您的会员计划，自动化永久运行。",
+            "tier1": "等级1",
+            "tier2": "等级2",
+            "tier3": "等级3",
+            "code1": "1个代码",
+            "codes2": "2个代码",
+            "codes3": "3个代码",
+            "strike1": "价值$588/年",
+            "strike2": "价值$1,788/年",
+            "strike3": "价值$4,788/年",
+            "oneTime": "一次性付款",
+            "mostPopular": "最受欢迎",
+            "t1f1": "500名会员",
+            "t1f2": "AI构建会员计划",
+            "t1f3": "包含所有自动化",
+            "t1f4": "积分、等级与奖励",
+            "t1f5": "终身更新",
+            "t2f1": "2,000名会员",
+            "t2f2": "AI构建会员计划",
+            "t2f3": "包含所有自动化",
+            "t2f4": "优先支持",
+            "t2f5": "终身更新",
+            "t3f1": "无限会员",
+            "t3f2": "AI构建会员计划",
+            "t3f3": "包含所有自动化",
+            "t3f4": "优先支持",
+            "t3f5": "终身更新",
+            "cta": "在AppSumo上获取优惠",
+            "guarantee": "通过AppSumo享60天退款保证"
+        },
+        "royaltyPro": {
+            "title": "Royalty Pro — 终身优惠持有者专属",
+            "desc": "想让AI智能持续分析您的会员并建议下一步行动？添加Royalty Pro解锁无限AI洞察和白标品牌。",
+            "f1": "无限AI洞察",
+            "f2": "白标品牌",
+            "f3": "随时取消",
+            "priceLabel": "添加到您的终身优惠",
+            "pricePeriod": "/月",
+            "cta": "添加Royalty Pro"
+        },
+        "faq": {
+            "title": "常见问题",
+            "subtitle": "关于定价您需要了解的一切",
+            "q1": "什么是\"会员\"？",
+            "a1": "会员是加入您会员计划的客户。每个唯一的邮箱或手机号算作一名会员，无论他们到访多少次。",
+            "q2": "什么是\"AI洞察\"？",
+            "a2": "AI洞察是我们智能系统提供的建议。它分析您的会员数据并建议操作，如\"向23名不活跃会员发送召回活动\"或\"祝贺小李升级到金牌等级。\"",
+            "q3": "开始需要信用卡吗？",
+            "a3": "不需要。您可以使用免费计划开始，或在不输入信用卡的情况下开始14天任何付费计划的试用。准备好时再升级。",
+            "q4": "终身优惠和订阅有什么区别？",
+            "a4": "AppSumo终身优惠(LTD)买家只需支付一次，即可永久使用。核心功能（AI设置、自动化、积分）完全相同。要添加AI智能洞察，LTD用户可订阅Royalty Pro（$39/月）。",
+            "q5": "可以随时更换方案吗？",
+            "a5": "可以！随时升级或降级。升级时按比例收取差价。降级时获得未来账单的抵扣额度。",
+            "q6": "什么是白标品牌？",
+            "a6": "白标会移除客户端会员应用上的\"Powered by Royalty\"品牌标识。您的客户只看到您的品牌。",
+            "q7": "有退款保证吗？",
+            "a7": "有！订阅享30天退款保证。AppSumo优惠通过其平台享有60天退款政策。",
+            "q8": "可以叠加AppSumo代码吗？",
+            "a8": "可以！每个代码增加您的会员上限。等级1 = 500名会员，等级2 = 2,000名会员，等级3 = 无限会员。叠加以达到您需要的等级。"
+        }
     },
     "footer": {
-        "tagline": "增强人际联系的自动化。",
+        "tagline": "AI为您创建并运营会员计划。",
         "product": "产品",
         "company": "公司",
         "legal": "法律",
+        "features": "功能",
+        "howItWorks": "工作原理",
         "about": "关于我们",
-        "careers": "招聘",
+        "contact": "联系我们",
         "privacy": "隐私",
         "terms": "条款",
-        "copyright": "© 2026 Automata。保留所有权利。"
+        "copyright": "© 2026 Royalty。保留所有权利。"
     },
     "dashboard": {
         "title": "仪表板",
@@ -277,7 +368,18 @@
         "referrals": "推荐",
         "noAppTitle": "创建您的忠诚度计划",
         "noAppDesc": "设置您的第一个应用，开始追踪会员、访问和奖励。",
-        "createApp": "创建应用"
+        "createApp": "创建应用",
+        "appAutoCreated": "您的忠诚度计划已准备就绪！随时自定义。",
+        "previewTitle": "您的应用",
+        "previewOpenTab": "在新标签页中打开",
+        "previewCustomize": "自定义",
+        "previewCopyLink": "复制链接",
+        "previewCopied": "已复制！",
+        "previewDownloadQR": "下载二维码",
+        "previewPrintQR": "打印二维码",
+        "previewMobileToggle": "预览应用",
+        "previewButton": "预览",
+        "previewHide": "隐藏预览"
     },
     "aiFeed": {
         "title": "AI智能推送",
@@ -414,6 +516,9 @@
         "whyThis": "为什么是这个？"
     },
     "modal": {
+        "successTitle": "您已加入Beta！",
+        "successDesc": "Royalty发布时，我们会发邮件通知您，享受专属早鸟价格。",
+        "successBtn": "知道了",
         "createProject": "创建新项目",
         "editProject": "编辑项目",
         "createAutomation": "创建自动化",
@@ -463,6 +568,8 @@
         "customTitle": "需要不同的功能？",
         "customDesc": "描述您需要的自动化，我们会为您构建。",
         "customPlaceholder": "例如，纹身预约6周后发送补色提醒...",
+        "analyzing": "分析中...",
+        "aiWillBuild": "AI将构建",
         "signupSummary": "您的自动化已准备就绪",
         "industry": "行业",
         "goals": "目标",

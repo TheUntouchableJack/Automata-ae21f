@@ -8,6 +8,7 @@ let currentApp = null;      // User's loyalty app
 let memberGrowthChart = null;
 let tierDistributionChart = null;
 let currentPeriodDays = 30; // Default chart period
+let isAutoCreating = false; // Guard against double auto-creation
 
 async function initDashboard() {
     // Require authentication
@@ -191,12 +192,22 @@ async function loadAppMetrics() {
         }
 
         if (!apps || apps.length === 0) {
-            // No app yet - show empty state or hide section
-            showNoAppState();
-            return;
+            // Auto-create default loyalty app for first-time users
+            const newApp = await autoCreateDefaultApp();
+            if (!newApp) {
+                // Fallback to manual creation if auto-create fails
+                showNoAppState();
+                return;
+            }
+            currentApp = newApp;
+            // Show success toast
+            const toastMsg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appAutoCreated') : 'Your loyalty program is ready! Customize it anytime.';
+            if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+                AppUtils.showToast(toastMsg, 'success');
+            }
+        } else {
+            currentApp = apps[0];
         }
-
-        currentApp = apps[0];
 
         // Show the metrics section
         const metricsSection = document.getElementById('app-metrics-section');
@@ -215,6 +226,9 @@ async function loadAppMetrics() {
 
         // Setup chart period selector
         setupChartPeriodSelector();
+
+        // Show preview panel
+        showPreviewPanel();
 
     } catch (error) {
         console.error('Error loading app metrics:', error);
@@ -252,6 +266,317 @@ function showNoAppState() {
     if (typeof i18n !== 'undefined' && i18n.updatePageTranslations) {
         i18n.updatePageTranslations();
     }
+}
+
+// ===== Auto-Create Default Loyalty App =====
+async function autoCreateDefaultApp() {
+    if (!currentOrganization || isAutoCreating) return null;
+    isAutoCreating = true;
+
+    try {
+        // Generate name and slug from organization name
+        const orgName = currentOrganization.name || 'My Business';
+        const businessName = orgName.replace(/'s Organization$/i, '').trim() || 'My Business';
+        const appName = `${businessName} Rewards`;
+        const slug = generateSlug(appName);
+
+        const features = {
+            points_enabled: true,
+            leaderboard_enabled: true,
+            rewards_enabled: true,
+            menu_enabled: false,
+            announcements_enabled: true,
+            referrals_enabled: false
+        };
+
+        const settings = {
+            points_per_scan: 10,
+            points_per_dollar: 1,
+            welcome_points: 50,
+            daily_scan_limit: 1,
+            require_email: true,
+            require_phone: false,
+            tier_thresholds: { silver: 500, gold: 1500, platinum: 5000 }
+        };
+
+        const branding = {
+            primary_color: '#7c3aed',
+            secondary_color: '#1e293b',
+            logo_url: null,
+            logo_fit: 'contain',
+            favicon_url: null,
+            custom_css: null,
+            business_info: {}
+        };
+
+        const appData = {
+            organization_id: currentOrganization.id,
+            name: appName,
+            slug: slug,
+            description: `Loyalty rewards program for ${businessName}`,
+            app_type: 'loyalty',
+            features: features,
+            settings: settings,
+            branding: branding,
+            is_active: true,
+            is_published: true
+        };
+
+        const { data, error } = await supabase
+            .from('customer_apps')
+            .insert([appData])
+            .select()
+            .single();
+
+        if (error) {
+            // Slug collision - retry with random suffix
+            if (error.code === '23505' && error.message.includes('slug')) {
+                appData.slug = slug + '-' + Math.random().toString(36).substring(2, 6);
+                const { data: retryData, error: retryError } = await supabase
+                    .from('customer_apps')
+                    .insert([appData])
+                    .select()
+                    .single();
+
+                if (retryError) throw retryError;
+                return retryData;
+            }
+            throw error;
+        }
+
+        return data;
+    } catch (err) {
+        console.error('Failed to auto-create loyalty app:', err);
+        return null;
+    } finally {
+        isAutoCreating = false;
+    }
+}
+
+function generateSlug(name) {
+    return (name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 50);
+}
+
+// ===== Preview Panel =====
+function showPreviewPanel() {
+    if (!currentApp) return;
+
+    const previewCol = document.getElementById('dashboard-preview-col');
+    const toggleBtn = document.getElementById('preview-toggle-btn');
+    const grid = document.getElementById('dashboard-with-preview');
+    if (!previewCol) return;
+
+    // Check if user previously hid the preview
+    const isHidden = localStorage.getItem('previewHidden') === 'true';
+    if (isHidden) {
+        previewCol.style.display = 'none';
+        if (grid) grid.style.gridTemplateColumns = '1fr';
+        if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+    } else {
+        previewCol.style.display = 'flex';
+        if (toggleBtn) toggleBtn.style.display = 'none';
+    }
+
+    // Render branded splash
+    const splash = document.getElementById('preview-splash');
+    if (splash) {
+        const branding = currentApp.branding || {};
+        const primaryColor = branding.primary_color || '#7c3aed';
+        const logoUrl = branding.logo_url;
+        const appName = currentApp.name || 'My App';
+        const initial = appName.charAt(0).toUpperCase();
+        const previewLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewButton') : 'Preview';
+
+        splash.style.backgroundColor = primaryColor;
+        splash.innerHTML = `
+            <div class="preview-splash-logo">
+                ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(appName)}">` : `<span>${initial}</span>`}
+            </div>
+            <div class="preview-splash-name">${escapeHtml(appName)}</div>
+            <div class="preview-splash-subtitle">Rewards Program</div>
+            <button class="preview-splash-btn" id="preview-splash-btn">${escapeHtml(previewLabel)}</button>
+        `;
+
+        document.getElementById('preview-splash-btn')?.addEventListener('click', () => {
+            window.open(`/customer-app/index.html?preview=true&app_id=${currentApp.id}&published=${currentApp.is_published ? '1' : '0'}`, '_blank');
+        });
+    }
+
+    // Show URL
+    const urlDisplay = document.getElementById('preview-url-display');
+    if (urlDisplay) {
+        const appUrl = `${window.location.origin}/a/${currentApp.slug}`;
+        urlDisplay.textContent = appUrl;
+        urlDisplay.title = appUrl;
+    }
+
+    // Edit button -> app-builder with app ID
+    const editBtn = document.getElementById('preview-edit-btn');
+    if (editBtn && currentApp.id) {
+        editBtn.href = `/app/app-builder.html?id=${currentApp.id}`;
+    }
+
+    // Open in new tab
+    const openTabBtn = document.getElementById('preview-open-tab-btn');
+    if (openTabBtn) {
+        openTabBtn.addEventListener('click', () => {
+            window.open(`/customer-app/index.html?preview=true&app_id=${currentApp.id}&published=${currentApp.is_published ? '1' : '0'}`, '_blank');
+        });
+    }
+
+    // Copy link
+    const copyBtn = document.getElementById('preview-copy-url-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            const url = `${window.location.origin}/a/${currentApp.slug}`;
+            navigator.clipboard.writeText(url).then(() => {
+                const origText = copyBtn.textContent;
+                copyBtn.textContent = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewCopied') : 'Copied!';
+                setTimeout(() => { copyBtn.textContent = origText; }, 2000);
+            });
+        });
+    }
+
+    // QR code buttons
+    const downloadQRBtn = document.getElementById('preview-download-qr-btn');
+    if (downloadQRBtn) {
+        downloadQRBtn.addEventListener('click', downloadPreviewQR);
+    }
+
+    const printQRBtn = document.getElementById('preview-print-qr-btn');
+    if (printQRBtn) {
+        printQRBtn.addEventListener('click', printPreviewQR);
+    }
+
+    // Hide preview button
+    const hideBtn = document.getElementById('preview-hide-btn');
+    if (hideBtn) {
+        hideBtn.addEventListener('click', hidePreviewPanel);
+    }
+
+    // Header toggle button (restore preview)
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            localStorage.removeItem('previewHidden');
+            previewCol.style.display = 'flex';
+            if (grid) grid.style.gridTemplateColumns = '';
+            toggleBtn.style.display = 'none';
+            previewCol.classList.remove('open');
+        });
+    }
+
+    // Generate QR code
+    generatePreviewQR();
+
+    // Re-apply translations
+    if (typeof i18n !== 'undefined' && i18n.updatePageTranslations) {
+        i18n.updatePageTranslations();
+    }
+}
+
+// ===== Hide Preview Panel =====
+function hidePreviewPanel() {
+    const previewCol = document.getElementById('dashboard-preview-col');
+    const toggleBtn = document.getElementById('preview-toggle-btn');
+    const grid = document.getElementById('dashboard-with-preview');
+
+    localStorage.setItem('previewHidden', 'true');
+
+    if (previewCol) previewCol.style.display = 'none';
+    if (grid) grid.style.gridTemplateColumns = '1fr';
+    if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+}
+
+// ===== Preview QR Code =====
+function generatePreviewQR() {
+    if (!currentApp) return;
+
+    const container = document.getElementById('preview-qr-code');
+    if (!container) return;
+
+    const url = `${window.location.origin}/a/${currentApp.slug}`;
+
+    if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
+        try {
+            QRCode.toCanvas(document.createElement('canvas'), url, {
+                width: 72,
+                margin: 1,
+                color: { dark: '#1e293b', light: '#ffffff' }
+            }, (error, canvas) => {
+                if (error) {
+                    console.error('QR generation error:', error);
+                    generatePreviewQRFallback(container, url);
+                    return;
+                }
+                container.innerHTML = '';
+                container.appendChild(canvas);
+            });
+        } catch (e) {
+            generatePreviewQRFallback(container, url);
+        }
+    } else {
+        generatePreviewQRFallback(container, url);
+    }
+}
+
+function generatePreviewQRFallback(container, url) {
+    const encodedUrl = encodeURIComponent(url);
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=${encodedUrl}&bgcolor=ffffff&color=1e293b&margin=4`;
+
+    const img = document.createElement('img');
+    img.src = qrApiUrl;
+    img.alt = 'QR Code';
+    img.style.width = '72px';
+    img.style.height = '72px';
+    container.innerHTML = '';
+    container.appendChild(img);
+}
+
+function downloadPreviewQR() {
+    const canvas = document.querySelector('#preview-qr-code canvas');
+    const img = document.querySelector('#preview-qr-code img');
+
+    if (canvas) {
+        const link = document.createElement('a');
+        link.download = `${currentApp?.slug || 'app'}-qr-code.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } else if (img) {
+        const link = document.createElement('a');
+        link.download = `${currentApp?.slug || 'app'}-qr-code.png`;
+        link.href = img.src;
+        link.target = '_blank';
+        link.click();
+    }
+}
+
+function printPreviewQR() {
+    const canvas = document.querySelector('#preview-qr-code canvas');
+    const img = document.querySelector('#preview-qr-code img');
+    const qrSrc = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+
+    if (!qrSrc) return;
+
+    const url = `${window.location.origin}/a/${currentApp?.slug || ''}`;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head><title>QR Code - ${currentApp?.name || 'App'}</title></head>
+        <body style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; margin: 0;">
+            <h2 style="margin-bottom: 8px;">${currentApp?.name || 'My App'}</h2>
+            <p style="color: #666; margin-bottom: 24px;">Scan to join our rewards program</p>
+            <img src="${qrSrc}" style="width: 250px; height: 250px;" />
+            <p style="margin-top: 16px; color: #888; font-size: 14px;">${url}</p>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 500);
 }
 
 // ===== Load Dashboard Summary =====

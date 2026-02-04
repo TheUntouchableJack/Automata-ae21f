@@ -29,17 +29,20 @@
         "subtitle": "Go-to-market strategy and platform launches"
     },
     "hero": {
-        "badge": "Now in Beta — Join our Beta",
-        "titleLine1": "One {word}.",
-        "titleLine2": "Thousands of Relationships.",
-        "rotatingWords": ["Person", "Founder", "Entrepreneur", "Owner", "Creator", "Mother", "Woman"],
-        "subtitle": "Every birthday remembered. Every visit followed up. Every loyal customer thanked — automatically.",
+        "badge": "AI-Powered Loyalty for Local Businesses",
+        "titlePart1": "Build your loyalty program in ",
+        "titleHighlight": "60 seconds",
+        "titleLine2": "Run it forever.",
+        "subtitle": "Royalty is an AI that builds your loyalty program in 60 seconds—then runs it forever. Customers earn points, you see what's working, and AI tells you exactly how to grow.",
         "joinWaitlist": "Join our Beta",
         "seeHowItWorks": "See How It Works",
+        "discoveryTitle": "Describe your business",
+        "discoverySubtitle": "Our AI will build you a custom loyalty program in 60 seconds.",
+        "discoveryPlaceholder": "e.g., I run a coffee shop in Austin with 200 regulars. I want to reward loyalty and bring back customers who haven't visited in a while...",
         "stats": {
-            "fasterSetup": "Faster Setup",
-            "timeSaved": "Time Saved",
-            "moreEngagement": "More Engagement"
+            "setupTime": "Setup Time",
+            "moreRepeatVisits": "More Repeat Visits",
+            "aiRunning": "AI Running For You"
         }
     },
     "preview": {
@@ -54,124 +57,111 @@
         "review": "Review"
     },
     "comparison": {
-        "title": "The Old Way Is Broken",
-        "subtitle": "Traditional apps put the cart before the horse. You build features hoping customers will come. Automata flips the script.",
+        "title": "Most loyalty apps just give you tools. Royalty gives you an employee.",
+        "subtitle": "Other apps make you do all the work. Royalty's AI builds your program, runs campaigns, and tells you what's working—automatically.",
         "oldWay": {
-            "title": "The Old Way",
-            "item1": "Build expensive app first",
-            "item2": "Hope customers show up",
-            "item3": "Manually manage relationships",
-            "item4": "Automations as afterthought",
-            "item5": "Generic, one-size-fits-all"
+            "title": "Other Loyalty Apps",
+            "item1": "You set up everything manually",
+            "item2": "You decide when to run campaigns",
+            "item3": "You figure out what's working",
+            "item4": "Generic punch card, that's it",
+            "item5": "No insights, no intelligence"
         },
         "newWay": {
-            "title": "The Automata Way",
-            "item1": "Start with your customers",
-            "item2": "AI proposes automations",
-            "item3": "Relationships scale automatically",
-            "item4": "Apps emerge from success",
-            "item5": "Personalized to each customer"
+            "title": "The Royalty Way",
+            "item1": "AI builds your program in 60 seconds",
+            "item2": "AI runs win-back campaigns automatically",
+            "item3": "AI tells you exactly what's working",
+            "item4": "Points, tiers, rewards, referrals—done",
+            "item5": "Weekly insights: \"Here's what I did for you\""
         }
     },
     "features": {
         "tag": "Features",
-        "title": "Everything You Need to Automate Customer Relationships",
-        "subtitle": "Powerful tools that work together seamlessly",
-        "dataImport": {
-            "title": "Easy Data Import",
-            "desc": "Upload your customer list via CSV or enter manually. Add custom fields that matter to your business."
+        "title": "Everything your loyalty program needs—powered by AI",
+        "subtitle": "From points to insights, Royalty handles it all",
+        "pointsRewards": {
+            "title": "Points & Rewards",
+            "desc": "Customers scan a QR code to earn points. Redeem for rewards you define. No app download required."
         },
-        "scheduling": {
-            "title": "Smart Scheduling",
-            "desc": "Weekly, monthly, or event-based triggers. AI optimizes send times for maximum engagement."
+        "tierSystem": {
+            "title": "Tier System",
+            "desc": "Bronze → Silver → Gold → Platinum. Customers level up automatically. Gamification that works."
         },
-        "aiProposals": {
-            "title": "AI-Powered Proposals",
-            "desc": "Our AI analyzes your business and customers, then suggests automations tailored to your goals."
+        "aiRuns": {
+            "title": "AI That Runs It",
+            "desc": "AI sends win-back offers, birthday rewards, and milestone bonuses—automatically. You get a weekly summary."
         },
-        "multiChannel": {
-            "title": "Multi-Channel Delivery",
-            "desc": "Reach customers via email or SMS. Each message personalized with their unique details."
+        "smartInsights": {
+            "title": "Smart Insights",
+            "desc": "\"8 customers haven't visited in 30 days.\" AI tells you what's happening and what to do about it."
         },
-        "humanLoop": {
-            "title": "Human in the Loop",
-            "desc": "AI proposes, you approve. Full control over every automation before it goes live."
+        "qrCheckins": {
+            "title": "QR Code Check-ins",
+            "desc": "Customers scan to earn points. One scan per day. Streak bonuses for regulars. Simple."
         },
-        "analytics": {
-            "title": "Real-Time Analytics",
-            "desc": "Track engagement, measure growth, and see which automations drive the most value."
+        "referralProgram": {
+            "title": "Referral Program",
+            "desc": "Customers share their unique link. Both parties earn bonus points. Growth on autopilot."
         }
     },
     "howItWorks": {
         "tag": "How It Works",
-        "title": "From Data to Relationships in 4 Steps",
-        "subtitle": "Get started in minutes, not months",
+        "title": "Live in 60 seconds. Running forever.",
+        "subtitle": "Describe your business. AI does the rest.",
         "step1": {
-            "title": "Upload Your Customers",
-            "desc": "Import your existing customer list via CSV or add them manually. Include whatever data matters — birthdays, locations, preferences."
+            "title": "Describe Your Business",
+            "desc": "\"I run a coffee shop in Austin with regulars I want to reward.\" That's all we need. AI builds your custom loyalty program instantly."
         },
         "step2": {
-            "title": "Tell Us About Your Business",
-            "desc": "Share your business type, goals, and what success looks like. This context helps our AI make smarter suggestions."
+            "title": "Share Your QR Code",
+            "desc": "Print it, display it at checkout, or share the link. Customers scan to join and start earning points immediately."
         },
         "step3": {
-            "title": "Review AI Suggestions",
-            "desc": "Our AI analyzes your data and proposes 5-10 tailored automations. Review each one, edit if needed, and approve with one click."
+            "title": "AI Runs Your Program",
+            "desc": "Win-back campaigns. Birthday rewards. Streak bonuses. AI handles it all automatically—or asks for approval if you prefer."
         },
         "step4": {
-            "title": "Watch Relationships Grow",
-            "desc": "Automations run on your schedule. Customers receive personalized messages. You focus on what matters — your business."
+            "title": "Get Weekly Insights",
+            "desc": "\"Royalty sent 47 messages this week. 3 customers came back. 2 upgraded to Gold.\" See exactly what AI is doing for you."
         }
     },
     "templates": {
-        "tag": "Templates",
-        "title": "Ready-to-Use Automations",
-        "subtitle": "Browse our library of proven templates. Customize and launch in minutes.",
-        "automate": "Automate",
-        "browseAll": "Browse All Templates",
-        "badges": {
-            "popular": "Popular",
-            "featured": "Featured",
-            "new": "New"
-        },
-        "industries": {
-            "all": "All Industries",
-            "retail": "Retail",
-            "food": "Food",
-            "health": "Health",
-            "services": "Services"
+        "tag": "AI Automations",
+        "title": "What Royalty runs automatically",
+        "subtitle": "Set it once. AI handles the rest—forever.",
+        "autoEnabled": "Auto-Enabled",
+        "winBack": {
+            "title": "Win-Back Campaigns",
+            "desc": "AI detects customers who haven't visited in 14+ days and automatically sends them a personalized offer to come back."
         },
         "birthday": {
             "title": "Birthday Rewards",
-            "desc": "Automatically send personalized birthday offers to customers. Boost loyalty and drive repeat visits."
+            "desc": "AI sends birthday rewards automatically when customers have a birthday coming up. Never miss a chance to delight."
         },
-        "loyalty": {
-            "title": "Loyalty Points Program",
-            "desc": "Reward repeat customers automatically. Track points and send redemption reminders."
+        "streakBonuses": {
+            "title": "Streak Bonuses",
+            "desc": "3-day streak? 7-day streak? 30-day streak? AI automatically awards bonus points and celebrates with customers."
         },
-        "happyHour": {
-            "title": "Happy Hour Alerts",
-            "desc": "Notify nearby customers about happy hour specials. Drive foot traffic during slow hours."
+        "tierMotivation": {
+            "title": "Tier Motivation",
+            "desc": "\"You're 50 points from Gold!\" AI sends encouraging messages when customers are close to leveling up."
         },
-        "appointment": {
-            "title": "Appointment Reminders",
-            "desc": "Reduce no-shows with automated reminders. Send via SMS or email 24 hours before."
+        "milestones": {
+            "title": "Milestone Celebrations",
+            "desc": "10th visit? 50th? 100th? AI celebrates with customers and awards bonus points for loyalty milestones."
         },
-        "postVisit": {
-            "title": "Post-Visit Follow-up",
-            "desc": "Thank customers after their visit and ask for feedback. Build relationships that last."
-        },
-        "winBack": {
-            "title": "Win-Back Campaign",
-            "desc": "Re-engage customers who haven't visited in 30+ days with personalized offers."
+        "referralNudges": {
+            "title": "Referral Nudges",
+            "desc": "AI identifies your happiest customers (Gold/Platinum) and nudges them to refer friends for bonus points."
         }
     },
     "testimonials": {
-        "tag": "Testimonials",
-        "title": "Loved by Businesses Everywhere",
-        "subtitle": "See what our customers have to say",
+        "tag": "Results",
+        "title": "Local businesses love Royalty",
+        "subtitle": "See what happens when AI runs your loyalty program",
         "quote1": {
-            "text": "We went from manually texting 50 customers to automatically engaging 5,000 — without hiring anyone. Our repeat visits are up 40%.",
+            "text": "\"I set up Royalty in literally one minute. Now I get a weekly email showing me which regulars haven't been in, and AI automatically sends them offers. Our repeat visits are up 40% and I didn't do anything.\"",
             "author": "Maria Rodriguez",
             "title": "Owner, Casa del Sol Restaurant"
         }
@@ -193,6 +183,7 @@
             "f1": "Up to 50 members",
             "f2": "1-click automations",
             "f3": "QR code check-ins",
+            "f4": "Points & rewards",
             "cta": "Start Free Beta"
         },
         "starter": {
@@ -201,6 +192,7 @@
             "f1": "Up to 500 members",
             "f2": "30 AI insights/month",
             "f3": "AI-built loyalty program",
+            "f4": "Email support",
             "cta": "Join Beta"
         },
         "growth": {
@@ -209,6 +201,7 @@
             "f1": "Up to 2,000 members",
             "f2": "100 AI insights/month",
             "f3": "Priority support",
+            "f4": "Advanced analytics",
             "cta": "Join Beta"
         },
         "scale": {
@@ -217,6 +210,7 @@
             "f1": "Unlimited members",
             "f2": "Unlimited AI insights",
             "f3": "White-label branding",
+            "f4": "Dedicated support",
             "cta": "Join Beta"
         },
         "royaltyPro": {
@@ -229,22 +223,142 @@
         }
     },
     "cta": {
-        "title": "Be the First to Automate Your Customer Relationships",
-        "subtitle": "Join our Beta and get early access to AI-powered automations.",
+        "title": "Ready to let AI run your loyalty program?",
+        "subtitle": "Join our Beta. Launch February 2026.",
         "emailPlaceholder": "Enter your email",
         "joinWaitlist": "Join our Beta",
-        "note": "We'll notify you when we launch."
+        "note": "Get early access pricing when we launch.",
+        "captchaError": "Please complete the CAPTCHA verification.",
+        "processing": "Processing...",
+        "alreadySigned": "Already signed up!",
+        "errorTryAgain": "Error. Try again."
+    },
+    "modal": {
+        "successTitle": "You're in the Beta!",
+        "successDesc": "We'll email you when Royalty launches with exclusive early access pricing.",
+        "successBtn": "Got it",
+        "createProject": "Create New Project",
+        "editProject": "Edit Project",
+        "createAutomation": "Create Automation",
+        "addCustomer": "Add Customer",
+        "editCustomer": "Edit Customer",
+        "importCsv": "Import CSV",
+        "close": "Close",
+        "cancel": "Cancel",
+        "create": "Create",
+        "save": "Save Changes"
+    },
+    "pricingPage": {
+        "bannerPrefix": "Limited Time: Get ",
+        "bannerHighlight": "lifetime access",
+        "bannerSuffix": " on AppSumo",
+        "bannerBtn": "View Deal",
+        "heroTitle": "Simple, transparent pricing",
+        "heroSubtitle": "AI-powered loyalty programs for local businesses. Start free, upgrade when you grow.",
+        "guarantee": "30-day money-back guarantee",
+        "monthly": "Monthly",
+        "annual": "Annual",
+        "saveBadge": "Save 20%",
+        "comparison": {
+            "title": "Compare plans in detail",
+            "subtitle": "Everything you need to know about each plan",
+            "features": "Features",
+            "coreLimits": "Core Limits",
+            "members": "Members",
+            "aiInsights": "AI Insights per month",
+            "loyaltyFeatures": "Loyalty Features",
+            "pointsRewards": "Points & rewards",
+            "qrCheckins": "QR code check-ins",
+            "tiersVip": "Tiers & VIP levels",
+            "referralProgram": "Referral program",
+            "leaderboard": "Leaderboard",
+            "aiFeatures": "AI Features",
+            "oneClickAutomations": "1-click automations",
+            "aiBuiltProgram": "AI-built loyalty program",
+            "aiIntelligence": "AI Intelligence insights",
+            "automatedCampaigns": "Automated campaigns",
+            "brandingSupport": "Branding & Support",
+            "whiteLabel": "White-label branding",
+            "emailSupport": "Email support",
+            "prioritySupport": "Priority support",
+            "unlimited": "Unlimited"
+        },
+        "appsumo": {
+            "limitedTime": "Limited Time",
+            "title": "Lifetime Deal on AppSumo",
+            "subtitle": "Get lifetime access to Royalty at a one-time price. No monthly fees, ever. AI builds your loyalty program, automations run forever.",
+            "tier1": "Tier 1",
+            "tier2": "Tier 2",
+            "tier3": "Tier 3",
+            "code1": "1 Code",
+            "codes2": "2 Codes",
+            "codes3": "3 Codes",
+            "strike1": "$588/yr value",
+            "strike2": "$1,788/yr value",
+            "strike3": "$4,788/yr value",
+            "oneTime": "one-time",
+            "mostPopular": "Most Popular",
+            "t1f1": "500 members",
+            "t1f2": "AI-built loyalty program",
+            "t1f3": "All automations included",
+            "t1f4": "Points, tiers & rewards",
+            "t1f5": "Lifetime updates",
+            "t2f1": "2,000 members",
+            "t2f2": "AI-built loyalty program",
+            "t2f3": "All automations included",
+            "t2f4": "Priority support",
+            "t2f5": "Lifetime updates",
+            "t3f1": "Unlimited members",
+            "t3f2": "AI-built loyalty program",
+            "t3f3": "All automations included",
+            "t3f4": "Priority support",
+            "t3f5": "Lifetime updates",
+            "cta": "Get Deal on AppSumo",
+            "guarantee": "60-day money-back guarantee via AppSumo"
+        },
+        "royaltyPro": {
+            "title": "Royalty Pro — For Lifetime Deal Holders",
+            "desc": "Want AI Intelligence to continuously analyze your members and suggest what to do next? Add Royalty Pro to unlock unlimited AI insights and white-label branding.",
+            "f1": "Unlimited AI insights",
+            "f2": "White-label branding",
+            "f3": "Cancel anytime",
+            "priceLabel": "Add to your LTD",
+            "pricePeriod": "/month",
+            "cta": "Add Royalty Pro"
+        },
+        "faq": {
+            "title": "Frequently Asked Questions",
+            "subtitle": "Everything you need to know about pricing",
+            "q1": "What is a \"member\"?",
+            "a1": "A member is a customer who joins your loyalty program. Each unique email or phone number counts as one member, regardless of how many visits they make.",
+            "q2": "What are \"AI insights\"?",
+            "a2": "AI insights are recommendations from our Intelligence system. It analyzes your member data and suggests actions like \"Send a win-back campaign to 23 inactive members\" or \"Congratulate Sarah on reaching Gold tier.\"",
+            "q3": "Do I need a credit card to start?",
+            "a3": "No. You can start with our free plan or begin a 14-day trial of any paid plan without entering a credit card. Upgrade when you're ready.",
+            "q4": "What's the difference between LTD and subscriptions?",
+            "a4": "AppSumo Lifetime Deal (LTD) buyers pay once and get access forever. The core features (AI setup, automations, points) work the same. To add AI Intelligence insights, LTD users can subscribe to Royalty Pro ($39/mo).",
+            "q5": "Can I change plans anytime?",
+            "a5": "Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing.",
+            "q6": "What's white-label branding?",
+            "a6": "White-label removes \"Powered by Royalty\" branding from your customer-facing loyalty app. Your customers see your brand only.",
+            "q7": "Is there a money-back guarantee?",
+            "a7": "Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform.",
+            "q8": "Can I stack AppSumo codes?",
+            "a8": "Yes! Each code increases your member limit. Tier 1 = 500 members, Tier 2 = 2,000 members, Tier 3 = unlimited members. Stack to reach the tier you need."
+        }
     },
     "footer": {
-        "tagline": "Automations that amplify human connection.",
+        "tagline": "AI that builds and runs your loyalty program.",
         "product": "Product",
         "company": "Company",
         "legal": "Legal",
+        "features": "Features",
+        "howItWorks": "How It Works",
         "about": "About",
-        "careers": "Careers",
+        "contact": "Contact",
         "privacy": "Privacy",
         "terms": "Terms",
-        "copyright": "© 2026 Automata. All rights reserved."
+        "copyright": "© 2026 Royalty. All rights reserved."
     },
     "dashboard": {
         "title": "Dashboard",
@@ -269,7 +383,18 @@
         "referrals": "Referrals",
         "noAppTitle": "Create Your Loyalty Program",
         "noAppDesc": "Set up your first customer app to start tracking members, visits, and rewards.",
-        "createApp": "Create App"
+        "createApp": "Create App",
+        "appAutoCreated": "Your loyalty program is ready! Customize it anytime.",
+        "previewTitle": "Your App",
+        "previewOpenTab": "Open in New Tab",
+        "previewCustomize": "Customize",
+        "previewCopyLink": "Copy Link",
+        "previewCopied": "Copied!",
+        "previewDownloadQR": "Download QR",
+        "previewPrintQR": "Print QR",
+        "previewMobileToggle": "Preview App",
+        "previewButton": "Preview",
+        "previewHide": "Hide preview"
     },
     "aiFeed": {
         "title": "AI Intelligence Feed",
@@ -405,18 +530,6 @@
         "dismiss": "Dismiss",
         "whyThis": "Why this?"
     },
-    "modal": {
-        "createProject": "Create New Project",
-        "editProject": "Edit Project",
-        "createAutomation": "Create Automation",
-        "addCustomer": "Add Customer",
-        "editCustomer": "Edit Customer",
-        "importCsv": "Import CSV",
-        "close": "Close",
-        "cancel": "Cancel",
-        "create": "Create",
-        "save": "Save Changes"
-    },
     "form": {
         "firstName": "First Name",
         "lastName": "Last Name",
@@ -455,6 +568,8 @@
         "customTitle": "Need something different?",
         "customDesc": "Describe the automation you need and we'll build it for you.",
         "customPlaceholder": "e.g., Send a reminder 6 weeks after a tattoo appointment for touch-ups...",
+        "analyzing": "Analyzing...",
+        "aiWillBuild": "AI Will Build",
         "signupSummary": "Your automations are ready",
         "industry": "Industry",
         "goals": "Goals",

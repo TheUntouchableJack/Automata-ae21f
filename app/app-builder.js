@@ -12,7 +12,7 @@ let isNewApp = true;
 let autoSaveTimer = null;
 let hasUnsavedChanges = false;
 let linkAutomationId = null; // If creating from automation, link after creation
-let isAdmin = false; // Track if user is admin/owner for UI visibility
+let isOrgAdmin = false; // Track if user is admin/owner for UI visibility
 
 // ===== App Type Feature Configurations =====
 const BLOG_FEATURES = [
@@ -200,6 +200,7 @@ async function initAppBuilder() {
         const appId = urlParams.get('id');
         const presetProjectId = urlParams.get('projectId'); // Pre-select project if creating from project page
         linkAutomationId = urlParams.get('linkAutomation'); // Store for later linking
+        console.log('[App Builder] URL params - id:', appId, 'projectId:', presetProjectId);
 
         // Update slug prefix to show current domain
         const slugPrefix = document.querySelector('.slug-prefix');
@@ -282,7 +283,7 @@ async function loadUserInfo() {
         }
 
         // Check if user is admin/owner (for UI visibility)
-        isAdmin = membership?.role === 'owner' || membership?.role === 'admin';
+        isOrgAdmin = membership?.role === 'owner' || membership?.role === 'admin';
 
         // Update sidebar with user data (including role for admin features)
         if (typeof AppSidebar !== 'undefined') {
@@ -311,7 +312,7 @@ function updateAdminOnlyElements() {
     const projectGroup = document.getElementById('app-project')?.closest('.form-group');
     const typeGroup = document.querySelector('.type-cards')?.closest('.form-group');
 
-    if (!isAdmin) {
+    if (!isOrgAdmin) {
         // Hide "Link to Project" dropdown
         if (projectGroup) {
             projectGroup.style.display = 'none';
@@ -361,6 +362,7 @@ async function loadProjects() {
 }
 
 async function loadApp(appId) {
+    console.log('[App Builder] Loading app:', appId);
     document.getElementById('loading').style.display = 'flex';
 
     try {
@@ -383,6 +385,7 @@ async function loadApp(appId) {
             throw error;
         }
 
+        console.log('[App Builder] App loaded:', data.name, data.id);
         currentApp = data;
 
         // Update title
@@ -398,9 +401,28 @@ async function loadApp(appId) {
         updatePublishButton();
 
     } catch (error) {
-        console.error('Failed to load app:', error);
-        showError('Failed to load app');
-        window.location.href = '/app/apps.html';
+        console.error('[App Builder] Failed to load app:', error);
+        document.getElementById('loading').style.display = 'none';
+
+        // Show error state on the builder page instead of redirecting
+        const mainContent = document.querySelector('.builder-content') || document.querySelector('main');
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                         stroke="var(--color-text-tertiary)" stroke-width="1.5" style="margin-bottom: 16px;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <h2 style="margin-bottom: 8px;">Unable to load app</h2>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 24px;">
+                        The app could not be found or you don't have permission to edit it.
+                    </p>
+                    <a href="/app/dashboard.html" class="btn btn-primary">Back to Dashboard</a>
+                </div>
+            `;
+        }
     }
 }
 

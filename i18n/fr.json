@@ -29,25 +29,20 @@
         "subtitle": "Stratégie de mise sur le marché et lancements"
     },
     "hero": {
-        "badge": "En Bêta — Rejoignez la liste d'attente",
-        "titleLine1": "Un {word}.",
-        "titleLine2": "Des Milliers de Relations.",
-        "rotatingWords": [
-            "Personne",
-            "Fondateur",
-            "Entrepreneur",
-            "Propriétaire",
-            "Créateur",
-            "Mère",
-            "Femme"
-        ],
-        "subtitle": "Chaque anniversaire mémorisé. Chaque visite suivie. Chaque client fidèle remercié — automatiquement.",
+        "badge": "Fidélisation Propulsée par l'IA pour les Commerces Locaux",
+        "titlePart1": "Créez votre programme de fidélité en ",
+        "titleHighlight": "60 secondes",
+        "titleLine2": "Il fonctionne pour toujours.",
+        "subtitle": "Royalty est une IA qui crée votre programme de fidélité en 60 secondes, puis le gère pour toujours. Les clients gagnent des points, vous voyez ce qui fonctionne, et l'IA vous dit exactement comment grandir.",
         "joinWaitlist": "Rejoindre la Bêta",
         "seeHowItWorks": "Voir Comment Ça Marche",
+        "discoveryTitle": "Décrivez votre entreprise",
+        "discoverySubtitle": "Notre IA vous créera un programme de fidélité sur mesure en 60 secondes.",
+        "discoveryPlaceholder": "ex., Je gère un café à Paris avec 200 habitués. Je veux récompenser la fidélité et faire revenir les clients qui ne sont pas venus depuis un moment...",
         "stats": {
-            "fasterSetup": "Configuration Rapide",
-            "timeSaved": "Temps Économisé",
-            "moreEngagement": "Plus d'Engagement"
+            "setupTime": "Temps de Configuration",
+            "moreRepeatVisits": "Plus de Visites Récurrentes",
+            "aiRunning": "IA Qui Travaille Pour Vous"
         }
     },
     "preview": {
@@ -62,124 +57,111 @@
         "review": "Examiner"
     },
     "comparison": {
-        "title": "L'Ancienne Méthode Est Obsolète",
-        "subtitle": "Les applications traditionnelles mettent la charrue avant les bœufs. Vous créez des fonctionnalités en espérant que les clients viendront. Automata inverse le script.",
+        "title": "La plupart des apps de fidélité vous donnent des outils. Royalty vous donne un employé.",
+        "subtitle": "Les autres apps vous font tout faire. L'IA de Royalty construit votre programme, lance des campagnes et vous dit ce qui fonctionne—automatiquement.",
         "oldWay": {
-            "title": "L'Ancienne Méthode",
-            "item1": "Créer d'abord une application coûteuse",
-            "item2": "Espérer que les clients arrivent",
-            "item3": "Gérer manuellement les relations",
-            "item4": "Les automatisations en dernier",
-            "item5": "Générique, taille unique"
+            "title": "Les Autres Apps de Fidélité",
+            "item1": "Vous configurez tout manuellement",
+            "item2": "Vous décidez quand lancer des campagnes",
+            "item3": "Vous devinez ce qui fonctionne",
+            "item4": "Une carte à tamponner générique, c'est tout",
+            "item5": "Aucun insight, aucune intelligence"
         },
         "newWay": {
-            "title": "La Méthode Automata",
-            "item1": "Commencer avec vos clients",
-            "item2": "L'IA propose des automatisations",
-            "item3": "Les relations évoluent automatiquement",
-            "item4": "Les applications émergent du succès",
-            "item5": "Personnalisé pour chaque client"
+            "title": "La Méthode Royalty",
+            "item1": "L'IA crée votre programme en 60 secondes",
+            "item2": "L'IA lance des campagnes de reconquête automatiquement",
+            "item3": "L'IA vous dit exactement ce qui fonctionne",
+            "item4": "Points, niveaux, récompenses, parrainages—c'est fait",
+            "item5": "Rapport hebdomadaire : \"Voici ce que j'ai fait pour vous\""
         }
     },
     "features": {
         "tag": "Fonctionnalités",
-        "title": "Tout Ce Dont Vous Avez Besoin Pour Automatiser les Relations Clients",
-        "subtitle": "Des outils puissants qui fonctionnent ensemble parfaitement",
-        "dataImport": {
-            "title": "Import de Données Facile",
-            "desc": "Téléchargez votre liste de clients via CSV ou saisissez-les manuellement. Ajoutez des champs personnalisés importants pour votre entreprise."
+        "title": "Tout ce dont votre programme de fidélité a besoin—propulsé par l'IA",
+        "subtitle": "Des points aux insights, Royalty s'occupe de tout",
+        "pointsRewards": {
+            "title": "Points et Récompenses",
+            "desc": "Les clients scannent un code QR pour gagner des points. Échangez contre des récompenses que vous définissez. Aucun téléchargement d'app requis."
         },
-        "scheduling": {
-            "title": "Planification Intelligente",
-            "desc": "Déclencheurs hebdomadaires, mensuels ou basés sur des événements. L'IA optimise les heures d'envoi pour un engagement maximum."
+        "tierSystem": {
+            "title": "Système de Niveaux",
+            "desc": "Bronze → Argent → Or → Platine. Les clients montent de niveau automatiquement. La gamification qui fonctionne."
         },
-        "aiProposals": {
-            "title": "Propositions Propulsées par l'IA",
-            "desc": "Notre IA analyse votre entreprise et vos clients, puis suggère des automatisations adaptées à vos objectifs."
+        "aiRuns": {
+            "title": "L'IA Qui Gère Tout",
+            "desc": "L'IA envoie des offres de reconquête, des récompenses d'anniversaire et des bonus d'étapes—automatiquement. Vous recevez un résumé hebdomadaire."
         },
-        "multiChannel": {
-            "title": "Livraison Multi-Canal",
-            "desc": "Atteignez vos clients par email ou SMS. Chaque message est personnalisé avec leurs détails uniques."
+        "smartInsights": {
+            "title": "Insights Intelligents",
+            "desc": "\"8 clients ne sont pas venus depuis 30 jours.\" L'IA vous dit ce qui se passe et ce qu'il faut faire."
         },
-        "humanLoop": {
-            "title": "Humain Dans la Boucle",
-            "desc": "L'IA propose, vous approuvez. Contrôle total sur chaque automatisation avant sa mise en ligne."
+        "qrCheckins": {
+            "title": "Check-ins par Code QR",
+            "desc": "Les clients scannent pour gagner des points. Un scan par jour. Bonus de série pour les habitués. Simple."
         },
-        "analytics": {
-            "title": "Analytiques en Temps Réel",
-            "desc": "Suivez l'engagement, mesurez la croissance et voyez quelles automatisations apportent le plus de valeur."
+        "referralProgram": {
+            "title": "Programme de Parrainage",
+            "desc": "Les clients partagent leur lien unique. Les deux parties gagnent des points bonus. Croissance en pilote automatique."
         }
     },
     "howItWorks": {
         "tag": "Comment Ça Marche",
-        "title": "Des Données Aux Relations en 4 Étapes",
-        "subtitle": "Commencez en quelques minutes, pas en mois",
+        "title": "Prêt en 60 secondes. Fonctionne pour toujours.",
+        "subtitle": "Décrivez votre entreprise. L'IA fait le reste.",
         "step1": {
-            "title": "Téléchargez Vos Clients",
-            "desc": "Importez votre liste de clients existante via CSV ou ajoutez-les manuellement. Incluez toutes les données importantes — anniversaires, localisations, préférences."
+            "title": "Décrivez Votre Entreprise",
+            "desc": "\"Je gère un café à Paris avec des habitués que je veux récompenser.\" C'est tout ce qu'il nous faut. L'IA crée votre programme de fidélité sur mesure instantanément."
         },
         "step2": {
-            "title": "Parlez-Nous de Votre Entreprise",
-            "desc": "Partagez votre type d'entreprise, vos objectifs et ce que signifie le succès pour vous. Ce contexte aide notre IA à faire des suggestions plus intelligentes."
+            "title": "Partagez Votre Code QR",
+            "desc": "Imprimez-le, affichez-le à la caisse, ou partagez le lien. Les clients scannent pour s'inscrire et commencent à gagner des points immédiatement."
         },
         "step3": {
-            "title": "Examinez les Suggestions IA",
-            "desc": "Notre IA analyse vos données et propose 5 à 10 automatisations sur mesure. Examinez chacune, modifiez si nécessaire, et approuvez en un clic."
+            "title": "L'IA Gère Votre Programme",
+            "desc": "Campagnes de reconquête. Récompenses d'anniversaire. Bonus de série. L'IA gère tout automatiquement—ou demande votre approbation si vous préférez."
         },
         "step4": {
-            "title": "Regardez les Relations Croître",
-            "desc": "Les automatisations s'exécutent selon votre planning. Les clients reçoivent des messages personnalisés. Vous vous concentrez sur l'essentiel — votre entreprise."
+            "title": "Recevez des Insights Hebdomadaires",
+            "desc": "\"Royalty a envoyé 47 messages cette semaine. 3 clients sont revenus. 2 sont passés au niveau Or.\" Voyez exactement ce que l'IA fait pour vous."
         }
     },
     "templates": {
-        "tag": "Modèles",
-        "title": "Automatisations Prêtes à l'Emploi",
-        "subtitle": "Parcourez notre bibliothèque de modèles éprouvés. Personnalisez et lancez en quelques minutes.",
-        "automate": "Automatiser",
-        "browseAll": "Voir Tous les Modèles",
-        "badges": {
-            "popular": "Populaire",
-            "featured": "En Vedette",
-            "new": "Nouveau"
-        },
-        "industries": {
-            "all": "Tous Secteurs",
-            "retail": "Commerce",
-            "food": "Restauration",
-            "health": "Santé",
-            "services": "Services"
+        "tag": "Automatisations IA",
+        "title": "Ce que Royalty exécute automatiquement",
+        "subtitle": "Configurez une fois. L'IA s'occupe du reste—pour toujours.",
+        "autoEnabled": "Auto-Activé",
+        "winBack": {
+            "title": "Campagnes de Reconquête",
+            "desc": "L'IA détecte les clients qui ne sont pas venus depuis plus de 14 jours et leur envoie automatiquement une offre personnalisée pour les faire revenir."
         },
         "birthday": {
-            "title": "Récompenses Anniversaire",
-            "desc": "Envoyez automatiquement des offres d'anniversaire personnalisées. Renforcez la fidélité et encouragez les visites répétées."
+            "title": "Récompenses d'Anniversaire",
+            "desc": "L'IA envoie automatiquement des récompenses d'anniversaire quand les clients ont un anniversaire qui approche. Ne manquez jamais une occasion de faire plaisir."
         },
-        "loyalty": {
-            "title": "Programme de Fidélité",
-            "desc": "Récompensez automatiquement les clients fidèles. Suivez les points et envoyez des rappels de récompenses."
+        "streakBonuses": {
+            "title": "Bonus de Série",
+            "desc": "Série de 3 jours ? 7 jours ? 30 jours ? L'IA attribue automatiquement des points bonus et célèbre avec les clients."
         },
-        "happyHour": {
-            "title": "Alertes Happy Hour",
-            "desc": "Informez les clients à proximité des offres happy hour. Augmentez l'affluence pendant les heures creuses."
+        "tierMotivation": {
+            "title": "Motivation de Niveau",
+            "desc": "\"Vous êtes à 50 points du niveau Or !\" L'IA envoie des messages d'encouragement quand les clients sont proches de monter de niveau."
         },
-        "appointment": {
-            "title": "Rappels de Rendez-vous",
-            "desc": "Réduisez les absences avec des rappels automatiques. Envoyez par SMS ou email 24 heures avant."
+        "milestones": {
+            "title": "Célébrations d'Étapes",
+            "desc": "10e visite ? 50e ? 100e ? L'IA célèbre avec les clients et attribue des points bonus pour les étapes de fidélité."
         },
-        "postVisit": {
-            "title": "Suivi Post-Visite",
-            "desc": "Remerciez les clients après leur visite et demandez leur avis. Construisez des relations durables."
-        },
-        "winBack": {
-            "title": "Campagne de Reconquête",
-            "desc": "Réengagez les clients absents depuis plus de 30 jours avec des offres personnalisées."
+        "referralNudges": {
+            "title": "Incitations au Parrainage",
+            "desc": "L'IA identifie vos clients les plus satisfaits (Or/Platine) et les encourage à parrainer des amis pour des points bonus."
         }
     },
     "testimonials": {
-        "tag": "Témoignages",
-        "title": "Adoré Par les Entreprises Partout",
-        "subtitle": "Découvrez ce que disent nos clients",
+        "tag": "Résultats",
+        "title": "Les commerces locaux adorent Royalty",
+        "subtitle": "Découvrez ce qui se passe quand l'IA gère votre programme de fidélité",
         "quote1": {
-            "text": "Nous sommes passés de l'envoi manuel de SMS à 50 clients à l'engagement automatique de 5 000 — sans embaucher personne. Nos visites répétées ont augmenté de 40%.",
+            "text": "\"J'ai configuré Royalty en littéralement une minute. Maintenant je reçois un email hebdomadaire me montrant quels habitués ne sont pas venus, et l'IA leur envoie automatiquement des offres. Nos visites récurrentes ont augmenté de 40% et je n'ai rien fait.\"",
             "author": "Maria Rodriguez",
             "title": "Propriétaire, Restaurant Casa del Sol"
         }
@@ -201,6 +183,7 @@
             "f1": "Jusqu'à 50 membres",
             "f2": "Automatisations en 1 clic",
             "f3": "Check-ins par code QR",
+            "f4": "Points et récompenses",
             "cta": "Commencer la Bêta Gratuite"
         },
         "starter": {
@@ -209,6 +192,7 @@
             "f1": "Jusqu'à 500 membres",
             "f2": "30 insights IA/mois",
             "f3": "Programme de fidélité par IA",
+            "f4": "Support par e-mail",
             "cta": "Rejoindre la Bêta"
         },
         "growth": {
@@ -217,6 +201,7 @@
             "f1": "Jusqu'à 2 000 membres",
             "f2": "100 insights IA/mois",
             "f3": "Support prioritaire",
+            "f4": "Analytiques avancées",
             "cta": "Rejoindre la Bêta"
         },
         "scale": {
@@ -225,6 +210,7 @@
             "f1": "Membres illimités",
             "f2": "Insights IA illimités",
             "f3": "Marque blanche",
+            "f4": "Support dédié",
             "cta": "Rejoindre la Bêta"
         },
         "royaltyPro": {
@@ -237,22 +223,127 @@
         }
     },
     "cta": {
-        "title": "Soyez le Premier à Automatiser Vos Relations Clients",
-        "subtitle": "Rejoignez la liste d'attente et obtenez un accès anticipé aux automatisations propulsées par l'IA.",
+        "title": "Prêt à laisser l'IA gérer votre programme de fidélité ?",
+        "subtitle": "Rejoignez notre Bêta. Lancement en février 2026.",
         "emailPlaceholder": "Entrez votre email",
         "joinWaitlist": "Rejoindre la Bêta",
-        "note": "Nous vous notifierons lors du lancement."
+        "note": "Obtenez un tarif d'accès anticipé lors du lancement.",
+        "captchaError": "Veuillez compléter la vérification CAPTCHA.",
+        "processing": "Traitement en cours...",
+        "alreadySigned": "Déjà inscrit !",
+        "errorTryAgain": "Erreur. Réessayez."
+    },
+    "pricingPage": {
+        "bannerPrefix": "Offre Limitée : Obtenez un ",
+        "bannerHighlight": "accès à vie",
+        "bannerSuffix": " sur AppSumo",
+        "bannerBtn": "Voir l'Offre",
+        "heroTitle": "Tarification simple et transparente",
+        "heroSubtitle": "Programmes de fidélité propulsés par l'IA pour les commerces locaux. Commencez gratuitement, passez à la version supérieure quand vous grandissez.",
+        "guarantee": "Garantie satisfait ou remboursé de 30 jours",
+        "monthly": "Mensuel",
+        "annual": "Annuel",
+        "saveBadge": "Économisez 20%",
+        "comparison": {
+            "title": "Comparez les forfaits en détail",
+            "subtitle": "Tout ce que vous devez savoir sur chaque forfait",
+            "features": "Fonctionnalités",
+            "coreLimits": "Limites Principales",
+            "members": "Membres",
+            "aiInsights": "Insights IA par mois",
+            "loyaltyFeatures": "Fonctions de Fidélité",
+            "pointsRewards": "Points et récompenses",
+            "qrCheckins": "Check-ins par code QR",
+            "tiersVip": "Niveaux et niveaux VIP",
+            "referralProgram": "Programme de parrainage",
+            "leaderboard": "Classement",
+            "aiFeatures": "Fonctions IA",
+            "oneClickAutomations": "Automatisations en 1 clic",
+            "aiBuiltProgram": "Programme de fidélité créé par l'IA",
+            "aiIntelligence": "Insights Intelligence IA",
+            "automatedCampaigns": "Campagnes automatisées",
+            "brandingSupport": "Image de Marque et Support",
+            "whiteLabel": "Marque blanche",
+            "emailSupport": "Support par e-mail",
+            "prioritySupport": "Support prioritaire",
+            "unlimited": "Illimité"
+        },
+        "appsumo": {
+            "limitedTime": "Offre Limitée",
+            "title": "Offre à Vie sur AppSumo",
+            "subtitle": "Obtenez un accès à vie à Royalty pour un paiement unique. Aucun frais mensuel, jamais. L'IA crée votre programme de fidélité, les automatisations fonctionnent pour toujours.",
+            "tier1": "Palier 1",
+            "tier2": "Palier 2",
+            "tier3": "Palier 3",
+            "code1": "1 Code",
+            "codes2": "2 Codes",
+            "codes3": "3 Codes",
+            "strike1": "Valeur de $588/an",
+            "strike2": "Valeur de $1,788/an",
+            "strike3": "Valeur de $4,788/an",
+            "oneTime": "paiement unique",
+            "mostPopular": "Plus Populaire",
+            "t1f1": "500 membres",
+            "t1f2": "Programme de fidélité créé par l'IA",
+            "t1f3": "Toutes les automatisations incluses",
+            "t1f4": "Points, niveaux et récompenses",
+            "t1f5": "Mises à jour à vie",
+            "t2f1": "2 000 membres",
+            "t2f2": "Programme de fidélité créé par l'IA",
+            "t2f3": "Toutes les automatisations incluses",
+            "t2f4": "Support prioritaire",
+            "t2f5": "Mises à jour à vie",
+            "t3f1": "Membres illimités",
+            "t3f2": "Programme de fidélité créé par l'IA",
+            "t3f3": "Toutes les automatisations incluses",
+            "t3f4": "Support prioritaire",
+            "t3f5": "Mises à jour à vie",
+            "cta": "Obtenir l'Offre sur AppSumo",
+            "guarantee": "Garantie satisfait ou remboursé de 60 jours via AppSumo"
+        },
+        "royaltyPro": {
+            "title": "Royalty Pro — Pour les Détenteurs d'Offre à Vie",
+            "desc": "Vous voulez que l'Intelligence IA analyse en continu vos membres et vous suggère quoi faire ? Ajoutez Royalty Pro pour débloquer des insights IA illimités et la marque blanche.",
+            "f1": "Insights IA illimités",
+            "f2": "Marque blanche",
+            "f3": "Annulez à tout moment",
+            "priceLabel": "Ajoutez à votre LTD",
+            "pricePeriod": "/mois",
+            "cta": "Ajouter Royalty Pro"
+        },
+        "faq": {
+            "title": "Questions Fréquemment Posées",
+            "subtitle": "Tout ce que vous devez savoir sur les tarifs",
+            "q1": "Qu'est-ce qu'un « membre » ?",
+            "a1": "Un membre est un client qui rejoint votre programme de fidélité. Chaque adresse e-mail ou numéro de téléphone unique compte comme un membre, quel que soit le nombre de visites effectuées.",
+            "q2": "Que sont les « insights IA » ?",
+            "a2": "Les insights IA sont des recommandations de notre système d'Intelligence. Il analyse les données de vos membres et suggère des actions comme « Envoyer une campagne de reconquête à 23 membres inactifs » ou « Féliciter Sarah pour avoir atteint le niveau Or. »",
+            "q3": "Ai-je besoin d'une carte bancaire pour commencer ?",
+            "a3": "Non. Vous pouvez commencer avec notre plan gratuit ou démarrer un essai de 14 jours de n'importe quel plan payant sans entrer de carte bancaire. Passez à la version supérieure quand vous êtes prêt.",
+            "q4": "Quelle est la différence entre LTD et les abonnements ?",
+            "a4": "Les acheteurs de l'Offre à Vie (LTD) AppSumo paient une fois et obtiennent un accès pour toujours. Les fonctionnalités principales (configuration IA, automatisations, points) fonctionnent de la même manière. Pour ajouter les insights Intelligence IA, les utilisateurs LTD peuvent s'abonner à Royalty Pro ($39/mois).",
+            "q5": "Puis-je changer de forfait à tout moment ?",
+            "a5": "Oui ! Passez à un forfait supérieur ou inférieur quand vous le souhaitez. Lors d'une mise à niveau, la différence proratisée vous sera facturée. Lors d'un passage à un forfait inférieur, vous recevrez un crédit pour la facturation future.",
+            "q6": "Qu'est-ce que la marque blanche ?",
+            "a6": "La marque blanche supprime le branding « Powered by Royalty » de votre app de fidélité côté client. Vos clients ne voient que votre marque.",
+            "q7": "Y a-t-il une garantie satisfait ou remboursé ?",
+            "a7": "Oui ! Nous offrons une garantie satisfait ou remboursé de 30 jours sur les abonnements. Les offres AppSumo bénéficient d'une politique de remboursement de 60 jours via leur plateforme.",
+            "q8": "Puis-je cumuler les codes AppSumo ?",
+            "a8": "Oui ! Chaque code augmente votre limite de membres. Palier 1 = 500 membres, Palier 2 = 2 000 membres, Palier 3 = membres illimités. Cumulez pour atteindre le palier dont vous avez besoin."
+        }
     },
     "footer": {
-        "tagline": "Des automatisations qui amplifient la connexion humaine.",
+        "tagline": "L'IA qui crée et gère votre programme de fidélité.",
         "product": "Produit",
         "company": "Entreprise",
         "legal": "Légal",
+        "features": "Fonctionnalités",
+        "howItWorks": "Comment Ça Marche",
         "about": "À propos",
-        "careers": "Carrières",
+        "contact": "Contact",
         "privacy": "Confidentialité",
         "terms": "Conditions",
-        "copyright": "© 2026 Automata. Tous droits réservés."
+        "copyright": "© 2026 Royalty. Tous droits réservés."
     },
     "dashboard": {
         "title": "Tableau de Bord",
@@ -277,7 +368,18 @@
         "referrals": "Parrainages",
         "noAppTitle": "Créez Votre Programme de Fidélité",
         "noAppDesc": "Configurez votre première app pour commencer à suivre les membres, visites et récompenses.",
-        "createApp": "Créer App"
+        "createApp": "Créer App",
+        "appAutoCreated": "Votre programme de fidélité est prêt ! Personnalisez-le à tout moment.",
+        "previewTitle": "Votre App",
+        "previewOpenTab": "Ouvrir dans un Nouvel Onglet",
+        "previewCustomize": "Personnaliser",
+        "previewCopyLink": "Copier le Lien",
+        "previewCopied": "Copié !",
+        "previewDownloadQR": "Télécharger QR",
+        "previewPrintQR": "Imprimer QR",
+        "previewMobileToggle": "Aperçu",
+        "previewButton": "Aperçu",
+        "previewHide": "Masquer l'aperçu"
     },
     "aiFeed": {
         "title": "Fil d'Intelligence IA",
@@ -414,6 +516,9 @@
         "whyThis": "Pourquoi ceci?"
     },
     "modal": {
+        "successTitle": "Vous êtes dans la Bêta !",
+        "successDesc": "Nous vous enverrons un email quand Royalty sera lancé avec un tarif d'accès anticipé exclusif.",
+        "successBtn": "Compris",
         "createProject": "Créer un Nouveau Projet",
         "editProject": "Modifier le Projet",
         "createAutomation": "Créer une Automatisation",
@@ -463,6 +568,8 @@
         "customTitle": "Besoin de quelque chose de différent ?",
         "customDesc": "Décrivez l'automatisation dont vous avez besoin et nous la créerons pour vous.",
         "customPlaceholder": "ex., Envoyer un rappel 6 semaines après un rendez-vous de tatouage pour les retouches...",
+        "analyzing": "Analyse en cours...",
+        "aiWillBuild": "L'IA Va Construire",
         "signupSummary": "Vos automatisations sont prêtes",
         "industry": "Secteur",
         "goals": "Objectifs",

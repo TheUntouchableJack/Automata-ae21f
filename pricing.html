@@ -29,6 +29,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=6">
+    <link rel="stylesheet" href="i18n/i18n.css">
     <style>
         /* AppSumo Announcement Banner */
         .announcement-banner {
@@ -559,8 +560,8 @@
     <!-- AppSumo Announcement Banner -->
     <div class="announcement-banner" id="appsumo-banner">
         <div class="container">
-            <span>Limited Time: Get <strong>lifetime access</strong> on AppSumo</span>
-            <a href="#appsumo" class="btn-deal">View Deal</a>
+            <span><span data-i18n="pricingPage.bannerPrefix">Limited Time: Get </span><strong data-i18n="pricingPage.bannerHighlight">lifetime access</strong><span data-i18n="pricingPage.bannerSuffix"> on AppSumo</span></span>
+            <a href="#appsumo" class="btn-deal" data-i18n="pricingPage.bannerBtn">View Deal</a>
             <button class="banner-close" aria-label="Close banner">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -577,13 +578,13 @@
                 <span class="logo-text">Royalty</span>
             </a>
             <div class="nav-links">
-                <a href="/#features">Features</a>
-                <a href="/pricing.html" class="active">Pricing</a>
-                <a href="/blog/">Blog</a>
+                <a href="/#features" data-i18n="nav.features">Features</a>
+                <a href="/pricing.html" class="active" data-i18n="nav.pricing">Pricing</a>
+                <a href="/blog/" data-i18n="nav.blog">Blog</a>
             </div>
             <div class="nav-cta">
-                <a href="/app/login.html" class="btn btn-secondary">Log In</a>
-                <a href="/app/signup.html" class="btn btn-primary">Start Free Beta</a>
+                <a href="/app/login.html" class="btn btn-secondary" data-i18n="nav.login">Log In</a>
+                <a href="/app/signup.html" class="btn btn-primary" data-i18n="nav.joinWaitlist">Start Free Beta</a>
             </div>
             <button class="mobile-menu-btn" aria-label="Toggle menu">
                 <span></span>
@@ -596,14 +597,14 @@
     <!-- Hero -->
     <section class="pricing-hero">
         <div class="container">
-            <h1>Simple, transparent pricing</h1>
-            <p>AI-powered loyalty programs for local businesses. Start free, upgrade when you grow.</p>
+            <h1 data-i18n="pricingPage.heroTitle">Simple, transparent pricing</h1>
+            <p data-i18n="pricingPage.heroSubtitle">AI-powered loyalty programs for local businesses. Start free, upgrade when you grow.</p>
             <div class="guarantee-badge">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <span>30-day money-back guarantee</span>
+                <span data-i18n="pricingPage.guarantee">30-day money-back guarantee</span>
             </div>
         </div>
     </section>
@@ -613,93 +614,93 @@
         <div class="container">
             <!-- Billing Toggle -->
             <div class="billing-toggle">
-                <span class="toggle-label active" data-period="monthly">Monthly</span>
+                <span class="toggle-label active" data-period="monthly" data-i18n="pricingPage.monthly">Monthly</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="billing-toggle">
                     <span class="toggle-slider"></span>
                 </label>
-                <span class="toggle-label" data-period="annual">Annual <span class="save-badge">Save 20%</span></span>
+                <span class="toggle-label" data-period="annual"><span data-i18n="pricingPage.annual">Annual</span> <span class="save-badge" data-i18n="pricingPage.saveBadge">Save 20%</span></span>
             </div>
 
             <div class="pricing-cards pricing-cards-4">
                 <!-- Free -->
                 <div class="pricing-card">
                     <div class="pricing-header">
-                        <h3>Free</h3>
-                        <p>Try it out</p>
+                        <h3 data-i18n="pricing.free.name">Free</h3>
+                        <p data-i18n="pricing.free.desc">Try it out</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price">$0</span>
-                        <span class="period">forever</span>
+                        <span class="period" data-i18n="pricing.forever">forever</span>
                     </div>
                     <ul class="pricing-features">
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Up to 50 members</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>1-click automations</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>QR code check-ins</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Points & rewards</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.free.f1">Up to 50 members</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.free.f2">1-click automations</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.free.f3">QR code check-ins</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.free.f4">Points & rewards</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block">Start Free Beta</a>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.free.cta">Start Free Beta</a>
                 </div>
 
                 <!-- Starter -->
                 <div class="pricing-card">
                     <div class="pricing-header">
-                        <h3>Starter</h3>
-                        <p>For small businesses</p>
+                        <h3 data-i18n="pricing.starter.name">Starter</h3>
+                        <p data-i18n="pricing.starter.desc">For small businesses</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price" data-monthly="49" data-annual="39">$49</span>
-                        <span class="period">/month</span>
+                        <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Up to 500 members</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>30 AI insights/month</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AI-built loyalty program</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Email support</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f1">Up to 500 members</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f2">30 AI insights/month</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f3">AI-built loyalty program</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f4">Email support</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block">Join Beta</a>
-                    <p class="pricing-note">14-day free trial</p>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.starter.cta">Join Beta</a>
+                    <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
 
                 <!-- Growth - Most Popular -->
                 <div class="pricing-card featured">
-                    <div class="pricing-badge">Most Popular</div>
+                    <div class="pricing-badge" data-i18n="pricing.popular">Most Popular</div>
                     <div class="pricing-header">
-                        <h3>Growth</h3>
-                        <p>For growing businesses</p>
+                        <h3 data-i18n="pricing.growth.name">Growth</h3>
+                        <p data-i18n="pricing.growth.desc">For growing businesses</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price" data-monthly="149" data-annual="119">$149</span>
-                        <span class="period">/month</span>
+                        <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Up to 2,000 members</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>100 AI insights/month</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Priority support</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Advanced analytics</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f1">Up to 2,000 members</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f2">100 AI insights/month</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f3">Priority support</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f4">Advanced analytics</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-primary btn-block">Join Beta</a>
-                    <p class="pricing-note">14-day free trial</p>
+                    <a href="/app/signup.html" class="btn btn-primary btn-block" data-i18n="pricing.growth.cta">Join Beta</a>
+                    <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
 
                 <!-- Scale -->
                 <div class="pricing-card">
                     <div class="pricing-header">
-                        <h3>Scale</h3>
-                        <p>For multi-location</p>
+                        <h3 data-i18n="pricing.scale.name">Scale</h3>
+                        <p data-i18n="pricing.scale.desc">For multi-location</p>
                     </div>
                     <div class="pricing-price">
                         <span class="price" data-monthly="399" data-annual="319">$399</span>
-                        <span class="period">/month</span>
+                        <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Unlimited members</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Unlimited AI insights</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>White-label branding</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Dedicated support</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f1">Unlimited members</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f2">Unlimited AI insights</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f3">White-label branding</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f4">Dedicated support</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block">Join Beta</a>
-                    <p class="pricing-note">14-day free trial</p>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.scale.cta">Join Beta</a>
+                    <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
             </div>
         </div>
@@ -709,75 +710,75 @@
     <section class="pricing-section alt-bg">
         <div class="container">
             <div class="section-header">
-                <h2>Compare plans in detail</h2>
-                <p>Everything you need to know about each plan</p>
+                <h2 data-i18n="pricingPage.comparison.title">Compare plans in detail</h2>
+                <p data-i18n="pricingPage.comparison.subtitle">Everything you need to know about each plan</p>
             </div>
 
             <div class="comparison-table-wrapper">
                 <table class="comparison-table">
                     <thead>
                         <tr>
-                            <th>Features</th>
-                            <th>Free</th>
-                            <th>Starter</th>
-                            <th>Growth</th>
-                            <th>Scale</th>
+                            <th data-i18n="pricingPage.comparison.features">Features</th>
+                            <th data-i18n="pricing.free.name">Free</th>
+                            <th data-i18n="pricing.starter.name">Starter</th>
+                            <th data-i18n="pricing.growth.name">Growth</th>
+                            <th data-i18n="pricing.scale.name">Scale</th>
                         </tr>
                     </thead>
                     <tbody>
                         <!-- Core Limits -->
                         <tr class="feature-group">
-                            <td colspan="5">Core Limits</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.coreLimits">Core Limits</td>
                         </tr>
                         <tr>
-                            <td>Members</td>
+                            <td data-i18n="pricingPage.comparison.members">Members</td>
                             <td>50</td>
                             <td>500</td>
                             <td>2,000</td>
-                            <td>Unlimited</td>
+                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
                         </tr>
                         <tr>
-                            <td>AI Insights per month</td>
+                            <td data-i18n="pricingPage.comparison.aiInsights">AI Insights per month</td>
                             <td><span class="dash-icon">—</span></td>
                             <td>30</td>
                             <td>100</td>
-                            <td>Unlimited</td>
+                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
                         </tr>
 
                         <!-- Core Features -->
                         <tr class="feature-group">
-                            <td colspan="5">Loyalty Features</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.loyaltyFeatures">Loyalty Features</td>
                         </tr>
                         <tr>
-                            <td>Points & rewards</td>
-                            <td><span class="check-icon">✓</span></td>
-                            <td><span class="check-icon">✓</span></td>
-                            <td><span class="check-icon">✓</span></td>
-                            <td><span class="check-icon">✓</span></td>
-                        </tr>
-                        <tr>
-                            <td>QR code check-ins</td>
+                            <td data-i18n="pricingPage.comparison.pointsRewards">Points & rewards</td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
-                            <td>Tiers & VIP levels</td>
+                            <td data-i18n="pricingPage.comparison.qrCheckins">QR code check-ins</td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
-                            <td>Referral program</td>
+                            <td data-i18n="pricingPage.comparison.tiersVip">Tiers & VIP levels</td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
-                            <td>Leaderboard</td>
+                            <td data-i18n="pricingPage.comparison.referralProgram">Referral program</td>
+                            <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="pricingPage.comparison.leaderboard">Leaderboard</td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -786,31 +787,31 @@
 
                         <!-- AI Features -->
                         <tr class="feature-group">
-                            <td colspan="5">AI Features</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.aiFeatures">AI Features</td>
                         </tr>
                         <tr>
-                            <td>1-click automations</td>
+                            <td data-i18n="pricingPage.comparison.oneClickAutomations">1-click automations</td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
-                            <td>AI-built loyalty program</td>
+                            <td data-i18n="pricingPage.comparison.aiBuiltProgram">AI-built loyalty program</td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
-                            <td>AI Intelligence insights</td>
+                            <td data-i18n="pricingPage.comparison.aiIntelligence">AI Intelligence insights</td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
-                            <td>Automated campaigns</td>
+                            <td data-i18n="pricingPage.comparison.automatedCampaigns">Automated campaigns</td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -819,24 +820,24 @@
 
                         <!-- Branding & Support -->
                         <tr class="feature-group">
-                            <td colspan="5">Branding & Support</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.brandingSupport">Branding & Support</td>
                         </tr>
                         <tr>
-                            <td>White-label branding</td>
+                            <td data-i18n="pricingPage.comparison.whiteLabel">White-label branding</td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
-                            <td><span class="check-icon">✓</span></td>
-                        </tr>
-                        <tr>
-                            <td>Email support</td>
-                            <td><span class="dash-icon">—</span></td>
-                            <td><span class="check-icon">✓</span></td>
-                            <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
-                            <td>Priority support</td>
+                            <td data-i18n="pricingPage.comparison.emailSupport">Email support</td>
+                            <td><span class="dash-icon">—</span></td>
+                            <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="pricingPage.comparison.prioritySupport">Priority support</td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -854,75 +855,75 @@
             <div class="appsumo-banner">
                 <div class="appsumo-badge">
                     <img src="https://appsumo2-cdn.appsumo.com/static/images/as-logo-dark.svg" alt="AppSumo" class="appsumo-logo">
-                    <span class="limited-badge">Limited Time</span>
+                    <span class="limited-badge" data-i18n="pricingPage.appsumo.limitedTime">Limited Time</span>
                 </div>
-                <h2>Lifetime Deal on AppSumo</h2>
-                <p>Get lifetime access to Royalty at a one-time price. No monthly fees, ever. AI builds your loyalty program, automations run forever.</p>
+                <h2 data-i18n="pricingPage.appsumo.title">Lifetime Deal on AppSumo</h2>
+                <p data-i18n="pricingPage.appsumo.subtitle">Get lifetime access to Royalty at a one-time price. No monthly fees, ever. AI builds your loyalty program, automations run forever.</p>
             </div>
 
             <div class="appsumo-tiers">
                 <!-- Tier 1 -->
                 <div class="appsumo-tier">
                     <div class="tier-header">
-                        <span class="tier-label">Tier 1</span>
-                        <span class="tier-codes">1 Code</span>
+                        <span class="tier-label" data-i18n="pricingPage.appsumo.tier1">Tier 1</span>
+                        <span class="tier-codes" data-i18n="pricingPage.appsumo.code1">1 Code</span>
                     </div>
                     <div class="tier-price">
-                        <span class="price-strike">$588/yr value</span>
+                        <span class="price-strike" data-i18n="pricingPage.appsumo.strike1">$588/yr value</span>
                         <span class="price-main">$59</span>
-                        <span class="price-type">one-time</span>
+                        <span class="price-type" data-i18n="pricingPage.appsumo.oneTime">one-time</span>
                     </div>
                     <ul class="tier-features">
-                        <li>500 members</li>
-                        <li>AI-built loyalty program</li>
-                        <li>All automations included</li>
-                        <li>Points, tiers & rewards</li>
-                        <li>Lifetime updates</li>
+                        <li data-i18n="pricingPage.appsumo.t1f1">500 members</li>
+                        <li data-i18n="pricingPage.appsumo.t1f2">AI-built loyalty program</li>
+                        <li data-i18n="pricingPage.appsumo.t1f3">All automations included</li>
+                        <li data-i18n="pricingPage.appsumo.t1f4">Points, tiers & rewards</li>
+                        <li data-i18n="pricingPage.appsumo.t1f5">Lifetime updates</li>
                     </ul>
-                    <a href="https://appsumo.com/products/royalty/" class="btn btn-secondary btn-block" target="_blank">Get Deal on AppSumo</a>
+                    <a href="https://appsumo.com/products/royalty/" class="btn btn-secondary btn-block" target="_blank" data-i18n="pricingPage.appsumo.cta">Get Deal on AppSumo</a>
                 </div>
 
                 <!-- Tier 2 -->
                 <div class="appsumo-tier featured">
-                    <div class="tier-popular">Most Popular</div>
+                    <div class="tier-popular" data-i18n="pricingPage.appsumo.mostPopular">Most Popular</div>
                     <div class="tier-header">
-                        <span class="tier-label">Tier 2</span>
-                        <span class="tier-codes">2 Codes</span>
+                        <span class="tier-label" data-i18n="pricingPage.appsumo.tier2">Tier 2</span>
+                        <span class="tier-codes" data-i18n="pricingPage.appsumo.codes2">2 Codes</span>
                     </div>
                     <div class="tier-price">
-                        <span class="price-strike">$1,788/yr value</span>
+                        <span class="price-strike" data-i18n="pricingPage.appsumo.strike2">$1,788/yr value</span>
                         <span class="price-main">$118</span>
-                        <span class="price-type">one-time</span>
+                        <span class="price-type" data-i18n="pricingPage.appsumo.oneTime">one-time</span>
                     </div>
                     <ul class="tier-features">
-                        <li>2,000 members</li>
-                        <li>AI-built loyalty program</li>
-                        <li>All automations included</li>
-                        <li>Priority support</li>
-                        <li>Lifetime updates</li>
+                        <li data-i18n="pricingPage.appsumo.t2f1">2,000 members</li>
+                        <li data-i18n="pricingPage.appsumo.t2f2">AI-built loyalty program</li>
+                        <li data-i18n="pricingPage.appsumo.t2f3">All automations included</li>
+                        <li data-i18n="pricingPage.appsumo.t2f4">Priority support</li>
+                        <li data-i18n="pricingPage.appsumo.t2f5">Lifetime updates</li>
                     </ul>
-                    <a href="https://appsumo.com/products/royalty/" class="btn btn-primary btn-block" target="_blank">Get Deal on AppSumo</a>
+                    <a href="https://appsumo.com/products/royalty/" class="btn btn-primary btn-block" target="_blank" data-i18n="pricingPage.appsumo.cta">Get Deal on AppSumo</a>
                 </div>
 
                 <!-- Tier 3 -->
                 <div class="appsumo-tier">
                     <div class="tier-header">
-                        <span class="tier-label">Tier 3</span>
-                        <span class="tier-codes">3 Codes</span>
+                        <span class="tier-label" data-i18n="pricingPage.appsumo.tier3">Tier 3</span>
+                        <span class="tier-codes" data-i18n="pricingPage.appsumo.codes3">3 Codes</span>
                     </div>
                     <div class="tier-price">
-                        <span class="price-strike">$4,788/yr value</span>
+                        <span class="price-strike" data-i18n="pricingPage.appsumo.strike3">$4,788/yr value</span>
                         <span class="price-main">$177</span>
-                        <span class="price-type">one-time</span>
+                        <span class="price-type" data-i18n="pricingPage.appsumo.oneTime">one-time</span>
                     </div>
                     <ul class="tier-features">
-                        <li>Unlimited members</li>
-                        <li>AI-built loyalty program</li>
-                        <li>All automations included</li>
-                        <li>Priority support</li>
-                        <li>Lifetime updates</li>
+                        <li data-i18n="pricingPage.appsumo.t3f1">Unlimited members</li>
+                        <li data-i18n="pricingPage.appsumo.t3f2">AI-built loyalty program</li>
+                        <li data-i18n="pricingPage.appsumo.t3f3">All automations included</li>
+                        <li data-i18n="pricingPage.appsumo.t3f4">Priority support</li>
+                        <li data-i18n="pricingPage.appsumo.t3f5">Lifetime updates</li>
                     </ul>
-                    <a href="https://appsumo.com/products/royalty/" class="btn btn-secondary btn-block" target="_blank">Get Deal on AppSumo</a>
+                    <a href="https://appsumo.com/products/royalty/" class="btn btn-secondary btn-block" target="_blank" data-i18n="pricingPage.appsumo.cta">Get Deal on AppSumo</a>
                 </div>
             </div>
 
@@ -931,7 +932,7 @@
                     <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <span>60-day money-back guarantee via AppSumo</span>
+                <span data-i18n="pricingPage.appsumo.guarantee">60-day money-back guarantee via AppSumo</span>
             </div>
         </div>
     </section>
@@ -941,28 +942,28 @@
         <div class="container">
             <div class="royalty-pro-content">
                 <div class="royalty-pro-info">
-                    <h3>Royalty Pro — For Lifetime Deal Holders</h3>
-                    <p>Want AI Intelligence to continuously analyze your members and suggest what to do next? Add Royalty Pro to unlock unlimited AI insights and white-label branding.</p>
+                    <h3 data-i18n="pricingPage.royaltyPro.title">Royalty Pro — For Lifetime Deal Holders</h3>
+                    <p data-i18n="pricingPage.royaltyPro.desc">Want AI Intelligence to continuously analyze your members and suggest what to do next? Add Royalty Pro to unlock unlimited AI insights and white-label branding.</p>
                     <div class="royalty-pro-features">
                         <span>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Unlimited AI insights
+                            <span data-i18n="pricingPage.royaltyPro.f1">Unlimited AI insights</span>
                         </span>
                         <span>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            White-label branding
+                            <span data-i18n="pricingPage.royaltyPro.f2">White-label branding</span>
                         </span>
                         <span>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Cancel anytime
+                            <span data-i18n="pricingPage.royaltyPro.f3">Cancel anytime</span>
                         </span>
                     </div>
                 </div>
                 <div class="royalty-pro-price">
-                    <div class="price-label">Add to your LTD</div>
+                    <div class="price-label" data-i18n="pricingPage.royaltyPro.priceLabel">Add to your LTD</div>
                     <div class="price-amount">$39</div>
-                    <div class="price-period">/month</div>
-                    <a href="/app/signup.html" class="btn btn-block">Add Royalty Pro</a>
+                    <div class="price-period" data-i18n="pricingPage.royaltyPro.pricePeriod">/month</div>
+                    <a href="/app/signup.html" class="btn btn-block" data-i18n="pricingPage.royaltyPro.cta">Add Royalty Pro</a>
                 </div>
             </div>
         </div>
@@ -972,49 +973,49 @@
     <section class="pricing-section alt-bg">
         <div class="container">
             <div class="section-header">
-                <h2>Frequently Asked Questions</h2>
-                <p>Everything you need to know about pricing</p>
+                <h2 data-i18n="pricingPage.faq.title">Frequently Asked Questions</h2>
+                <p data-i18n="pricingPage.faq.subtitle">Everything you need to know about pricing</p>
             </div>
 
             <div class="faq-grid">
                 <div class="faq-item">
-                    <h4>What is a "member"?</h4>
-                    <p>A member is a customer who joins your loyalty program. Each unique email or phone number counts as one member, regardless of how many visits they make.</p>
+                    <h4 data-i18n="pricingPage.faq.q1">What is a "member"?</h4>
+                    <p data-i18n="pricingPage.faq.a1">A member is a customer who joins your loyalty program. Each unique email or phone number counts as one member, regardless of how many visits they make.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h4>What are "AI insights"?</h4>
-                    <p>AI insights are recommendations from our Intelligence system. It analyzes your member data and suggests actions like "Send a win-back campaign to 23 inactive members" or "Congratulate Sarah on reaching Gold tier."</p>
+                    <h4 data-i18n="pricingPage.faq.q2">What are "AI insights"?</h4>
+                    <p data-i18n="pricingPage.faq.a2">AI insights are recommendations from our Intelligence system. It analyzes your member data and suggests actions like "Send a win-back campaign to 23 inactive members" or "Congratulate Sarah on reaching Gold tier."</p>
                 </div>
 
                 <div class="faq-item">
-                    <h4>Do I need a credit card to start?</h4>
-                    <p>No. You can start with our free plan or begin a 14-day trial of any paid plan without entering a credit card. Upgrade when you're ready.</p>
+                    <h4 data-i18n="pricingPage.faq.q3">Do I need a credit card to start?</h4>
+                    <p data-i18n="pricingPage.faq.a3">No. You can start with our free plan or begin a 14-day trial of any paid plan without entering a credit card. Upgrade when you're ready.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h4>What's the difference between LTD and subscriptions?</h4>
-                    <p>AppSumo Lifetime Deal (LTD) buyers pay once and get access forever. The core features (AI setup, automations, points) work the same. To add AI Intelligence insights, LTD users can subscribe to Royalty Pro ($39/mo).</p>
+                    <h4 data-i18n="pricingPage.faq.q4">What's the difference between LTD and subscriptions?</h4>
+                    <p data-i18n="pricingPage.faq.a4">AppSumo Lifetime Deal (LTD) buyers pay once and get access forever. The core features (AI setup, automations, points) work the same. To add AI Intelligence insights, LTD users can subscribe to Royalty Pro ($39/mo).</p>
                 </div>
 
                 <div class="faq-item">
-                    <h4>Can I change plans anytime?</h4>
-                    <p>Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing.</p>
+                    <h4 data-i18n="pricingPage.faq.q5">Can I change plans anytime?</h4>
+                    <p data-i18n="pricingPage.faq.a5">Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h4>What's white-label branding?</h4>
-                    <p>White-label removes "Powered by Royalty" branding from your customer-facing loyalty app. Your customers see your brand only.</p>
+                    <h4 data-i18n="pricingPage.faq.q6">What's white-label branding?</h4>
+                    <p data-i18n="pricingPage.faq.a6">White-label removes "Powered by Royalty" branding from your customer-facing loyalty app. Your customers see your brand only.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h4>Is there a money-back guarantee?</h4>
-                    <p>Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform.</p>
+                    <h4 data-i18n="pricingPage.faq.q7">Is there a money-back guarantee?</h4>
+                    <p data-i18n="pricingPage.faq.a7">Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h4>Can I stack AppSumo codes?</h4>
-                    <p>Yes! Each code increases your member limit. Tier 1 = 500 members, Tier 2 = 2,000 members, Tier 3 = unlimited members. Stack to reach the tier you need.</p>
+                    <h4 data-i18n="pricingPage.faq.q8">Can I stack AppSumo codes?</h4>
+                    <p data-i18n="pricingPage.faq.a8">Yes! Each code increases your member limit. Tier 1 = 500 members, Tier 2 = 2,000 members, Tier 3 = unlimited members. Stack to reach the tier you need.</p>
                 </div>
             </div>
         </div>
@@ -1029,33 +1030,34 @@
                         <img src="/logo.svg" alt="Royalty" class="logo-icon">
                         <span class="logo-text">Royalty</span>
                     </a>
-                    <p>AI-powered loyalty programs for local businesses.</p>
+                    <p data-i18n="footer.tagline">AI-powered loyalty programs for local businesses.</p>
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
-                        <h4>Product</h4>
-                        <a href="/#features">Features</a>
-                        <a href="/pricing.html">Pricing</a>
+                        <h4 data-i18n="footer.product">Product</h4>
+                        <a href="/#features" data-i18n="footer.features">Features</a>
+                        <a href="/pricing.html" data-i18n="nav.pricing">Pricing</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Company</h4>
-                        <a href="/blog/">Blog</a>
-                        <a href="mailto:hello@royaltyapp.ai">Contact</a>
+                        <h4 data-i18n="footer.company">Company</h4>
+                        <a href="/blog/" data-i18n="nav.blog">Blog</a>
+                        <a href="mailto:hello@royaltyapp.ai" data-i18n="footer.contact">Contact</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Legal</h4>
-                        <a href="/privacy.html">Privacy</a>
-                        <a href="/terms.html">Terms</a>
+                        <h4 data-i18n="footer.legal">Legal</h4>
+                        <a href="/privacy.html" data-i18n="footer.privacy">Privacy</a>
+                        <a href="/terms.html" data-i18n="footer.terms">Terms</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Royalty. All rights reserved.</p>
+                <p data-i18n="footer.copyright">&copy; 2026 Royalty. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script src="script.js?v=7"></script>
+    <script src="i18n/i18n.js"></script>
+    <script src="script.js?v=8"></script>
     <script>
         // Banner dismissal
         (function() {

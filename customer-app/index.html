@@ -1954,13 +1954,15 @@
         }
 
         function showPreviewBanner() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPublished = urlParams.get('published') === '1';
             const banner = document.createElement('div');
             banner.style.cssText = `
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
-                background: linear-gradient(90deg, #f59e0b, #d97706);
+                background: ${isPublished ? '#7c3aed' : 'linear-gradient(90deg, #f59e0b, #d97706)'};
                 color: white;
                 text-align: center;
                 padding: 10px 16px;
@@ -1972,7 +1974,9 @@
                 align-items: center;
                 gap: 12px;
             `;
-            banner.innerHTML = '<span>Preview Mode</span><span style="font-weight: 400; opacity: 0.9;">This app is not yet published</span>';
+            banner.innerHTML = isPublished
+                ? '<span>Preview Mode</span>'
+                : '<span>Preview Mode</span><span style="font-weight: 400; opacity: 0.9;">This app is not yet published</span>';
             document.body.insertBefore(banner, document.body.firstChild);
             document.body.style.paddingTop = '42px';
         }

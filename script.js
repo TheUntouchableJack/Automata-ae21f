@@ -274,13 +274,14 @@ if (signupForm) {
 
         // Disable button and show loading state
         submitBtn.disabled = true;
+        const processingText = (typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('cta.processing') || 'Processing...') : 'Processing...';
         submitBtn.innerHTML = `
             <svg class="spinner" width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" stroke-dasharray="40" stroke-dashoffset="10">
                     <animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="1s" repeatCount="indefinite"/>
                 </circle>
             </svg>
-            Processing...
+            ${processingText}
         `;
 
         try {
@@ -319,10 +320,10 @@ if (signupForm) {
 
             // Handle duplicate email
             if (error.message === 'already_registered') {
-                submitBtn.innerHTML = 'Already signed up!';
+                submitBtn.innerHTML = (typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('cta.alreadySigned') || 'Already signed up!') : 'Already signed up!';
                 submitBtn.style.background = '#f59e0b';
             } else {
-                submitBtn.innerHTML = 'Error. Try again.';
+                submitBtn.innerHTML = (typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('cta.errorTryAgain') || 'Error. Try again.') : 'Error. Try again.';
                 submitBtn.style.background = '#ef4444';
             }
 
@@ -573,7 +574,7 @@ function handleGetRecommendations() {
                 <animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="1s" repeatCount="indefinite"/>
             </circle>
         </svg>
-        Analyzing...
+        ${(typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('onboarding.analyzing') || 'Analyzing...') : 'Analyzing...'}
     `;
 
     // Simulate brief delay for UX (recommendations are instant since they're local)
@@ -629,7 +630,14 @@ function renderRecommendations(recommendations) {
 
     // Update context message
     if (recommendationsContext && industry && industry !== 'agnostic') {
-        const industryNames = {
+        const industryNames = (typeof I18n !== 'undefined' && I18n.t) ? {
+            food: I18n.t('onboarding.industries.food') || 'food & beverage',
+            retail: I18n.t('onboarding.industries.retail') || 'retail',
+            health: I18n.t('onboarding.industries.health') || 'health & wellness',
+            service: I18n.t('onboarding.industries.service') || 'professional services',
+            technology: I18n.t('onboarding.industries.technology') || 'technology',
+            education: I18n.t('onboarding.industries.education') || 'education'
+        } : {
             food: 'food & beverage',
             retail: 'retail',
             health: 'health & wellness',
@@ -661,7 +669,7 @@ function createRecommendationCard(rec) {
 
     card.innerHTML = `
         <div class="recommendation-card-icon">${icon}</div>
-        <span class="recommendation-card-badge">AI Will Build</span>
+        <span class="recommendation-card-badge">${(typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('onboarding.aiWillBuild') || 'AI Will Build') : 'AI Will Build'}</span>
         <h3 class="recommendation-card-name">${rec.name}</h3>
         <p class="recommendation-card-desc">${rec.description}</p>
         ${rec.reasoning ? `<p class="recommendation-card-reason">"${rec.reasoning}"</p>` : ''}

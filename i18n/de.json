@@ -29,25 +29,20 @@
         "subtitle": "Go-to-Market-Strategie und Plattform-Launches"
     },
     "hero": {
-        "badge": "In Beta — Warteliste beitreten",
-        "titleLine1": "Ein {word}.",
-        "titleLine2": "Tausende von Beziehungen.",
-        "rotatingWords": [
-            "Person",
-            "Gründer",
-            "Unternehmer",
-            "Inhaber",
-            "Schöpfer",
-            "Mutter",
-            "Frau"
-        ],
-        "subtitle": "Jeder Geburtstag erinnert. Jeder Besuch nachverfolgt. Jeder treue Kunde bedankt — automatisch.",
+        "badge": "KI-gestütztes Treueprogramm für lokale Unternehmen",
+        "titlePart1": "Erstellen Sie Ihr Treueprogramm in ",
+        "titleHighlight": "60 Sekunden",
+        "titleLine2": "Es läuft für immer.",
+        "subtitle": "Royalty ist eine KI, die Ihr Treueprogramm in 60 Sekunden erstellt — und es dann für immer betreibt. Kunden sammeln Punkte, Sie sehen, was funktioniert, und KI sagt Ihnen genau, wie Sie wachsen können.",
         "joinWaitlist": "Beta beitreten",
         "seeHowItWorks": "So funktioniert's",
+        "discoveryTitle": "Beschreiben Sie Ihr Unternehmen",
+        "discoverySubtitle": "Unsere KI erstellt Ihnen ein maßgeschneidertes Treueprogramm in 60 Sekunden.",
+        "discoveryPlaceholder": "z.B., Ich betreibe ein Café in Berlin mit 200 Stammkunden. Ich möchte Treue belohnen und Kunden zurückgewinnen, die länger nicht da waren...",
         "stats": {
-            "fasterSetup": "Schnellere Einrichtung",
-            "timeSaved": "Zeit gespart",
-            "moreEngagement": "Mehr Engagement"
+            "setupTime": "Einrichtungszeit",
+            "moreRepeatVisits": "Mehr Wiederholungsbesuche",
+            "aiRunning": "KI arbeitet für Sie"
         }
     },
     "preview": {
@@ -62,124 +57,111 @@
         "review": "Prüfen"
     },
     "comparison": {
-        "title": "Der Alte Weg Ist Überholt",
-        "subtitle": "Traditionelle Apps setzen das Pferd hinter den Wagen. Sie bauen Funktionen und hoffen, dass Kunden kommen. Automata dreht das Skript um.",
+        "title": "Die meisten Treue-Apps geben Ihnen nur Werkzeuge. Royalty gibt Ihnen einen Mitarbeiter.",
+        "subtitle": "Andere Apps lassen Sie die ganze Arbeit machen. Royaltys KI erstellt Ihr Programm, führt Kampagnen durch und sagt Ihnen, was funktioniert — automatisch.",
         "oldWay": {
-            "title": "Der alte Weg",
-            "item1": "Erst teure App bauen",
-            "item2": "Hoffen, dass Kunden kommen",
-            "item3": "Beziehungen manuell verwalten",
-            "item4": "Automatisierungen als Nachgedanke",
-            "item5": "Generisch, Einheitsgröße"
+            "title": "Andere Treue-Apps",
+            "item1": "Sie richten alles manuell ein",
+            "item2": "Sie entscheiden, wann Kampagnen laufen",
+            "item3": "Sie finden selbst heraus, was funktioniert",
+            "item4": "Generische Stempelkarte, das war's",
+            "item5": "Keine Einblicke, keine Intelligenz"
         },
         "newWay": {
-            "title": "Der Automata-Weg",
-            "item1": "Mit Ihren Kunden beginnen",
-            "item2": "KI schlägt Automatisierungen vor",
-            "item3": "Beziehungen skalieren automatisch",
-            "item4": "Apps entstehen aus Erfolg",
-            "item5": "Personalisiert für jeden Kunden"
+            "title": "Der Royalty-Weg",
+            "item1": "KI erstellt Ihr Programm in 60 Sekunden",
+            "item2": "KI führt Rückgewinnungskampagnen automatisch durch",
+            "item3": "KI sagt Ihnen genau, was funktioniert",
+            "item4": "Punkte, Stufen, Belohnungen, Empfehlungen — erledigt",
+            "item5": "Wöchentliche Einblicke: \"Das habe ich für Sie getan\""
         }
     },
     "features": {
         "tag": "Funktionen",
-        "title": "Alles Was Sie Brauchen, Um Kundenbeziehungen Zu Automatisieren",
-        "subtitle": "Leistungsstarke Tools, die nahtlos zusammenarbeiten",
-        "dataImport": {
-            "title": "Einfacher Datenimport",
-            "desc": "Laden Sie Ihre Kundenliste per CSV hoch oder geben Sie sie manuell ein. Fügen Sie benutzerdefinierte Felder hinzu, die für Ihr Unternehmen wichtig sind."
+        "title": "Alles, was Ihr Treueprogramm braucht — KI-gestützt",
+        "subtitle": "Von Punkten bis zu Einblicken — Royalty erledigt alles",
+        "pointsRewards": {
+            "title": "Punkte & Belohnungen",
+            "desc": "Kunden scannen einen QR-Code, um Punkte zu sammeln. Einlösung gegen von Ihnen definierte Belohnungen. Kein App-Download nötig."
         },
-        "scheduling": {
-            "title": "Intelligente Planung",
-            "desc": "Wöchentliche, monatliche oder ereignisbasierte Auslöser. KI optimiert Sendezeiten für maximales Engagement."
+        "tierSystem": {
+            "title": "Stufensystem",
+            "desc": "Bronze → Silber → Gold → Platin. Kunden steigen automatisch auf. Gamification, die funktioniert."
         },
-        "aiProposals": {
-            "title": "KI-gestützte Vorschläge",
-            "desc": "Unsere KI analysiert Ihr Unternehmen und Ihre Kunden und schlägt dann auf Ihre Ziele zugeschnittene Automatisierungen vor."
+        "aiRuns": {
+            "title": "KI, die es betreibt",
+            "desc": "KI sendet Rückgewinnungsangebote, Geburtstagsbelohnungen und Meilenstein-Boni — automatisch. Sie erhalten eine wöchentliche Zusammenfassung."
         },
-        "multiChannel": {
-            "title": "Multi-Channel-Zustellung",
-            "desc": "Erreichen Sie Kunden per E-Mail oder SMS. Jede Nachricht mit ihren einzigartigen Details personalisiert."
+        "smartInsights": {
+            "title": "Intelligente Einblicke",
+            "desc": "\"8 Kunden haben seit 30 Tagen nicht besucht.\" KI sagt Ihnen, was passiert und was Sie dagegen tun können."
         },
-        "humanLoop": {
-            "title": "Mensch in der Schleife",
-            "desc": "KI schlägt vor, Sie genehmigen. Volle Kontrolle über jede Automatisierung, bevor sie live geht."
+        "qrCheckins": {
+            "title": "QR-Code-Check-ins",
+            "desc": "Kunden scannen, um Punkte zu sammeln. Ein Scan pro Tag. Streak-Boni für Stammkunden. Einfach."
         },
-        "analytics": {
-            "title": "Echtzeit-Analysen",
-            "desc": "Verfolgen Sie Engagement, messen Sie Wachstum und sehen Sie, welche Automatisierungen den größten Wert liefern."
+        "referralProgram": {
+            "title": "Empfehlungsprogramm",
+            "desc": "Kunden teilen ihren einzigartigen Link. Beide Seiten erhalten Bonuspunkte. Wachstum auf Autopilot."
         }
     },
     "howItWorks": {
         "tag": "So Funktioniert's",
-        "title": "Von Daten Zu Beziehungen in 4 Schritten",
-        "subtitle": "Starten Sie in Minuten, nicht Monaten",
+        "title": "In 60 Sekunden live. Läuft für immer.",
+        "subtitle": "Beschreiben Sie Ihr Unternehmen. KI erledigt den Rest.",
         "step1": {
-            "title": "Laden Sie Ihre Kunden hoch",
-            "desc": "Importieren Sie Ihre bestehende Kundenliste per CSV oder fügen Sie sie manuell hinzu. Fügen Sie beliebige Daten hinzu — Geburtstage, Standorte, Präferenzen."
+            "title": "Beschreiben Sie Ihr Unternehmen",
+            "desc": "\"Ich betreibe ein Café in Berlin mit Stammkunden, die ich belohnen möchte.\" Das ist alles, was wir brauchen. KI erstellt sofort Ihr maßgeschneidertes Treueprogramm."
         },
         "step2": {
-            "title": "Erzählen Sie uns von Ihrem Unternehmen",
-            "desc": "Teilen Sie Ihren Unternehmenstyp, Ihre Ziele und was Erfolg für Sie bedeutet. Dieser Kontext hilft unserer KI, klügere Vorschläge zu machen."
+            "title": "Teilen Sie Ihren QR-Code",
+            "desc": "Drucken Sie ihn aus, zeigen Sie ihn an der Kasse oder teilen Sie den Link. Kunden scannen zum Beitreten und sammeln sofort Punkte."
         },
         "step3": {
-            "title": "Überprüfen Sie KI-Vorschläge",
-            "desc": "Unsere KI analysiert Ihre Daten und schlägt 5-10 maßgeschneiderte Automatisierungen vor. Überprüfen Sie jede, bearbeiten Sie bei Bedarf und genehmigen Sie mit einem Klick."
+            "title": "KI betreibt Ihr Programm",
+            "desc": "Rückgewinnungskampagnen. Geburtstagsbelohnungen. Streak-Boni. KI erledigt alles automatisch — oder fragt um Genehmigung, wenn Sie das bevorzugen."
         },
         "step4": {
-            "title": "Beobachten Sie das Wachstum der Beziehungen",
-            "desc": "Automatisierungen laufen nach Ihrem Zeitplan. Kunden erhalten personalisierte Nachrichten. Sie konzentrieren sich auf das Wesentliche — Ihr Geschäft."
+            "title": "Wöchentliche Einblicke erhalten",
+            "desc": "\"Royalty hat diese Woche 47 Nachrichten gesendet. 3 Kunden kamen zurück. 2 sind auf Gold aufgestiegen.\" Sehen Sie genau, was KI für Sie tut."
         }
     },
     "templates": {
-        "tag": "Vorlagen",
-        "title": "Sofort Einsatzbereite Automatisierungen",
-        "subtitle": "Durchsuchen Sie unsere Bibliothek bewährter Vorlagen. Anpassen und in Minuten starten.",
-        "automate": "Automatisieren",
-        "browseAll": "Alle Vorlagen durchsuchen",
-        "badges": {
-            "popular": "Beliebt",
-            "featured": "Empfohlen",
-            "new": "Neu"
-        },
-        "industries": {
-            "all": "Alle Branchen",
-            "retail": "Einzelhandel",
-            "food": "Gastronomie",
-            "health": "Gesundheit",
-            "services": "Dienstleistungen"
+        "tag": "KI-Automatisierungen",
+        "title": "Was Royalty automatisch ausführt",
+        "subtitle": "Einmal einrichten. KI erledigt den Rest — für immer.",
+        "autoEnabled": "Automatisch Aktiviert",
+        "winBack": {
+            "title": "Rückgewinnungskampagnen",
+            "desc": "KI erkennt Kunden, die seit 14+ Tagen nicht besucht haben und sendet ihnen automatisch ein personalisiertes Angebot zur Rückkehr."
         },
         "birthday": {
             "title": "Geburtstags-Belohnungen",
-            "desc": "Senden Sie automatisch personalisierte Geburtstagsangebote an Kunden. Steigern Sie Loyalität und wiederkehrende Besuche."
+            "desc": "KI sendet automatisch Geburtstagsbelohnungen, wenn Kunden bald Geburtstag haben. Verpassen Sie nie eine Chance, zu begeistern."
         },
-        "loyalty": {
-            "title": "Treuepunkte-Programm",
-            "desc": "Belohnen Sie Stammkunden automatisch. Verfolgen Sie Punkte und senden Sie Einlösungserinnerungen."
+        "streakBonuses": {
+            "title": "Streak-Boni",
+            "desc": "3-Tage-Streak? 7-Tage-Streak? 30-Tage-Streak? KI vergibt automatisch Bonuspunkte und feiert mit den Kunden."
         },
-        "happyHour": {
-            "title": "Happy-Hour-Benachrichtigungen",
-            "desc": "Informieren Sie Kunden in der Nähe über Happy-Hour-Angebote. Steigern Sie den Besucherverkehr in ruhigen Zeiten."
+        "tierMotivation": {
+            "title": "Stufen-Motivation",
+            "desc": "\"Nur noch 50 Punkte bis Gold!\" KI sendet aufmunternde Nachrichten, wenn Kunden kurz vor dem Aufstieg stehen."
         },
-        "appointment": {
-            "title": "Terminerinnerungen",
-            "desc": "Reduzieren Sie Nichterscheinen mit automatischen Erinnerungen. Senden Sie per SMS oder E-Mail 24 Stunden vorher."
+        "milestones": {
+            "title": "Meilenstein-Feiern",
+            "desc": "10. Besuch? 50.? 100.? KI feiert mit Kunden und vergibt Bonuspunkte für Treue-Meilensteine."
         },
-        "postVisit": {
-            "title": "Nachbesuchs-Follow-up",
-            "desc": "Danken Sie Kunden nach ihrem Besuch und bitten Sie um Feedback. Bauen Sie dauerhafte Beziehungen auf."
-        },
-        "winBack": {
-            "title": "Rückgewinnungskampagne",
-            "desc": "Reaktivieren Sie Kunden, die seit über 30 Tagen nicht besucht haben, mit personalisierten Angeboten."
+        "referralNudges": {
+            "title": "Empfehlungs-Anstöße",
+            "desc": "KI identifiziert Ihre zufriedensten Kunden (Gold/Platin) und ermutigt sie, Freunde für Bonuspunkte zu werben."
         }
     },
     "testimonials": {
-        "tag": "Erfahrungen",
-        "title": "Von Unternehmen Überall Geliebt",
-        "subtitle": "Sehen Sie, was unsere Kunden sagen",
+        "tag": "Ergebnisse",
+        "title": "Lokale Unternehmen lieben Royalty",
+        "subtitle": "Sehen Sie, was passiert, wenn KI Ihr Treueprogramm betreibt",
         "quote1": {
-            "text": "Wir sind vom manuellen SMS-Versand an 50 Kunden zur automatischen Interaktion mit 5.000 übergegangen — ohne jemanden einzustellen. Unsere Wiederholungsbesuche sind um 40% gestiegen.",
+            "text": "\"Ich habe Royalty buchstäblich in einer Minute eingerichtet. Jetzt bekomme ich wöchentlich eine E-Mail, die mir zeigt, welche Stammkunden nicht da waren, und KI sendet ihnen automatisch Angebote. Unsere Wiederholungsbesuche sind um 40% gestiegen und ich habe nichts gemacht.\"",
             "author": "Maria Rodriguez",
             "title": "Inhaberin, Restaurant Casa del Sol"
         }
@@ -201,6 +183,7 @@
             "f1": "Bis zu 50 Mitglieder",
             "f2": "1-Klick-Automatisierungen",
             "f3": "QR-Code-Check-ins",
+            "f4": "Punkte & Belohnungen",
             "cta": "Kostenlose Beta Starten"
         },
         "starter": {
@@ -209,6 +192,7 @@
             "f1": "Bis zu 500 Mitglieder",
             "f2": "30 KI-Einblicke/Monat",
             "f3": "KI-gestütztes Treueprogramm",
+            "f4": "E-Mail-Support",
             "cta": "Beta Beitreten"
         },
         "growth": {
@@ -217,6 +201,7 @@
             "f1": "Bis zu 2.000 Mitglieder",
             "f2": "100 KI-Einblicke/Monat",
             "f3": "Prioritäts-Support",
+            "f4": "Erweiterte Analysen",
             "cta": "Beta Beitreten"
         },
         "scale": {
@@ -225,6 +210,7 @@
             "f1": "Unbegrenzte Mitglieder",
             "f2": "Unbegrenzte KI-Einblicke",
             "f3": "White-Label-Branding",
+            "f4": "Dedizierter Support",
             "cta": "Beta Beitreten"
         },
         "royaltyPro": {
@@ -237,22 +223,127 @@
         }
     },
     "cta": {
-        "title": "Seien Sie Der Erste, Der Kundenbeziehungen Automatisiert",
-        "subtitle": "Treten Sie der Warteliste bei und erhalten Sie frühen Zugang zu KI-gestützten Automatisierungen.",
+        "title": "Bereit, KI Ihr Treueprogramm betreiben zu lassen?",
+        "subtitle": "Treten Sie unserer Beta bei. Start Februar 2026.",
         "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
         "joinWaitlist": "Beta beitreten",
-        "note": "Wir benachrichtigen Sie, wenn wir starten."
+        "note": "Erhalten Sie frühzeitige Zugangspreise zum Start.",
+        "captchaError": "Bitte vervollständigen Sie die CAPTCHA-Verifizierung.",
+        "processing": "Wird verarbeitet...",
+        "alreadySigned": "Bereits angemeldet!",
+        "errorTryAgain": "Fehler. Versuchen Sie es erneut."
+    },
+    "pricingPage": {
+        "bannerPrefix": "Zeitlich begrenzt: Sichern Sie sich ",
+        "bannerHighlight": "lebenslangen Zugang",
+        "bannerSuffix": " auf AppSumo",
+        "bannerBtn": "Angebot ansehen",
+        "heroTitle": "Einfache, transparente Preise",
+        "heroSubtitle": "KI-gestützte Treueprogramme für lokale Unternehmen. Kostenlos starten, upgraden wenn Sie wachsen.",
+        "guarantee": "30-Tage-Geld-zurück-Garantie",
+        "monthly": "Monatlich",
+        "annual": "Jährlich",
+        "saveBadge": "20% sparen",
+        "comparison": {
+            "title": "Pläne im Detail vergleichen",
+            "subtitle": "Alles, was Sie über jeden Plan wissen müssen",
+            "features": "Funktionen",
+            "coreLimits": "Kern-Limits",
+            "members": "Mitglieder",
+            "aiInsights": "KI-Einblicke pro Monat",
+            "loyaltyFeatures": "Treue-Funktionen",
+            "pointsRewards": "Punkte & Belohnungen",
+            "qrCheckins": "QR-Code-Check-ins",
+            "tiersVip": "Stufen & VIP-Level",
+            "referralProgram": "Empfehlungsprogramm",
+            "leaderboard": "Rangliste",
+            "aiFeatures": "KI-Funktionen",
+            "oneClickAutomations": "1-Klick-Automatisierungen",
+            "aiBuiltProgram": "KI-erstelltes Treueprogramm",
+            "aiIntelligence": "KI-Intelligenz-Einblicke",
+            "automatedCampaigns": "Automatisierte Kampagnen",
+            "brandingSupport": "Branding & Support",
+            "whiteLabel": "White-Label-Branding",
+            "emailSupport": "E-Mail-Support",
+            "prioritySupport": "Prioritäts-Support",
+            "unlimited": "Unbegrenzt"
+        },
+        "appsumo": {
+            "limitedTime": "Zeitlich Begrenzt",
+            "title": "Lifetime-Deal auf AppSumo",
+            "subtitle": "Sichern Sie sich lebenslangen Zugang zu Royalty zum Einmalpreis. Keine monatlichen Gebühren, nie. KI erstellt Ihr Treueprogramm, Automatisierungen laufen für immer.",
+            "tier1": "Stufe 1",
+            "tier2": "Stufe 2",
+            "tier3": "Stufe 3",
+            "code1": "1 Code",
+            "codes2": "2 Codes",
+            "codes3": "3 Codes",
+            "strike1": "$588/Jahr Wert",
+            "strike2": "$1,788/Jahr Wert",
+            "strike3": "$4,788/Jahr Wert",
+            "oneTime": "einmalig",
+            "mostPopular": "Am Beliebtesten",
+            "t1f1": "500 Mitglieder",
+            "t1f2": "KI-erstelltes Treueprogramm",
+            "t1f3": "Alle Automatisierungen inklusive",
+            "t1f4": "Punkte, Stufen & Belohnungen",
+            "t1f5": "Lebenslange Updates",
+            "t2f1": "2.000 Mitglieder",
+            "t2f2": "KI-erstelltes Treueprogramm",
+            "t2f3": "Alle Automatisierungen inklusive",
+            "t2f4": "Prioritäts-Support",
+            "t2f5": "Lebenslange Updates",
+            "t3f1": "Unbegrenzte Mitglieder",
+            "t3f2": "KI-erstelltes Treueprogramm",
+            "t3f3": "Alle Automatisierungen inklusive",
+            "t3f4": "Prioritäts-Support",
+            "t3f5": "Lebenslange Updates",
+            "cta": "Deal auf AppSumo sichern",
+            "guarantee": "60-Tage-Geld-zurück-Garantie über AppSumo"
+        },
+        "royaltyPro": {
+            "title": "Royalty Pro — Für Lifetime-Deal-Inhaber",
+            "desc": "Möchten Sie, dass KI-Intelligenz Ihre Mitglieder kontinuierlich analysiert und Ihnen sagt, was zu tun ist? Fügen Sie Royalty Pro hinzu, um unbegrenzte KI-Einblicke und White-Label-Branding freizuschalten.",
+            "f1": "Unbegrenzte KI-Einblicke",
+            "f2": "White-Label-Branding",
+            "f3": "Jederzeit kündbar",
+            "priceLabel": "Zu Ihrem LTD hinzufügen",
+            "pricePeriod": "/Monat",
+            "cta": "Royalty Pro Hinzufügen"
+        },
+        "faq": {
+            "title": "Häufig Gestellte Fragen",
+            "subtitle": "Alles, was Sie über die Preise wissen müssen",
+            "q1": "Was ist ein \"Mitglied\"?",
+            "a1": "Ein Mitglied ist ein Kunde, der Ihrem Treueprogramm beitritt. Jede eindeutige E-Mail-Adresse oder Telefonnummer zählt als ein Mitglied, unabhängig davon, wie viele Besuche es macht.",
+            "q2": "Was sind \"KI-Einblicke\"?",
+            "a2": "KI-Einblicke sind Empfehlungen unseres Intelligenz-Systems. Es analysiert Ihre Mitgliederdaten und schlägt Aktionen vor wie \"Senden Sie eine Rückgewinnungskampagne an 23 inaktive Mitglieder\" oder \"Gratulieren Sie Sarah zum Erreichen der Gold-Stufe.\"",
+            "q3": "Brauche ich eine Kreditkarte zum Starten?",
+            "a3": "Nein. Sie können mit unserem kostenlosen Plan starten oder eine 14-tägige Testversion jedes bezahlten Plans beginnen, ohne eine Kreditkarte einzugeben. Upgraden Sie, wenn Sie bereit sind.",
+            "q4": "Was ist der Unterschied zwischen LTD und Abonnements?",
+            "a4": "AppSumo Lifetime Deal (LTD) Käufer zahlen einmal und erhalten lebenslangen Zugang. Die Kernfunktionen (KI-Einrichtung, Automatisierungen, Punkte) funktionieren gleich. Um KI-Intelligenz-Einblicke hinzuzufügen, können LTD-Nutzer Royalty Pro ($39/Monat) abonnieren.",
+            "q5": "Kann ich den Plan jederzeit wechseln?",
+            "a5": "Ja! Upgraden oder downgraden Sie jederzeit. Beim Upgrade wird Ihnen die anteilige Differenz berechnet. Beim Downgrade erhalten Sie eine Gutschrift für zukünftige Abrechnungen.",
+            "q6": "Was ist White-Label-Branding?",
+            "a6": "White-Label entfernt das \"Powered by Royalty\"-Branding von Ihrer kundenorientierten Treue-App. Ihre Kunden sehen nur Ihre Marke.",
+            "q7": "Gibt es eine Geld-zurück-Garantie?",
+            "a7": "Ja! Wir bieten eine 30-Tage-Geld-zurück-Garantie auf Abonnements. AppSumo-Angebote haben eine 60-Tage-Rückerstattungsrichtlinie über deren Plattform.",
+            "q8": "Kann ich AppSumo-Codes stapeln?",
+            "a8": "Ja! Jeder Code erhöht Ihr Mitglieder-Limit. Stufe 1 = 500 Mitglieder, Stufe 2 = 2.000 Mitglieder, Stufe 3 = unbegrenzte Mitglieder. Stapeln Sie, um die benötigte Stufe zu erreichen."
+        }
     },
     "footer": {
-        "tagline": "Automatisierungen, die menschliche Verbindungen verstärken.",
+        "tagline": "KI, die Ihr Treueprogramm erstellt und betreibt.",
         "product": "Produkt",
         "company": "Unternehmen",
         "legal": "Rechtliches",
+        "features": "Funktionen",
+        "howItWorks": "So funktioniert's",
         "about": "Über uns",
-        "careers": "Karriere",
+        "contact": "Kontakt",
         "privacy": "Datenschutz",
         "terms": "AGB",
-        "copyright": "© 2026 Automata. Alle Rechte vorbehalten."
+        "copyright": "© 2026 Royalty. Alle Rechte vorbehalten."
     },
     "dashboard": {
         "title": "Dashboard",
@@ -277,7 +368,18 @@
         "referrals": "Empfehlungen",
         "noAppTitle": "Erstellen Sie Ihr Treueprogramm",
         "noAppDesc": "Richten Sie Ihre erste App ein, um Mitglieder, Besuche und Prämien zu verfolgen.",
-        "createApp": "App Erstellen"
+        "createApp": "App Erstellen",
+        "appAutoCreated": "Ihr Treueprogramm ist bereit! Passen Sie es jederzeit an.",
+        "previewTitle": "Ihre App",
+        "previewOpenTab": "In Neuem Tab Öffnen",
+        "previewCustomize": "Anpassen",
+        "previewCopyLink": "Link Kopieren",
+        "previewCopied": "Kopiert!",
+        "previewDownloadQR": "QR Herunterladen",
+        "previewPrintQR": "QR Drucken",
+        "previewMobileToggle": "App-Vorschau",
+        "previewButton": "Vorschau",
+        "previewHide": "Vorschau ausblenden"
     },
     "aiFeed": {
         "title": "KI-Intelligenz-Feed",
@@ -414,6 +516,9 @@
         "whyThis": "Warum dies?"
     },
     "modal": {
+        "successTitle": "Sie sind in der Beta!",
+        "successDesc": "Wir senden Ihnen eine E-Mail, wenn Royalty mit exklusiven Frühzugangspreisen startet.",
+        "successBtn": "Verstanden",
         "createProject": "Neues Projekt erstellen",
         "editProject": "Projekt bearbeiten",
         "createAutomation": "Automatisierung erstellen",
@@ -463,6 +568,8 @@
         "customTitle": "Brauchen Sie etwas anderes?",
         "customDesc": "Beschreiben Sie die gewünschte Automatisierung und wir erstellen sie für Sie.",
         "customPlaceholder": "z.B., 6 Wochen nach einem Tattoo-Termin eine Erinnerung für Nachbesserungen senden...",
+        "analyzing": "Analysiere...",
+        "aiWillBuild": "KI wird erstellen",
         "signupSummary": "Ihre Automatisierungen sind bereit",
         "industry": "Branche",
         "goals": "Ziele",
