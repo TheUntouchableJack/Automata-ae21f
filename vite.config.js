@@ -41,6 +41,7 @@ export default defineConfig({
         outgoing: resolve(__dirname, 'app/outgoing.html'),
         apps: resolve(__dirname, 'app/apps.html'),
         appBuilder: resolve(__dirname, 'app/app-builder.html'),
+        intelligence: resolve(__dirname, 'app/intelligence.html'),
 
         // Customer-facing app
         customerAppLanding: resolve(__dirname, 'customer-app/index.html'),
@@ -57,6 +58,8 @@ export default defineConfig({
         manualChunks: {
           // Vendor chunk for external libraries
           vendor: [],
+          // Isolate Three.js — only loaded on intelligence page
+          three: ['three'],
         },
       },
     },

@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=4">
     <link rel="stylesheet" href="intelligence.css?v=2">
+    <link rel="stylesheet" href="crown-dashboard.css?v=8">
     <link rel="stylesheet" href="../i18n/i18n.css">
 </head>
 <body>
@@ -23,175 +24,74 @@
 
         <!-- Main Content -->
         <main class="app-main">
-            <div class="page-header intelligence-header">
-                <div class="container">
-                    <div>
-                        <div class="page-title-wrapper">
-                            <div class="page-title-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
-                                    <path d="M12 2a10 10 0 0 1 10 10"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h1 class="page-title" data-i18n="intelligence.title">AI Intelligence</h1>
-                                <p class="page-subtitle" data-i18n="intelligence.subtitle">AI-powered insights and recommendations for your business</p>
-                            </div>
+            <!-- 3D Crown Dashboard -->
+            <div class="crown-dashboard" id="crown-dashboard">
+                <!-- Left: 3D Crown Viewport -->
+                <div class="crown-viewport" id="crown-viewport">
+                    <canvas id="crown-canvas" role="img" aria-label="3D AI Neural Orb visualization"></canvas>
+                    <button class="theme-toggle-btn" id="theme-toggle-btn" aria-label="Toggle theme">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
+                    <!-- Status indicator (bottom-left) -->
+                    <div class="crown-status">
+                        <span class="crown-status-dot"></span>
+                        <span class="crown-status-text" data-i18n="intelligence.crown.idle">Monitoring</span>
+                    </div>
+                    <!-- Mode toggle (top-left) -->
+                    <div class="crown-mode-toggle" id="crown-mode-toggle">
+                        <button class="mode-btn active" data-mode="review" aria-pressed="true" data-i18n="intelligence.modes.review">Review</button>
+                        <button class="mode-btn" data-mode="autonomous" aria-pressed="false" data-i18n="intelligence.modes.autonomous">Autonomous</button>
+                    </div>
+                </div>
+                <!-- Right: Cards Panel -->
+                <div class="crown-cards-panel" id="crown-cards-panel">
+                    <div class="cards-panel-header">
+                        <h2 data-i18n="intelligence.cards.title">AI Activity</h2>
+                        <div class="cards-panel-stats">
+                            <span class="stat-mini" id="cards-pending">0 pending</span>
+                            <span class="stat-mini" id="cards-completed">0 completed</span>
                         </div>
                     </div>
-                    <div class="page-header-actions">
-                        <button class="btn btn-primary btn-analyze-lg" id="analyze-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="M21 21l-4.35-4.35"/>
-                            </svg>
-                            <span data-i18n="intelligence.analyze">Analyze My Business</span>
-                        </button>
+                    <!-- Cards feed — populated with AI recommendations -->
+                    <div class="cards-feed" id="cards-feed">
+                        <!-- Cards rendered by JS -->
                     </div>
                 </div>
             </div>
 
-            <!-- Stats Overview -->
-            <section class="intelligence-stats">
-                <div class="container">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon recommendations">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value" id="stat-pending">0</span>
-                                <span class="stat-label" data-i18n="intelligence.pending">Pending Actions</span>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon implemented">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="20 6 9 17 4 12"/>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value" id="stat-implemented">0</span>
-                                <span class="stat-label" data-i18n="intelligence.implemented">Implemented</span>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon high-impact">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                                    <polyline points="17 6 23 6 23 12"/>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value" id="stat-high-impact">0</span>
-                                <span class="stat-label" data-i18n="intelligence.highImpact">High Impact</span>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon last-analysis">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <polyline points="12 6 12 12 16 14"/>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value" id="stat-last-analysis">Never</span>
-                                <span class="stat-label" data-i18n="intelligence.lastAnalysis">Last Analysis</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Main Content Area -->
-            <section class="intelligence-content">
-                <div class="container">
-                    <!-- Filters -->
-                    <div class="intelligence-filters">
-                        <div class="filter-tabs">
-                            <button class="filter-tab active" data-filter="all">All</button>
-                            <button class="filter-tab" data-filter="pending">Pending</button>
-                            <button class="filter-tab" data-filter="implemented">Implemented</button>
-                            <button class="filter-tab" data-filter="dismissed">Dismissed</button>
-                        </div>
-                        <div class="filter-type">
-                            <select id="type-filter" class="filter-select">
-                                <option value="">All Types</option>
-                                <option value="opportunity">Opportunities</option>
-                                <option value="efficiency">Efficiency</option>
-                                <option value="growth">Growth</option>
-                                <option value="risk">Risk Alerts</option>
-                                <option value="automation">Automation</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Loading State -->
-                    <div class="intelligence-loading" id="intelligence-loading">
-                        <div class="loading-spinner"></div>
-                        <p data-i18n="intelligence.loading">Loading recommendations...</p>
-                    </div>
-
-                    <!-- Empty State -->
-                    <div class="intelligence-empty" id="intelligence-empty" style="display: none;">
-                        <div class="empty-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
-                                <path d="M12 2a10 10 0 0 1 10 10"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                        </div>
-                        <h3 data-i18n="intelligence.emptyTitle">No recommendations yet</h3>
-                        <p data-i18n="intelligence.emptyDesc">Click "Analyze My Business" to get AI-powered insights based on your organization data.</p>
-                        <button class="btn btn-primary" id="empty-analyze-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="M21 21l-4.35-4.35"/>
-                            </svg>
-                            <span data-i18n="intelligence.analyzeNow">Analyze Now</span>
-                        </button>
-                    </div>
-
-                    <!-- Upgrade Banner (shown when limit reached) -->
-                    <div class="intelligence-upgrade" id="intelligence-upgrade" style="display: none;">
-                        <div class="upgrade-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                            </svg>
-                        </div>
-                        <h3 id="upgrade-title">Unlock AI Intelligence</h3>
-                        <p id="upgrade-desc">Get AI-powered insights to grow your loyalty program. Upgrade to access smart recommendations.</p>
-                        <div class="upgrade-usage" id="upgrade-usage">
-                            <span class="usage-label">This month:</span>
-                            <span class="usage-value" id="usage-count">0 / 0 insights used</span>
-                        </div>
-                        <a href="/app/settings.html#plan" class="btn btn-primary btn-upgrade">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                            </svg>
-                            <span>Upgrade Plan</span>
-                        </a>
-                    </div>
-
-                    <!-- Recommendations List -->
-                    <div class="recommendations-list" id="recommendations-list" style="display: none;">
-                        <!-- Recommendations will be rendered here -->
-                    </div>
-                </div>
-            </section>
+            <!-- Legacy content (hidden, used by intelligence.js data layer) -->
+            <div id="legacy-intelligence" style="display: none;">
+                <button class="btn btn-primary" id="analyze-btn">Analyze My Business</button>
+                <span id="stat-pending">0</span>
+                <span id="stat-implemented">0</span>
+                <span id="stat-high-impact">0</span>
+                <span id="stat-last-analysis">Never</span>
+                <div id="intelligence-loading" style="display: none;"></div>
+                <div id="intelligence-empty" style="display: none;"></div>
+                <div id="intelligence-upgrade" style="display: none;"></div>
+                <div id="recommendations-list" style="display: none;"></div>
+                <div id="empty-analyze-btn"></div>
+                <select id="type-filter"><option value="">All</option></select>
+            </div>
         </main>
     </div>
 
     <!-- First Login Loading Modal -->
     <div class="first-login-modal" id="first-login-modal" style="display: none;">
+        <canvas id="loading-particles" class="loading-particles-canvas"></canvas>
         <div class="first-login-content">
-            <div class="first-login-logo">
-                <img src="/logo.svg" alt="Royalty" class="logo-icon">
+            <div class="loading-logo-container">
+                <div class="first-login-logo">
+                    <img src="/logo.svg" alt="Royalty" class="logo-icon loading-logo-breathe">
+                </div>
+                <div class="loading-ring"></div>
+                <div class="loading-ring loading-ring-2"></div>
             </div>
             <h2 data-i18n="intelligence.firstLogin.title">Building your loyalty program...</h2>
+            <p class="loading-context-text" id="loading-context-text"></p>
+            <div class="loading-progress-bar">
+                <div class="loading-progress-fill" id="loading-progress-fill"></div>
+            </div>
             <div class="first-login-steps">
                 <div class="step-item" data-step="1">
                     <span class="step-icon active"></span>
@@ -203,11 +103,15 @@
                 </div>
                 <div class="step-item" data-step="3">
                     <span class="step-icon pending"></span>
-                    <span class="step-text" data-i18n="intelligence.firstLogin.step3">Setting up automations</span>
+                    <span class="step-text" data-i18n="intelligence.firstLogin.step3">Building your plans</span>
                 </div>
                 <div class="step-item" data-step="4">
                     <span class="step-icon pending"></span>
-                    <span class="step-text" data-i18n="intelligence.firstLogin.step4">Configuring AI assistant</span>
+                    <span class="step-text" data-i18n="intelligence.firstLogin.step4">Setting up automations</span>
+                </div>
+                <div class="step-item" data-step="5">
+                    <span class="step-icon pending"></span>
+                    <span class="step-text" data-i18n="intelligence.firstLogin.step5">Configuring AI assistant</span>
                 </div>
             </div>
         </div>
@@ -225,6 +129,7 @@
                 <div class="app-ready-text">
                     <h2 data-i18n="intelligence.appReady.title">Your loyalty app is ready!</h2>
                     <p data-i18n="intelligence.appReady.subtitle">Royalty AI built your program. Preview it or customize the details.</p>
+                    <p class="app-ready-stats" id="app-ready-stats"></p>
                 </div>
                 <div class="app-ready-actions">
                     <a href="#" id="preview-app-btn" class="btn btn-primary">
@@ -234,7 +139,15 @@
                         </svg>
                         <span data-i18n="intelligence.appReady.preview">Preview App</span>
                     </a>
-                    <a href="/app/apps.html" class="btn btn-secondary" data-i18n="intelligence.appReady.customize">Customize</a>
+                    <a href="#" id="test-app-btn" class="btn btn-secondary" target="_blank">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                        <span data-i18n="intelligence.appReady.testApp">Test Your App</span>
+                    </a>
+                    <a href="/app/automations.html" class="btn btn-ghost" data-i18n="intelligence.appReady.viewPlans">View Plans</a>
                 </div>
             </div>
             <div class="autonomy-toggle">
@@ -274,7 +187,12 @@
     <script src="utils.js?v=5"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="audit-log.js?v=1"></script>
+    <script src="templates-library.js?v=2"></script>
     <script src="sidebar.js?v=16"></script>
-    <script src="intelligence.js?v=5"></script>
+    <!-- Fluid Orb 3D Dashboard -->
+    <script src="crown-materials.js?v=10"></script>
+    <script type="module" src="crown-scene.js?v=11"></script>
+    <script src="crown-dashboard.js?v=4"></script>
+    <script src="intelligence.js?v=8"></script>
 </body>
 </html>
