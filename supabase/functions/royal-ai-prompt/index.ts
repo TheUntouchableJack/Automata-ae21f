@@ -7,6 +7,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { webSearch, saveResearchFindings, extractInsights } from '../_shared/web-search.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -344,7 +345,7 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
   },
   {
     name: 'read_automations',
-    description: 'Query configured automations and campaigns. Use to understand what loyalty automations are active (birthday rewards, win-back, streak bonuses) and their performance.',
+    description: 'Query configured automations and campaigns with performance metrics. Returns open rates, click rates, and identifies top/under performers. Use to understand what works.',
     input_schema: {
       type: 'object',
       properties: {
@@ -356,6 +357,16 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
         type: {
           type: 'string',
           description: 'Filter by automation type (e.g., birthday, win_back, streak_bonus)'
+        },
+        include_performance: {
+          type: 'boolean',
+          description: 'Include detailed performance metrics (open rates, click rates). Default: true',
+          default: true
+        },
+        days: {
+          type: 'number',
+          description: 'Number of days to calculate performance metrics. Default: 30',
+          default: 30
         }
       },
       required: []
@@ -1038,16 +1049,18 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   },
 
   // ---------------------------------------------------------------------------
-  // read_automations - Query active automations
+  // read_automations - Query active automations with performance metrics
   // ---------------------------------------------------------------------------
   read_automations: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
     const { supabase, organizationId, appId } = ctx
     const status = input.status as string
     const type = input.type as string
+    const includePerformance = input.include_performance !== false
+    const days = (input.days as number) || 30
 
     const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
 
-    // Query automations table
+    // Query automations table (legacy)
     let query = supabase
       .from('automations')
       .select('id, name, automation_type, is_active, trigger_config, action_config, template_id, created_at')
@@ -1056,7 +1069,6 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       query = query.eq('app_id', targetAppId)
     }
 
-    // Filter by is_archived = false
     query = query.eq('is_archived', false)
 
     if (status === 'active') {
@@ -1075,6 +1087,49 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       return { success: false, error: error.message }
     }
 
+    // Get performance metrics from automation_definitions if enabled
+    let performanceData: Record<string, unknown>[] = []
+    let rankings: Record<string, unknown> | null = null
+
+    if (includePerformance) {
+      // Get performance from automation_definitions table
+      const { data: perfData } = await supabase.rpc('get_automation_performance', {
+        p_organization_id: organizationId,
+        p_app_id: targetAppId || null,
+        p_days: days
+      })
+      performanceData = perfData || []
+
+      // Get rankings (top/bottom performers)
+      const { data: rankData } = await supabase.rpc('get_automation_rankings', {
+        p_organization_id: organizationId,
+        p_days: days
+      })
+      rankings = rankData || null
+    }
+
+    // Create a map of automation_id -> performance for quick lookup
+    const perfMap = new Map(performanceData.map((p: Record<string, unknown>) =>
+      [p.automation_id as string, p]
+    ))
+
+    // Enhance automations with performance data if available
+    const enhancedAutomations = (automations || []).map(a => {
+      const perf = perfMap.get(a.id)
+      return {
+        ...a,
+        performance: perf ? {
+          trigger_count: perf.trigger_count,
+          success_rate_pct: perf.success_rate_pct,
+          total_sent: perf.total_sent,
+          open_rate_pct: perf.open_rate_pct,
+          click_rate_pct: perf.click_rate_pct,
+          bounce_rate_pct: perf.bounce_rate_pct,
+          last_triggered_at: perf.last_triggered_at
+        } : null
+      }
+    })
+
     const summary = {
       total_automations: automations?.length || 0,
       active: (automations || []).filter(a => a.is_active).length,
@@ -1082,12 +1137,21 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
         const aType = a.automation_type || 'unknown'
         acc[aType] = (acc[aType] || 0) + 1
         return acc
-      }, {} as Record<string, number>)
+      }, {} as Record<string, number>),
+      ...(rankings ? {
+        avg_open_rate_pct: rankings.avg_open_rate_pct,
+        top_performer: rankings.top_performer,
+        underperformer: rankings.underperformer
+      } : {})
     }
 
     return {
       success: true,
-      data: { summary, automations: automations || [] },
+      data: {
+        summary,
+        automations: enhancedAutomations,
+        performance_period_days: days
+      },
       metadata: { rowCount: automations?.length || 0 }
     }
   },
@@ -1193,45 +1257,28 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const industry = (input.industry as string) || 'business'
     const location = (input.location as string) || ''
     const query = (input.query as string) || `${industry} competitors ${location}`.trim()
-    const serperKey = Deno.env.get('SERPER_API_KEY')
 
-    // Stub response - ready for Serper integration
-    if (!serperKey) {
-      const stubInsights = [
-        `To research ${industry} competitors${location ? ` in ${location}` : ''}, I would search for:`,
-        `• Direct competitors offering similar products/services`,
-        `• Their pricing models and market positioning`,
-        `• Customer reviews and satisfaction levels`,
-        `• Marketing strategies and channels used`
-      ]
+    // Use shared web search module (handles API key check and caching internally)
+    const searchResult = await webSearch(supabase, organizationId, query, 'competitors', { num: 5 })
 
-      // Save stub as knowledge to test the flow
-      await supabase.from('business_knowledge').insert({
-        organization_id: organizationId,
-        layer: 'market',
-        category: 'competition',
-        fact: `Research needed: ${industry} competitor analysis${location ? ` for ${location}` : ''}`,
-        confidence: 0.3,
-        importance: 'medium',
-        source_type: 'research_stub',
-        status: 'active'
-      }).select()
-
-      return {
-        success: true,
-        data: {
-          query,
-          insights: stubInsights,
-          results: [],
-          api_status: 'not_configured',
-          action_required: 'Add SERPER_API_KEY to Supabase secrets for live web search'
-        },
-        metadata: { source: 'stub', saved_to_knowledge: true }
+    if (searchResult.source === 'serper' && searchResult.results.length > 0) {
+      // Save real insights to knowledge base
+      const insights = extractInsights(searchResult.results)
+      if (insights.length > 0) {
+        await saveResearchFindings(supabase, organizationId, 'market', 'competition', insights, query)
       }
     }
 
-    // TODO: Real Serper API call when key is present
-    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
+    return {
+      success: searchResult.success,
+      data: {
+        query: searchResult.query,
+        results: searchResult.results,
+        cached: searchResult.cached,
+        api_status: searchResult.source === 'serper' ? 'configured' : 'not_configured'
+      },
+      metadata: { source: searchResult.source }
+    }
   },
 
   search_regulations: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
@@ -1240,36 +1287,26 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const state = (input.state as string) || ''
     const industry = (input.industry as string) || ''
     const query = `${topic} regulations ${state} ${industry}`.trim()
-    const serperKey = Deno.env.get('SERPER_API_KEY')
 
-    if (!serperKey) {
-      const stubInsights = [
-        `Regulatory research for ${topic}${state ? ` in ${state}` : ''}:`,
-        `• Federal/state compliance requirements`,
-        `• Industry-specific licensing needs`,
-        `• Recent regulatory changes (2025-2026)`,
-        `• Common compliance pitfalls to avoid`
-      ]
+    const searchResult = await webSearch(supabase, organizationId, query, 'regulations', { num: 5 })
 
-      await supabase.from('business_knowledge').insert({
-        organization_id: organizationId,
-        layer: 'market',
-        category: 'regulations',
-        fact: `Research needed: ${topic} regulatory requirements${state ? ` for ${state}` : ''}`,
-        confidence: 0.3,
-        importance: 'high',
-        source_type: 'research_stub',
-        status: 'active'
-      }).select()
-
-      return {
-        success: true,
-        data: { query, insights: stubInsights, results: [], api_status: 'not_configured' },
-        metadata: { source: 'stub', saved_to_knowledge: true }
+    if (searchResult.source === 'serper' && searchResult.results.length > 0) {
+      const insights = extractInsights(searchResult.results)
+      if (insights.length > 0) {
+        await saveResearchFindings(supabase, organizationId, 'market', 'regulations', insights, query)
       }
     }
 
-    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
+    return {
+      success: searchResult.success,
+      data: {
+        query: searchResult.query,
+        results: searchResult.results,
+        cached: searchResult.cached,
+        api_status: searchResult.source === 'serper' ? 'configured' : 'not_configured'
+      },
+      metadata: { source: searchResult.source }
+    }
   },
 
   search_market_trends: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
@@ -1278,36 +1315,26 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const topic = (input.topic as string) || 'trends'
     const timeframe = (input.timeframe as string) || '2026'
     const query = `${industry} ${topic} ${timeframe}`.trim()
-    const serperKey = Deno.env.get('SERPER_API_KEY')
 
-    if (!serperKey) {
-      const stubInsights = [
-        `Market trend analysis for ${industry} (${timeframe}):`,
-        `• Consumer behavior shifts`,
-        `• Technology adoption patterns`,
-        `• Economic factors affecting the industry`,
-        `• Emerging opportunities and threats`
-      ]
+    const searchResult = await webSearch(supabase, organizationId, query, 'trends', { num: 5 })
 
-      await supabase.from('business_knowledge').insert({
-        organization_id: organizationId,
-        layer: 'market',
-        category: 'trends',
-        fact: `Research needed: ${industry} market trends for ${timeframe}`,
-        confidence: 0.3,
-        importance: 'medium',
-        source_type: 'research_stub',
-        status: 'active'
-      }).select()
-
-      return {
-        success: true,
-        data: { query, insights: stubInsights, results: [], api_status: 'not_configured' },
-        metadata: { source: 'stub', saved_to_knowledge: true }
+    if (searchResult.source === 'serper' && searchResult.results.length > 0) {
+      const insights = extractInsights(searchResult.results)
+      if (insights.length > 0) {
+        await saveResearchFindings(supabase, organizationId, 'market', 'trends', insights, query)
       }
     }
 
-    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
+    return {
+      success: searchResult.success,
+      data: {
+        query: searchResult.query,
+        results: searchResult.results,
+        cached: searchResult.cached,
+        api_status: searchResult.source === 'serper' ? 'configured' : 'not_configured'
+      },
+      metadata: { source: searchResult.source }
+    }
   },
 
   search_benchmarks: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
@@ -1316,36 +1343,26 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const metric = (input.metric as string) || 'customer retention'
     const businessSize = (input.business_size as string) || 'small business'
     const query = `${industry} ${metric} benchmark ${businessSize}`.trim()
-    const serperKey = Deno.env.get('SERPER_API_KEY')
 
-    if (!serperKey) {
-      const stubInsights = [
-        `Industry benchmark research for ${industry}:`,
-        `• ${metric} standards for ${businessSize}`,
-        `• Top/median/bottom quartile performance`,
-        `• Key factors driving benchmark performance`,
-        `• How to measure and improve your metrics`
-      ]
+    const searchResult = await webSearch(supabase, organizationId, query, 'benchmarks', { num: 5 })
 
-      await supabase.from('business_knowledge').insert({
-        organization_id: organizationId,
-        layer: 'market',
-        category: 'benchmarks',
-        fact: `Research needed: ${industry} ${metric} benchmarks for ${businessSize}`,
-        confidence: 0.3,
-        importance: 'medium',
-        source_type: 'research_stub',
-        status: 'active'
-      }).select()
-
-      return {
-        success: true,
-        data: { query, insights: stubInsights, results: [], api_status: 'not_configured' },
-        metadata: { source: 'stub', saved_to_knowledge: true }
+    if (searchResult.source === 'serper' && searchResult.results.length > 0) {
+      const insights = extractInsights(searchResult.results)
+      if (insights.length > 0) {
+        await saveResearchFindings(supabase, organizationId, 'market', 'benchmarks', insights, query)
       }
     }
 
-    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
+    return {
+      success: searchResult.success,
+      data: {
+        query: searchResult.query,
+        results: searchResult.results,
+        cached: searchResult.cached,
+        api_status: searchResult.source === 'serper' ? 'configured' : 'not_configured'
+      },
+      metadata: { source: searchResult.source }
+    }
   },
 
   // ---------------------------------------------------------------------------

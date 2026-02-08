@@ -330,6 +330,24 @@ async function processBatch(
       })
       stats.failed++
     }
+
+    // Insert into message_recipients for webhook tracking
+    // This allows us to look up batch_id and member_id when we receive webhook events
+    if (result.message_id || result.success) {
+      await supabase
+        .from('message_recipients')
+        .upsert({
+          batch_id: batch.id,
+          member_id: member.id,
+          message_id: result.message_id || null,
+          channel: batch.channel,
+          status: result.success ? (resendApiKey ? 'sent' : 'stubbed') : 'failed',
+          error_message: result.error || null,
+          sent_at: new Date().toISOString()
+        }, {
+          onConflict: 'batch_id,member_id'
+        })
+    }
   }
 
   // Update batch with final stats
