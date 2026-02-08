@@ -393,6 +393,89 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
     }
   },
   {
+    name: 'create_automation',
+    description: 'Create a custom automation with guardrails. Validates config, checks for duplicates, and calculates confidence for auto-approval. LIMITS: max 500 points, max 5x multiplier, max 50% discount.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Automation name (human-readable)'
+        },
+        description: {
+          type: 'string',
+          description: 'Brief description of what this automation does'
+        },
+        category: {
+          type: 'string',
+          description: 'Automation category',
+          enum: ['welcome', 'engagement', 'retention', 'recovery', 'behavioral', 'proactive']
+        },
+        trigger: {
+          type: 'object',
+          description: 'Trigger configuration',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['event', 'schedule', 'condition', 'ai'],
+              description: 'Trigger type'
+            },
+            event: {
+              type: 'string',
+              description: 'Event name (for event triggers): member_signup, visit, purchase, birthday, inactivity_30d, tier_change'
+            },
+            schedule: {
+              type: 'string',
+              description: 'Cron schedule (for schedule triggers)'
+            },
+            condition: {
+              type: 'object',
+              description: 'Condition config (for condition triggers)'
+            }
+          }
+        },
+        action: {
+          type: 'object',
+          description: 'Action configuration',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['send_message', 'award_points', 'create_promo', 'notify_staff'],
+              description: 'Action type'
+            },
+            config: {
+              type: 'object',
+              description: 'Action-specific config (channel, subject, body for messages; points for awards)'
+            }
+          }
+        },
+        limits: {
+          type: 'object',
+          description: 'Rate limiting configuration',
+          properties: {
+            delay_minutes: {
+              type: 'number',
+              description: 'Delay before executing (default: 0)'
+            },
+            max_frequency_days: {
+              type: 'number',
+              description: 'Minimum days between triggers for same member'
+            },
+            daily_limit: {
+              type: 'number',
+              description: 'Max executions per day'
+            }
+          }
+        },
+        auto_enable: {
+          type: 'boolean',
+          description: 'Enable immediately if confidence is high enough (autonomous mode)'
+        }
+      },
+      required: ['name', 'category', 'trigger', 'action']
+    }
+  },
+  {
     name: 'read_business_profile',
     description: 'Query the business profile including financial metrics, market position, and operational details. Use before making recommendations to understand the business model.',
     input_schema: {
@@ -1207,6 +1290,77 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
           : 'Safe to proceed with messaging campaign.'
       },
       metadata: { segment, threshold }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // create_automation - Create custom automation with guardrails
+  // ---------------------------------------------------------------------------
+  create_automation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+
+    const name = input.name as string
+    const description = input.description as string || ''
+    const category = input.category as string
+    const trigger = input.trigger as Record<string, unknown>
+    const action = input.action as Record<string, unknown>
+    const limits = input.limits as Record<string, unknown> || {}
+    const autoEnable = input.auto_enable as boolean || false
+
+    // Validation
+    if (!name || !category || !trigger || !action) {
+      return { success: false, error: 'Missing required fields: name, category, trigger, action' }
+    }
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+
+    // Call the RPC to create with guardrails
+    const { data: result, error } = await supabase.rpc('create_custom_automation', {
+      p_organization_id: organizationId,
+      p_app_id: targetAppId,
+      p_name: name,
+      p_description: description,
+      p_category: category,
+      p_trigger_type: trigger.type as string || 'event',
+      p_trigger_event: trigger.event as string || null,
+      p_trigger_condition: trigger.condition || null,
+      p_trigger_schedule: trigger.schedule as string || null,
+      p_action_type: action.type as string || 'send_message',
+      p_action_config: action.config || {},
+      p_delay_minutes: (limits.delay_minutes as number) || 0,
+      p_max_frequency_days: (limits.max_frequency_days as number) || null,
+      p_daily_limit: (limits.daily_limit as number) || null,
+      p_auto_enable: autoEnable,
+      p_created_by: 'ai'
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    // Check if creation failed due to validation or duplicate
+    if (result && !result.success) {
+      return {
+        success: false,
+        error: result.error,
+        data: {
+          validation_errors: result.validation_errors,
+          duplicate_info: result.duplicate_info
+        }
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        automation_id: result.automation_id,
+        name: result.name,
+        is_enabled: result.is_enabled,
+        confidence: result.confidence,
+        message: result.message,
+        warnings: result.validation_warnings || result.duplicate_warning || null
+      },
+      metadata: { auto_enabled: result.is_enabled }
     }
   },
 
