@@ -48,6 +48,106 @@ const CrownDashboard = (function() {
 
     let orgCurrency = CURRENCY_MAP['US']; // Default to USD, updated on org load
 
+    // AI Recommendation Templates - Define what gets created when accepting automation cards
+    const AI_TEMPLATES = {
+        'welcome-email': {
+            projectName: 'Customer Onboarding',
+            projectDesc: 'Automated welcome and onboarding for new customers',
+            automation: {
+                name: 'Welcome Email Series',
+                description: 'Automatically welcome new customers with a personalized email series',
+                type: 'email',
+                frequency: 'daily',
+                icon: 'welcome',
+                template_id: 'welcome-series'
+            }
+        },
+        'follow-up': {
+            projectName: 'Customer Follow-ups',
+            projectDesc: 'Automated follow-up communications after customer interactions',
+            automation: {
+                name: 'Post-Visit Follow-up',
+                description: 'Send thank you messages and collect feedback after visits',
+                type: 'email',
+                frequency: 'daily',
+                icon: 'follow_up',
+                template_id: 'post-visit-follow-up'
+            }
+        },
+        're-engagement': {
+            projectName: 'Customer Retention',
+            projectDesc: 'Win back inactive customers and prevent churn',
+            automation: {
+                name: 'Win-Back Campaign',
+                description: 'Re-engage customers who haven\'t visited in 30+ days',
+                type: 'email',
+                frequency: 'weekly',
+                icon: 'win_back',
+                template_id: 'win-back-campaign'
+            }
+        },
+        'birthday': {
+            projectName: 'Customer Celebrations',
+            projectDesc: 'Celebrate customer milestones and special days',
+            automation: {
+                name: 'Birthday Rewards',
+                description: 'Send personalized birthday greetings with special offers',
+                type: 'email',
+                frequency: 'daily',
+                icon: 'birthday',
+                template_id: 'birthday-rewards'
+            }
+        },
+        'review-request': {
+            projectName: 'Reputation Management',
+            projectDesc: 'Build your online reputation through customer reviews',
+            automation: {
+                name: 'Review Requests',
+                description: 'Ask satisfied customers for reviews at the right time',
+                type: 'email',
+                frequency: 'weekly',
+                icon: 'feedback',
+                template_id: 'review-request'
+            }
+        },
+        'newsletter': {
+            projectName: 'Customer Communications',
+            projectDesc: 'Keep customers informed and engaged',
+            automation: {
+                name: 'Monthly Newsletter',
+                description: 'Monthly updates, news, and curated content for your audience',
+                type: 'email',
+                frequency: 'monthly',
+                icon: 'newsletter',
+                template_id: 'monthly-newsletter'
+            }
+        },
+        'loyalty': {
+            projectName: 'Loyalty Program',
+            projectDesc: 'Reward and retain your best customers',
+            automation: {
+                name: 'Loyalty Rewards',
+                description: 'Automatically reward customers with points and VIP perks',
+                type: 'workflow',
+                frequency: 'weekly',
+                icon: 'loyalty',
+                template_id: 'loyalty-program'
+            }
+        },
+        'thank-you': {
+            projectName: 'Customer Appreciation',
+            projectDesc: 'Show gratitude to your customers',
+            automation: {
+                name: 'Thank You Notes',
+                description: 'Send personalized thank you messages after visits',
+                type: 'email',
+                frequency: 'daily',
+                icon: 'thank_you',
+                template_id: 'thank-you-note'
+            }
+        }
+    };
+
     // ===== CONSTANTS =====
 
     // localStorage keys
@@ -873,9 +973,115 @@ const CrownDashboard = (function() {
         return card;
     }
 
+    /**
+     * Create automation from an AI suggestion card
+     * @param {Object} idea - The idea object from the card
+     * @param {boolean} autoActivate - Whether to activate immediately (autonomous mode)
+     */
+    async function createAutomationFromIdea(idea, autoActivate) {
+        const templateId = idea.action_payload?.template_id;
+        const template = AI_TEMPLATES[templateId];
+        if (!template) {
+            console.warn('Template not found:', templateId);
+            return;
+        }
+
+        try {
+            // Get current user and organization
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: orgResult } = await supabase
+                .from('organization_members')
+                .select('organization:organizations(id)')
+                .eq('user_id', user.id)
+                .single();
+
+            if (!orgResult?.organization?.id) {
+                console.error('Organization not found');
+                return;
+            }
+
+            const orgId = orgResult.organization.id;
+
+            // Create project first
+            const { data: project, error: projectError } = await supabase
+                .from('projects')
+                .insert({
+                    organization_id: orgId,
+                    name: template.projectName,
+                    description: template.projectDesc,
+                    settings: { created_from: 'ai_suggestion' }
+                })
+                .select()
+                .single();
+
+            if (projectError) {
+                console.error('Error creating project:', projectError);
+                showActivityToast('error', 'Failed to create project');
+                return;
+            }
+
+            // Create automation
+            const { data: automation, error: automationError } = await supabase
+                .from('automations')
+                .insert({
+                    project_id: project.id,
+                    name: template.automation.name,
+                    description: template.automation.description,
+                    type: template.automation.type,
+                    frequency: template.automation.frequency,
+                    icon: template.automation.icon,
+                    template_id: template.automation.template_id,
+                    is_active: autoActivate,
+                    settings: { created_from: 'ai_suggestion', template_id: templateId }
+                })
+                .select()
+                .single();
+
+            if (automationError) {
+                console.error('Error creating automation:', automationError);
+                showActivityToast('error', 'Failed to create automation');
+                return;
+            }
+
+            // Show appropriate toast
+            showActivityToast(
+                autoActivate ? 'success' : 'info',
+                autoActivate
+                    ? `Created & activated "${template.automation.name}"`
+                    : `Created "${template.automation.name}" - activate in Automations`
+            );
+
+            // Log audit
+            if (typeof AuditLog !== 'undefined') {
+                AuditLog.logAutomationCreate(orgId, automation);
+            }
+
+        } catch (err) {
+            console.error('Failed to create automation:', err);
+            showActivityToast('error', 'Failed to create automation');
+        }
+    }
+
     function handleCardAction(action, recId, cardEl) {
         try {
         if (action === 'accept') {
+            // Check for automation idea data and create automation if present
+            const ideaBtn = cardEl.querySelector('[data-idea]');
+            if (ideaBtn) {
+                try {
+                    const idea = JSON.parse(decodeURIComponent(ideaBtn.dataset.idea));
+                    if (idea?.action_type === 'create_automation' ||
+                        idea?.action_type === 'create_project_with_automation') {
+                        // Create automation: active in autonomous mode, inactive in review mode
+                        createAutomationFromIdea(idea, modeState.current === 'autonomous');
+                    }
+                } catch (e) {
+                    console.error('Failed to parse idea data:', e);
+                }
+            }
+
             // Find and click the accept button in the legacy recommendations list
             const legacyBtn = document.querySelector(`[data-recommendation-id="${recId}"] .btn-implement, [data-rec-id="${recId}"]`);
             if (legacyBtn) {
@@ -2176,8 +2382,21 @@ const CrownDashboard = (function() {
         });
 
         if (error) {
+            // Classify error type
+            const isAuthError = error?.status === 401 ||
+                                error?.message?.includes('401') ||
+                                error?.message?.includes('Unauthorized');
+            const isServerError = error?.status >= 500 ||
+                                  error?.message?.includes('500') ||
+                                  error?.message?.includes('Internal Server Error');
+
+            // Handle server errors immediately (no retry)
+            if (isServerError) {
+                throw new Error('Something went wrong on our end. Please try again in a moment.');
+            }
+
             // Handle auth issues with automatic retry
-            if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('non-2xx')) {
+            if (isAuthError) {
                 // Refresh session and retry ONCE
                 const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
                 if (refreshData?.session) {
@@ -2189,6 +2408,12 @@ const CrownDashboard = (function() {
                         }
                     });
                     if (retryError) {
+                        // Check if retry also failed due to server error
+                        const retryIsServerError = retryError?.status >= 500 ||
+                                                   retryError?.message?.includes('500');
+                        if (retryIsServerError) {
+                            throw new Error('Something went wrong on our end. Please try again in a moment.');
+                        }
                         throw new Error('Session expired. Please refresh the page and log in again.');
                     }
                     // Update thread ID from retry response
