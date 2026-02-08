@@ -2,6 +2,15 @@
 -- Creates tables for message batches, promotions, automation definitions, and templates
 
 -- ============================================================================
+-- 0. CLEANUP - Drop existing tables to allow re-running (idempotent)
+-- ============================================================================
+DROP TABLE IF EXISTS automation_executions CASCADE;
+DROP TABLE IF EXISTS automation_definitions CASCADE;
+DROP TABLE IF EXISTS message_templates CASCADE;
+DROP TABLE IF EXISTS app_promotions CASCADE;
+DROP TABLE IF EXISTS app_message_batches CASCADE;
+
+-- ============================================================================
 -- 1. MESSAGE BATCHES - Email/push/SMS queuing and delivery tracking
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS app_message_batches (
@@ -102,7 +111,7 @@ CREATE INDEX idx_promotions_scheduled ON app_promotions(starts_at) WHERE status 
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS automation_definitions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,  -- NULL for system templates
     app_id UUID REFERENCES customer_apps(id) ON DELETE CASCADE,
 
     -- Identity
@@ -252,21 +261,21 @@ ALTER TABLE message_templates ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their org message batches" ON app_message_batches
     FOR SELECT USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
 CREATE POLICY "Users can insert message batches for their org" ON app_message_batches
     FOR INSERT WITH CHECK (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
 CREATE POLICY "Users can update their org message batches" ON app_message_batches
     FOR UPDATE USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
@@ -274,14 +283,14 @@ CREATE POLICY "Users can update their org message batches" ON app_message_batche
 CREATE POLICY "Users can view their org promotions" ON app_promotions
     FOR SELECT USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
 CREATE POLICY "Users can manage their org promotions" ON app_promotions
     FOR ALL USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
@@ -289,7 +298,7 @@ CREATE POLICY "Users can manage their org promotions" ON app_promotions
 CREATE POLICY "Users can view their org automations" ON automation_definitions
     FOR SELECT USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
         OR is_template = TRUE
     );
@@ -297,7 +306,7 @@ CREATE POLICY "Users can view their org automations" ON automation_definitions
 CREATE POLICY "Users can manage their org automations" ON automation_definitions
     FOR ALL USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
@@ -305,7 +314,7 @@ CREATE POLICY "Users can manage their org automations" ON automation_definitions
 CREATE POLICY "Users can view their org automation executions" ON automation_executions
     FOR SELECT USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
@@ -313,7 +322,7 @@ CREATE POLICY "Users can view their org automation executions" ON automation_exe
 CREATE POLICY "Users can view message templates" ON message_templates
     FOR SELECT USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
         OR is_system = TRUE
         OR organization_id IS NULL
@@ -322,7 +331,7 @@ CREATE POLICY "Users can view message templates" ON message_templates
 CREATE POLICY "Users can manage their org templates" ON message_templates
     FOR ALL USING (
         organization_id IN (
-            SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()
+            SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
         )
     );
 
