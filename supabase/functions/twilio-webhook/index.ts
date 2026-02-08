@@ -32,8 +32,8 @@ async function verifyTwilioSignature(
   signature: string | null
 ): Promise<boolean> {
   if (!twilioAuthToken) {
-    console.warn('TWILIO_AUTH_TOKEN not set, skipping signature verification')
-    return true  // Allow in development
+    console.error('TWILIO_AUTH_TOKEN not configured - rejecting webhook')
+    return false  // Fail-closed: reject if not configured
   }
 
   if (!signature) {
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
       console.error('Error processing event:', error)
       // Return 200 to Twilio even on error (they'll retry on non-2xx)
       return new Response(
-        JSON.stringify({ received: true, error: error.message }),
+        JSON.stringify({ received: true, error: 'Failed to process event' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
     console.error('Webhook error:', e)
     // Return 200 to prevent Twilio retries on parsing errors
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }),
+      JSON.stringify({ error: 'Internal webhook error' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

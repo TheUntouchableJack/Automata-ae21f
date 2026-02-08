@@ -71,8 +71,8 @@ async function verifyWebhookSignature(
   headers: Headers
 ): Promise<boolean> {
   if (!resendWebhookSecret) {
-    console.warn('RESEND_WEBHOOK_SECRET not set, skipping signature verification')
-    return true  // Allow in development
+    console.error('RESEND_WEBHOOK_SECRET not configured - rejecting webhook')
+    return false  // Fail-closed: reject if not configured
   }
 
   const svixId = headers.get('svix-id')
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
     if (error) {
       console.error('Error processing event:', error)
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: 'Failed to process event' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error('Webhook error:', e)
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }),
+      JSON.stringify({ error: 'Internal webhook error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
