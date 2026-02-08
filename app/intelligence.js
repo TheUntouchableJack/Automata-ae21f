@@ -168,18 +168,46 @@ const IntelligencePage = (function() {
                 businessPrompt = parsed.businessPrompt.trim().substring(0, 500);
             }
 
-            // Validate context - only extract known safe fields
+            // Validate context - only extract known safe fields (check both field names)
             let context = {};
-            if (parsed.context && typeof parsed.context === 'object') {
-                if (typeof parsed.context.industry === 'string') {
+            const ctxSource = parsed.context || parsed.businessContext || {};
+            if (ctxSource && typeof ctxSource === 'object') {
+                if (typeof ctxSource.industry === 'string') {
                     // Whitelist valid industries
                     const validIndustries = ['food', 'retail', 'health', 'service', 'technology', 'education', ''];
-                    const industry = parsed.context.industry.trim().substring(0, 100);
+                    const industry = ctxSource.industry.trim().substring(0, 100);
                     context.industry = validIndustries.includes(industry) ? industry : '';
                 }
             }
 
-            return { isValid: true, data: { businessPrompt, context } };
+            // Validate selectedPlans array (check both field names for compat)
+            let selectedPlans = [];
+            const plansSource = parsed.selectedPlans || parsed.selectedTemplates || [];
+            if (Array.isArray(plansSource)) {
+                selectedPlans = plansSource
+                    .filter(id => typeof id === 'string')
+                    .map(id => id.trim().substring(0, 100))
+                    .slice(0, 20);
+            }
+
+            // Validate businessDetails
+            let businessDetails = {};
+            if (parsed.businessDetails && typeof parsed.businessDetails === 'object') {
+                if (typeof parsed.businessDetails.businessName === 'string') {
+                    businessDetails.businessName = parsed.businessDetails.businessName.trim().substring(0, 200);
+                }
+                if (typeof parsed.businessDetails.businessType === 'string') {
+                    businessDetails.businessType = parsed.businessDetails.businessType.trim().substring(0, 100);
+                }
+                if (typeof parsed.businessDetails.customerCount === 'string') {
+                    businessDetails.customerCount = parsed.businessDetails.customerCount.trim().substring(0, 20);
+                }
+                if (typeof parsed.businessDetails.websiteUrl === 'string') {
+                    businessDetails.websiteUrl = parsed.businessDetails.websiteUrl.trim().substring(0, 500);
+                }
+            }
+
+            return { isValid: true, data: { businessPrompt, context, selectedPlans, businessDetails } };
         } catch (e) {
             console.error('Invalid onboarding data format:', e);
             return { isValid: false, data: null };
@@ -196,15 +224,6 @@ const IntelligencePage = (function() {
         }
         currentUserId = user.id;
 
-        // Check for first login flow
-        const urlParams = new URLSearchParams(window.location.search);
-        const isFirstLogin = urlParams.get('firstLogin') === 'true';
-
-        if (isFirstLogin) {
-            // Clear the URL param
-            history.replaceState(null, '', '/app/intelligence.html');
-        }
-
         // Get organization and user info
         const [memberResult, userInfoResult, orgResult] = await Promise.all([
             supabase
@@ -213,8 +232,8 @@ const IntelligencePage = (function() {
                 .eq('user_id', user.id)
                 .single(),
             supabase
-                .from('user_profiles')
-                .select('full_name')
+                .from('profiles')
+                .select('first_name, last_name')
                 .eq('id', user.id)
                 .single(),
             supabase
@@ -237,11 +256,11 @@ const IntelligencePage = (function() {
         // Setup sidebar with proper data
         if (typeof AppSidebar !== 'undefined') {
             AppSidebar.init({
-                name: userInfo?.full_name || user.email,
+                name: userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || user.email : user.email,
                 email: user.email,
                 organization: orgData?.organizations || { name: 'My Organization' },
                 role: member.role,
-                isAdmin: userInfo?.is_admin === true
+                isAdmin: (userInfo?.is_admin === true) || (userInfo?.profile?.is_admin === true)
             });
         }
 
@@ -254,11 +273,25 @@ const IntelligencePage = (function() {
                              localStorage.getItem('royalty_onboarding');
 
         if (isFirstLogin && organizationId) {
+            // Clear the URL param
+            history.replaceState(null, '', '/app/intelligence.html');
             await runFirstLoginFlow();
         } else {
             // Normal flow - load recommendations
             await loadRecommendations();
             updateStats();
+        }
+
+        // Initialize Crown 3D Dashboard (after auth + data loaded)
+        if (typeof CrownDashboard !== 'undefined') {
+            CrownDashboard.init();
+        } else {
+            // Module script may not have loaded yet — wait for it
+            window.addEventListener('crown-ready', () => {
+                if (typeof CrownDashboard !== 'undefined') {
+                    CrownDashboard.init();
+                }
+            });
         }
     }
 
@@ -270,7 +303,6 @@ const IntelligencePage = (function() {
         // ===== QA FIX: Prevent duplicate app creation on refresh =====
         const inProgress = sessionStorage.getItem('royalty_app_creation_in_progress');
         if (inProgress === 'true') {
-            console.log('App creation already in progress, skipping');
             return;
         }
 
@@ -285,7 +317,6 @@ const IntelligencePage = (function() {
                 .single();
 
             if (existingApp) {
-                console.log('Onboarding app already exists:', existingApp.slug);
                 createdAppSlug = existingApp.slug;
                 localStorage.removeItem('royalty_onboarding');
                 showAppReadyBanner();
@@ -303,28 +334,51 @@ const IntelligencePage = (function() {
         // Show modal
         modal.style.display = 'flex';
 
+        // Start particle animation
+        const particleCleanup = initLoadingParticles();
+
+        // Set context text from onboarding data
+        const rawData = localStorage.getItem('royalty_onboarding');
+        const { data: onboardingData } = validateOnboardingData(rawData);
+        const contextEl = document.getElementById('loading-context-text');
+        if (contextEl && onboardingData) {
+            const planCount = onboardingData.selectedPlans?.length || 0;
+            const bizName = onboardingData.businessDetails?.businessName || '';
+            if (planCount > 0 && bizName) {
+                contextEl.textContent = `Creating ${planCount} plan${planCount > 1 ? 's' : ''} for ${bizName}`;
+            } else if (planCount > 0) {
+                contextEl.textContent = `Setting up ${planCount} plan${planCount > 1 ? 's' : ''} for your business`;
+            } else if (bizName) {
+                contextEl.textContent = `Personalizing for ${bizName}`;
+            }
+        }
+
         const steps = modal.querySelectorAll('.step-item');
-        const stepDelay = 800; // 0.8s per step
+        const progressFill = document.getElementById('loading-progress-fill');
+        const progressSteps = [20, 40, 60, 85, 100]; // percentage per step
         let appCreationResult = null;
+
+        // Helper to update progress bar
+        function setProgress(percent) {
+            if (progressFill) progressFill.style.width = percent + '%';
+        }
 
         // Animate through steps
         for (let i = 0; i < steps.length; i++) {
-            // Wait for step delay
-            await new Promise(r => setTimeout(r, stepDelay));
+            // Shorter initial delay for steps with real async work; longer for cosmetic-only steps
+            const delay = (i === 2 || i === 3) ? 400 : 800;
+            await new Promise(r => setTimeout(r, delay));
 
             const currentIcon = steps[i].querySelector('.step-icon');
 
-            // On step 3 (Setting up automations), actually create the app
+            // Step 3 (index 2): Create the loyalty app
             if (i === 2) {
                 appCreationResult = await createLoyaltyAppFromOnboarding();
 
-                // ===== ERROR HANDLING: Show error if app creation failed =====
                 if (!appCreationResult.success) {
-                    // Mark step as failed
                     currentIcon.classList.remove('pending', 'active');
                     currentIcon.classList.add('error');
-
-                    // Hide modal and show error
+                    if (particleCleanup) particleCleanup();
                     await new Promise(r => setTimeout(r, 500));
                     modal.style.display = 'none';
                     sessionStorage.removeItem('royalty_app_creation_in_progress');
@@ -332,6 +386,14 @@ const IntelligencePage = (function() {
                     return;
                 }
             }
+
+            // Step 4 (index 3): Create automations from selected plans
+            if (i === 3 && appCreationResult?.success && appCreationResult.app) {
+                await createAutomationsFromSelectedPlans(appCreationResult.app.id, onboardingData);
+            }
+
+            // Update progress bar
+            setProgress(progressSteps[i] || 100);
 
             // Mark current step as complete
             currentIcon.classList.remove('pending', 'active');
@@ -346,11 +408,14 @@ const IntelligencePage = (function() {
         }
 
         // Small delay before hiding modal
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 600));
+
+        // Cleanup particles
+        if (particleCleanup) particleCleanup();
 
         // Fade out modal
         modal.style.opacity = '0';
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 400));
         modal.style.display = 'none';
 
         // Clear flags and onboarding data
@@ -360,11 +425,106 @@ const IntelligencePage = (function() {
         // Only show banner if app was created successfully
         if (appCreationResult?.success) {
             showAppReadyBanner();
+            // Celebration!
+            if (typeof celebrate === 'function') celebrate();
         }
 
         // Load recommendations in background
         loadRecommendations();
         updateStats();
+    }
+
+    // Create automations from the user's selected plans
+    async function createAutomationsFromSelectedPlans(appId, onboardingData) {
+        const selectedPlans = onboardingData?.selectedPlans || [];
+        if (selectedPlans.length === 0) return;
+
+        for (const planId of selectedPlans) {
+            // Look up template info (templates-library.js is loaded globally)
+            const template = (typeof getTemplateById === 'function') ? getTemplateById(planId) : null;
+            if (!template) continue;
+
+            try {
+                await supabase.from('automations').insert({
+                    organization_id: organizationId,
+                    name: template.name,
+                    description: template.description,
+                    type: template.type || 'email',
+                    trigger_type: 'schedule',
+                    is_active: true,
+                    settings: {
+                        created_from: 'onboarding',
+                        template_id: planId,
+                        frequency: template.frequency || 'daily',
+                        ...(template.config || {})
+                    }
+                });
+            } catch (err) {
+                console.error('Error creating automation for', planId, err);
+            }
+        }
+    }
+
+    // Lightweight canvas particle system for loading screen
+    function initLoadingParticles() {
+        const canvas = document.getElementById('loading-particles');
+        if (!canvas) return null;
+
+        const ctx = canvas.getContext('2d');
+        let animationId = null;
+        let particles = [];
+        const PARTICLE_COUNT = 40;
+
+        function resize() {
+            canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1);
+            canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
+            ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Initialize particles
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+                x: Math.random() * canvas.offsetWidth,
+                y: Math.random() * canvas.offsetHeight,
+                radius: Math.random() * 2.5 + 0.5,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: -(Math.random() * 0.4 + 0.1),
+                alpha: Math.random() * 0.4 + 0.1
+            });
+        }
+
+        function draw() {
+            const w = canvas.offsetWidth;
+            const h = canvas.offsetHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            for (const p of particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Wrap around
+                if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+                if (p.x < -10) p.x = w + 10;
+                if (p.x > w + 10) p.x = -10;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+                ctx.fill();
+            }
+
+            animationId = requestAnimationFrame(draw);
+        }
+        draw();
+
+        // Return cleanup function
+        return function cleanup() {
+            if (animationId) cancelAnimationFrame(animationId);
+            window.removeEventListener('resize', resize);
+            particles = [];
+        };
     }
 
     // ===== ERROR HANDLING: Show error banner when app creation fails =====
@@ -436,11 +596,18 @@ const IntelligencePage = (function() {
 
         let businessPrompt = '';
         let industry = '';
+        let businessName = '';
+        let selectedPlans = [];
 
         if (isValid && data) {
             businessPrompt = data.businessPrompt;
             industry = data.context?.industry || '';
+            businessName = data.businessDetails?.businessName || '';
+            selectedPlans = data.selectedPlans || [];
         }
+
+        // Use business name from info-gathering, fall back to extraction from prompt
+        const appName = businessName || (businessPrompt ? extractBusinessName(businessPrompt) : 'My Loyalty Program');
 
         // Generate a unique slug
         const slug = 'app-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -451,14 +618,14 @@ const IntelligencePage = (function() {
                 .from('customer_apps')
                 .insert({
                     organization_id: organizationId,
-                    name: businessPrompt ? extractBusinessName(businessPrompt) : 'My Loyalty Program',
+                    name: appName,
                     slug: slug,
                     app_type: 'loyalty',
                     description: businessPrompt || 'AI-powered loyalty program',
                     branding: {
                         primary_color: '#7c3aed',
                         secondary_color: '#a855f7',
-                        logo_text: 'R'
+                        logo_text: appName.charAt(0).toUpperCase() || 'R'
                     },
                     features: {
                         points: true,
@@ -471,7 +638,9 @@ const IntelligencePage = (function() {
                         points_per_visit: 10,
                         created_from: 'onboarding',
                         business_context: businessPrompt,
-                        industry: industry
+                        industry: industry,
+                        selected_plans: selectedPlans,
+                        business_details: data?.businessDetails || {}
                     },
                     ai_autonomy_mode: 'auto_pilot',
                     is_active: true
@@ -480,12 +649,10 @@ const IntelligencePage = (function() {
                 .single();
 
             if (error) {
-                console.error('Error creating app:', error);
                 return { success: false, error: error.message };
             }
 
             createdAppSlug = app.slug;
-            console.log('Created loyalty app:', app.slug);
 
             // Create default rewards (non-blocking error)
             await createDefaultRewards(app.id);
@@ -493,7 +660,6 @@ const IntelligencePage = (function() {
             return { success: true, app };
 
         } catch (err) {
-            console.error('Error in createLoyaltyAppFromOnboarding:', err);
             return { success: false, error: err.message || 'Unknown error' };
         }
     }
@@ -553,6 +719,28 @@ const IntelligencePage = (function() {
         const previewBtn = document.getElementById('preview-app-btn');
         if (previewBtn && createdAppSlug) {
             previewBtn.href = `/customer-app/index.html?app=${createdAppSlug}`;
+        }
+
+        // Set test app link (opens customer-facing app)
+        const testBtn = document.getElementById('test-app-btn');
+        if (testBtn && createdAppSlug) {
+            testBtn.href = `/a/${createdAppSlug}`;
+        }
+
+        // Show automation count stats
+        const statsEl = document.getElementById('app-ready-stats');
+        if (statsEl) {
+            // Count automations created from onboarding
+            supabase.from('automations')
+                .select('id', { count: 'exact', head: true })
+                .eq('organization_id', organizationId)
+                .filter('settings->>created_from', 'eq', 'onboarding')
+                .then(({ count }) => {
+                    if (count && count > 0) {
+                        statsEl.textContent = `${count} automation${count > 1 ? 's' : ''} activated`;
+                        statsEl.style.display = 'block';
+                    }
+                });
         }
 
         // ===== CODE QUALITY FIX: Only attach listeners once (prevents listener leak) =====
@@ -686,8 +874,12 @@ const IntelligencePage = (function() {
 
             renderFilteredRecommendations();
             updateStats();
+
+            // Notify Crown Dashboard of loaded recommendations
+            document.dispatchEvent(new CustomEvent('crown:recommendations-loaded', {
+                detail: { recommendations: allRecommendations }
+            }));
         } catch (err) {
-            console.log('AI recommendations table not yet created:', err);
             allRecommendations = [];
             showEmptyState();
         }
@@ -943,6 +1135,9 @@ const IntelligencePage = (function() {
         analyzeBtn.innerHTML = '<span class="spinner"></span> Analyzing...';
         analyzeBtn.disabled = true;
 
+        // Notify Crown Dashboard
+        document.dispatchEvent(new Event('crown:analyzing'));
+
         showLoading();
 
         try {
@@ -964,6 +1159,11 @@ const IntelligencePage = (function() {
             if (recommendations.length > 0 && typeof celebrate === 'function') {
                 celebrate();
             }
+
+            // Notify Crown Dashboard — analysis complete
+            document.dispatchEvent(new CustomEvent('crown:analyzed', {
+                detail: { recommendations: allRecommendations }
+            }));
 
         } catch (error) {
             console.error('Error analyzing business:', error);
@@ -1338,6 +1538,11 @@ const IntelligencePage = (function() {
             if (typeof celebrate === 'function') {
                 celebrate();
             }
+
+            // Notify Crown Dashboard
+            document.dispatchEvent(new CustomEvent('crown:implemented', {
+                detail: { name: template?.automation?.name || payload?.title || 'Recommendation', recId }
+            }));
 
             // Show success
             if (card) {

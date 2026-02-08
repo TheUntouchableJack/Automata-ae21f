@@ -1,9 +1,12 @@
 // Supabase Edge Function: Royal AI Prompt
 // Conversational AI for business owners with mode-aware responses
 // Features: session memory, chat threads, review mode (cards) vs chat mode (conversational)
+// Phase 1: Business knowledge learning, discovery questions, and knowledge injection
+// Phase 2: Proactive discovery with context-aware question selection
+// Phase 3: Claude tool use for internal data queries and external research
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -13,9 +16,25 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const MODEL_ID = 'claude-sonnet-4-20250514'
 const MODEL_DISPLAY_NAME = 'Sonnet 4'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Allowed origins for CORS - production and development
+const ALLOWED_ORIGINS = [
+  'https://royaltyapp.ai',
+  'https://www.royaltyapp.ai',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+]
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 interface ExternalContext {
@@ -100,6 +119,556 @@ interface ChatResponse {
 
 type PromptResponse = ReviewResponse | ChatResponse
 
+// ============================================================================
+// KNOWLEDGE & DISCOVERY TYPES
+// ============================================================================
+
+interface BusinessKnowledge {
+  id: string
+  layer: 'operational' | 'customer' | 'financial' | 'market' | 'growth' | 'regulatory'
+  category: string
+  fact: string
+  confidence: number
+  importance: 'critical' | 'high' | 'medium' | 'low'
+  source_type: 'conversation' | 'research' | 'integration' | 'inferred'
+}
+
+interface DiscoveryQuestion {
+  question_id: string
+  domain: string
+  question: string
+  why_asking: string
+  priority: number
+}
+
+interface BusinessProfile {
+  business_type?: string
+  revenue_model?: string
+  avg_ticket?: number
+  gross_margin_pct?: number
+  food_cost_pct?: number
+  labor_cost_pct?: number
+  price_positioning?: string
+  competitive_advantage?: string
+  current_stage?: string
+  biggest_challenge?: string
+  success_vision?: string
+  ideal_customer_description?: string
+  primary_age_range?: string
+  profile_completeness?: number
+}
+
+// Knowledge extraction patterns - what facts we're looking for in conversations
+const KNOWLEDGE_EXTRACTION_PATTERNS = [
+  { pattern: /(?:food|product)\s*cost.*?(\d+)\s*%/i, layer: 'financial', category: 'food_cost', field: 'food_cost_pct' },
+  { pattern: /(?:labor|payroll).*?(\d+)\s*%/i, layer: 'financial', category: 'labor_cost', field: 'labor_cost_pct' },
+  { pattern: /(?:margin|gross\s*margin).*?(\d+)\s*%/i, layer: 'financial', category: 'margin', field: 'gross_margin_pct' },
+  { pattern: /average\s*(?:ticket|transaction|check).*?\$?(\d+(?:\.\d{2})?)/i, layer: 'financial', category: 'avg_ticket', field: 'avg_ticket' },
+  { pattern: /(\d+)\s*(?:employees?|staff|workers)/i, layer: 'operational', category: 'staff_count', field: 'staff_count' },
+  { pattern: /(?:busy|peak)\s*(?:hours?|times?)\s*(?:are?|is)?\s*([^.]+)/i, layer: 'operational', category: 'peak_hours', field: null },
+  { pattern: /(?:slow|quiet)\s*(?:days?|times?)\s*(?:are?|is)?\s*([^.]+)/i, layer: 'operational', category: 'slow_periods', field: null },
+  { pattern: /(?:competitor|competition)\s*(?:is|are|includes?)?\s*([^.]+)/i, layer: 'market', category: 'competitor', field: null },
+  { pattern: /(?:customers?|clients?)\s*(?:are?|is)\s*(?:mostly|typically|usually)\s*([^.]+)/i, layer: 'customer', category: 'customer_profile', field: 'ideal_customer_description' },
+  { pattern: /(?:age|ages?)\s*(?:range|group)?\s*(?:is|are)?\s*(\d+\s*-\s*\d+|\d+s?)/i, layer: 'customer', category: 'age_range', field: 'primary_age_range' },
+]
+
+// ============================================================================
+// PHASE 3: CLAUDE TOOL USE TYPES
+// ============================================================================
+
+/**
+ * Claude's tool definition format (Anthropic API spec)
+ */
+interface ClaudeTool {
+  name: string
+  description: string
+  input_schema: {
+    type: 'object'
+    properties: Record<string, {
+      type: string
+      description: string
+      enum?: string[]
+      items?: { type: string }
+    }>
+    required?: string[]
+  }
+}
+
+/**
+ * Tool use content block from Claude response
+ */
+interface ToolUseBlock {
+  type: 'tool_use'
+  id: string
+  name: string
+  input: Record<string, unknown>
+}
+
+/**
+ * Text content block from Claude response
+ */
+interface TextBlock {
+  type: 'text'
+  text: string
+}
+
+type ContentBlock = ToolUseBlock | TextBlock
+
+/**
+ * Claude API response with tool use support
+ */
+interface ClaudeToolResponse {
+  id: string
+  type: 'message'
+  role: 'assistant'
+  content: ContentBlock[]
+  model: string
+  stop_reason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence'
+  usage: {
+    input_tokens: number
+    output_tokens: number
+  }
+}
+
+/**
+ * Context passed to tool handlers
+ */
+interface ToolContext {
+  supabase: SupabaseClient
+  organizationId: string
+  appId?: string
+}
+
+/**
+ * Tool execution result
+ */
+interface ToolResult {
+  success: boolean
+  data?: unknown
+  error?: string
+  metadata?: {
+    rowCount?: number
+    truncated?: boolean
+    source?: string
+  }
+}
+
+/**
+ * Tool handler function signature
+ */
+type ToolHandler = (
+  input: Record<string, unknown>,
+  ctx: ToolContext
+) => Promise<ToolResult>
+
+// Tool use configuration
+const TOOL_USE_CONFIG = {
+  maxIterations: 5,      // Maximum tool use loops
+  maxTokens: 4000,       // Max tokens per Claude call
+  toolTimeout: 10000,    // Timeout per tool execution (ms)
+}
+
+// ============================================================================
+// PHASE 3: TOOL DEFINITIONS
+// ============================================================================
+
+const ROYAL_AI_TOOLS: ClaudeTool[] = [
+  // Internal Read Tools
+  {
+    name: 'read_customers',
+    description: 'Query customer data from the loyalty program. Returns member details including points, tier, visit history, and engagement metrics. Use to understand customer segments, at-risk members, and VIPs.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        segment: {
+          type: 'string',
+          description: 'Customer segment to query',
+          enum: ['all', 'active', 'at_risk', 'churned', 'new', 'vip']
+        },
+        tier: {
+          type: 'string',
+          description: 'Filter by loyalty tier',
+          enum: ['bronze', 'silver', 'gold', 'platinum']
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum customers to return (default: 50, max: 100)'
+        },
+        include_visits: {
+          type: 'boolean',
+          description: 'Include recent visit history'
+        },
+        days_inactive: {
+          type: 'number',
+          description: 'For at_risk/churned, define inactivity threshold in days'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'read_activity',
+    description: 'Query recent activity and events from the loyalty program. Use to understand engagement patterns, recent transactions, tier upgrades, and visit frequency.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        event_type: {
+          type: 'string',
+          description: 'Filter by event type',
+          enum: ['member_joined', 'points_earned', 'reward_redeemed', 'tier_upgrade', 'visit']
+        },
+        days: {
+          type: 'number',
+          description: 'Look back period in days (default: 30, max: 90)'
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum events to return (default: 100)'
+        },
+        member_id: {
+          type: 'string',
+          description: 'Filter to a specific member UUID'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'read_automations',
+    description: 'Query configured automations and campaigns. Use to understand what loyalty automations are active (birthday rewards, win-back, streak bonuses) and their performance.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          description: 'Filter by status',
+          enum: ['active', 'inactive', 'all']
+        },
+        type: {
+          type: 'string',
+          description: 'Filter by automation type (e.g., birthday, win_back, streak_bonus)'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'read_business_profile',
+    description: 'Query the business profile including financial metrics, market position, and operational details. Use before making recommendations to understand the business model.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        include_knowledge: {
+          type: 'boolean',
+          description: 'Also return accumulated business knowledge facts (default: true)'
+        },
+        knowledge_layers: {
+          type: 'array',
+          description: 'Filter knowledge to specific layers',
+          items: { type: 'string' }
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'read_knowledge',
+    description: 'Query the business knowledge store for facts learned from conversations and research. Use to recall previously learned information about the business.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        layer: {
+          type: 'string',
+          description: 'Filter by knowledge layer',
+          enum: ['operational', 'customer', 'financial', 'market', 'growth', 'regulatory']
+        },
+        category: {
+          type: 'string',
+          description: 'Filter by category (e.g., margin, competitor, regulation)'
+        },
+        importance: {
+          type: 'string',
+          description: 'Filter by importance level',
+          enum: ['critical', 'high', 'medium', 'low']
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum facts to return (default: 20)'
+        }
+      },
+      required: []
+    }
+  },
+  // External Research Tools
+  {
+    name: 'search_competitors',
+    description: 'Search for competitor information in the local area or industry. Use for competitive intelligence, pricing comparisons, and market positioning insights.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Specific search query (e.g., "coffee shops downtown Austin")'
+        },
+        location: {
+          type: 'string',
+          description: 'City and state for local search'
+        },
+        industry: {
+          type: 'string',
+          description: 'Industry context (e.g., restaurant, salon, retail)'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'search_regulations',
+    description: 'Search for industry regulations and compliance requirements. Use for local or state regulations that may affect the business.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        topic: {
+          type: 'string',
+          description: 'Regulation topic (e.g., "food safety requirements", "loyalty program laws")'
+        },
+        state: {
+          type: 'string',
+          description: 'State for state-specific regulations'
+        },
+        industry: {
+          type: 'string',
+          description: 'Industry for industry-specific regulations'
+        }
+      },
+      required: ['topic']
+    }
+  },
+  {
+    name: 'search_market_trends',
+    description: 'Search for current market trends and industry developments. Use for trends in customer behavior, technology adoption, or industry shifts.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        industry: {
+          type: 'string',
+          description: 'Industry to research'
+        },
+        topic: {
+          type: 'string',
+          description: 'Specific trend topic (e.g., "loyalty program trends", "consumer preferences")'
+        },
+        timeframe: {
+          type: 'string',
+          description: 'Timeframe for trends',
+          enum: ['2024', '2025', '2026', 'recent']
+        }
+      },
+      required: ['industry']
+    }
+  },
+  {
+    name: 'search_benchmarks',
+    description: 'Search for industry benchmarks and KPIs. Use for typical metrics (e.g., average customer retention rate, visit frequency).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        industry: {
+          type: 'string',
+          description: 'Industry for benchmarks'
+        },
+        metric: {
+          type: 'string',
+          description: 'Specific metric to benchmark (e.g., "customer retention rate", "loyalty enrollment rate")'
+        },
+        business_size: {
+          type: 'string',
+          description: 'Business size for relevant benchmarks',
+          enum: ['small', 'medium', 'large']
+        }
+      },
+      required: ['industry', 'metric']
+    }
+  },
+  // ---------------------------------------------------------------------------
+  // PHASE 4: WRITE TOOLS (Confidence-gated, queued for approval)
+  // ---------------------------------------------------------------------------
+  {
+    name: 'create_announcement',
+    description: 'Create an announcement to post to the loyalty app. Use for important updates, new offers, or business news. Requires approval unless confidence is high and auto-execute is enabled.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'Announcement title (max 100 chars)'
+        },
+        body: {
+          type: 'string',
+          description: 'Announcement content (max 500 chars)'
+        },
+        priority: {
+          type: 'string',
+          description: 'Priority level affects visibility',
+          enum: ['low', 'normal', 'high']
+        },
+        schedule_for: {
+          type: 'string',
+          description: 'ISO datetime to schedule (optional, default: immediate)'
+        }
+      },
+      required: ['title', 'body']
+    }
+  },
+  {
+    name: 'send_targeted_message',
+    description: 'Send a targeted message to a customer segment. Use for personalized outreach, win-back campaigns, or VIP communications.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        segment: {
+          type: 'string',
+          description: 'Target customer segment',
+          enum: ['all', 'active', 'at_risk', 'churned', 'new', 'vip']
+        },
+        tier: {
+          type: 'string',
+          description: 'Optional tier filter',
+          enum: ['bronze', 'silver', 'gold', 'platinum']
+        },
+        subject: {
+          type: 'string',
+          description: 'Message subject (max 100 chars)'
+        },
+        body: {
+          type: 'string',
+          description: 'Message content (max 500 chars)'
+        },
+        channel: {
+          type: 'string',
+          description: 'Delivery channel',
+          enum: ['push', 'email', 'in_app']
+        }
+      },
+      required: ['segment', 'subject', 'body']
+    }
+  },
+  {
+    name: 'create_flash_promotion',
+    description: 'Create a time-limited points promotion (e.g., 2x points today only). Use for driving immediate traffic or rewarding engagement.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Promotion name (max 50 chars)'
+        },
+        multiplier: {
+          type: 'number',
+          description: 'Points multiplier (e.g., 2 for double points)'
+        },
+        duration_hours: {
+          type: 'number',
+          description: 'Duration in hours (max 72)'
+        },
+        min_spend: {
+          type: 'number',
+          description: 'Minimum spend to qualify (optional)'
+        },
+        target_segment: {
+          type: 'string',
+          description: 'Optional segment targeting',
+          enum: ['all', 'active', 'at_risk', 'new', 'vip']
+        }
+      },
+      required: ['name', 'multiplier', 'duration_hours']
+    }
+  },
+  {
+    name: 'award_bonus_points',
+    description: 'Award bonus points to specific members or a segment. Use for rewarding loyalty, resolving issues, or surprise-and-delight moments.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        member_ids: {
+          type: 'array',
+          description: 'Specific member UUIDs to award (max 50)',
+          items: { type: 'string' }
+        },
+        segment: {
+          type: 'string',
+          description: 'Award to entire segment (alternative to member_ids)',
+          enum: ['vip', 'new', 'at_risk', 'birthday_today']
+        },
+        points: {
+          type: 'number',
+          description: 'Points to award (max 1000)'
+        },
+        reason: {
+          type: 'string',
+          description: 'Reason shown to member (max 100 chars)'
+        }
+      },
+      required: ['points', 'reason']
+    }
+  },
+  {
+    name: 'enable_automation',
+    description: 'Enable or configure a loyalty automation (e.g., birthday rewards, win-back campaigns, streak bonuses).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        automation_type: {
+          type: 'string',
+          description: 'Type of automation',
+          enum: ['birthday', 'win_back', 'streak_bonus', 'tier_upgrade', 'welcome']
+        },
+        enable: {
+          type: 'boolean',
+          description: 'Whether to enable (true) or disable (false)'
+        },
+        config: {
+          type: 'object',
+          description: 'Automation-specific configuration'
+        }
+      },
+      required: ['automation_type', 'enable']
+    }
+  },
+  {
+    name: 'save_knowledge',
+    description: 'Save a learned fact to the business knowledge store. Use when you learn important business information that should be remembered.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        layer: {
+          type: 'string',
+          description: 'Knowledge category',
+          enum: ['operational', 'customer', 'financial', 'market', 'growth', 'regulatory']
+        },
+        category: {
+          type: 'string',
+          description: 'Specific category (e.g., margin, competitor, regulation)'
+        },
+        fact: {
+          type: 'string',
+          description: 'The fact to store (max 500 chars)'
+        },
+        importance: {
+          type: 'string',
+          description: 'Importance level',
+          enum: ['critical', 'high', 'medium', 'low']
+        },
+        confidence: {
+          type: 'number',
+          description: 'Confidence in fact accuracy (0.0-1.0)'
+        }
+      },
+      required: ['layer', 'category', 'fact']
+    }
+  }
+]
+
 // Sanitize user input to prevent prompt injection attacks
 // Rejects inputs containing common injection patterns and enforces length limits
 function sanitizeContextInput(input: string | null | undefined, maxLength: number = 200): string {
@@ -141,6 +710,1473 @@ function sanitizeContextInput(input: string | null | undefined, maxLength: numbe
 function sanitizeContextArray(arr: string[] | null | undefined): string[] {
   if (!arr || !Array.isArray(arr)) return []
   return arr.slice(0, 10).map(item => sanitizeContextInput(item, 50))
+}
+
+// ============================================================================
+// PHASE 3: TOOL HANDLERS
+// ============================================================================
+
+/**
+ * Get app_id for an organization
+ */
+async function getAppIdForOrg(supabase: SupabaseClient, organizationId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('customer_apps')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .is('deleted_at', null)
+    .limit(1)
+    .single()
+  return data?.id || null
+}
+
+/**
+ * Tool handlers registry
+ */
+const TOOL_HANDLERS: Record<string, ToolHandler> = {
+  // ---------------------------------------------------------------------------
+  // read_customers - Query customer segments and member data
+  // ---------------------------------------------------------------------------
+  read_customers: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const limit = Math.min((input.limit as number) || 50, 100)
+    const segment = input.segment as string || 'all'
+    const tier = input.tier as string
+    const includeVisits = input.include_visits as boolean
+    const daysInactive = (input.days_inactive as number) || 30
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+    if (!targetAppId) {
+      return { success: false, error: 'No loyalty app found for this organization' }
+    }
+
+    let query = supabase
+      .from('app_members')
+      .select('id, email, first_name, last_name, tier, points_balance, total_points_earned, visit_count, current_streak, last_visit_at, joined_at')
+      .eq('app_id', targetAppId)
+      .is('deleted_at', null)
+
+    // Apply segment filter
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - daysInactive)
+
+    switch (segment) {
+      case 'active':
+        query = query.gte('last_visit_at', cutoffDate.toISOString())
+        break
+      case 'at_risk':
+        const atRiskStart = new Date()
+        atRiskStart.setDate(atRiskStart.getDate() - (daysInactive * 2))
+        query = query
+          .lt('last_visit_at', cutoffDate.toISOString())
+          .gte('last_visit_at', atRiskStart.toISOString())
+        break
+      case 'churned':
+        const churnCutoff = new Date()
+        churnCutoff.setDate(churnCutoff.getDate() - 60)
+        query = query.lt('last_visit_at', churnCutoff.toISOString())
+        break
+      case 'new':
+        const newCutoff = new Date()
+        newCutoff.setDate(newCutoff.getDate() - 14)
+        query = query.gte('joined_at', newCutoff.toISOString())
+        break
+      case 'vip':
+        query = query.in('tier', ['gold', 'platinum'])
+        break
+    }
+
+    if (tier) {
+      query = query.eq('tier', tier)
+    }
+
+    query = query.order('last_visit_at', { ascending: false }).limit(limit)
+
+    const { data: members, error } = await query
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    // Build summary
+    const summary = {
+      total_count: members?.length || 0,
+      segment_applied: segment,
+      by_tier: (members || []).reduce((acc, m) => {
+        acc[m.tier || 'none'] = (acc[m.tier || 'none'] || 0) + 1
+        return acc
+      }, {} as Record<string, number>),
+      avg_points: members?.length
+        ? Math.round((members || []).reduce((sum, m) => sum + (m.points_balance || 0), 0) / members.length)
+        : 0,
+      avg_visits: members?.length
+        ? Math.round((members || []).reduce((sum, m) => sum + (m.visit_count || 0), 0) / members.length)
+        : 0
+    }
+
+    return {
+      success: true,
+      data: { summary, members: members || [] },
+      metadata: { rowCount: members?.length || 0 }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // read_activity - Query recent events and activity
+  // ---------------------------------------------------------------------------
+  read_activity: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const days = Math.min((input.days as number) || 30, 90)
+    const limit = Math.min((input.limit as number) || 100, 500)
+    const eventType = input.event_type as string
+    const memberId = input.member_id as string
+
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+    if (!targetAppId) {
+      return { success: false, error: 'No loyalty app found' }
+    }
+
+    let query = supabase
+      .from('app_events')
+      .select('id, event_type, event_data, member_id, created_at')
+      .eq('app_id', targetAppId)
+      .gte('created_at', cutoffDate.toISOString())
+
+    if (eventType) {
+      query = query.eq('event_type', eventType)
+    }
+    if (memberId) {
+      query = query.eq('member_id', memberId)
+    }
+
+    query = query.order('created_at', { ascending: false }).limit(limit)
+
+    const { data: events, error } = await query
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    const summary = {
+      total_events: events?.length || 0,
+      period_days: days,
+      by_type: (events || []).reduce((acc, e) => {
+        acc[e.event_type] = (acc[e.event_type] || 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+    }
+
+    return {
+      success: true,
+      data: { summary, events: events || [] },
+      metadata: { rowCount: events?.length || 0 }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // read_automations - Query active automations
+  // ---------------------------------------------------------------------------
+  read_automations: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const status = input.status as string
+    const type = input.type as string
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+
+    // Query automations table
+    let query = supabase
+      .from('automations')
+      .select('id, name, automation_type, is_active, trigger_config, action_config, template_id, created_at')
+
+    if (targetAppId) {
+      query = query.eq('app_id', targetAppId)
+    }
+
+    // Filter by is_archived = false
+    query = query.eq('is_archived', false)
+
+    if (status === 'active') {
+      query = query.eq('is_active', true)
+    } else if (status === 'inactive') {
+      query = query.eq('is_active', false)
+    }
+
+    if (type) {
+      query = query.eq('automation_type', type)
+    }
+
+    const { data: automations, error } = await query
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    const summary = {
+      total_automations: automations?.length || 0,
+      active: (automations || []).filter(a => a.is_active).length,
+      by_type: (automations || []).reduce((acc, a) => {
+        const aType = a.automation_type || 'unknown'
+        acc[aType] = (acc[aType] || 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+    }
+
+    return {
+      success: true,
+      data: { summary, automations: automations || [] },
+      metadata: { rowCount: automations?.length || 0 }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // read_business_profile - Query business profile and knowledge
+  // ---------------------------------------------------------------------------
+  read_business_profile: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId } = ctx
+    const includeKnowledge = input.include_knowledge !== false
+    const knowledgeLayers = input.knowledge_layers as string[] | undefined
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name, slug, created_at, plan_type')
+      .eq('id', organizationId)
+      .single()
+
+    const { data: profile } = await supabase
+      .from('business_profiles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .single()
+
+    let knowledge: unknown[] = []
+    if (includeKnowledge) {
+      let knowledgeQuery = supabase
+        .from('business_knowledge')
+        .select('layer, category, fact, confidence, importance, source_type, created_at')
+        .eq('organization_id', organizationId)
+        .eq('status', 'active')
+        .order('importance', { ascending: false })
+        .limit(30)
+
+      if (knowledgeLayers && knowledgeLayers.length > 0) {
+        knowledgeQuery = knowledgeQuery.in('layer', knowledgeLayers)
+      }
+
+      const { data: knowledgeData } = await knowledgeQuery
+      knowledge = knowledgeData || []
+    }
+
+    return {
+      success: true,
+      data: {
+        organization: org,
+        profile: profile,
+        knowledge: knowledge,
+        profile_completeness: profile?.profile_completeness || 0
+      }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // read_knowledge - Query knowledge store
+  // ---------------------------------------------------------------------------
+  read_knowledge: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId } = ctx
+    const limit = Math.min((input.limit as number) || 20, 50)
+    const layer = input.layer as string
+    const category = input.category as string
+    const importance = input.importance as string
+
+    let query = supabase
+      .from('business_knowledge')
+      .select('id, layer, category, fact, confidence, importance, source_type, source_url, created_at, times_used')
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+
+    if (layer) query = query.eq('layer', layer)
+    if (category) query = query.eq('category', category)
+    if (importance) query = query.eq('importance', importance)
+
+    query = query.order('importance', { ascending: false })
+      .order('times_used', { ascending: false })
+      .limit(limit)
+
+    const { data: knowledge, error } = await query
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    const byLayer = (knowledge || []).reduce((acc, k) => {
+      if (!acc[k.layer]) acc[k.layer] = []
+      acc[k.layer].push(k)
+      return acc
+    }, {} as Record<string, unknown[]>)
+
+    return {
+      success: true,
+      data: { facts: knowledge || [], by_layer: byLayer, total_count: knowledge?.length || 0 },
+      metadata: { rowCount: knowledge?.length || 0 }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // External Research Tools (Placeholder - will need search API integration)
+  // ---------------------------------------------------------------------------
+  search_competitors: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const query = (input.query as string) || `${input.industry || 'business'} competitors ${input.location || ''}`.trim()
+    // TODO: Integrate with search API (Serper, SerpAPI, Brave Search)
+    return {
+      success: true,
+      data: {
+        query: query,
+        results: [],
+        note: 'Web search API not yet configured. Configure SEARCH_API_KEY for real results.'
+      },
+      metadata: { source: 'placeholder' }
+    }
+  },
+
+  search_regulations: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const query = `${input.topic} regulations ${input.state || ''} ${input.industry || ''}`.trim()
+    return {
+      success: true,
+      data: { query, results: [], note: 'Web search API not yet configured.' },
+      metadata: { source: 'placeholder' }
+    }
+  },
+
+  search_market_trends: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const query = `${input.industry} ${input.topic || 'trends'} ${input.timeframe || '2026'}`.trim()
+    return {
+      success: true,
+      data: { query, results: [], note: 'Web search API not yet configured.' },
+      metadata: { source: 'placeholder' }
+    }
+  },
+
+  search_benchmarks: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const query = `${input.industry} ${input.metric} benchmark ${input.business_size || 'small business'}`.trim()
+    return {
+      success: true,
+      data: { query, results: [], note: 'Web search API not yet configured.' },
+      metadata: { source: 'placeholder' }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // PHASE 4: WRITE TOOL HANDLERS (Confidence-gated, queued for approval)
+  // ---------------------------------------------------------------------------
+
+  create_announcement: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const title = (input.title as string || '').slice(0, 100)
+    const body = (input.body as string || '').slice(0, 500)
+    const priority = (input.priority as string) || 'normal'
+    const scheduleFor = input.schedule_for as string | undefined
+
+    if (!title || !body) {
+      return { success: false, error: 'Title and body are required' }
+    }
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+
+    // Calculate confidence based on action parameters
+    let confidence = 0.7  // Base confidence for announcements
+    if (priority === 'high') confidence -= 0.1  // High priority = lower confidence, needs approval
+    if (body.length > 300) confidence -= 0.05  // Long messages warrant review
+
+    // Queue the action instead of executing directly
+    const { data: queueResult, error } = await supabase.rpc('queue_ai_action', {
+      p_org_id: organizationId,
+      p_action_type: 'create_announcement',
+      p_action_payload: {
+        app_id: targetAppId,
+        title,
+        body,
+        priority,
+        schedule_for: scheduleFor
+      },
+      p_reasoning: `AI generated announcement: "${title}"`,
+      p_confidence: confidence
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        queued: true,
+        action_id: queueResult?.action_id,
+        status: queueResult?.status,
+        confidence,
+        auto_approved: queueResult?.auto_approved,
+        message: queueResult?.auto_approved
+          ? 'Announcement queued for automatic execution'
+          : 'Announcement queued for approval'
+      }
+    }
+  },
+
+  send_targeted_message: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const segment = (input.segment as string) || 'all'
+    const tier = input.tier as string | undefined
+    const subject = (input.subject as string || '').slice(0, 100)
+    const body = (input.body as string || '').slice(0, 500)
+    const channel = (input.channel as string) || 'push'
+
+    if (!subject || !body) {
+      return { success: false, error: 'Subject and body are required' }
+    }
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+
+    // Count affected members to calculate confidence
+    let memberQuery = supabase
+      .from('app_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('app_id', targetAppId)
+      .is('deleted_at', null)
+
+    // Apply segment filter
+    if (segment === 'vip') {
+      memberQuery = memberQuery.in('tier', ['gold', 'platinum'])
+    } else if (segment === 'new') {
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - 14)
+      memberQuery = memberQuery.gte('joined_at', cutoff.toISOString())
+    }
+
+    if (tier) {
+      memberQuery = memberQuery.eq('tier', tier)
+    }
+
+    const { count } = await memberQuery
+
+    // Calculate confidence - lower for larger audiences
+    let confidence = 0.75
+    if ((count || 0) > 100) confidence -= 0.1
+    if ((count || 0) > 500) confidence -= 0.15
+    if (segment === 'all') confidence -= 0.1  // Mass messages need approval
+
+    // Queue the action
+    const { data: queueResult, error } = await supabase.rpc('queue_ai_action', {
+      p_org_id: organizationId,
+      p_action_type: 'send_targeted_message',
+      p_action_payload: {
+        app_id: targetAppId,
+        segment,
+        tier,
+        subject,
+        body,
+        channel,
+        estimated_recipients: count
+      },
+      p_reasoning: `Send "${subject}" to ${count} ${segment} members via ${channel}`,
+      p_confidence: Math.max(0.3, confidence)
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        queued: true,
+        action_id: queueResult?.action_id,
+        status: queueResult?.status,
+        confidence: Math.max(0.3, confidence),
+        estimated_recipients: count,
+        auto_approved: queueResult?.auto_approved,
+        message: queueResult?.auto_approved
+          ? `Message to ${count} members queued for automatic sending`
+          : `Message to ${count} members queued for approval`
+      }
+    }
+  },
+
+  create_flash_promotion: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const name = (input.name as string || '').slice(0, 50)
+    const multiplier = Math.min((input.multiplier as number) || 2, 5)  // Cap at 5x
+    const durationHours = Math.min((input.duration_hours as number) || 24, 72)  // Cap at 72 hours
+    const minSpend = input.min_spend as number | undefined
+    const targetSegment = (input.target_segment as string) || 'all'
+
+    if (!name) {
+      return { success: false, error: 'Promotion name is required' }
+    }
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+
+    // Calculate confidence - higher multipliers need more approval
+    let confidence = 0.7
+    if (multiplier >= 3) confidence -= 0.15
+    if (multiplier >= 4) confidence -= 0.15
+    if (durationHours > 24) confidence -= 0.1
+    if (targetSegment === 'all') confidence -= 0.05
+
+    const startsAt = new Date()
+    const endsAt = new Date(startsAt.getTime() + durationHours * 60 * 60 * 1000)
+
+    const { data: queueResult, error } = await supabase.rpc('queue_ai_action', {
+      p_org_id: organizationId,
+      p_action_type: 'create_flash_promotion',
+      p_action_payload: {
+        app_id: targetAppId,
+        name,
+        multiplier,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        min_spend: minSpend,
+        target_segment: targetSegment
+      },
+      p_reasoning: `${multiplier}x points promotion "${name}" for ${durationHours} hours`,
+      p_confidence: Math.max(0.3, confidence)
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        queued: true,
+        action_id: queueResult?.action_id,
+        status: queueResult?.status,
+        confidence: Math.max(0.3, confidence),
+        promotion_details: { name, multiplier, durationHours, targetSegment },
+        auto_approved: queueResult?.auto_approved
+      }
+    }
+  },
+
+  award_bonus_points: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const memberIds = (input.member_ids as string[])?.slice(0, 50)
+    const segment = input.segment as string
+    const points = Math.min(Math.max((input.points as number) || 0, 1), 1000)  // 1-1000 range
+    const reason = (input.reason as string || '').slice(0, 100)
+
+    if (!reason) {
+      return { success: false, error: 'Reason is required' }
+    }
+
+    if (!memberIds?.length && !segment) {
+      return { success: false, error: 'Either member_ids or segment is required' }
+    }
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+
+    // Calculate affected count
+    let affectedCount = memberIds?.length || 0
+    if (segment) {
+      const { count } = await supabase
+        .from('app_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('app_id', targetAppId)
+        .is('deleted_at', null)
+      affectedCount = count || 0
+    }
+
+    // Calculate confidence
+    let confidence = 0.75
+    if (points > 200) confidence -= 0.1
+    if (points > 500) confidence -= 0.15
+    if (affectedCount > 50) confidence -= 0.1
+    if (segment === 'all') confidence -= 0.2  // Never auto-award to all
+
+    const { data: queueResult, error } = await supabase.rpc('queue_ai_action', {
+      p_org_id: organizationId,
+      p_action_type: 'award_bonus_points',
+      p_action_payload: {
+        app_id: targetAppId,
+        member_ids: memberIds,
+        segment,
+        points,
+        reason
+      },
+      p_reasoning: `Award ${points} points to ${affectedCount} members: "${reason}"`,
+      p_confidence: Math.max(0.2, confidence)
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        queued: true,
+        action_id: queueResult?.action_id,
+        status: queueResult?.status,
+        confidence: Math.max(0.2, confidence),
+        total_points: points * affectedCount,
+        affected_members: affectedCount,
+        auto_approved: queueResult?.auto_approved
+      }
+    }
+  },
+
+  enable_automation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const automationType = input.automation_type as string
+    const enable = input.enable as boolean
+    const config = input.config as Record<string, unknown> | undefined
+
+    if (!automationType) {
+      return { success: false, error: 'automation_type is required' }
+    }
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+
+    // Enabling automations has higher confidence than disabling
+    let confidence = enable ? 0.65 : 0.8
+
+    const { data: queueResult, error } = await supabase.rpc('queue_ai_action', {
+      p_org_id: organizationId,
+      p_action_type: 'enable_automation',
+      p_action_payload: {
+        app_id: targetAppId,
+        automation_type: automationType,
+        enable,
+        config
+      },
+      p_reasoning: `${enable ? 'Enable' : 'Disable'} ${automationType} automation`,
+      p_confidence: confidence
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        queued: true,
+        action_id: queueResult?.action_id,
+        status: queueResult?.status,
+        confidence,
+        action: enable ? 'enable' : 'disable',
+        automation_type: automationType,
+        auto_approved: queueResult?.auto_approved
+      }
+    }
+  },
+
+  save_knowledge: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId } = ctx
+    const layer = input.layer as string
+    const category = input.category as string
+    const fact = (input.fact as string || '').slice(0, 500)
+    const importance = (input.importance as string) || 'medium'
+    const confidence = Math.min(Math.max((input.confidence as number) || 0.8, 0), 1)
+
+    if (!layer || !category || !fact) {
+      return { success: false, error: 'layer, category, and fact are required' }
+    }
+
+    // Knowledge saving doesn't need approval queue - execute directly
+    const { data, error } = await supabase
+      .from('business_knowledge')
+      .insert({
+        organization_id: organizationId,
+        layer,
+        category,
+        fact,
+        importance,
+        confidence,
+        source_type: 'conversation',
+        status: 'active'
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        saved: true,
+        knowledge_id: data?.id,
+        layer,
+        category,
+        importance
+      }
+    }
+  }
+}
+
+/**
+ * Execute a tool with timeout protection
+ */
+async function executeToolWithTimeout(
+  toolName: string,
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+  timeoutMs: number
+): Promise<ToolResult> {
+  const handler = TOOL_HANDLERS[toolName]
+
+  if (!handler) {
+    return { success: false, error: `Unknown tool: ${toolName}` }
+  }
+
+  return Promise.race([
+    handler(input, ctx),
+    new Promise<ToolResult>((_, reject) =>
+      setTimeout(() => reject(new Error('Tool execution timeout')), timeoutMs)
+    )
+  ])
+}
+
+/**
+ * Check if a tool is an external research tool
+ */
+function isExternalTool(toolName: string): boolean {
+  return toolName.startsWith('search_')
+}
+
+/**
+ * Call Claude API with tool use support
+ * Implements the tool use loop: call Claude -> execute tools -> call Claude again
+ */
+async function callClaudeWithTools(
+  systemPrompt: string,
+  messages: Array<{ role: 'user' | 'assistant'; content: string | ContentBlock[] }>,
+  ctx: ToolContext,
+  maxTokens: number = TOOL_USE_CONFIG.maxTokens
+): Promise<{ text: string; toolsUsed: string[]; tokensUsed: number }> {
+
+  let currentMessages = [...messages]
+  let totalTokensUsed = 0
+  const toolsUsed: string[] = []
+  let iterations = 0
+
+  while (iterations < TOOL_USE_CONFIG.maxIterations) {
+    iterations++
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: MODEL_ID,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: currentMessages,
+        tools: ROYAL_AI_TOOLS,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Claude API error: ${response.status} - ${error}`)
+    }
+
+    const data: ClaudeToolResponse = await response.json()
+    totalTokensUsed += data.usage.input_tokens + data.usage.output_tokens
+
+    // Check if Claude wants to use tools
+    if (data.stop_reason === 'tool_use') {
+      const toolUseBlocks = data.content.filter(
+        (block): block is ToolUseBlock => block.type === 'tool_use'
+      )
+
+      if (toolUseBlocks.length === 0) {
+        console.warn('stop_reason is tool_use but no tool blocks found')
+        break
+      }
+
+      // Add assistant message with tool use to conversation
+      currentMessages.push({
+        role: 'assistant',
+        content: data.content
+      })
+
+      // Execute all tools and collect results
+      const toolResults: Array<{
+        type: 'tool_result'
+        tool_use_id: string
+        content: string
+        is_error?: boolean
+      }> = []
+
+      for (const toolUse of toolUseBlocks) {
+        toolsUsed.push(toolUse.name)
+
+        try {
+          const result = await executeToolWithTimeout(
+            toolUse.name,
+            toolUse.input,
+            ctx,
+            TOOL_USE_CONFIG.toolTimeout
+          )
+
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(result.success ? result.data : { error: result.error }),
+            is_error: !result.success
+          })
+
+        } catch (e) {
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify({ error: (e as Error).message || 'Tool execution failed' }),
+            is_error: true
+          })
+        }
+      }
+
+      // Add tool results to conversation
+      currentMessages.push({
+        role: 'user',
+        content: toolResults
+      })
+
+      continue
+    }
+
+    // Claude finished - extract final text response
+    const textBlocks = data.content.filter(
+      (block): block is TextBlock => block.type === 'text'
+    )
+
+    const finalText = textBlocks.map(block => block.text).join('\n')
+
+    return {
+      text: finalText,
+      toolsUsed: [...new Set(toolsUsed)],
+      tokensUsed: totalTokensUsed
+    }
+  }
+
+  console.warn(`Tool use loop exceeded ${TOOL_USE_CONFIG.maxIterations} iterations`)
+  throw new Error('AI response took too long. Please try a simpler question.')
+}
+
+// ============================================================================
+// KNOWLEDGE MANAGEMENT FUNCTIONS
+// ============================================================================
+
+// Load accumulated business knowledge for an organization
+async function loadBusinessKnowledge(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<BusinessKnowledge[]> {
+  try {
+    const { data, error } = await supabase
+      .from('business_knowledge')
+      .select('id, layer, category, fact, confidence, importance, source_type')
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+      .order('importance', { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error('Failed to load business knowledge:', error)
+      return []
+    }
+    return data || []
+  } catch (e) {
+    console.error('Error loading knowledge:', e)
+    return []
+  }
+}
+
+// Load business profile for an organization
+async function loadBusinessProfile(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<BusinessProfile | null> {
+  try {
+    const { data, error } = await supabase
+      .from('business_profiles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
+      console.error('Failed to load business profile:', error)
+    }
+    return data || null
+  } catch (e) {
+    console.error('Error loading profile:', e)
+    return null
+  }
+}
+
+// Get next discovery question for an organization
+async function getNextDiscoveryQuestion(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<DiscoveryQuestion | null> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_next_discovery_question', { p_org_id: organizationId })
+
+    if (error) {
+      console.error('Failed to get discovery question:', error)
+      return null
+    }
+    return data?.[0] || null
+  } catch (e) {
+    console.error('Error getting discovery question:', e)
+    return null
+  }
+}
+
+// Mark a discovery question as asked
+async function markQuestionAsked(
+  supabase: SupabaseClient,
+  organizationId: string,
+  questionId: string,
+  threadId: string | null
+): Promise<void> {
+  try {
+    await supabase
+      .from('org_discovery_progress')
+      .upsert({
+        organization_id: organizationId,
+        question_id: questionId,
+        status: 'asked',
+        asked_at: new Date().toISOString(),
+        answer_thread_id: threadId
+      }, { onConflict: 'organization_id,question_id' })
+  } catch (e) {
+    console.error('Error marking question asked:', e)
+  }
+}
+
+// Extract knowledge from a conversation
+function extractKnowledgeFromText(
+  userMessage: string,
+  aiResponse: string
+): Array<{ layer: string; category: string; fact: string; field?: string | null }> {
+  const extracted: Array<{ layer: string; category: string; fact: string; field?: string | null }> = []
+  const combinedText = `${userMessage} ${aiResponse}`
+
+  for (const pattern of KNOWLEDGE_EXTRACTION_PATTERNS) {
+    const match = combinedText.match(pattern.pattern)
+    if (match && match[1]) {
+      extracted.push({
+        layer: pattern.layer,
+        category: pattern.category,
+        fact: match[0].slice(0, 500), // Store the matched context
+        field: pattern.field
+      })
+    }
+  }
+
+  return extracted
+}
+
+// Save extracted knowledge to database
+async function saveExtractedKnowledge(
+  supabase: SupabaseClient,
+  organizationId: string,
+  threadId: string | null,
+  extracted: Array<{ layer: string; category: string; fact: string; field?: string | null }>
+): Promise<void> {
+  if (extracted.length === 0) return
+
+  try {
+    // Save to business_knowledge
+    const knowledgeInserts = extracted.map(item => ({
+      organization_id: organizationId,
+      layer: item.layer,
+      category: item.category,
+      fact: item.fact,
+      confidence: 0.7, // Medium confidence for extracted data
+      importance: 'medium',
+      source_type: 'conversation',
+      source_thread_id: threadId
+    }))
+
+    await supabase
+      .from('business_knowledge')
+      .insert(knowledgeInserts)
+
+    // Update business_profiles for structured fields
+    const profileUpdates: Record<string, any> = {}
+    for (const item of extracted) {
+      if (item.field) {
+        // Extract numeric value if it's a number field
+        const numMatch = item.fact.match(/(\d+(?:\.\d+)?)/);
+        if (numMatch) {
+          profileUpdates[item.field] = parseFloat(numMatch[1])
+        } else {
+          profileUpdates[item.field] = item.fact
+        }
+      }
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+      // Upsert business profile
+      await supabase
+        .from('business_profiles')
+        .upsert({
+          organization_id: organizationId,
+          ...profileUpdates
+        }, { onConflict: 'organization_id' })
+    }
+  } catch (e) {
+    console.error('Error saving knowledge:', e)
+  }
+}
+
+// Build knowledge context section for prompt
+function buildKnowledgeContextSection(
+  knowledge: BusinessKnowledge[],
+  profile: BusinessProfile | null
+): string {
+  if (knowledge.length === 0 && !profile) return ''
+
+  const lines: string[] = ['', '## What I Know About This Business']
+
+  // Add profile info
+  if (profile) {
+    if (profile.business_type) lines.push(`- Business Type: ${profile.business_type}`)
+    if (profile.avg_ticket) lines.push(`- Average Transaction: $${profile.avg_ticket}`)
+    if (profile.gross_margin_pct) lines.push(`- Gross Margin: ${profile.gross_margin_pct}%`)
+    if (profile.food_cost_pct) lines.push(`- Food Cost: ${profile.food_cost_pct}%`)
+    if (profile.labor_cost_pct) lines.push(`- Labor Cost: ${profile.labor_cost_pct}%`)
+    if (profile.price_positioning) lines.push(`- Price Position: ${profile.price_positioning}`)
+    if (profile.current_stage) lines.push(`- Business Stage: ${profile.current_stage}`)
+    if (profile.biggest_challenge) lines.push(`- Current Challenge: ${profile.biggest_challenge}`)
+    if (profile.competitive_advantage) lines.push(`- Competitive Edge: ${profile.competitive_advantage}`)
+    if (profile.ideal_customer_description) lines.push(`- Ideal Customer: ${profile.ideal_customer_description}`)
+    if (profile.primary_age_range) lines.push(`- Customer Age Range: ${profile.primary_age_range}`)
+  }
+
+  // Group knowledge by layer
+  const byLayer: Record<string, BusinessKnowledge[]> = {}
+  for (const k of knowledge) {
+    if (!byLayer[k.layer]) byLayer[k.layer] = []
+    byLayer[k.layer].push(k)
+  }
+
+  // Add learned facts (avoiding duplicates with profile)
+  const addedFacts = new Set<string>()
+  for (const [layer, facts] of Object.entries(byLayer)) {
+    const layerLabel = layer.charAt(0).toUpperCase() + layer.slice(1)
+    for (const fact of facts.slice(0, 5)) {
+      const factKey = `${fact.category}:${fact.fact.slice(0, 50)}`
+      if (!addedFacts.has(factKey)) {
+        lines.push(`- [${layerLabel}] ${fact.fact}`)
+        addedFacts.add(factKey)
+      }
+    }
+  }
+
+  if (lines.length <= 1) return ''
+  return lines.join('\n')
+}
+
+// Build discovery question injection
+function buildDiscoveryPromptAddition(question: DiscoveryQuestion | null): string {
+  if (!question) return ''
+
+  return `
+
+## Discovery Question to Weave In
+When natural, try to ask this question during your response. Don't force it if it doesn't fit the conversation.
+- Question: "${question.question}"
+- Why: "${question.why_asking || 'Helps me understand their business better'}"
+- Domain: ${question.domain}
+
+Weave this in naturally - for example:
+- At the end of your response as a genuine question
+- Or as a follow-up question in the follow_up_questions array
+- Don't ask if the conversation is clearly about something else`
+}
+
+// ============================================================================
+// PHASE 2: DISCOVERY DETECTION & SESSION TRACKING
+// ============================================================================
+
+interface SessionDiscoveryState {
+  questionsAskedThisSession: number
+  lastQuestionId: string | null
+  pendingQuestionId: string | null
+}
+
+interface AnswerDetectionResult {
+  isAnswer: boolean
+  answerText: string | null
+  confidence: number
+}
+
+// Detect if user explicitly wants to skip/defer a question
+function detectDeferral(userMessage: string): 'skip' | 'defer' | null {
+  const message = userMessage.toLowerCase().trim()
+
+  // Explicit defer patterns - user wants to answer later
+  const deferPatterns = [
+    /ask me (again )?later/i,
+    /come back to (that|this)/i,
+    /remind me (later|tomorrow|next time)/i,
+    /maybe later/i,
+    /let('s| me) (come back|get back) to (that|this)/i,
+    /not (right )?now,? (but |maybe )?later/i,
+  ]
+
+  for (const pattern of deferPatterns) {
+    if (pattern.test(userMessage)) {
+      return 'defer'
+    }
+  }
+
+  // Explicit skip patterns - user doesn't want to answer
+  const skipPatterns = [
+    /i('d| would) (rather not|prefer not to)/i,
+    /skip (that|this)( question)?/i,
+    /can we (talk about|move on|discuss) something else/i,
+    /let's (talk about|focus on|move to) something else/i,
+    /i('d| would) rather not (say|share|answer)/i,
+    /none of your business/i,
+    /that's private/i,
+    /i don't (want to|wanna) (talk about|share|answer)/i,
+    /pass on (that|this)/i,
+    /next question/i,
+  ]
+
+  for (const pattern of skipPatterns) {
+    if (pattern.test(userMessage)) {
+      return 'skip'
+    }
+  }
+
+  return null
+}
+
+// Detect conversation context/topic from user message and history
+function detectConversationContext(
+  userMessage: string,
+  threadHistory: Array<{ prompt_text: string; response: any }>
+): string | null {
+  // Combine recent messages for context detection
+  const recentMessages = [
+    userMessage,
+    ...threadHistory.slice(-3).map(h => h.prompt_text)
+  ].join(' ').toLowerCase()
+
+  // Domain keywords - ordered by specificity
+  const contextKeywords: Record<string, string[]> = {
+    costs: ['cost', 'costs', 'expense', 'expenses', 'spending', 'overhead', 'margin', 'margins', 'labor', 'rent', 'payroll', 'food cost', 'cogs'],
+    revenue: ['revenue', 'sales', 'income', 'money', 'profit', 'earnings', 'pricing', 'price', 'prices', 'ticket', 'transaction'],
+    customers: ['customer', 'customers', 'client', 'clients', 'visitor', 'visitors', 'guest', 'guests', 'who buys', 'demographic', 'audience', 'age range', 'target market'],
+    competition: ['competitor', 'competitors', 'competition', 'rival', 'rivals', 'other business', 'nearby', 'alternative', 'competing'],
+    operations: ['hours', 'schedule', 'scheduling', 'staff', 'staffing', 'employee', 'employees', 'busy', 'slow', 'peak', 'capacity', 'workflow'],
+    growth: ['grow', 'growth', 'expand', 'expansion', 'scale', 'scaling', 'goal', 'goals', 'target', 'milestone', 'future', 'plan', 'plans'],
+    marketing: ['marketing', 'advertise', 'advertising', 'promotion', 'promotions', 'social media', 'campaign', 'reach', 'ads', 'word of mouth'],
+    team: ['team', 'staff', 'employee', 'employees', 'hire', 'hiring', 'manager', 'worker', 'workers', 'turnover'],
+    finances: ['cash flow', 'budget', 'budgeting', 'loan', 'loans', 'funding', 'investment', 'financial', 'money', 'bank'],
+    personal: ['stress', 'stressed', 'worry', 'worried', 'concern', 'concerned', 'why i started', 'passion', 'motivation', 'burnout', 'tired'],
+  }
+
+  let bestMatch: string | null = null
+  let highestScore = 0
+
+  for (const [domain, keywords] of Object.entries(contextKeywords)) {
+    let score = 0
+    for (const keyword of keywords) {
+      if (recentMessages.includes(keyword)) {
+        // Give more weight to multi-word keywords
+        score += keyword.includes(' ') ? 2 : 1
+      }
+    }
+    if (score > highestScore) {
+      highestScore = score
+      bestMatch = domain
+    }
+  }
+
+  // Require at least 2 keyword matches to be confident
+  return highestScore >= 2 ? bestMatch : null
+}
+
+// Detect if user's message answers a pending discovery question
+function detectDiscoveryAnswer(
+  userMessage: string,
+  pendingQuestion: DiscoveryQuestion | null
+): AnswerDetectionResult {
+  if (!pendingQuestion) {
+    return { isAnswer: false, answerText: null, confidence: 0 }
+  }
+
+  const message = userMessage.toLowerCase().trim()
+
+  // Very short responses are rarely answers
+  if (message.length < 5) {
+    return { isAnswer: false, answerText: null, confidence: 0.1 }
+  }
+
+  // Domain-specific answer patterns
+  const answerPatterns: Record<string, { patterns: RegExp[]; weight: number }> = {
+    revenue: {
+      patterns: [
+        /\$?\d{1,3}(,\d{3})*(\.\d{2})?/,  // Money amounts like $1,234.56
+        /(\d+)\s*(k|thousand|million)/i,   // 50k, 50 thousand
+        /around\s+\$?\d+/i,
+        /about\s+\$?\d+/i,
+        /average(ly)?\s+(is|around|about)?\s*\$?\d+/i,
+      ],
+      weight: 1.5,
+    },
+    costs: {
+      patterns: [
+        /(\d+(\.\d+)?)\s*%/,              // Percentages
+        /(\d+)\s*percent/i,
+        /around\s+(\d+)/i,
+        /about\s+(\d+)/i,
+        /(one|two|three|four|five)\s*-?\s*thirds?/i,  // One-third, etc.
+      ],
+      weight: 1.5,
+    },
+    customers: {
+      patterns: [
+        /they('re| are)\s+(mostly|usually|typically|generally)/i,
+        /my (ideal )?customers?( are)?/i,
+        /(\d+)\s*(-|to)\s*(\d+)\s*(years?|y\/o|year old)/i,  // Age ranges
+        /(young|old|middle.?aged?|millennial|gen.?z|boomer)/i,
+        /(professional|student|family|families|couple|retiree)/i,
+      ],
+      weight: 1.2,
+    },
+    operations: {
+      patterns: [
+        /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
+        /(\d{1,2})(:\d{2})?\s*(am|pm)?/i,  // Times
+        /(morning|afternoon|evening|night|lunch|dinner|breakfast)/i,
+        /(busiest|slowest|peak|dead|quiet)/i,
+      ],
+      weight: 1.3,
+    },
+    growth: {
+      patterns: [
+        /i want to|we('re| are) trying to|our goal/i,
+        /by (end of |the )?(year|month|quarter)/i,
+        /in (\d+)\s*(month|year|week)/i,
+        /(expand|grow|scale|open|launch)/i,
+        /(second|another|new)\s*(location|store|branch)/i,
+      ],
+      weight: 1.2,
+    },
+    personal: {
+      patterns: [
+        /i('m| am) (worried|concerned|stressed) about/i,
+        /what keeps me up/i,
+        /my biggest (concern|fear|worry|challenge)/i,
+        /(burnout|exhausted|overwhelmed|frustrated)/i,
+        /i started (this|my) business (because|to)/i,
+      ],
+      weight: 1.0,
+    },
+    competition: {
+      patterns: [
+        /(competitor|competition) (is|are)/i,
+        /there('s| is) (a )?(\w+) (down|across|near)/i,
+        /(joe|bob|mike|the )\s*('s|s)\s*(place|shop|store|cafe|restaurant)/i,  // Competitor names
+        /(better|worse) than (us|me|we)/i,
+      ],
+      weight: 1.2,
+    },
+  }
+
+  const domain = pendingQuestion.domain
+  const domainPatterns = answerPatterns[domain]
+
+  let matchedPattern = false
+  let patternWeight = 1.0
+
+  if (domainPatterns) {
+    for (const pattern of domainPatterns.patterns) {
+      if (pattern.test(userMessage)) {
+        matchedPattern = true
+        patternWeight = domainPatterns.weight
+        break
+      }
+    }
+  }
+
+  // Calculate confidence based on various signals
+  let confidence = 0.3  // Base confidence
+
+  // Pattern match gives strong signal
+  if (matchedPattern) {
+    confidence += 0.35 * patternWeight
+  }
+
+  // Message length is a good indicator
+  if (userMessage.length > 50) {
+    confidence += 0.15
+  } else if (userMessage.length > 20) {
+    confidence += 0.1
+  }
+
+  // Messages that start with the domain topic are likely answers
+  const startsWithTopic = new RegExp(`^(my |our |the |we )?(${domain}|${pendingQuestion.domain})`, 'i')
+  if (startsWithTopic.test(userMessage)) {
+    confidence += 0.1
+  }
+
+  // Cap at 0.95
+  confidence = Math.min(0.95, confidence)
+
+  // Threshold for considering it an answer
+  const isAnswer = confidence >= 0.5
+
+  return {
+    isAnswer,
+    answerText: isAnswer ? userMessage : null,
+    confidence,
+  }
+}
+
+// Get session discovery state from database
+async function getSessionDiscoveryState(
+  supabase: SupabaseClient,
+  sessionId: string,
+  organizationId: string
+): Promise<SessionDiscoveryState> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_session_discovery_state', {
+        p_org_id: organizationId,
+        p_session_id: sessionId,
+        p_lookback_minutes: 30
+      })
+
+    if (error) {
+      console.error('Failed to get session discovery state:', error)
+      return {
+        questionsAskedThisSession: 0,
+        lastQuestionId: null,
+        pendingQuestionId: null
+      }
+    }
+
+    return {
+      questionsAskedThisSession: data?.questions_asked_this_session || 0,
+      lastQuestionId: data?.last_question_id || null,
+      pendingQuestionId: data?.pending_question_id || null
+    }
+  } catch (e) {
+    console.error('Error getting session discovery state:', e)
+    return {
+      questionsAskedThisSession: 0,
+      lastQuestionId: null,
+      pendingQuestionId: null
+    }
+  }
+}
+
+// Get a pending question by ID
+async function getPendingQuestionById(
+  supabase: SupabaseClient,
+  questionId: string
+): Promise<DiscoveryQuestion | null> {
+  try {
+    const { data, error } = await supabase
+      .from('discovery_questions')
+      .select('id, domain, question, why_asking, priority')
+      .eq('id', questionId)
+      .single()
+
+    if (error || !data) {
+      return null
+    }
+
+    return {
+      question_id: data.id,
+      domain: data.domain,
+      question: data.question,
+      why_asking: data.why_asking,
+      priority: data.priority
+    }
+  } catch (e) {
+    return null
+  }
+}
+
+// Handle question outcome (answered, skipped, deferred)
+async function handleQuestionOutcome(
+  supabase: SupabaseClient,
+  organizationId: string,
+  questionId: string,
+  outcome: 'answered' | 'skipped' | 'deferred',
+  threadId: string | null,
+  answerText: string | null
+): Promise<void> {
+  try {
+    await supabase.rpc('handle_question_outcome', {
+      p_org_id: organizationId,
+      p_question_id: questionId,
+      p_outcome: outcome,
+      p_thread_id: threadId,
+      p_answer_text: answerText
+    })
+  } catch (e) {
+    console.error('Error handling question outcome:', e)
+  }
+}
+
+// Get next discovery question with context awareness (Phase 2)
+async function getNextDiscoveryQuestionV2(
+  supabase: SupabaseClient,
+  organizationId: string,
+  conversationContext: string | null,
+  lastAnsweredQuestionId: string | null,
+  sessionQuestionsAsked: number,
+  businessType: string | null
+): Promise<DiscoveryQuestion | null> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_next_discovery_question_v2', {
+        p_org_id: organizationId,
+        p_conversation_context: conversationContext,
+        p_last_question_id: lastAnsweredQuestionId,
+        p_session_questions_asked: sessionQuestionsAsked,
+        p_business_type: businessType
+      })
+
+    if (error) {
+      console.error('Failed to get discovery question v2:', error)
+      return null
+    }
+
+    if (!data || data.length === 0) {
+      return null
+    }
+
+    const q = data[0]
+    return {
+      question_id: q.question_id,
+      domain: q.domain,
+      question: q.question,
+      why_asking: q.why_asking,
+      priority: q.priority
+    }
+  } catch (e) {
+    console.error('Error getting discovery question v2:', e)
+    return null
+  }
 }
 
 // Call Claude API with conversation history
@@ -215,7 +2251,12 @@ function buildExternalContextSection(external: ExternalContext | null | undefine
 }
 
 // Build system prompt based on mode
-function buildSystemPrompt(context: PromptRequest['context'], mode: 'review' | 'chat'): string {
+function buildSystemPrompt(
+  context: PromptRequest['context'],
+  mode: 'review' | 'chat',
+  knowledgeContext: string = '',
+  discoveryPrompt: string = ''
+): string {
   // Sanitize all user-provided context fields to prevent prompt injection
   const safeIndustry = sanitizeContextInput(context.industry, 100)
   const safeCity = sanitizeContextInput(context.city, 100)
@@ -241,7 +2282,7 @@ function buildSystemPrompt(context: PromptRequest['context'], mode: 'review' | '
 
   const businessContext = `## Business Context
 **Business:** ${safeBusinessName || 'Local Business'}${industryInfo}${locationInfo}
-**Customer Count:** ${context.customerCount}${automationsInfo}${slowDaysInfo}${revenueInfo}${challengeInfo}${externalContext}`
+**Customer Count:** ${context.customerCount}${automationsInfo}${slowDaysInfo}${revenueInfo}${challengeInfo}${externalContext}${knowledgeContext}`
 
   if (mode === 'chat') {
     // Chat mode: conversational, no forced card generation
@@ -252,6 +2293,7 @@ function buildSystemPrompt(context: PromptRequest['context'], mode: 'review' | '
 - Answer questions helpfully and conversationally
 - Only suggest specific actions when the user asks for recommendations
 - Be warm, encouraging, and supportive
+- Learn about the business over time through natural conversation
 
 ${businessContext}
 
@@ -265,12 +2307,46 @@ If the user asks for specific recommendations or actions, you may optionally inc
 
 But for general conversation, just respond in plain text like a helpful advisor would.
 
+## Tools Available
+You have access to tools to query AND act on real business data.
+
+### Read Tools (use proactively):
+- read_customers: Query customer segments, at-risk members, VIPs
+- read_activity: Query recent activity and engagement
+- read_automations: Check current campaigns
+- read_business_profile: Get business model data
+- read_knowledge: Recall previously learned facts
+
+### Research Tools (external data):
+- search_competitors: Research local competitors
+- search_regulations: Find industry regulations
+- search_market_trends: Discover market trends
+- search_benchmarks: Find industry benchmarks
+
+### Write Tools (requires approval unless high confidence):
+- create_announcement: Post announcements to the loyalty app
+- send_targeted_message: Send messages to customer segments
+- create_flash_promotion: Create time-limited points promotions
+- award_bonus_points: Award bonus points to members
+- enable_automation: Enable/disable loyalty automations
+- save_knowledge: Store learned facts about the business
+
+When using write tools:
+1. Explain what you're doing and why
+2. If the action is queued for approval, inform the user
+3. Only use write tools when the user clearly wants to take action
+4. For knowledge, save important facts proactively
+
+Use read tools proactively to provide data-driven answers rather than guessing.
+
 ## Guidelines
 1. Be conversational and natural - this is a chat, not a report
 2. Ask clarifying questions when needed
 3. Reference their business context when relevant
 4. Only generate action cards when they explicitly ask "what should I do" or similar
-5. Keep responses concise but helpful`
+5. Keep responses concise but helpful
+6. When you learn new facts about the business, acknowledge them naturally
+7. Use tools to look up real data before giving specific numbers or recommendations${discoveryPrompt}`
   }
 
   // Review mode: structured card generation (existing behavior)
@@ -281,6 +2357,7 @@ But for general conversation, just respond in plain text like a helpful advisor 
 - Provide actionable insights based on their specific business context
 - Suggest automations, strategies, and local marketing ideas
 - Be conversational, helpful, and data-driven
+- Continuously learn about the business to provide better recommendations
 
 ${businessContext}
 
@@ -291,6 +2368,36 @@ You have deep knowledge of:
 - Local marketing tactics
 - Automation workflows for customer engagement
 - Competitive insights for various industries
+
+## Tools Available
+You have access to tools to query AND act on real business data.
+
+### Read Tools (use for data-driven recommendations):
+- read_customers: Query customer segments, at-risk members, VIPs
+- read_activity: Query recent events and engagement patterns
+- read_automations: Check current campaigns and their performance
+- read_business_profile: Get detailed business model data
+- read_knowledge: Recall facts you've learned about this business
+
+### Research Tools (external data):
+- search_competitors: Research local competitors
+- search_regulations: Find industry regulations
+- search_market_trends: Discover market trends
+- search_benchmarks: Find industry benchmarks for KPIs
+
+### Write Tools (confidence-gated actions):
+- create_announcement: Post to loyalty app
+- send_targeted_message: Send to customer segments
+- create_flash_promotion: Create points promotions
+- award_bonus_points: Award points to members
+- enable_automation: Toggle automations
+- save_knowledge: Store learned business facts
+
+Write tools queue actions for approval unless:
+1. Auto-execute is enabled for the organization
+2. The AI confidence exceeds the organization's threshold
+
+Use tools proactively when generating recommendations to base them on real data.
 
 ## Response Format
 You MUST respond in valid JSON with this exact structure:
@@ -328,7 +2435,7 @@ When suggesting automations, use these template_id values:
 4. Include 2-4 follow-up questions to continue the conversation
 5. Be specific and actionable - general advice is not helpful
 6. For new businesses (0 customers), focus on acquisition and onboarding
-7. For established businesses, focus on retention and optimization`
+7. For established businesses, focus on retention and optimization${discoveryPrompt}`
 }
 
 // Parse response based on mode
@@ -418,6 +2525,8 @@ async function generateThreadTitle(prompt: string): Promise<string> {
 
 // Main handler
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -429,7 +2538,10 @@ Deno.serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      throw new Error('Missing authorization header')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -580,10 +2692,130 @@ Deno.serve(async (req) => {
 
     messages.push({ role: 'user', content: prompt })
 
-    // Generate AI response
-    const systemPrompt = buildSystemPrompt(context, mode)
-    const aiResponseText = await callClaude(systemPrompt, messages)
+    // =========================================================================
+    // PHASE 2: INTELLIGENT DISCOVERY WITH CONTEXT AWARENESS
+    // Load knowledge, detect answers/skips, and select contextual questions
+    // =========================================================================
+
+    // Load business knowledge, profile, and session state in parallel
+    const [knowledge, profile, sessionState] = await Promise.all([
+      loadBusinessKnowledge(supabase, organizationId),
+      loadBusinessProfile(supabase, organizationId),
+      getSessionDiscoveryState(supabase, session_id, organizationId)
+    ])
+
+    // Track discovery outcomes for logging
+    let discoveryOutcome: 'answered' | 'skipped' | 'deferred' | null = null
+    let lastAnsweredQuestionId: string | null = null
+
+    // Check if there's a pending question from previous messages
+    if (sessionState.pendingQuestionId) {
+      const pendingQuestion = await getPendingQuestionById(supabase, sessionState.pendingQuestionId)
+
+      if (pendingQuestion) {
+        // Check for explicit deferral/skip first
+        const deferralResult = detectDeferral(prompt)
+
+        if (deferralResult === 'defer') {
+          discoveryOutcome = 'deferred'
+          await handleQuestionOutcome(
+            supabase, organizationId,
+            sessionState.pendingQuestionId,
+            'deferred',
+            currentThreadId || null,
+            null
+          )
+        } else if (deferralResult === 'skip') {
+          discoveryOutcome = 'skipped'
+          await handleQuestionOutcome(
+            supabase, organizationId,
+            sessionState.pendingQuestionId,
+            'skipped',
+            currentThreadId || null,
+            null
+          )
+        } else {
+          // Check if user's message answers the pending question
+          const answerResult = detectDiscoveryAnswer(prompt, pendingQuestion)
+
+          if (answerResult.isAnswer && answerResult.confidence >= 0.5) {
+            discoveryOutcome = 'answered'
+            lastAnsweredQuestionId = sessionState.pendingQuestionId
+            await handleQuestionOutcome(
+              supabase, organizationId,
+              sessionState.pendingQuestionId,
+              'answered',
+              currentThreadId || null,
+              answerResult.answerText
+            )
+          }
+          // If not clearly an answer and not a skip, question remains pending
+          // It will be implicitly skipped after 2 ignores (handled by v2 function)
+        }
+      }
+    }
+
+    // Detect conversation context for smart question selection
+    const conversationContext = detectConversationContext(prompt, threadHistory || [])
+
+    // Decide whether to ask a new discovery question
+    let discoveryQuestion: DiscoveryQuestion | null = null
+    const shouldAskQuestion =
+      sessionState.questionsAskedThisSession < 2 &&  // Max 2 per session
+      discoveryOutcome !== 'answered'  // Don't ask right after they just answered
+
+    if (shouldAskQuestion) {
+      // Use context-aware v2 question selection
+      discoveryQuestion = await getNextDiscoveryQuestionV2(
+        supabase,
+        organizationId,
+        conversationContext,
+        lastAnsweredQuestionId,  // For follow-up chaining
+        sessionState.questionsAskedThisSession,
+        profile?.business_type || null
+      )
+    }
+
+    // Build knowledge context for prompt
+    const knowledgeContext = buildKnowledgeContextSection(knowledge, profile)
+    const discoveryPrompt = buildDiscoveryPromptAddition(discoveryQuestion)
+
+    // Generate AI response with enhanced context
+    const systemPrompt = buildSystemPrompt(context, mode, knowledgeContext, discoveryPrompt)
+
+    // Phase 3: Use tool-enabled Claude call
+    const toolContext: ToolContext = {
+      supabase,
+      organizationId,
+      appId: undefined // Will be resolved by tool handlers
+    }
+
+    const { text: aiResponseText, toolsUsed, tokensUsed } = await callClaudeWithTools(
+      systemPrompt,
+      messages,
+      toolContext
+    )
+
     const parsed = parseResponse(aiResponseText, mode)
+
+    // =========================================================================
+    // PHASE 1 & 2: KNOWLEDGE EXTRACTION
+    // Extract facts from conversation and save to knowledge store
+    // =========================================================================
+
+    // Extract knowledge from user message and AI response
+    const extractedKnowledge = extractKnowledgeFromText(prompt, aiResponseText)
+    if (extractedKnowledge.length > 0) {
+      // Save extracted knowledge (async, don't block response)
+      saveExtractedKnowledge(supabase, organizationId, currentThreadId || null, extractedKnowledge)
+        .catch(e => console.error('Knowledge save error:', e))
+    }
+
+    // Mark discovery question as asked if we included one
+    if (discoveryQuestion) {
+      markQuestionAsked(supabase, organizationId, discoveryQuestion.question_id, currentThreadId || null)
+        .catch(e => console.error('Discovery question mark error:', e))
+    }
 
     // Save prompt and response to database
     await supabase.from('ai_prompts').insert({
@@ -598,7 +2830,18 @@ Deno.serve(async (req) => {
         ...(mode === 'chat' ? { message: parsed.message } : {}),
         ideas: parsed.ideas,
         follow_up_questions: parsed.follow_up_questions,
-        raw_response: aiResponseText
+        raw_response: aiResponseText,
+        knowledge_extracted: extractedKnowledge.length,
+        // Phase 2: Enhanced discovery tracking
+        discovery_question_asked: discoveryQuestion?.question || null,
+        discovery_question_id: discoveryQuestion?.question_id || null,
+        discovery_question_domain: discoveryQuestion?.domain || null,
+        discovery_outcome: discoveryOutcome,
+        conversation_context: conversationContext,
+        session_questions_count: sessionState.questionsAskedThisSession + (discoveryQuestion ? 1 : 0),
+        // Phase 3: Tool use tracking
+        tools_used: toolsUsed,
+        tokens_used: tokensUsed
       },
       ideas_generated: parsed.ideas.length
     })
