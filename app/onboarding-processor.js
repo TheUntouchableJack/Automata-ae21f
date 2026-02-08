@@ -135,11 +135,8 @@ const OnboardingProcessor = (function() {
     async function process(organizationId, supabase) {
         const data = getPendingData();
         if (!data || !data.selectedTemplates?.length) {
-            console.log('No pending onboarding data to process');
             return null;
         }
-
-        console.log('Processing onboarding data:', data);
 
         try {
             // 1. Create project with business context
@@ -158,18 +155,14 @@ const OnboardingProcessor = (function() {
                 .single();
 
             if (projectError) {
-                console.error('Error creating project:', projectError);
                 throw projectError;
             }
-
-            console.log('Created project:', project);
 
             // 2. Create automations from selected templates
             const automations = [];
             for (const templateId of data.selectedTemplates) {
                 const template = TEMPLATE_DEFINITIONS[templateId];
                 if (!template) {
-                    console.warn('Unknown template:', templateId);
                     continue;
                 }
 
@@ -188,12 +181,8 @@ const OnboardingProcessor = (function() {
                     .select()
                     .single();
 
-                if (automationError) {
-                    console.error('Error creating automation:', automationError);
-                    // Continue with other automations
-                } else {
+                if (!automationError) {
                     automations.push(automation);
-                    console.log('Created automation:', automation);
                 }
             }
 
@@ -202,11 +191,8 @@ const OnboardingProcessor = (function() {
                 OnboardingStorage.clear();
             }
 
-            console.log('Onboarding complete. Created project and', automations.length, 'automations');
-
             return { project, automations };
         } catch (error) {
-            console.error('Error processing onboarding:', error);
             return null;
         }
     }

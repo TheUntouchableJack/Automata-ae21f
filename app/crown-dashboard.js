@@ -87,8 +87,8 @@ const CrownDashboard = (function() {
         ANALYZED: 'crown:analyzed',
         IMPLEMENTED: 'crown:implemented',
         RECOMMENDATIONS_LOADED: 'crown:recommendations-loaded',
-        ACCEPT: EVENTS.ACCEPT,
-        STATUS_CHANGED: EVENTS.STATUS_CHANGED
+        ACCEPT: 'crown:accept',
+        STATUS_CHANGED: 'crown:status-changed'
     };
 
     function getCurrencyForCountry(countryCode) {
@@ -137,6 +137,9 @@ const CrownDashboard = (function() {
     ];
 
     async function init() {
+        // Clean up any existing event listeners to prevent memory leaks on re-init
+        cleanupEventListeners();
+
         // Check WebGL support
         if (!supportsWebGL()) {
             showFallback();
@@ -194,11 +197,14 @@ const CrownDashboard = (function() {
             setMode(savedMode);
         }
 
-        // Cleanup on page unload to prevent memory leaks
-        window.addEventListener('beforeunload', () => {
-            cleanupEventListeners();
-            stopCountdownTimer();
-        });
+        // Cleanup on page unload to prevent memory leaks (only add once)
+        if (!eventListenerRefs.beforeUnload) {
+            eventListenerRefs.beforeUnload = () => {
+                cleanupEventListeners();
+                stopCountdownTimer();
+            };
+            window.addEventListener('beforeunload', eventListenerRefs.beforeUnload);
+        }
 
         modeState.initialized = true;
     }
@@ -741,6 +747,11 @@ const CrownDashboard = (function() {
         }
         if (eventListenerRefs.recommendationsLoaded) {
             document.removeEventListener(EVENTS.RECOMMENDATIONS_LOADED, eventListenerRefs.recommendationsLoaded);
+        }
+        // Clean up beforeunload listener to prevent memory leaks on re-init
+        if (eventListenerRefs.beforeUnload) {
+            window.removeEventListener('beforeunload', eventListenerRefs.beforeUnload);
+            eventListenerRefs.beforeUnload = null;
         }
     }
 
@@ -1590,7 +1601,10 @@ const CrownDashboard = (function() {
     }
 
     function escapeHtml(str) {
-        if (typeof window.escapeHtml === 'function') return window.escapeHtml(str);
+        if (typeof AppUtils !== 'undefined' && typeof AppUtils.escapeHtml === 'function') {
+            return AppUtils.escapeHtml(str);
+        }
+        // Fallback for safety
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
@@ -1942,7 +1956,6 @@ const CrownDashboard = (function() {
 
         // IMMEDIATE guards - check both disabled state AND flag to close race window
         if (sendBtn.disabled || promptState.loading) {
-            console.log('Already processing a prompt, ignoring duplicate submission');
             return;
         }
         if (!textarea.value.trim()) return;
@@ -1975,15 +1988,14 @@ const CrownDashboard = (function() {
         }
         updateStatus('analyzing');
 
-        // Get current mode from active tab
-        const chatTab = document.getElementById('tab-chat');
-        const activeMode = chatTab && chatTab.classList.contains('active') ? 'chat' : 'review';
-
-        // Add user message to chat if in chat mode
-        if (activeMode === 'chat' && typeof ChatThread !== 'undefined') {
+        // Always switch to Chat tab and use chat mode when sending a message
+        // This ensures the user sees the response regardless of which tab they were on
+        if (typeof ChatThread !== 'undefined') {
+            ChatThread.activateChatTab();
             ChatThread.appendMessage('user', prompt);
             ChatThread.appendTypingIndicator();
         }
+        const activeMode = 'chat';  // Always use chat mode
 
         // Clear input immediately after capturing
         textarea.value = '';
@@ -2084,14 +2096,11 @@ const CrownDashboard = (function() {
         let { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
-            console.warn('User validation failed, attempting session refresh:', userError?.message);
             // Try to refresh the session
             const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
             if (refreshError || !refreshData?.session) {
-                console.error('Session refresh failed:', refreshError?.message);
                 throw new Error('Your session has expired. Please refresh the page and log in again.');
             }
-            console.log('Session refreshed successfully after validation failure');
             // Re-fetch user after refresh
             const refreshedUser = await supabase.auth.getUser();
             user = refreshedUser.data.user;
@@ -2104,7 +2113,6 @@ const CrownDashboard = (function() {
         let session = await getValidSession();
 
         if (!session || !session.access_token) {
-            console.error('No valid session for API call');
             throw new Error('Your session has expired. Please refresh the page and log in again.');
         }
 
@@ -2168,13 +2176,11 @@ const CrownDashboard = (function() {
         });
 
         if (error) {
-            console.error('Edge function error:', error.message || 'Unknown error');
             // Handle auth issues with automatic retry
             if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('non-2xx')) {
                 // Refresh session and retry ONCE
                 const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
                 if (refreshData?.session) {
-                    console.log('Session refreshed after 401, retrying request...');
                     // Retry the request with new token
                     const { data: retryData, error: retryError } = await supabase.functions.invoke('royal-ai-prompt', {
                         body: requestBody,
@@ -2183,7 +2189,6 @@ const CrownDashboard = (function() {
                         }
                     });
                     if (retryError) {
-                        console.error('Retry also failed:', retryError?.message || 'Unknown error');
                         throw new Error('Session expired. Please refresh the page and log in again.');
                     }
                     // Update thread ID from retry response

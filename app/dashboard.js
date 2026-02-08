@@ -4,7 +4,8 @@ let currentOrganization = null;
 let currentUsage = null;
 let orgLimits = null;
 let isSubmitting = false;  // Guard against double-submit
-let currentApp = null;      // User's loyalty app
+let currentApp = null;      // User's current loyalty app (for charts/preview)
+let allApps = [];            // All org apps (for aggregate metrics + switcher)
 let memberGrowthChart = null;
 let tierDistributionChart = null;
 let currentPeriodDays = 7; // Default chart period (matches 7D active button)
@@ -106,7 +107,6 @@ async function processPendingOnboarding() {
     if (!OnboardingProcessor.hasPendingOnboarding()) return null;
     if (!currentOrganization) return null;
 
-    console.log('Processing pending onboarding data...');
     return await OnboardingProcessor.process(currentOrganization.id, supabase);
 }
 
@@ -141,26 +141,20 @@ async function loadUsageData() {
 
         if (error) {
             // If RPC doesn't exist yet, calculate manually
-            console.log('get_current_usage not available, calculating manually');
             await calculateUsageManually();
             return;
         }
 
         currentUsage = usage;
 
-        // Update snapshot counts (non-blocking, errors logged but don't break flow)
-        const { error: snapshotError } = await supabase.rpc('update_usage_snapshots', { org_id: currentOrganization.id });
-        if (snapshotError) {
-            console.warn('Failed to update usage snapshots:', snapshotError.message);
-        }
+        // Update snapshot counts (non-blocking)
+        await supabase.rpc('update_usage_snapshots', { org_id: currentOrganization.id });
 
         // Re-fetch updated usage
         const { data: updatedUsage, error: refetchError } = await supabase
             .rpc('get_current_usage', { org_id: currentOrganization.id });
 
-        if (refetchError) {
-            console.warn('Failed to refetch usage:', refetchError.message);
-        } else if (updatedUsage) {
+        if (!refetchError && updatedUsage) {
             currentUsage = updatedUsage;
         }
 
@@ -177,14 +171,13 @@ async function loadAppMetrics() {
     if (!currentOrganization) return;
 
     try {
-        // Get the organization's customer app(s)
+        // Get ALL the organization's customer apps (no limit)
         const { data: apps, error: appsError } = await supabase
             .from('customer_apps')
             .select('*')
             .eq('organization_id', currentOrganization.id)
             .is('deleted_at', null)
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .order('created_at', { ascending: false });
 
         if (appsError) {
             console.error('Error fetching apps:', appsError);
@@ -200,6 +193,7 @@ async function loadAppMetrics() {
                 return;
             }
             currentApp = newApp;
+            allApps = [newApp];
             // Show success toast
             const toastMsg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appAutoCreated') : 'Your loyalty program is ready! Customize it anytime.';
             if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
@@ -207,6 +201,7 @@ async function loadAppMetrics() {
             }
         } else {
             currentApp = apps[0];
+            allApps = apps;
         }
 
         // Show the metrics section
@@ -229,6 +224,9 @@ async function loadAppMetrics() {
 
         // Show preview panel
         showPreviewPanel();
+
+        // Setup app switcher (if multiple apps)
+        setupAppSwitcher();
 
     } catch (error) {
         console.error('Error loading app metrics:', error);
@@ -453,7 +451,13 @@ function updatePreviewContent(previewCol, toggleBtn, grid) {
         const appName = currentApp.name || 'My App';
         const initial = appName.charAt(0).toUpperCase();
         const rewardsLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.rewardsProgram') : 'Rewards Program';
-        const previewLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewButton') : 'Preview';
+        const isPublished = currentApp.is_published;
+        const buttonLabel = isPublished
+            ? ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.launchApp') : 'Launch App')
+            : ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewButton') : 'Preview');
+        const buttonUrl = isPublished
+            ? `${window.location.origin}/a/${currentApp.slug}`
+            : `/customer-app/index.html?preview=true&app_id=${currentApp.id}&published=0`;
 
         splash.style.backgroundColor = primaryColor;
         splash.innerHTML = `
@@ -462,12 +466,20 @@ function updatePreviewContent(previewCol, toggleBtn, grid) {
             </div>
             <div class="preview-splash-name">${escapeHtml(appName)}</div>
             <div class="preview-splash-subtitle">${escapeHtml(rewardsLabel)}</div>
-            <button class="preview-splash-btn" id="preview-splash-btn">${escapeHtml(previewLabel)}</button>
+            <button class="preview-splash-btn${isPublished ? ' published' : ''}" id="preview-splash-btn">${escapeHtml(buttonLabel)}</button>
         `;
 
         document.getElementById('preview-splash-btn')?.addEventListener('click', () => {
-            window.open(`/customer-app/index.html?preview=true&app_id=${currentApp.id}&published=${currentApp.is_published ? '1' : '0'}`, '_blank');
+            window.open(buttonUrl, '_blank');
         });
+
+        // Update header toggle button text too
+        const toggleBtnText = document.querySelector('#preview-toggle-btn span');
+        if (toggleBtnText) {
+            toggleBtnText.textContent = isPublished
+                ? ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.launchApp') : 'Launch App')
+                : ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewMobileToggle') : 'Preview App');
+        }
     }
 
     // Show URL
@@ -588,17 +600,48 @@ function printPreviewQR() {
     setTimeout(() => { printWindow.print(); }, 500);
 }
 
-// ===== Load Dashboard Summary =====
+// ===== Load Dashboard Summary (org-wide aggregate) =====
 async function loadDashboardSummary() {
-    if (!currentApp) return;
+    if (!currentOrganization) return;
 
     try {
-        // Try RPC function first
-        const { data: summary, error } = await supabase
-            .rpc('get_app_dashboard_summary', { p_app_id: currentApp.id });
+        // Try org-level aggregate RPC first (sums across ALL apps)
+        let summary = null;
+        const { data: orgSummary, error: orgError } = await supabase
+            .rpc('get_org_dashboard_summary', { p_org_id: currentOrganization.id });
 
-        if (error) {
-            console.warn('get_app_dashboard_summary not available, calculating manually');
+        if (!orgError && orgSummary) {
+            summary = orgSummary;
+        } else {
+            // Fallback: try per-app RPC and aggregate client-side
+            console.warn('get_org_dashboard_summary not available, trying per-app fallback');
+            if (allApps.length > 0) {
+                const results = await Promise.all(
+                    allApps.map(app => supabase.rpc('get_app_dashboard_summary', { p_app_id: app.id }))
+                );
+                summary = results.reduce((acc, r) => {
+                    if (r.error || !r.data) return acc;
+                    const d = r.data;
+                    acc.total_members += d.total_members || 0;
+                    acc.today_checkins += d.today_checkins || 0;
+                    acc.new_this_week += d.new_this_week || 0;
+                    acc.points_this_week += d.points_this_week || 0;
+                    acc.active_members_30d += d.active_members_30d || 0;
+                    acc.total_visits += d.total_visits || 0;
+                    acc.referral_count += d.referral_count || 0;
+                    // Merge tier distributions
+                    if (d.tier_distribution) {
+                        for (const [tier, count] of Object.entries(d.tier_distribution)) {
+                            acc.tier_distribution[tier] = (acc.tier_distribution[tier] || 0) + count;
+                        }
+                    }
+                    return acc;
+                }, { total_members: 0, today_checkins: 0, new_this_week: 0, points_this_week: 0,
+                     active_members_30d: 0, total_visits: 0, referral_count: 0, tier_distribution: {} });
+            }
+        }
+
+        if (!summary) {
             await calculateMetricsManually();
             return;
         }
@@ -659,7 +702,7 @@ async function calculateMetricsManually() {
             .from('app_members')
             .select('*', { count: 'exact', head: true })
             .eq('app_id', currentApp.id)
-            .gte('created_at', weekAgo)
+            .gte('joined_at', weekAgo)
             .is('deleted_at', null);
 
         // Update metric cards
@@ -1031,10 +1074,10 @@ async function loadActivityManually() {
         // Get recent members (joins)
         const { data: members } = await supabase
             .from('app_members')
-            .select('id, first_name, last_name, created_at')
+            .select('id, first_name, last_name, joined_at')
             .eq('app_id', currentApp.id)
             .is('deleted_at', null)
-            .order('created_at', { ascending: false })
+            .order('joined_at', { ascending: false })
             .limit(10);
 
         if (!members || members.length === 0) {
@@ -1054,7 +1097,7 @@ async function loadActivityManually() {
             event_type: 'join',
             member_name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Member',
             description: 'joined the program',
-            created_at: m.created_at
+            created_at: m.joined_at
         }));
 
         renderActivityList(activities);
@@ -1131,6 +1174,89 @@ function setupChartPeriodSelector() {
             await loadMemberGrowthChart(days);
         });
     });
+}
+
+// ===== App Switcher =====
+function setupAppSwitcher() {
+    const switcher = document.getElementById('app-switcher');
+    const btn = document.getElementById('app-switcher-btn');
+    const menu = document.getElementById('app-switcher-menu');
+    const currentName = document.getElementById('app-switcher-current');
+
+    if (!switcher || !btn || !menu) return;
+
+    // Only show if 2+ apps
+    if (allApps.length < 2) {
+        switcher.style.display = 'none';
+        return;
+    }
+
+    switcher.style.display = 'block';
+    if (currentName && currentApp) {
+        currentName.textContent = currentApp.name || 'My App';
+    }
+
+    // Populate menu
+    menu.innerHTML = allApps.map(app => {
+        const isActive = app.id === currentApp?.id;
+        const statusLabel = app.is_published
+            ? ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appLive') : 'Live')
+            : ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appDraft') : 'Draft');
+        const statusClass = app.is_published ? 'live' : 'draft';
+        return `
+            <button class="app-switcher-item ${isActive ? 'active' : ''}" data-app-id="${app.id}">
+                <span class="app-switcher-item-name">${escapeHtml(app.name || 'Untitled')}</span>
+                <span class="app-status-badge ${statusClass}">${statusLabel}</span>
+            </button>
+        `;
+    }).join('');
+
+    // Toggle menu
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('open');
+    });
+
+    // Close menu on click outside
+    document.addEventListener('click', () => {
+        menu.classList.remove('open');
+    });
+
+    // Handle item clicks
+    menu.addEventListener('click', async (e) => {
+        const item = e.target.closest('.app-switcher-item');
+        if (!item) return;
+        const appId = item.dataset.appId;
+        if (appId && appId !== currentApp?.id) {
+            await switchToApp(appId);
+        }
+        menu.classList.remove('open');
+    });
+}
+
+async function switchToApp(appId) {
+    const newApp = allApps.find(a => a.id === appId);
+    if (!newApp) return;
+
+    currentApp = newApp;
+
+    // Update switcher UI
+    const currentName = document.getElementById('app-switcher-current');
+    if (currentName) currentName.textContent = currentApp.name || 'My App';
+
+    // Update active states in menu
+    document.querySelectorAll('.app-switcher-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.appId === appId);
+    });
+
+    // Reload per-app data (charts, activity, preview)
+    await Promise.all([
+        loadMemberGrowthChart(currentPeriodDays),
+        loadRecentActivity()
+    ]);
+
+    // Update preview panel content
+    updatePreviewContent();
 }
 
 // ===== Refresh Dashboard =====

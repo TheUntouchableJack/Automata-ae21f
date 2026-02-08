@@ -459,7 +459,10 @@ async function handleCheckout(plan) {
     btn.innerHTML = 'Loading...';
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const session = await getValidSession();
+        if (!session) {
+            throw new Error('Session expired. Please refresh the page and log in again.');
+        }
 
         // Request embedded checkout session
         const response = await fetch(
@@ -574,7 +577,10 @@ async function handleManageBilling() {
     btn.innerHTML = 'Loading...';
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const session = await getValidSession();
+        if (!session) {
+            throw new Error('Session expired. Please refresh the page and log in again.');
+        }
 
         const response = await fetch(
             'https://vhpmmfhfwnpmavytoomd.supabase.co/functions/v1/create-portal-session',
@@ -623,7 +629,10 @@ async function cancelSubscription() {
             btn.innerHTML = 'Canceling...';
 
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const session = await getValidSession();
+                if (!session) {
+                    throw new Error('Session expired. Please refresh the page and log in again.');
+                }
 
                 const response = await fetch(
                     'https://vhpmmfhfwnpmavytoomd.supabase.co/functions/v1/cancel-subscription',
@@ -670,7 +679,10 @@ async function reactivateSubscription() {
     btn.innerHTML = 'Reactivating...';
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const session = await getValidSession();
+        if (!session) {
+            throw new Error('Session expired. Please refresh the page and log in again.');
+        }
 
         const response = await fetch(
             'https://vhpmmfhfwnpmavytoomd.supabase.co/functions/v1/cancel-subscription',
@@ -1527,6 +1539,7 @@ function handleAdvancedModeToggle(e) {
             email: currentUser.email,
             organization: currentOrganization,
             role: currentMembership?.role,
+            isAdmin: currentProfile?.is_admin === true,
             advancedMode: isAdvanced
         });
     }

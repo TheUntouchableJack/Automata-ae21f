@@ -41,6 +41,35 @@ async function getSession() {
 }
 
 /**
+ * Get a valid session with non-expired access token
+ * Auto-refreshes if token is expired or about to expire (within 60 seconds)
+ * @returns {Promise<object|null>} Valid session object or null
+ */
+async function getValidSession() {
+    let { data: { session }, error } = await db.auth.getSession();
+
+    if (error || !session) {
+        return null;
+    }
+
+    // Check if token is expired or about to expire (within 60 seconds)
+    const now = Math.floor(Date.now() / 1000);
+    const bufferSeconds = 60;
+
+    if (session.expires_at && session.expires_at < now + bufferSeconds) {
+        const { data: refreshData, error: refreshError } = await db.auth.refreshSession();
+
+        if (refreshError || !refreshData?.session) {
+            return null;
+        }
+
+        session = refreshData.session;
+    }
+
+    return session;
+}
+
+/**
  * Sign in with email and password
  * @param {string} email
  * @param {string} password

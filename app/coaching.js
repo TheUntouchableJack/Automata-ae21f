@@ -646,9 +646,13 @@ const Coaching = (function() {
     }
 
     /**
-     * Escape HTML helper
+     * Escape HTML helper - delegates to AppUtils
      */
     function escapeHtml(text) {
+        if (typeof AppUtils !== 'undefined' && typeof AppUtils.escapeHtml === 'function') {
+            return AppUtils.escapeHtml(text);
+        }
+        // Fallback for safety
         const div = document.createElement('div');
         div.textContent = text || '';
         return div.innerHTML;

@@ -23,6 +23,12 @@ const OnboardingStorage = (function() {
             selectedTemplates: [],
             customAutomation: '', // User-described custom automation
             aiRecommendations: [],
+            businessDetails: {
+                businessName: '',
+                businessType: '',
+                customerCount: '',
+                websiteUrl: ''
+            },
             createdAt: now,
             expiresAt: now + (EXPIRY_DAYS * 24 * 60 * 60 * 1000)
         };
@@ -94,13 +100,10 @@ const OnboardingStorage = (function() {
     }
 
     // Check if onboarding has minimum data to proceed to signup
+    // AI auto-selects templates, so we only require a business prompt
     function isComplete() {
         const data = get();
-        const hasTemplates = data?.selectedTemplates?.length > 0;
-        const hasCustom = data?.customAutomation?.trim()?.length > 0;
-        return data !== null &&
-            data.businessPrompt.trim() !== '' &&
-            (hasTemplates || hasCustom);
+        return data !== null && data.businessPrompt.trim() !== '';
     }
 
     // Get selected template IDs
@@ -128,17 +131,14 @@ const OnboardingStorage = (function() {
         return data?.customAutomation || '';
     }
 
-    // Check if can add more selections (templates + custom < 3)
+    // Check if can add more selections (unlimited)
     function canAddMore() {
-        return getSelectionCount() < 3;
+        return true;
     }
 
-    // Add a template to selection (max 3)
+    // Add a template to selection
     function addTemplate(templateId) {
         const data = get() || getDefaultData();
-        if (data.selectedTemplates.length >= 3) {
-            return false;
-        }
         if (!data.selectedTemplates.includes(templateId)) {
             data.selectedTemplates.push(templateId);
             save(data);
@@ -174,6 +174,17 @@ const OnboardingStorage = (function() {
     // Set business context
     function setBusinessContext(context) {
         save({ businessContext: context });
+    }
+
+    // Set business details (info-gathering step)
+    function setBusinessDetails(details) {
+        save({ businessDetails: details || {} });
+    }
+
+    // Get business details
+    function getBusinessDetails() {
+        const data = get();
+        return data?.businessDetails || {};
     }
 
     // Set AI recommendations (cache them)
@@ -219,9 +230,10 @@ const OnboardingStorage = (function() {
         setRecommendations,
         setCustomAutomation,
         getCustomAutomation,
+        setBusinessDetails,
+        getBusinessDetails,
         canAddMore,
-        getDaysUntilExpiry,
-        MAX_TEMPLATES: 3
+        getDaysUntilExpiry
     };
 })();
 

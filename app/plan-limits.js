@@ -509,4 +509,19 @@ if (typeof window !== 'undefined') {
     window.canUseIntelligence = canUseIntelligence;
     window.canUseIntelligenceSync = canUseIntelligenceSync;
     window.hasWhiteLabel = hasWhiteLabel;
+
+    // Create PlanLimits namespace for crown-dashboard.js compatibility
+    window.PlanLimits = {
+        PLANS: {
+            free: PLAN_LIMITS.free,
+            starter: PLAN_LIMITS.subscription.starter,
+            growth: PLAN_LIMITS.subscription.growth,
+            scale: PLAN_LIMITS.subscription.scale,
+            subscription: PLAN_LIMITS.subscription
+        },
+        canUseIntelligence: canUseIntelligence,
+        getOrgLimits: getOrgLimits,
+        checkLimit: checkLimit,
+        formatLimit: formatLimit
+    };
 }
