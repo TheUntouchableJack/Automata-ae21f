@@ -384,7 +384,12 @@
         "timeJustNow": "agora mesmo",
         "timeMinutesAgo": "há {n}m",
         "timeHoursAgo": "há {n}h",
-        "timeDaysAgo": "há {n}d"
+        "timeDaysAgo": "há {n}d",
+        "launchApp": "Lançar App",
+        "switchApp": "Trocar App",
+        "appLive": "Ao Vivo",
+        "appDraft": "Rascunho",
+        "today": "Hoje"
     },
     "aiFeed": {
         "title": "Feed de Inteligência IA",
@@ -422,15 +427,18 @@
             "title": "Construindo seu programa de fidelidade...",
             "step1": "Analisando seu negócio",
             "step2": "Selecionando recompensas ideais",
-            "step3": "Configurando automações",
-            "step4": "Configurando assistente AI"
+            "step3": "Criando seus planos",
+            "step4": "Configurando automações",
+            "step5": "Configurando o assistente de IA"
         },
         "appReady": {
             "title": "Seu app de fidelidade está pronto!",
             "subtitle": "Royalty AI construiu seu programa. Visualize ou personalize os detalhes.",
             "preview": "Visualizar",
             "customize": "Personalizar",
-            "letsGo": "Vamos lá!"
+            "letsGo": "Vamos lá!",
+            "testApp": "Testar Seu App",
+            "viewPlans": "Ver Planos"
         },
         "autonomy": {
             "title": "Como o Royalty AI deve gerenciar seu programa?",
@@ -440,7 +448,31 @@
             "manualApproveDesc": "AI propõe ações, você aprova cada uma"
         },
         "appCreationError": "Falha ao criar seu app de fidelidade",
-        "createManually": "Criar Manualmente"
+        "createManually": "Criar Manualmente",
+        "crown": {
+            "idle": "Monitorando",
+            "analyzing": "Analisando...",
+            "autonomous": "Piloto Automático Ativo",
+            "loading": "Carregando cena 3D...",
+            "fallback": "Inteligência IA"
+        },
+        "modes": {
+            "review": "Revisão",
+            "autonomous": "Autônomo"
+        },
+        "cards": {
+            "title": "Atividade IA",
+            "pending": "pendente",
+            "completed": "concluído",
+            "acceptAction": "Aceitar",
+            "dismissAction": "Dispensar",
+            "viewDetails": "Ver Detalhes",
+            "undoAction": "Desfazer"
+        },
+        "theme": {
+            "dark": "Modo escuro",
+            "light": "Modo claro"
+        }
     },
     "projects": {
         "recommended": "Projetos Recomendados"
@@ -566,9 +598,25 @@
         "moreDetails": "Adicione detalhes para melhores sugestões",
         "getRecommendations": "Obter Recomendações",
         "recommendationsTitle": "Recomendado para Você",
-        "selectedCount": "de 3 selecionados",
+        "selectedCount": "planos selecionados",
         "continueToSignup": "Criar Conta e Ativar",
         "freeTierNote": "Plano gratuito: 3 automações, 100 clientes, 500 mensagens/mês",
+        "plansSelected": "planos selecionados",
+        "startMyPlan": "Iniciar Meu Programa",
+        "selectPlan": "Selecionar Plano",
+        "selected": "Selecionado",
+        "selectAtLeastOne": "Selecione pelo menos um plano para continuar",
+        "infoTitle": "Conte-nos sobre seu negócio",
+        "infoSubtitle": "Isso nos ajuda a personalizar seu programa de fidelidade.",
+        "businessName": "Nome do Negócio",
+        "businessType": "Tipo de Negócio",
+        "customerCount": "Clientes Aprox.",
+        "websiteUrl": "Site (opcional)",
+        "difficulty": {
+            "easy": "Fácil",
+            "medium": "Médio",
+            "hard": "Difícil"
+        },
         "customBadge": "Crie a Sua",
         "customTitle": "Precisa de algo diferente?",
         "customDesc": "Descreva a automação que você precisa e nós a criaremos para você.",
@@ -588,6 +636,15 @@
             "technology": "Tecnologia",
             "education": "Educação",
             "other": "Outro"
+        },
+        "getStarted": "Começar",
+        "optionalStep": "Opcional",
+        "skipDetails": "Pular — Adicionarei detalhes depois",
+        "transition": {
+            "analyzing": "Analisando seu negócio...",
+            "selecting": "Selecionando as melhores estratégias...",
+            "building": "Construindo seu espaço de trabalho...",
+            "preparing": "Preparando seu painel de controle..."
         }
     },
     "coaching": {

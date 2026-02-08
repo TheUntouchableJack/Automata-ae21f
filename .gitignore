@@ -37,3 +37,19 @@ build/
 
 # Local Netlify folder
 .netlify
+
+# Test artifacts
+.playwright-mcp/
+test-results/
+playwright-report/
+
+# Large temporary images (testing/screenshots)
+*.screenshot.png
+*-test-*.png
+
+# Development screenshots (not for production)
+home-*.png
+architect-*.png
+24hd-*.png
+sign-off-*.png
+pdf-*.png

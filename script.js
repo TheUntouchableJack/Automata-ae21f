@@ -474,33 +474,9 @@ const businessPromptInput = document.getElementById('business-prompt');
 const industrySelect = document.getElementById('ctx-industry');
 const goalsInput = document.getElementById('ctx-goals');
 const painPointsInput = document.getElementById('ctx-pain-points');
-const recommendationsSection = document.getElementById('recommendations-section');
-const recommendationsGrid = document.getElementById('recommendations-grid');
-const recommendationsContext = document.getElementById('recommendations-context');
-const continueSignupBtn = document.getElementById('continue-signup-btn');
-
-// Template icon map for recommendations
-const templateIcons = {
-    'birthday-rewards': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 8V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>`,
-    'loyalty-program': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
-    'happy-hour': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M21 11.5C21 16.75 12 22 12 22C12 22 3 16.75 3 11.5C3 6.25 7.03 2 12 2C16.97 2 21 6.25 21 11.5Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="11" r="3" stroke="currentColor" stroke-width="2"/></svg>`,
-    'appointment-reminders': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 2V6M16 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-    'post-visit': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    'win-back': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 12C3 7.03 7.03 3 12 3C16.97 3 21 7.03 21 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 8L21 3M21 3V8M21 3H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    'referral-program': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="11" r="3" stroke="currentColor" stroke-width="2"/><path d="M3 19C3 16 5.5 14 9 14C10 14 10.8 14.2 11.5 14.5M17 17V21M15 19H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-    'review-request': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M21 11.5C21 16.11 12 22 12 22C12 22 3 16.11 3 11.5C3 6.89 7.03 3 12 3C16.97 3 21 6.89 21 11.5Z" stroke="currentColor" stroke-width="2"/><path d="M12 7V13M12 16V16.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-    'new-product': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2V6M12 18V22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-    'welcome-series': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/><path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2"/></svg>`,
-    'seasonal-promo': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-    'vip-program': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M2 7L7 2L12 7L17 2L22 7V17L17 22L12 17L7 22L2 17V7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`
-};
 
 if (getRecommendationsBtn) {
-    getRecommendationsBtn.addEventListener('click', handleGetRecommendations);
-}
-
-if (continueSignupBtn) {
-    continueSignupBtn.addEventListener('click', handleContinueToSignup);
+    getRecommendationsBtn.addEventListener('click', handleStartOnboarding);
 }
 
 // Restore onboarding data if available
@@ -523,18 +499,14 @@ function restoreOnboardingData() {
                 painPointsInput.value = data.businessContext.painPoints.join('\n');
             }
         }
-        // If user had recommendations, show them as preview
-        if (data.aiRecommendations?.length > 0) {
-            renderRecommendations(data.aiRecommendations);
-            showRecommendationsSection();
-        }
     }
 }
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', restoreOnboardingData);
 
-function handleGetRecommendations() {
+// Main onboarding entry point — AI auto-selects templates, then shows optional info step
+function handleStartOnboarding() {
     const prompt = businessPromptInput?.value?.trim() || '';
 
     if (!prompt) {
@@ -564,7 +536,7 @@ function handleGetRecommendations() {
         OnboardingStorage.setBusinessContext(context);
     }
 
-    // Show loading state
+    // Show loading state on button
     const btn = getRecommendationsBtn;
     const originalText = btn.innerHTML;
     btn.disabled = true;
@@ -577,128 +549,71 @@ function handleGetRecommendations() {
         ${(typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('onboarding.analyzing') || 'Analyzing...') : 'Analyzing...'}
     `;
 
-    // Simulate brief delay for UX (recommendations are instant since they're local)
+    // AI runs silently — auto-selects best templates
     setTimeout(() => {
-        // Record rate limit attempt
+        // Record rate limit
         if (window.RateLimiter) {
             window.RateLimiter.recordRateLimit('ai_analysis');
         }
 
-        // Get recommendations
+        // Get AI recommendations
         let recommendations = [];
         if (typeof AIRecommendations !== 'undefined') {
             recommendations = AIRecommendations.getRecommendations(prompt, context);
         }
 
-        // Save recommendations
+        // Save recommendations and auto-select all of them
         if (typeof OnboardingStorage !== 'undefined') {
             OnboardingStorage.setRecommendations(recommendations);
+            recommendations.forEach(rec => OnboardingStorage.addTemplate(rec.id));
         }
-
-        // Render recommendations
-        renderRecommendations(recommendations);
-
-        // Show section and scroll to it
-        showRecommendationsSection();
 
         // Reset button
         btn.disabled = false;
         btn.innerHTML = originalText;
 
-        // Scroll to recommendations
-        setTimeout(() => {
-            recommendationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+        // Show optional info-gathering section
+        onboardingShowInfoGathering();
     }, 800);
 }
 
-function showRecommendationsSection() {
-    if (recommendationsSection) {
-        recommendationsSection.style.display = 'block';
-    }
-}
+function onboardingShowInfoGathering() {
+    const section = document.getElementById('info-gathering-section');
+    if (!section) return;
 
-function renderRecommendations(recommendations) {
-    if (!recommendationsGrid) return;
+    section.style.display = 'block';
 
-    // Get detected industry for context message
-    const prompt = businessPromptInput?.value || '';
-    let industry = industrySelect?.value || '';
-    if (!industry && typeof AIRecommendations !== 'undefined') {
-        industry = AIRecommendations.detectIndustry(prompt);
+    // Pre-fill business type from detected industry
+    const industryVal = industrySelect?.value || '';
+    if (industryVal) {
+        const typeSelect = document.getElementById('info-business-type');
+        if (typeSelect) typeSelect.value = industryVal;
     }
 
-    // Update context message
-    if (recommendationsContext && industry && industry !== 'agnostic') {
-        const industryNames = (typeof I18n !== 'undefined' && I18n.t) ? {
-            food: I18n.t('onboarding.industries.food') || 'food & beverage',
-            retail: I18n.t('onboarding.industries.retail') || 'retail',
-            health: I18n.t('onboarding.industries.health') || 'health & wellness',
-            service: I18n.t('onboarding.industries.service') || 'professional services',
-            technology: I18n.t('onboarding.industries.technology') || 'technology',
-            education: I18n.t('onboarding.industries.education') || 'education'
-        } : {
-            food: 'food & beverage',
-            retail: 'retail',
-            health: 'health & wellness',
-            service: 'professional services',
-            technology: 'technology',
-            education: 'education'
-        };
-        recommendationsContext.textContent = `Based on your ${industryNames[industry] || industry} business, AI will automatically set up:`;
-    }
-
-    // Clear existing cards
-    recommendationsGrid.innerHTML = '';
-
-    // Render each recommendation as preview-only (no selection)
-    recommendations.forEach(rec => {
-        const card = createRecommendationCard(rec);
-        recommendationsGrid.appendChild(card);
-    });
-
-    // No custom card needed - AI builds what it knows is best
+    // Smooth scroll to the section
+    setTimeout(() => {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
 }
 
-function createRecommendationCard(rec) {
-    const card = document.createElement('div');
-    card.className = 'recommendation-card preview-only';
-    card.dataset.templateId = rec.id;
-
-    const icon = templateIcons[rec.id] || templateIcons['birthday-rewards'];
-
-    card.innerHTML = `
-        <div class="recommendation-card-icon">${icon}</div>
-        <span class="recommendation-card-badge">${(typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('onboarding.aiWillBuild') || 'AI Will Build') : 'AI Will Build'}</span>
-        <h3 class="recommendation-card-name">${rec.name}</h3>
-        <p class="recommendation-card-desc">${rec.description}</p>
-        ${rec.reasoning ? `<p class="recommendation-card-reason">"${rec.reasoning}"</p>` : ''}
-    `;
-
-    // Preview-only, no click handler needed
-
-    return card;
-}
-
-// Selection functions removed - preview-only mode now
-
+// Continue to signup with optional business details
 function handleContinueToSignup() {
-    // Save business context to localStorage for the Intelligence page to use
-    const businessPrompt = businessPromptInput?.value?.trim() || '';
-    const context = {
-        industry: industrySelect?.value || '',
-        goals: goalsInput?.value?.split('\n').filter(g => g.trim()) || [],
-        painPoints: painPointsInput?.value?.split('\n').filter(p => p.trim()) || []
+    const businessDetails = {
+        businessName: document.getElementById('info-business-name')?.value?.trim() || '',
+        businessType: document.getElementById('info-business-type')?.value || '',
+        customerCount: document.getElementById('info-customer-count')?.value || '',
+        websiteUrl: document.getElementById('info-website-url')?.value?.trim() || ''
     };
 
-    // Store for post-signup app creation
-    localStorage.setItem('royalty_onboarding', JSON.stringify({
-        businessPrompt,
-        context,
-        timestamp: Date.now()
-    }));
+    if (typeof OnboardingStorage !== 'undefined') {
+        OnboardingStorage.setBusinessDetails(businessDetails);
+    }
 
-    // Redirect to signup
+    window.location.href = '/app/signup.html?onboarding=true';
+}
+
+// Skip info-gathering and go straight to signup
+function handleSkipToSignup() {
     window.location.href = '/app/signup.html?onboarding=true';
 }
 

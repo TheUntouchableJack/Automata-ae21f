@@ -22,7 +22,11 @@
         "admin": "Admin",
         "launchPlan": "Launch Plan",
         "intelligence": "Intelligence",
-        "support": "Support"
+        "support": "Support",
+        "askRoyal": "Ask Royal AI",
+        "chatEmpty": "Start a conversation...",
+        "chatPlaceholder": "Quick question?",
+        "fullChat": "Open full chat"
     },
     "launchPlan": {
         "title": "Launch Plan",
@@ -399,7 +403,12 @@
         "timeJustNow": "just now",
         "timeMinutesAgo": "{n}m ago",
         "timeHoursAgo": "{n}h ago",
-        "timeDaysAgo": "{n}d ago"
+        "timeDaysAgo": "{n}d ago",
+        "launchApp": "Launch App",
+        "switchApp": "Switch App",
+        "appLive": "Live",
+        "appDraft": "Draft",
+        "today": "Today"
     },
     "aiFeed": {
         "title": "AI Intelligence Feed",
@@ -437,13 +446,16 @@
             "title": "Building your loyalty program...",
             "step1": "Analyzing your business",
             "step2": "Selecting optimal rewards",
-            "step3": "Setting up automations",
-            "step4": "Configuring AI assistant"
+            "step3": "Building your plans",
+            "step4": "Setting up automations",
+            "step5": "Configuring AI assistant"
         },
         "appReady": {
             "title": "Your loyalty app is ready!",
             "subtitle": "Royalty AI built your program. Preview it or customize the details.",
             "preview": "Preview App",
+            "testApp": "Test Your App",
+            "viewPlans": "View Plans",
             "customize": "Customize",
             "letsGo": "Let's Go!"
         },
@@ -455,7 +467,58 @@
             "manualApproveDesc": "AI proposes actions, you approve each one"
         },
         "appCreationError": "Failed to create your loyalty app",
-        "createManually": "Create Manually"
+        "createManually": "Create Manually",
+        "crown": {
+            "idle": "Monitoring",
+            "analyzing": "Analyzing...",
+            "autonomous": "Auto-pilot Active",
+            "loading": "Loading 3D scene...",
+            "fallback": "AI Intelligence"
+        },
+        "modes": {
+            "review": "Review",
+            "manual": "Manual",
+            "autonomous": "Autonomous"
+        },
+        "tabs": {
+            "chat": "Chat",
+            "actions": "Actions",
+            "intel": "Intel"
+        },
+        "intel": {
+            "emptyTitle": "All caught up!",
+            "emptyDesc": "Royal AI has all the info it needs for now."
+        },
+        "filters": {
+            "new": "New",
+            "rejected": "Rejected",
+            "accepted": "Accepted"
+        },
+        "history": "History",
+        "llmModel": "Sonnet 4",
+        "cards": {
+            "title": "AI Activity",
+            "pending": "pending",
+            "completed": "completed",
+            "acceptAction": "Accept",
+            "dismissAction": "Dismiss",
+            "reacceptAction": "Re-accept",
+            "viewDetails": "View Details",
+            "undoAction": "Undo"
+        },
+        "theme": {
+            "dark": "Dark mode",
+            "light": "Light mode"
+        },
+        "autonomousModal": {
+            "title": "Enable Autonomous Mode?",
+            "description": "Royal AI will take actions automatically on your behalf. You'll be notified of all changes.",
+            "tosPrefix": "By enabling, you agree to our",
+            "tosLink": "Terms of Service",
+            "dontShowAgain": "Don't show this again",
+            "cancel": "Cancel",
+            "enable": "Enable Autonomous"
+        }
     },
     "projects": {
         "recommended": "Recommended Projects"
@@ -565,10 +628,26 @@
         "placeholder": "e.g., I run a coffee shop in Austin. We want to keep customers coming back...",
         "moreDetails": "Add details for better suggestions",
         "getRecommendations": "Get Recommendations",
-        "recommendationsTitle": "Recommended for You",
-        "selectedCount": "of 3 selected",
-        "continueToSignup": "Create Account & Activate",
+        "recommendationsTitle": "Recommended For You",
+        "selectedCount": "plans selected",
+        "continueToSignup": "Continue to Sign Up",
         "freeTierNote": "Free plan: 3 automations, 100 customers, 500 messages/month",
+        "plansSelected": "plans selected",
+        "startMyPlan": "Start My Program",
+        "selectPlan": "Select Plan",
+        "selected": "Selected",
+        "selectAtLeastOne": "Select at least one plan to continue",
+        "infoTitle": "Tell us about your business",
+        "infoSubtitle": "This helps us personalize your loyalty program and get it right from day one.",
+        "businessName": "Business Name",
+        "businessType": "Business Type",
+        "customerCount": "Approx. Customers",
+        "websiteUrl": "Website (optional)",
+        "difficulty": {
+            "easy": "Easy",
+            "medium": "Medium",
+            "hard": "Hard"
+        },
         "customBadge": "Build Your Own",
         "customTitle": "Need something different?",
         "customDesc": "Describe the automation you need and we'll build it for you.",
@@ -588,6 +667,15 @@
             "technology": "Technology",
             "education": "Education",
             "other": "Other"
+        },
+        "getStarted": "Get Started",
+        "optionalStep": "Optional",
+        "skipDetails": "Skip — I'll add details later",
+        "transition": {
+            "analyzing": "Analyzing your business...",
+            "selecting": "Selecting best strategies...",
+            "building": "Building your workspace...",
+            "preparing": "Preparing your dashboard..."
         }
     },
     "coaching": {

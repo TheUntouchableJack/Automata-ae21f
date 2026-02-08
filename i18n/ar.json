@@ -384,7 +384,12 @@
         "timeJustNow": "الآن",
         "timeMinutesAgo": "منذ {n}د",
         "timeHoursAgo": "منذ {n}س",
-        "timeDaysAgo": "منذ {n}ي"
+        "timeDaysAgo": "منذ {n}ي",
+        "launchApp": "تشغيل التطبيق",
+        "switchApp": "تبديل التطبيق",
+        "appLive": "مباشر",
+        "appDraft": "مسودة",
+        "today": "اليوم"
     },
     "aiFeed": {
         "title": "موجز الذكاء الاصطناعي",
@@ -422,15 +427,18 @@
             "title": "جاري بناء برنامج الولاء الخاص بك...",
             "step1": "تحليل عملك",
             "step2": "اختيار المكافآت المثلى",
-            "step3": "إعداد الأتمتة",
-            "step4": "تكوين مساعد الذكاء الاصطناعي"
+            "step3": "إنشاء خططك",
+            "step4": "إعداد الأتمتة",
+            "step5": "تكوين مساعد الذكاء الاصطناعي"
         },
         "appReady": {
             "title": "تطبيق الولاء جاهز!",
             "subtitle": "قام Royalty AI ببناء برنامجك. معاينة أو تخصيص التفاصيل.",
             "preview": "معاينة",
             "customize": "تخصيص",
-            "letsGo": "هيا بنا!"
+            "letsGo": "هيا بنا!",
+            "testApp": "اختبر تطبيقك",
+            "viewPlans": "عرض الخطط"
         },
         "autonomy": {
             "title": "كيف يجب أن يدير Royalty AI برنامجك؟",
@@ -440,7 +448,31 @@
             "manualApproveDesc": "يقترح الذكاء الاصطناعي إجراءات، وأنت توافق على كل منها"
         },
         "appCreationError": "فشل في إنشاء تطبيق الولاء",
-        "createManually": "إنشاء يدوياً"
+        "createManually": "إنشاء يدوياً",
+        "crown": {
+            "idle": "مراقبة",
+            "analyzing": "جاري التحليل...",
+            "autonomous": "الوضع التلقائي نشط",
+            "loading": "جاري تحميل المشهد ثلاثي الأبعاد...",
+            "fallback": "الذكاء الاصطناعي"
+        },
+        "modes": {
+            "review": "مراجعة",
+            "autonomous": "تلقائي"
+        },
+        "cards": {
+            "title": "نشاط الذكاء الاصطناعي",
+            "pending": "معلق",
+            "completed": "مكتمل",
+            "acceptAction": "قبول",
+            "dismissAction": "تجاهل",
+            "viewDetails": "عرض التفاصيل",
+            "undoAction": "تراجع"
+        },
+        "theme": {
+            "dark": "الوضع الداكن",
+            "light": "الوضع الفاتح"
+        }
     },
     "projects": {
         "recommended": "المشاريع الموصى بها"
@@ -566,9 +598,25 @@
         "moreDetails": "أضف تفاصيل للحصول على اقتراحات أفضل",
         "getRecommendations": "احصل على التوصيات",
         "recommendationsTitle": "موصى به لك",
-        "selectedCount": "من 3 محددة",
+        "selectedCount": "خطط محددة",
         "continueToSignup": "إنشاء حساب وتفعيل",
         "freeTierNote": "الخطة المجانية: 3 أتمتة، 100 عميل، 500 رسالة/شهر",
+        "plansSelected": "خطط محددة",
+        "startMyPlan": "ابدأ برنامجي",
+        "selectPlan": "اختر خطة",
+        "selected": "محدد",
+        "selectAtLeastOne": "اختر خطة واحدة على الأقل للمتابعة",
+        "infoTitle": "أخبرنا عن عملك",
+        "infoSubtitle": "هذا يساعدنا في تخصيص برنامج الولاء الخاص بك.",
+        "businessName": "اسم النشاط التجاري",
+        "businessType": "نوع النشاط التجاري",
+        "customerCount": "عدد العملاء التقريبي",
+        "websiteUrl": "الموقع الإلكتروني (اختياري)",
+        "difficulty": {
+            "easy": "سهل",
+            "medium": "متوسط",
+            "hard": "صعب"
+        },
         "customBadge": "أنشئ أتمتتك",
         "customTitle": "تحتاج شيئاً مختلفاً؟",
         "customDesc": "صف الأتمتة التي تحتاجها وسنبنيها لك.",
@@ -588,6 +636,15 @@
             "technology": "التكنولوجيا",
             "education": "التعليم",
             "other": "أخرى"
+        },
+        "getStarted": "ابدأ الآن",
+        "optionalStep": "اختياري",
+        "skipDetails": "تخطي — سأضيف التفاصيل لاحقاً",
+        "transition": {
+            "analyzing": "جاري تحليل عملك...",
+            "selecting": "جاري اختيار أفضل الاستراتيجيات...",
+            "building": "جاري بناء مساحة عملك...",
+            "preparing": "جاري تحضير لوحة التحكم..."
         }
     },
     "coaching": {

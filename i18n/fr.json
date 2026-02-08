@@ -384,7 +384,12 @@
         "timeJustNow": "à l'instant",
         "timeMinutesAgo": "il y a {n}m",
         "timeHoursAgo": "il y a {n}h",
-        "timeDaysAgo": "il y a {n}j"
+        "timeDaysAgo": "il y a {n}j",
+        "launchApp": "Lancer l'App",
+        "switchApp": "Changer d'App",
+        "appLive": "En ligne",
+        "appDraft": "Brouillon",
+        "today": "Aujourd'hui"
     },
     "aiFeed": {
         "title": "Fil d'Intelligence IA",
@@ -422,15 +427,18 @@
             "title": "Construction de votre programme de fidélité...",
             "step1": "Analyse de votre entreprise",
             "step2": "Sélection des récompenses optimales",
-            "step3": "Configuration des automatisations",
-            "step4": "Configuration de l'assistant IA"
+            "step3": "Création de vos plans",
+            "step4": "Configuration des automatisations",
+            "step5": "Configuration de l'assistant IA"
         },
         "appReady": {
             "title": "Votre app de fidélité est prête !",
             "subtitle": "Royalty AI a construit votre programme. Prévisualisez-le ou personnalisez les détails.",
             "preview": "Aperçu",
             "customize": "Personnaliser",
-            "letsGo": "C'est parti !"
+            "letsGo": "C'est parti !",
+            "testApp": "Tester Votre App",
+            "viewPlans": "Voir les Plans"
         },
         "autonomy": {
             "title": "Comment Royalty AI doit-il gérer votre programme ?",
@@ -440,7 +448,31 @@
             "manualApproveDesc": "L'IA propose des actions, vous approuvez chacune"
         },
         "appCreationError": "Échec de la création de votre app de fidélité",
-        "createManually": "Créer Manuellement"
+        "createManually": "Créer Manuellement",
+        "crown": {
+            "idle": "Surveillance",
+            "analyzing": "Analyse en cours...",
+            "autonomous": "Pilote Automatique Actif",
+            "loading": "Chargement de la scène 3D...",
+            "fallback": "Intelligence IA"
+        },
+        "modes": {
+            "review": "Examen",
+            "autonomous": "Autonome"
+        },
+        "cards": {
+            "title": "Activité IA",
+            "pending": "en attente",
+            "completed": "terminé",
+            "acceptAction": "Accepter",
+            "dismissAction": "Ignorer",
+            "viewDetails": "Voir les Détails",
+            "undoAction": "Annuler"
+        },
+        "theme": {
+            "dark": "Mode sombre",
+            "light": "Mode clair"
+        }
     },
     "projects": {
         "recommended": "Projets Recommandés"
@@ -566,9 +598,25 @@
         "moreDetails": "Ajoutez des détails pour de meilleures suggestions",
         "getRecommendations": "Obtenir des Recommandations",
         "recommendationsTitle": "Recommandé pour Vous",
-        "selectedCount": "sur 3 sélectionnés",
+        "selectedCount": "plans sélectionnés",
         "continueToSignup": "Créer un Compte et Activer",
         "freeTierNote": "Plan gratuit : 3 automatisations, 100 clients, 500 messages/mois",
+        "plansSelected": "plans sélectionnés",
+        "startMyPlan": "Démarrer Mon Programme",
+        "selectPlan": "Sélectionner",
+        "selected": "Sélectionné",
+        "selectAtLeastOne": "Sélectionnez au moins un plan pour continuer",
+        "infoTitle": "Parlez-nous de votre entreprise",
+        "infoSubtitle": "Cela nous aide à personnaliser votre programme de fidélité.",
+        "businessName": "Nom de l'entreprise",
+        "businessType": "Type d'entreprise",
+        "customerCount": "Clients approx.",
+        "websiteUrl": "Site Web (optionnel)",
+        "difficulty": {
+            "easy": "Facile",
+            "medium": "Moyen",
+            "hard": "Difficile"
+        },
         "customBadge": "Créez le Vôtre",
         "customTitle": "Besoin de quelque chose de différent ?",
         "customDesc": "Décrivez l'automatisation dont vous avez besoin et nous la créerons pour vous.",
@@ -588,6 +636,15 @@
             "technology": "Technologie",
             "education": "Éducation",
             "other": "Autre"
+        },
+        "getStarted": "Commencer",
+        "optionalStep": "Facultatif",
+        "skipDetails": "Passer — J'ajouterai les détails plus tard",
+        "transition": {
+            "analyzing": "Analyse de votre entreprise...",
+            "selecting": "Sélection des meilleures stratégies...",
+            "building": "Construction de votre espace de travail...",
+            "preparing": "Préparation de votre tableau de bord..."
         }
     },
     "coaching": {

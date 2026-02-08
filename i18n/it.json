@@ -384,7 +384,12 @@
         "timeJustNow": "proprio ora",
         "timeMinutesAgo": "{n}m fa",
         "timeHoursAgo": "{n}h fa",
-        "timeDaysAgo": "{n}g fa"
+        "timeDaysAgo": "{n}g fa",
+        "launchApp": "Avvia App",
+        "switchApp": "Cambia App",
+        "appLive": "Attiva",
+        "appDraft": "Bozza",
+        "today": "Oggi"
     },
     "aiFeed": {
         "title": "Feed Intelligenza IA",
@@ -422,15 +427,18 @@
             "title": "Creazione del tuo programma fedeltà...",
             "step1": "Analisi della tua attività",
             "step2": "Selezione dei premi ottimali",
-            "step3": "Configurazione delle automazioni",
-            "step4": "Configurazione dell'assistente AI"
+            "step3": "Creazione dei tuoi piani",
+            "step4": "Configurazione delle automazioni",
+            "step5": "Configurazione dell'assistente IA"
         },
         "appReady": {
             "title": "La tua app fedeltà è pronta!",
             "subtitle": "Royalty AI ha costruito il tuo programma. Visualizza l'anteprima o personalizza i dettagli.",
             "preview": "Anteprima",
             "customize": "Personalizza",
-            "letsGo": "Andiamo!"
+            "letsGo": "Andiamo!",
+            "testApp": "Testa la Tua App",
+            "viewPlans": "Vedi Piani"
         },
         "autonomy": {
             "title": "Come dovrebbe Royalty AI gestire il tuo programma?",
@@ -440,7 +448,31 @@
             "manualApproveDesc": "L'AI propone azioni, tu approvi ciascuna"
         },
         "appCreationError": "Impossibile creare la tua app fedeltà",
-        "createManually": "Crea Manualmente"
+        "createManually": "Crea Manualmente",
+        "crown": {
+            "idle": "Monitoraggio",
+            "analyzing": "Analisi in corso...",
+            "autonomous": "Pilota Automatico Attivo",
+            "loading": "Caricamento scena 3D...",
+            "fallback": "Intelligenza IA"
+        },
+        "modes": {
+            "review": "Revisione",
+            "autonomous": "Autonomo"
+        },
+        "cards": {
+            "title": "Attività IA",
+            "pending": "in attesa",
+            "completed": "completato",
+            "acceptAction": "Accetta",
+            "dismissAction": "Ignora",
+            "viewDetails": "Vedi Dettagli",
+            "undoAction": "Annulla"
+        },
+        "theme": {
+            "dark": "Modalità scura",
+            "light": "Modalità chiara"
+        }
     },
     "projects": {
         "recommended": "Progetti Consigliati"
@@ -566,9 +598,25 @@
         "moreDetails": "Aggiungi dettagli per suggerimenti migliori",
         "getRecommendations": "Ottieni Raccomandazioni",
         "recommendationsTitle": "Raccomandato per Te",
-        "selectedCount": "di 3 selezionati",
+        "selectedCount": "piani selezionati",
         "continueToSignup": "Crea Account e Attiva",
         "freeTierNote": "Piano gratuito: 3 automazioni, 100 clienti, 500 messaggi/mese",
+        "plansSelected": "piani selezionati",
+        "startMyPlan": "Avvia il Mio Programma",
+        "selectPlan": "Seleziona Piano",
+        "selected": "Selezionato",
+        "selectAtLeastOne": "Seleziona almeno un piano per continuare",
+        "infoTitle": "Parlaci della tua attività",
+        "infoSubtitle": "Questo ci aiuta a personalizzare il tuo programma fedeltà.",
+        "businessName": "Nome Attività",
+        "businessType": "Tipo di Attività",
+        "customerCount": "Clienti Approx.",
+        "websiteUrl": "Sito Web (opzionale)",
+        "difficulty": {
+            "easy": "Facile",
+            "medium": "Medio",
+            "hard": "Difficile"
+        },
         "customBadge": "Crea la Tua",
         "customTitle": "Hai bisogno di qualcosa di diverso?",
         "customDesc": "Descrivi l'automazione di cui hai bisogno e la creeremo per te.",
@@ -588,6 +636,15 @@
             "technology": "Tecnologia",
             "education": "Istruzione",
             "other": "Altro"
+        },
+        "getStarted": "Inizia",
+        "optionalStep": "Facoltativo",
+        "skipDetails": "Salta — Aggiungerò i dettagli dopo",
+        "transition": {
+            "analyzing": "Analisi della tua attività...",
+            "selecting": "Selezione delle migliori strategie...",
+            "building": "Creazione del tuo spazio di lavoro...",
+            "preparing": "Preparazione della tua dashboard..."
         }
     },
     "coaching": {

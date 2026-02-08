@@ -10,7 +10,7 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const jwtSecret = Deno.env.get('MEMBER_JWT_SECRET') || Deno.env.get('SUPABASE_JWT_SECRET')!
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://royaltyapp.ai',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -24,7 +24,10 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Parse request body
-    const { app_id, email, phone, pin_hash, action } = await req.json()
+    // Accept both 'pin' (new) and 'pin_hash' (legacy) for backwards compatibility during rollout
+    const body = await req.json()
+    const { app_id, email, phone, action, first_name, last_name } = body
+    const pin = body.pin || body.pin_hash  // Prefer 'pin', fall back to 'pin_hash' for legacy clients
 
     // Validate inputs
     if (!app_id) {
@@ -41,9 +44,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (!pin_hash) {
+    if (!pin) {
       return new Response(
-        JSON.stringify({ success: false, error: 'pin_hash is required' }),
+        JSON.stringify({ success: false, error: 'pin is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -72,7 +75,7 @@ Deno.serve(async (req) => {
 
     if (action === 'signup') {
       // Handle signup via the atomic RPC
-      const { first_name, last_name } = await req.json()
+      // Note: first_name and last_name are already extracted from body above
 
       const { data: signupResult, error: signupError } = await supabase.rpc('customer_app_signup', {
         p_app_id: app_id,
@@ -80,7 +83,7 @@ Deno.serve(async (req) => {
         p_last_name: last_name || '',
         p_email: email || null,
         p_phone: phone || null,
-        p_pin_hash: pin_hash
+        p_pin: pin  // Changed from p_pin_hash - now sends plaintext PIN for server-side hashing
       })
 
       if (signupError) {
@@ -107,7 +110,7 @@ Deno.serve(async (req) => {
         p_app_id: app_id,
         p_email: email || null,
         p_phone: phone || null,
-        p_pin_hash: pin_hash
+        p_pin: pin  // Changed from p_pin_hash - now sends plaintext PIN for server-side verification
       })
 
       if (loginError) {

@@ -384,7 +384,12 @@
         "timeJustNow": "刚刚",
         "timeMinutesAgo": "{n}分钟前",
         "timeHoursAgo": "{n}小时前",
-        "timeDaysAgo": "{n}天前"
+        "timeDaysAgo": "{n}天前",
+        "launchApp": "启动应用",
+        "switchApp": "切换应用",
+        "appLive": "已上线",
+        "appDraft": "草稿",
+        "today": "今天"
     },
     "aiFeed": {
         "title": "AI智能推送",
@@ -422,15 +427,18 @@
             "title": "正在构建您的会员计划...",
             "step1": "分析您的业务",
             "step2": "选择最佳奖励",
-            "step3": "配置自动化",
-            "step4": "配置AI助手"
+            "step3": "创建您的计划",
+            "step4": "配置自动化",
+            "step5": "配置AI助手"
         },
         "appReady": {
             "title": "您的会员应用已准备就绪！",
             "subtitle": "Royalty AI 已构建您的计划。预览或自定义详情。",
             "preview": "预览",
             "customize": "自定义",
-            "letsGo": "开始吧！"
+            "letsGo": "开始吧！",
+            "testApp": "测试您的应用",
+            "viewPlans": "查看计划"
         },
         "autonomy": {
             "title": "Royalty AI 应如何管理您的计划？",
@@ -440,7 +448,31 @@
             "manualApproveDesc": "AI提出建议，您逐一审批"
         },
         "appCreationError": "创建会员应用失败",
-        "createManually": "手动创建"
+        "createManually": "手动创建",
+        "crown": {
+            "idle": "监控中",
+            "analyzing": "分析中...",
+            "autonomous": "自动驾驶已激活",
+            "loading": "加载3D场景...",
+            "fallback": "AI智能分析"
+        },
+        "modes": {
+            "review": "审核",
+            "autonomous": "自主"
+        },
+        "cards": {
+            "title": "AI活动",
+            "pending": "待处理",
+            "completed": "已完成",
+            "acceptAction": "接受",
+            "dismissAction": "忽略",
+            "viewDetails": "查看详情",
+            "undoAction": "撤销"
+        },
+        "theme": {
+            "dark": "深色模式",
+            "light": "浅色模式"
+        }
     },
     "projects": {
         "recommended": "推荐项目"
@@ -566,9 +598,25 @@
         "moreDetails": "添加详细信息以获得更好的建议",
         "getRecommendations": "获取推荐",
         "recommendationsTitle": "为您推荐",
-        "selectedCount": "/ 3 已选",
+        "selectedCount": "个计划已选择",
         "continueToSignup": "创建账户并激活",
         "freeTierNote": "免费计划：3个自动化，100位客户，500条消息/月",
+        "plansSelected": "个计划已选择",
+        "startMyPlan": "启动我的项目",
+        "selectPlan": "选择计划",
+        "selected": "已选择",
+        "selectAtLeastOne": "请至少选择一个计划以继续",
+        "infoTitle": "告诉我们您的业务",
+        "infoSubtitle": "这有助于我们为您量身定制忠诚计划。",
+        "businessName": "企业名称",
+        "businessType": "企业类型",
+        "customerCount": "大约客户数",
+        "websiteUrl": "网站（可选）",
+        "difficulty": {
+            "easy": "简单",
+            "medium": "中等",
+            "hard": "困难"
+        },
         "customBadge": "自定义创建",
         "customTitle": "需要不同的功能？",
         "customDesc": "描述您需要的自动化，我们会为您构建。",
@@ -588,6 +636,15 @@
             "technology": "科技",
             "education": "教育",
             "other": "其他"
+        },
+        "getStarted": "开始",
+        "optionalStep": "可选",
+        "skipDetails": "跳过 — 稍后添加详细信息",
+        "transition": {
+            "analyzing": "正在分析您的业务...",
+            "selecting": "正在选择最佳策略...",
+            "building": "正在构建您的工作空间...",
+            "preparing": "正在准备您的控制面板..."
         }
     },
     "coaching": {

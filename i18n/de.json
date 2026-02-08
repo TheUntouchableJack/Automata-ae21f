@@ -384,7 +384,12 @@
         "timeJustNow": "gerade eben",
         "timeMinutesAgo": "vor {n}m",
         "timeHoursAgo": "vor {n}h",
-        "timeDaysAgo": "vor {n}T"
+        "timeDaysAgo": "vor {n}T",
+        "launchApp": "App starten",
+        "switchApp": "App wechseln",
+        "appLive": "Live",
+        "appDraft": "Entwurf",
+        "today": "Heute"
     },
     "aiFeed": {
         "title": "KI-Intelligenz-Feed",
@@ -422,15 +427,18 @@
             "title": "Ihr Treueprogramm wird erstellt...",
             "step1": "Ihr Geschäft wird analysiert",
             "step2": "Optimale Belohnungen werden ausgewählt",
-            "step3": "Automatisierungen werden eingerichtet",
-            "step4": "KI-Assistent wird konfiguriert"
+            "step3": "Erstellen Ihrer Pläne",
+            "step4": "Automatisierungen werden eingerichtet",
+            "step5": "Konfiguration des KI-Assistenten"
         },
         "appReady": {
             "title": "Ihre Treue-App ist bereit!",
             "subtitle": "Royalty AI hat Ihr Programm erstellt. Vorschau ansehen oder Details anpassen.",
             "preview": "Vorschau",
             "customize": "Anpassen",
-            "letsGo": "Los geht's!"
+            "letsGo": "Los geht's!",
+            "testApp": "App Testen",
+            "viewPlans": "Pläne Ansehen"
         },
         "autonomy": {
             "title": "Wie soll Royalty AI Ihr Programm verwalten?",
@@ -440,7 +448,31 @@
             "manualApproveDesc": "KI schlägt Aktionen vor, Sie genehmigen jede einzelne"
         },
         "appCreationError": "Fehler beim Erstellen Ihrer Treue-App",
-        "createManually": "Manuell Erstellen"
+        "createManually": "Manuell Erstellen",
+        "crown": {
+            "idle": "Überwachung",
+            "analyzing": "Analysiere...",
+            "autonomous": "Autopilot Aktiv",
+            "loading": "3D-Szene wird geladen...",
+            "fallback": "KI-Intelligenz"
+        },
+        "modes": {
+            "review": "Überprüfung",
+            "autonomous": "Autonom"
+        },
+        "cards": {
+            "title": "KI-Aktivität",
+            "pending": "ausstehend",
+            "completed": "abgeschlossen",
+            "acceptAction": "Akzeptieren",
+            "dismissAction": "Verwerfen",
+            "viewDetails": "Details Anzeigen",
+            "undoAction": "Rückgängig"
+        },
+        "theme": {
+            "dark": "Dunkler Modus",
+            "light": "Heller Modus"
+        }
     },
     "projects": {
         "recommended": "Empfohlene Projekte"
@@ -566,9 +598,25 @@
         "moreDetails": "Fügen Sie Details für bessere Vorschläge hinzu",
         "getRecommendations": "Empfehlungen Erhalten",
         "recommendationsTitle": "Für Sie Empfohlen",
-        "selectedCount": "von 3 ausgewählt",
+        "selectedCount": "Pläne ausgewählt",
         "continueToSignup": "Konto Erstellen & Aktivieren",
         "freeTierNote": "Kostenloser Plan: 3 Automatisierungen, 100 Kunden, 500 Nachrichten/Monat",
+        "plansSelected": "Pläne ausgewählt",
+        "startMyPlan": "Mein Programm Starten",
+        "selectPlan": "Plan Auswählen",
+        "selected": "Ausgewählt",
+        "selectAtLeastOne": "Wählen Sie mindestens einen Plan aus",
+        "infoTitle": "Erzählen Sie uns von Ihrem Unternehmen",
+        "infoSubtitle": "Dies hilft uns, Ihr Treueprogramm zu personalisieren.",
+        "businessName": "Firmenname",
+        "businessType": "Geschäftstyp",
+        "customerCount": "Ca. Kunden",
+        "websiteUrl": "Webseite (optional)",
+        "difficulty": {
+            "easy": "Einfach",
+            "medium": "Mittel",
+            "hard": "Schwer"
+        },
         "customBadge": "Eigene Erstellen",
         "customTitle": "Brauchen Sie etwas anderes?",
         "customDesc": "Beschreiben Sie die gewünschte Automatisierung und wir erstellen sie für Sie.",
@@ -588,6 +636,15 @@
             "technology": "Technologie",
             "education": "Bildung",
             "other": "Sonstige"
+        },
+        "getStarted": "Loslegen",
+        "optionalStep": "Optional",
+        "skipDetails": "Überspringen — Details füge ich später hinzu",
+        "transition": {
+            "analyzing": "Ihr Unternehmen wird analysiert...",
+            "selecting": "Beste Strategien werden ausgewählt...",
+            "building": "Ihr Arbeitsbereich wird erstellt...",
+            "preparing": "Ihr Dashboard wird vorbereitet..."
         }
     },
     "coaching": {

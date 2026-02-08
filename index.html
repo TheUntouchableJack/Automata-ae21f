@@ -52,14 +52,9 @@
     <!-- Cloudflare Turnstile CAPTCHA -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FQ3SGEP2YG"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-FQ3SGEP2YG');
-    </script>
+    <!-- Analytics (loaded after cookie consent) -->
+    <script>window.GA_MEASUREMENT_ID = 'G-FQ3SGEP2YG';</script>
+    <script src="/js/cookie-consent.js" defer></script>
 </head>
 <body>
     <!-- Constellation Network Background -->
@@ -166,7 +161,7 @@
                     </details>
 
                     <button id="get-recommendations-btn" class="btn btn-primary btn-large discovery-btn">
-                        <span data-i18n="onboarding.getRecommendations">Get Recommendations</span>
+                        <span data-i18n="onboarding.getStarted">Get Started</span>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                             <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -193,30 +188,62 @@
         </div>
     </section>
 
-    <!-- Recommendations Section (hidden until user submits business prompt) -->
-    <section id="recommendations-section" class="recommendations" style="display: none;">
+    <!-- Info-Gathering Section (shown after clicking Get Started — optional, skippable) -->
+    <section id="info-gathering-section" class="info-gathering" style="display: none;">
         <div class="container">
-            <div class="recommendations-header">
-                <div class="recommendations-header-text">
-                    <h2 data-i18n="onboarding.recommendationsTitle">Here's What AI Will Build For You</h2>
-                    <p class="recommendations-context" id="recommendations-context"></p>
+            <div class="info-gathering-card">
+                <div class="info-gathering-header">
+                    <div class="info-gathering-step" data-i18n="onboarding.optionalStep">Optional</div>
+                    <h2 data-i18n="onboarding.infoTitle">Tell us about your business</h2>
+                    <p data-i18n="onboarding.infoSubtitle">This helps us personalize your loyalty program and get it right from day one.</p>
                 </div>
-            </div>
-
-            <div class="recommendations-grid" id="recommendations-grid">
-                <!-- Template cards will be inserted here by JavaScript -->
-            </div>
-
-            <div class="recommendations-cta">
-                <button id="continue-signup-btn" class="btn btn-primary btn-large">
-                    <span data-i18n="onboarding.continueToSignup">Create Account</span>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-                <p class="free-tier-note" data-i18n="onboarding.freeTierNote">
-                    Your AI-powered loyalty program will be ready in 60 seconds
-                </p>
+                <div class="info-gathering-form">
+                    <div class="form-field">
+                        <label for="info-business-name" data-i18n="onboarding.businessName">Business Name</label>
+                        <input type="text" id="info-business-name" placeholder="e.g., Blue Bottle Coffee">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="info-business-type" data-i18n="onboarding.businessType">Business Type</label>
+                            <select id="info-business-type">
+                                <option value="">Select...</option>
+                                <option value="food">Food & Beverage</option>
+                                <option value="retail">Retail</option>
+                                <option value="health">Health & Wellness</option>
+                                <option value="service">Professional Services</option>
+                                <option value="technology">Technology</option>
+                                <option value="education">Education</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="info-customer-count" data-i18n="onboarding.customerCount">Approx. Customers</label>
+                            <select id="info-customer-count">
+                                <option value="">Select...</option>
+                                <option value="1-50">1 - 50</option>
+                                <option value="51-200">51 - 200</option>
+                                <option value="201-500">201 - 500</option>
+                                <option value="501-1000">501 - 1,000</option>
+                                <option value="1001+">1,000+</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label for="info-website-url" data-i18n="onboarding.websiteUrl">Website (optional)</label>
+                        <input type="url" id="info-website-url" placeholder="https://yourbusiness.com">
+                    </div>
+                </div>
+                <div class="info-gathering-actions">
+                    <button id="continue-to-signup-btn" class="btn btn-primary btn-large" onclick="handleContinueToSignup()">
+                        <span data-i18n="onboarding.continueToSignup">Continue to Sign Up</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button id="skip-details-btn" class="btn-link skip-link" onclick="handleSkipToSignup()">
+                        <span data-i18n="onboarding.skipDetails">Skip — I'll add details later</span>
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -724,7 +751,7 @@
     <script src="app/templates-library.js"></script>
     <script src="app/ai-recommendations.js"></script>
     <script src="app/rate-limiter.js?v=1"></script>
-    <script src="script.js?v=11"></script>
+    <script src="script.js?v=12"></script>
     <script src="network-bg.js?v=7"></script>
 </body>
 </html>

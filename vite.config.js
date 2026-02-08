@@ -26,6 +26,10 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         pricing: resolve(__dirname, 'pricing.html'),
 
+        // Error pages
+        error404: resolve(__dirname, '404.html'),
+        error500: resolve(__dirname, '500.html'),
+
         // App pages
         login: resolve(__dirname, 'app/login.html'),
         signup: resolve(__dirname, 'app/signup.html'),
