@@ -17,6 +17,9 @@ const ACTIVITY_PAGE_SIZE = 20;
 let hasMoreActivity = true;
 let activityLoaded = false;
 
+// AI Settings state
+let aiSettingsLoaded = false;
+
 // ===== Initialization =====
 async function initSettings() {
     currentUser = await requireAuth();
@@ -985,6 +988,148 @@ function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// ===== AI Settings =====
+async function loadAISettings() {
+    if (!currentOrganization || aiSettingsLoaded) return;
+
+    try {
+        // Set form values from organization data
+        const autoExecuteToggle = document.getElementById('ai-auto-execute-toggle');
+        const confidenceSlider = document.getElementById('ai-confidence-slider');
+        const confidenceValue = document.getElementById('confidence-value');
+        const dailyLimitInput = document.getElementById('ai-daily-limit');
+
+        if (autoExecuteToggle) {
+            autoExecuteToggle.checked = currentOrganization.ai_auto_execute_enabled || false;
+        }
+
+        if (confidenceSlider && confidenceValue) {
+            const threshold = Math.round((currentOrganization.ai_confidence_threshold || 0.8) * 100);
+            confidenceSlider.value = threshold;
+            confidenceValue.textContent = `${threshold}%`;
+        }
+
+        if (dailyLimitInput) {
+            dailyLimitInput.value = currentOrganization.ai_daily_action_limit || 20;
+        }
+
+        // Load allowed action types from metadata if stored
+        const allowedActions = currentOrganization.ai_allowed_actions || ['announcements', 'messages', 'promotions', 'automations'];
+        document.getElementById('ai-allow-announcements').checked = allowedActions.includes('announcements');
+        document.getElementById('ai-allow-messages').checked = allowedActions.includes('messages');
+        document.getElementById('ai-allow-promotions').checked = allowedActions.includes('promotions');
+        document.getElementById('ai-allow-points').checked = allowedActions.includes('points');
+        document.getElementById('ai-allow-automations').checked = allowedActions.includes('automations');
+
+        // Load usage stats
+        await loadAIUsageStats();
+
+        aiSettingsLoaded = true;
+    } catch (err) {
+        console.error('Error loading AI settings:', err);
+    }
+}
+
+async function loadAIUsageStats() {
+    if (!currentOrganization) return;
+
+    try {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        // Get actions executed today
+        const { count: executedCount } = await supabase
+            .from('ai_action_queue')
+            .select('id', { count: 'exact', head: true })
+            .eq('organization_id', currentOrganization.id)
+            .in('status', ['executed', 'executing'])
+            .gte('executed_at', todayStart.toISOString());
+
+        // Get pending actions
+        const { count: pendingCount } = await supabase
+            .from('ai_action_queue')
+            .select('id', { count: 'exact', head: true })
+            .eq('organization_id', currentOrganization.id)
+            .eq('status', 'pending');
+
+        const dailyLimit = currentOrganization.ai_daily_action_limit || 20;
+        const used = executedCount || 0;
+        const remaining = Math.max(0, dailyLimit - used);
+
+        document.getElementById('ai-actions-today').textContent = used;
+        document.getElementById('ai-pending-count').textContent = pendingCount || 0;
+        document.getElementById('ai-remaining').textContent = remaining;
+    } catch (err) {
+        console.error('Error loading AI usage stats:', err);
+        // Set defaults on error
+        document.getElementById('ai-actions-today').textContent = '0';
+        document.getElementById('ai-pending-count').textContent = '0';
+        document.getElementById('ai-remaining').textContent = currentOrganization?.ai_daily_action_limit || 20;
+    }
+}
+
+async function handleSaveAISettings() {
+    const btn = document.getElementById('save-ai-settings-btn');
+    const originalText = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>Saving...</span>';
+
+    try {
+        const autoExecute = document.getElementById('ai-auto-execute-toggle').checked;
+        const confidenceThreshold = parseInt(document.getElementById('ai-confidence-slider').value) / 100;
+        const dailyLimit = parseInt(document.getElementById('ai-daily-limit').value) || 20;
+
+        // Collect allowed action types
+        const allowedActions = [];
+        if (document.getElementById('ai-allow-announcements').checked) allowedActions.push('announcements');
+        if (document.getElementById('ai-allow-messages').checked) allowedActions.push('messages');
+        if (document.getElementById('ai-allow-promotions').checked) allowedActions.push('promotions');
+        if (document.getElementById('ai-allow-points').checked) allowedActions.push('points');
+        if (document.getElementById('ai-allow-automations').checked) allowedActions.push('automations');
+
+        // Validate
+        if (dailyLimit < 1 || dailyLimit > 100) {
+            showToast('Daily limit must be between 1 and 100', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            return;
+        }
+
+        const { error } = await supabase
+            .from('organizations')
+            .update({
+                ai_auto_execute_enabled: autoExecute,
+                ai_confidence_threshold: confidenceThreshold,
+                ai_daily_action_limit: dailyLimit,
+                ai_allowed_actions: allowedActions
+            })
+            .eq('id', currentOrganization.id);
+
+        if (error) throw error;
+
+        // Update local state
+        currentOrganization.ai_auto_execute_enabled = autoExecute;
+        currentOrganization.ai_confidence_threshold = confidenceThreshold;
+        currentOrganization.ai_daily_action_limit = dailyLimit;
+        currentOrganization.ai_allowed_actions = allowedActions;
+
+        showToast('AI settings saved!', 'success');
+        celebrate();
+    } catch (err) {
+        console.error('Error saving AI settings:', err);
+        showToast('Failed to save AI settings', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+function handleConfidenceSliderChange(e) {
+    const value = e.target.value;
+    document.getElementById('confidence-value').textContent = `${value}%`;
+}
+
 // ===== Event Listeners =====
 function setupEventListeners() {
     // Tab navigation
@@ -1097,6 +1242,10 @@ function setupEventListeners() {
         }
     });
 
+    // AI Settings
+    document.getElementById('save-ai-settings-btn')?.addEventListener('click', handleSaveAISettings);
+    document.getElementById('ai-confidence-slider')?.addEventListener('input', handleConfidenceSliderChange);
+
     // Check for successful checkout return
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
@@ -1135,6 +1284,11 @@ function switchTab(tabName) {
     // Load activity logs when switching to activity tab
     if (tabName === 'activity' && !activityLoaded) {
         loadActivityLogs(true);
+    }
+
+    // Load AI settings when switching to AI tab
+    if (tabName === 'ai' && !aiSettingsLoaded) {
+        loadAISettings();
     }
 }
 
