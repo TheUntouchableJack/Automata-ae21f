@@ -32,6 +32,7 @@ interface MessageBatch {
   scheduled_for: string | null
   total_recipients: number
   created_by: string
+  automation_id: string | null
   status: string
 }
 
@@ -277,6 +278,20 @@ async function processBatch(
       continue
     }
 
+    // Check fatigue for automation-triggered messages
+    if (batch.created_by === 'automation' || batch.created_by === 'ai') {
+      const { data: fatigueCheck } = await supabase.rpc('should_skip_for_fatigue', {
+        p_member_id: member.id,
+        p_threshold: 70  // Default threshold
+      })
+
+      if (fatigueCheck?.should_skip) {
+        results.push({ member_id: member.id, channel: batch.channel, status: 'skipped', error: 'Member fatigued' })
+        stats.skipped++
+        continue
+      }
+    }
+
     // Interpolate message with member data
     const interpolate = (text: string) => text
       .replace(/\{\{name\}\}/g, member.first_name || 'Friend')
@@ -321,6 +336,16 @@ async function processBatch(
         message_id: result.message_id
       })
       stats.delivered++
+
+      // Log communication for fatigue tracking
+      await supabase.rpc('log_member_communication', {
+        p_member_id: member.id,
+        p_channel: batch.channel,
+        p_message_type: batch.created_by || 'automation',
+        p_source_automation_id: batch.automation_id,
+        p_source_batch_id: batch.id,
+        p_external_message_id: result.message_id || null
+      })
     } else {
       results.push({
         member_id: member.id,

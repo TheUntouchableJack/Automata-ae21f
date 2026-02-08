@@ -373,6 +373,26 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
     }
   },
   {
+    name: 'check_fatigue',
+    description: 'Check customer fatigue before sending messages. Returns fatigue scores and recommendation on whether to proceed. ALWAYS use before sending bulk messages or campaigns.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        segment: {
+          type: 'string',
+          description: 'Segment to check fatigue for',
+          enum: ['all', 'vip', 'at_risk', 'new', 'active', 'churned']
+        },
+        threshold: {
+          type: 'number',
+          description: 'Fatigue threshold 0-100 (default: 50). Members above this are considered fatigued.',
+          default: 50
+        }
+      },
+      required: []
+    }
+  },
+  {
     name: 'read_business_profile',
     description: 'Query the business profile including financial metrics, market position, and operational details. Use before making recommendations to understand the business model.',
     input_schema: {
@@ -1153,6 +1173,40 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
         performance_period_days: days
       },
       metadata: { rowCount: automations?.length || 0 }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // check_fatigue - Check customer fatigue before messaging
+  // ---------------------------------------------------------------------------
+  check_fatigue: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId } = ctx
+    const segment = (input.segment as string) || 'all'
+    const threshold = (input.threshold as number) || 50
+
+    // Get segment fatigue summary
+    const { data: summary, error } = await supabase.rpc('get_segment_fatigue_summary', {
+      p_organization_id: organizationId,
+      p_segment: segment,
+      p_threshold: threshold
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        segment,
+        ...summary,
+        guidance: summary?.status === 'pause'
+          ? 'DO NOT proceed with messaging. Audience is critically fatigued.'
+          : summary?.status === 'caution'
+          ? 'Proceed with caution. Consider targeting only unfatigued members or high-value content.'
+          : 'Safe to proceed with messaging campaign.'
+      },
+      metadata: { segment, threshold }
     }
   },
 
