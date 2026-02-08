@@ -28,10 +28,19 @@ const ALLOWED_ORIGINS = [
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('Origin') || ''
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+
+  // Security fix: Only allow exact matches, no fallback to default origin
+  // Unknown origins get empty Access-Control-Allow-Origin which blocks the request
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      'Access-Control-Allow-Origin': '',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    }
+  }
 
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   }
@@ -713,8 +722,145 @@ function sanitizeContextArray(arr: string[] | null | undefined): string[] {
 }
 
 // ============================================================================
+// API TIMEOUT WRAPPER
+// ============================================================================
+
+/**
+ * Fetch with timeout to prevent indefinite hangs on API calls
+ * Uses AbortController to cancel requests that exceed the timeout
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number = 30000
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    })
+    return response
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`)
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+// API timeout configuration
+const API_TIMEOUT_MS = 30000  // 30 seconds for Anthropic API calls
+
+// ============================================================================
+// STRUCTURED LOGGING
+// ============================================================================
+
+/**
+ * Structured logging for production traceability
+ */
+function log(
+  level: 'info' | 'warn' | 'error',
+  message: string,
+  context?: Record<string, unknown>
+): void {
+  const entry = {
+    level,
+    message,
+    timestamp: new Date().toISOString(),
+    service: 'royal-ai-prompt',
+    ...context
+  }
+  if (level === 'error') {
+    console.error(JSON.stringify(entry))
+  } else if (level === 'warn') {
+    console.warn(JSON.stringify(entry))
+  } else {
+    console.log(JSON.stringify(entry))
+  }
+}
+
+// ============================================================================
 // PHASE 3: TOOL HANDLERS
 // ============================================================================
+
+/**
+ * Input validation schema types
+ */
+type ValidationSchema = Record<string, 'string' | 'number' | 'boolean' | 'array' | 'object'>
+
+/**
+ * Validate and sanitize tool input parameters
+ * Prevents injection attacks and ensures type safety
+ */
+function validateToolInput<T extends Record<string, unknown>>(
+  input: Record<string, unknown>,
+  schema: ValidationSchema,
+  toolName: string
+): T {
+  const validated: Record<string, unknown> = {}
+
+  for (const [key, expectedType] of Object.entries(schema)) {
+    const value = input[key]
+
+    // Skip undefined values (optional parameters)
+    if (value === undefined || value === null) continue
+
+    switch (expectedType) {
+      case 'string':
+        if (typeof value !== 'string') {
+          log('warn', 'Invalid tool input type', { tool: toolName, key, expected: 'string', got: typeof value })
+          throw new Error(`Parameter '${key}' must be a string`)
+        }
+        // Sanitize strings to prevent injection
+        validated[key] = sanitizeContextInput(value, 1000)
+        break
+
+      case 'number':
+        const num = typeof value === 'number' ? value : Number(value)
+        if (isNaN(num)) {
+          log('warn', 'Invalid tool input type', { tool: toolName, key, expected: 'number', got: typeof value })
+          throw new Error(`Parameter '${key}' must be a number`)
+        }
+        // Clamp to reasonable bounds
+        validated[key] = Math.min(Math.max(num, -1000000), 1000000)
+        break
+
+      case 'boolean':
+        validated[key] = Boolean(value)
+        break
+
+      case 'array':
+        if (!Array.isArray(value)) {
+          log('warn', 'Invalid tool input type', { tool: toolName, key, expected: 'array', got: typeof value })
+          throw new Error(`Parameter '${key}' must be an array`)
+        }
+        // Limit array size and sanitize string elements
+        validated[key] = value.slice(0, 100).map(item =>
+          typeof item === 'string' ? sanitizeContextInput(item, 200) : item
+        )
+        break
+
+      case 'object':
+        if (typeof value !== 'object' || Array.isArray(value)) {
+          log('warn', 'Invalid tool input type', { tool: toolName, key, expected: 'object', got: typeof value })
+          throw new Error(`Parameter '${key}' must be an object`)
+        }
+        // Limit object depth and stringify for safety
+        validated[key] = JSON.parse(JSON.stringify(value).slice(0, 10000))
+        break
+
+      default:
+        validated[key] = value
+    }
+  }
+
+  return validated as T
+}
 
 /**
  * Get app_id for an organization
@@ -738,12 +884,27 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   // read_customers - Query customer segments and member data
   // ---------------------------------------------------------------------------
   read_customers: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    // Validate inputs
+    const validated = validateToolInput<{
+      limit?: number
+      segment?: string
+      tier?: string
+      include_visits?: boolean
+      days_inactive?: number
+    }>(input, {
+      limit: 'number',
+      segment: 'string',
+      tier: 'string',
+      include_visits: 'boolean',
+      days_inactive: 'number'
+    }, 'read_customers')
+
     const { supabase, organizationId, appId } = ctx
-    const limit = Math.min((input.limit as number) || 50, 100)
-    const segment = input.segment as string || 'all'
-    const tier = input.tier as string
-    const includeVisits = input.include_visits as boolean
-    const daysInactive = (input.days_inactive as number) || 30
+    const limit = Math.min(validated.limit || 50, 100)
+    const segment = validated.segment || 'all'
+    const tier = validated.tier
+    const includeVisits = validated.include_visits
+    const daysInactive = validated.days_inactive || 30
 
     const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
     if (!targetAppId) {
@@ -1192,14 +1353,32 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   // ---------------------------------------------------------------------------
 
   create_announcement: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    // Validate and sanitize inputs
+    const validated = validateToolInput<{
+      title?: string
+      body?: string
+      priority?: string
+      schedule_for?: string
+    }>(input, {
+      title: 'string',
+      body: 'string',
+      priority: 'string',
+      schedule_for: 'string'
+    }, 'create_announcement')
+
     const { supabase, organizationId, appId } = ctx
-    const title = (input.title as string || '').slice(0, 100)
-    const body = (input.body as string || '').slice(0, 500)
-    const priority = (input.priority as string) || 'normal'
-    const scheduleFor = input.schedule_for as string | undefined
+    const title = (validated.title || '').slice(0, 100)
+    const body = (validated.body || '').slice(0, 500)
+    const priority = validated.priority || 'normal'
+    const scheduleFor = validated.schedule_for
 
     if (!title || !body) {
       return { success: false, error: 'Title and body are required' }
+    }
+
+    // Validate priority enum
+    if (!['low', 'normal', 'high'].includes(priority)) {
+      return { success: false, error: 'Priority must be low, normal, or high' }
     }
 
     const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
@@ -1244,15 +1423,38 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   },
 
   send_targeted_message: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    // Validate and sanitize inputs
+    const validated = validateToolInput<{
+      segment?: string
+      tier?: string
+      subject?: string
+      body?: string
+      channel?: string
+    }>(input, {
+      segment: 'string',
+      tier: 'string',
+      subject: 'string',
+      body: 'string',
+      channel: 'string'
+    }, 'send_targeted_message')
+
     const { supabase, organizationId, appId } = ctx
-    const segment = (input.segment as string) || 'all'
-    const tier = input.tier as string | undefined
-    const subject = (input.subject as string || '').slice(0, 100)
-    const body = (input.body as string || '').slice(0, 500)
-    const channel = (input.channel as string) || 'push'
+    const segment = validated.segment || 'all'
+    const tier = validated.tier
+    const subject = (validated.subject || '').slice(0, 100)
+    const body = (validated.body || '').slice(0, 500)
+    const channel = validated.channel || 'push'
 
     if (!subject || !body) {
       return { success: false, error: 'Subject and body are required' }
+    }
+
+    // Validate enums
+    if (!['all', 'active', 'at_risk', 'churned', 'new', 'vip'].includes(segment)) {
+      return { success: false, error: 'Invalid segment' }
+    }
+    if (channel && !['push', 'email', 'in_app'].includes(channel)) {
+      return { success: false, error: 'Invalid channel' }
     }
 
     const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
@@ -1380,11 +1582,24 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   },
 
   award_bonus_points: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    // Validate and sanitize inputs
+    const validated = validateToolInput<{
+      member_ids?: string[]
+      segment?: string
+      points?: number
+      reason?: string
+    }>(input, {
+      member_ids: 'array',
+      segment: 'string',
+      points: 'number',
+      reason: 'string'
+    }, 'award_bonus_points')
+
     const { supabase, organizationId, appId } = ctx
-    const memberIds = (input.member_ids as string[])?.slice(0, 50)
-    const segment = input.segment as string
-    const points = Math.min(Math.max((input.points as number) || 0, 1), 1000)  // 1-1000 range
-    const reason = (input.reason as string || '').slice(0, 100)
+    const memberIds = (validated.member_ids as string[] | undefined)?.slice(0, 50)
+    const segment = validated.segment
+    const points = Math.min(Math.max(validated.points || 0, 1), 1000)  // 1-1000 range
+    const reason = (validated.reason || '').slice(0, 100)
 
     if (!reason) {
       return { success: false, error: 'Reason is required' }
@@ -1392,6 +1607,21 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
     if (!memberIds?.length && !segment) {
       return { success: false, error: 'Either member_ids or segment is required' }
+    }
+
+    // Validate segment if provided
+    if (segment && !['vip', 'new', 'at_risk', 'birthday_today'].includes(segment)) {
+      return { success: false, error: 'Invalid segment' }
+    }
+
+    // Validate member_ids are valid UUIDs if provided
+    if (memberIds?.length) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      for (const id of memberIds) {
+        if (!uuidRegex.test(id)) {
+          return { success: false, error: 'Invalid member_id format' }
+        }
+      }
     }
 
     const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
@@ -1586,29 +1816,35 @@ async function callClaudeWithTools(
   while (iterations < TOOL_USE_CONFIG.maxIterations) {
     iterations++
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+    const response = await fetchWithTimeout(
+      'https://api.anthropic.com/v1/messages',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: MODEL_ID,
+          max_tokens: maxTokens,
+          system: systemPrompt,
+          messages: currentMessages,
+          tools: ROYAL_AI_TOOLS,
+        }),
       },
-      body: JSON.stringify({
-        model: MODEL_ID,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: currentMessages,
-        tools: ROYAL_AI_TOOLS,
-      }),
-    })
+      API_TIMEOUT_MS
+    )
 
     if (!response.ok) {
       const error = await response.text()
+      log('error', 'Claude API error in tool loop', { status: response.status, error, iteration: iterations })
       throw new Error(`Claude API error: ${response.status} - ${error}`)
     }
 
     const data: ClaudeToolResponse = await response.json()
     totalTokensUsed += data.usage.input_tokens + data.usage.output_tokens
+    log('info', 'Claude API response received', { iteration: iterations, tokensUsed: data.usage.input_tokens + data.usage.output_tokens })
 
     // Check if Claude wants to use tools
     if (data.stop_reason === 'tool_use') {
@@ -2305,23 +2541,28 @@ async function callClaude(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   maxTokens: number = 2000
 ): Promise<string> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
+  const response = await fetchWithTimeout(
+    'https://api.anthropic.com/v1/messages',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: MODEL_ID,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages,
+      }),
     },
-    body: JSON.stringify({
-      model: MODEL_ID,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages,
-    }),
-  })
+    API_TIMEOUT_MS
+  )
 
   if (!response.ok) {
     const error = await response.text()
+    log('error', 'Claude API error', { status: response.status, error })
     throw new Error(`Claude API error: ${response.status} - ${error}`)
   }
 

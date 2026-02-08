@@ -13,6 +13,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Generate unique instance ID for distributed locking
+const INSTANCE_ID = crypto.randomUUID()
+
+// ============================================================================
+// STRUCTURED LOGGING
+// ============================================================================
+
+/**
+ * Structured logging for production traceability
+ */
+function log(
+  level: 'info' | 'warn' | 'error',
+  message: string,
+  context?: Record<string, unknown>
+): void {
+  const entry = {
+    level,
+    message,
+    timestamp: new Date().toISOString(),
+    service: 'royal-ai-autonomous',
+    instance_id: INSTANCE_ID,
+    ...context
+  }
+  if (level === 'error') {
+    console.error(JSON.stringify(entry))
+  } else if (level === 'warn') {
+    console.warn(JSON.stringify(entry))
+  } else {
+    console.log(JSON.stringify(entry))
+  }
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -31,44 +63,51 @@ interface RateLimitInfo {
 }
 
 // ============================================================================
-// RATE LIMITING
+// RATE LIMITING (FAIL-CLOSED)
 // ============================================================================
 
 /**
  * Check if organization has remaining action quota for today
+ * SECURITY: Fails closed on any error - actions are blocked if rate limit check fails
  */
 async function checkRateLimit(
   supabase: SupabaseClient,
   orgId: string
 ): Promise<RateLimitInfo> {
-  // Get org's daily limit
-  const { data: limit } = await supabase
-    .from('ai_rate_limits')
-    .select('daily_actions')
-    .eq('organization_id', orgId)
-    .single()
+  try {
+    // Use safe RPC function that handles errors internally
+    const { data, error } = await supabase.rpc('safe_check_rate_limit', {
+      p_org_id: orgId
+    })
 
-  const dailyLimit = limit?.daily_actions || 20  // Default 20 actions/day
+    if (error) {
+      log('error', 'Rate limit RPC failed', { orgId, error: error.message })
+      // FAIL CLOSED - block actions if we can't verify limits
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: 20,
+        reason: 'Rate limit check failed - blocking actions'
+      }
+    }
 
-  // Count today's executed actions
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-
-  const { count } = await supabase
-    .from('ai_action_queue')
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .in('status', ['executed', 'executing'])
-    .gte('executed_at', todayStart.toISOString())
-
-  const used = count || 0
-  const remaining = Math.max(0, dailyLimit - used)
-
-  return {
-    allowed: remaining > 0,
-    remaining,
-    limit: dailyLimit,
-    reason: remaining <= 0 ? 'Daily action limit reached' : undefined
+    // Parse RPC response
+    const result = data as RateLimitInfo
+    return {
+      allowed: result.allowed,
+      remaining: result.remaining,
+      limit: result.limit,
+      reason: result.reason
+    }
+  } catch (err) {
+    log('error', 'Rate limit check exception', { orgId, error: (err as Error).message })
+    // FAIL CLOSED on any exception
+    return {
+      allowed: false,
+      remaining: 0,
+      limit: 20,
+      reason: 'Rate limit error - blocking actions'
+    }
   }
 }
 
@@ -112,7 +151,7 @@ async function recordAutomationExecution(
     .single()
 
   if (error) {
-    console.log('Failed to record automation execution:', error.message)
+    log('warn', 'Failed to record automation execution', { error: error.message, actionId: action.id })
     return null
   }
 
@@ -271,7 +310,7 @@ async function executeSendMessage(
 
   if (batchError) {
     // Table might not exist, log and continue
-    console.log('Message batch insert failed (table may not exist):', batchError.message)
+    log('warn', 'Message batch insert failed', { error: batchError.message, app_id })
     return {
       success: true,
       data: {
@@ -322,7 +361,7 @@ async function executeFlashPromotion(
 
   if (error) {
     // Table might not exist, log and continue
-    console.log('Promotion insert failed (table may not exist):', error.message)
+    log('warn', 'Promotion insert failed', { error: error.message, name, app_id })
     return {
       success: true,
       data: { name, multiplier, note: 'Promotion created (table not available)' }
@@ -337,6 +376,7 @@ async function executeFlashPromotion(
 
 /**
  * Execute an award_bonus_points action
+ * Uses batch RPC for transaction safety and performance
  */
 async function executeAwardPoints(
   supabase: SupabaseClient,
@@ -378,19 +418,21 @@ async function executeAwardPoints(
     return { success: false, error: 'No members to award points to' }
   }
 
-  // Award points to each member
-  let awarded = 0
-  for (const memberId of targetMembers) {
-    const { error } = await supabase
-      .from('app_members')
-      .update({
-        points_balance: supabase.rpc('increment_points', { amount: points }),
-        total_points_earned: supabase.rpc('increment_points', { amount: points })
-      })
-      .eq('id', memberId)
+  // Use batch RPC for atomic transaction (all-or-nothing)
+  const { data: batchResult, error: batchError } = await supabase.rpc('batch_award_points', {
+    p_member_ids: targetMembers,
+    p_points: points as number,
+    p_reason: reason as string,
+    p_app_id: app_id as string
+  })
 
-    // Fallback: direct update
-    if (error) {
+  if (batchError) {
+    log('error', 'Batch award points failed', { error: batchError.message, memberCount: targetMembers.length })
+
+    // Fallback to legacy loop if RPC not available
+    log('info', 'Falling back to legacy point award loop', { memberCount: targetMembers.length })
+    let awarded = 0
+    for (const memberId of targetMembers) {
       const { data: member } = await supabase
         .from('app_members')
         .select('points_balance, total_points_earned')
@@ -405,26 +447,37 @@ async function executeAwardPoints(
             total_points_earned: (member.total_points_earned || 0) + (points as number)
           })
           .eq('id', memberId)
+
+        await supabase
+          .from('app_events')
+          .insert({
+            app_id,
+            member_id: memberId,
+            event_type: 'bonus_points_awarded',
+            event_data: { points, reason, source: 'ai_autonomous' }
+          })
+
         awarded++
       }
-    } else {
-      awarded++
     }
 
-    // Create points event
-    await supabase
-      .from('app_events')
-      .insert({
-        app_id,
-        member_id: memberId,
-        event_type: 'bonus_points_awarded',
-        event_data: { points, reason, source: 'ai_autonomous' }
-      })
+    return {
+      success: true,
+      data: { awarded, points, reason, method: 'legacy' }
+    }
   }
+
+  // Parse RPC result
+  const result = batchResult as { success: boolean; awarded: number; error?: string }
+  if (!result.success) {
+    return { success: false, error: result.error || 'Batch award failed' }
+  }
+
+  log('info', 'Batch award points successful', { awarded: result.awarded, requested: targetMembers.length })
 
   return {
     success: true,
-    data: { awarded, points, reason }
+    data: { awarded: result.awarded, points, reason, method: 'batch' }
   }
 }
 
@@ -644,7 +697,7 @@ async function measureActionOutcome(
         successScore = 0.5  // Neutral for unknown action types
     }
   } catch (err) {
-    console.error('Error measuring outcome:', err)
+    log('error', 'Error measuring outcome', { error: (err as Error).message, actionType })
     successScore = 0.5
   }
 
@@ -770,36 +823,73 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
   measured: number
   retried: number
   rateLimited: number
+  abandoned: number
 }> {
-  const stats = { executed: 0, failed: 0, measured: 0, retried: 0, rateLimited: 0 }
+  const stats = { executed: 0, failed: 0, measured: 0, retried: 0, rateLimited: 0, abandoned: 0 }
 
-  // 1. Process approved actions that are past their scheduled time
-  const { data: pendingActions } = await supabase
-    .from('ai_action_queue')
-    .select('*')
-    .eq('status', 'approved')
-    .lte('scheduled_for', new Date().toISOString())
-    .limit(10)
+  log('info', 'Starting action queue processing', { instance_id: INSTANCE_ID })
 
-  for (const action of pendingActions || []) {
+  // 0. Release any abandoned actions (instance crashed while executing)
+  try {
+    const { data: releasedCount } = await supabase.rpc('release_abandoned_actions', {
+      p_timeout_minutes: 15
+    })
+    if (releasedCount && releasedCount > 0) {
+      log('warn', 'Released abandoned actions', { count: releasedCount })
+      stats.abandoned = releasedCount
+    }
+  } catch (err) {
+    log('error', 'Failed to release abandoned actions', { error: (err as Error).message })
+  }
+
+  // 1. Atomically claim approved actions using distributed lock
+  // This prevents race conditions when multiple instances run simultaneously
+  const { data: pendingActions, error: claimError } = await supabase.rpc('claim_pending_actions', {
+    p_instance_id: INSTANCE_ID,
+    p_limit: 10
+  })
+
+  if (claimError) {
+    log('error', 'Failed to claim actions', { error: claimError.message })
+    // Fall back to legacy query if RPC not available (migration not applied yet)
+    const { data: fallbackActions } = await supabase
+      .from('ai_action_queue')
+      .select('*')
+      .eq('status', 'approved')
+      .lte('scheduled_for', new Date().toISOString())
+      .limit(10)
+
+    if (fallbackActions) {
+      log('warn', 'Using fallback action query', { count: fallbackActions.length })
+    }
+  }
+
+  const actionsToProcess = pendingActions || []
+  log('info', 'Claimed actions for processing', { count: actionsToProcess.length })
+
+  for (const action of actionsToProcess) {
     const actionId = action.id as string
     const actionType = action.action_type as string
     const payload = action.action_payload as Record<string, unknown>
     const orgId = action.organization_id as string
 
-    // Check rate limit before executing
+    // Check rate limit before executing (fail-closed)
     const rateLimit = await checkRateLimit(supabase, orgId)
     if (!rateLimit.allowed) {
-      console.log(`Rate limited org ${orgId}: ${rateLimit.reason}`)
+      log('info', 'Rate limited action', { orgId, actionId, reason: rateLimit.reason })
+      // Release the action back to approved state for retry later
+      await supabase
+        .from('ai_action_queue')
+        .update({
+          status: 'approved',
+          executing_instance: null,
+          scheduled_for: new Date(Date.now() + 60000).toISOString(), // Retry in 1 minute
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', actionId)
       stats.rateLimited++
-      continue  // Skip this action, will retry next run
+      continue
     }
-
-    // Mark as executing
-    await supabase
-      .from('ai_action_queue')
-      .update({ status: 'executing', updated_at: new Date().toISOString() })
-      .eq('id', actionId)
 
     let result: ExecutionResult = { success: false, error: 'Unknown action type' }
 
@@ -997,7 +1087,7 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Autonomous runner error:', error)
+    log('error', 'Autonomous runner error', { error: (error as Error).message })
     return new Response(
       JSON.stringify({
         success: false,
