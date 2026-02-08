@@ -22,100 +22,219 @@ function isPlanAdmin() {
 }
 
 const PLAN_LIMITS = {
-    // Free tier - 50 members, no intelligence
+    // Free tier - 50 members, no messaging, no Royal AI
     free: {
         name: 'Free',
+        tagline: 'Try Royalty',
         members: 50,
-        intelligence_monthly: 0,
-        automations: true,  // 1-click automations included for all
-        ai_setup: false,
+        // Messaging limits
+        emails_monthly: 0,
+        sms_monthly: 0,
+        // Royal AI capabilities
+        royal_chat: false,
+        max_automations: 0,
+        review_mode: false,
+        autonomous_mode: false,
+        business_learning: false,
+        fatigue_protection: false,
+        performance_metrics: false,
+        visit_attribution: false,
+        // Branding & support
         white_label: false,
-        priority_support: false
+        email_support: false,
+        priority_support: false,
+        dedicated_support: false
     },
 
     // Subscription tiers (matches Stripe products)
     subscription: {
         starter: {
             name: 'Starter',
-            price_monthly: 49,
-            price_annual: 39, // $468/year = $39/month
+            tagline: 'Royal Helps You',
+            price_monthly: 79,
+            price_annual: 63, // $756/year = $63/month (20% off)
             members: 500,
-            intelligence_monthly: 30,
-            automations: true,
-            ai_setup: true,
+            // Messaging limits
+            emails_monthly: 2000,
+            sms_monthly: 100,
+            // Royal AI capabilities
+            royal_chat: true,
+            max_automations: 5,
+            review_mode: true,
+            autonomous_mode: false,
+            business_learning: false,
+            fatigue_protection: false,
+            performance_metrics: false,
+            visit_attribution: false,
+            // Branding & support
             white_label: false,
-            priority_support: false
+            email_support: true,
+            priority_support: false,
+            dedicated_support: false
         },
         growth: {
             name: 'Growth',
-            price_monthly: 149,
-            price_annual: 119, // $1,428/year = $119/month
+            tagline: 'Royal Runs Your Marketing',
+            price_monthly: 199,
+            price_annual: 159, // $1,908/year = $159/month (20% off)
             members: 2000,
-            intelligence_monthly: 100,
-            automations: true,
-            ai_setup: true,
+            // Messaging limits
+            emails_monthly: 10000,
+            sms_monthly: 500,
+            // Royal AI capabilities
+            royal_chat: true,
+            max_automations: -1, // unlimited
+            review_mode: true,
+            autonomous_mode: true,
+            business_learning: true,
+            fatigue_protection: true,
+            performance_metrics: true,
+            visit_attribution: false,
+            // Branding & support
             white_label: false,
-            priority_support: true
+            email_support: true,
+            priority_support: true,
+            dedicated_support: false
         },
         scale: {
             name: 'Scale',
-            price_monthly: 399,
-            price_annual: 319, // $3,828/year = $319/month
+            tagline: 'Royal Proves Your ROI',
+            price_monthly: 499,
+            price_annual: 399, // $4,788/year = $399/month (20% off)
             members: -1, // unlimited
-            intelligence_monthly: -1, // unlimited
-            automations: true,
-            ai_setup: true,
+            // Messaging limits
+            emails_monthly: 50000,
+            sms_monthly: 2000,
+            // Royal AI capabilities
+            royal_chat: true,
+            max_automations: -1, // unlimited
+            review_mode: true,
+            autonomous_mode: true,
+            business_learning: true,
+            fatigue_protection: true,
+            performance_metrics: true,
+            visit_attribution: true,
+            // Branding & support
             white_label: true,
-            priority_support: true
+            email_support: true,
+            priority_support: true,
+            dedicated_support: true
         }
     },
 
-    // AppSumo lifetime tiers - AI setup + automations, NO intelligence
+    // AppSumo lifetime tiers - Loyalty platform + email, NO Royal AI or SMS
     appsumo: {
         1: {
             name: 'Lifetime Tier 1',
+            tagline: 'Loyalty Essentials',
             badge: 'AppSumo',
             price_paid: 59,
             members: 500,
-            intelligence_monthly: 0, // No intelligence - need Royalty Pro
-            automations: true,
-            ai_setup: true,
+            // Messaging limits - email only, no SMS
+            emails_monthly: 500,
+            sms_monthly: 0,
+            // Royal AI capabilities - none without Royalty Pro
+            royal_chat: false,
+            max_automations: 0,
+            review_mode: false,
+            autonomous_mode: false,
+            business_learning: false,
+            fatigue_protection: false,
+            performance_metrics: false,
+            visit_attribution: false,
+            // Branding & support
             white_label: false,
+            email_support: true,
             priority_support: false,
+            dedicated_support: false,
             can_upgrade_to_pro: true
         },
         2: {
             name: 'Lifetime Tier 2',
+            tagline: 'Growing Business',
             badge: 'AppSumo',
             price_paid: 118,
             members: 2000,
-            intelligence_monthly: 0,
-            automations: true,
-            ai_setup: true,
+            // Messaging limits
+            emails_monthly: 2000,
+            sms_monthly: 0,
+            // Royal AI capabilities
+            royal_chat: false,
+            max_automations: 0,
+            review_mode: false,
+            autonomous_mode: false,
+            business_learning: false,
+            fatigue_protection: false,
+            performance_metrics: false,
+            visit_attribution: false,
+            // Branding & support
             white_label: false,
-            priority_support: true,
+            email_support: true,
+            priority_support: false,
+            dedicated_support: false,
             can_upgrade_to_pro: true
         },
         3: {
             name: 'Lifetime Tier 3',
+            tagline: 'Unlimited Growth',
             badge: 'AppSumo',
             price_paid: 177,
             members: -1, // unlimited
-            intelligence_monthly: 0,
-            automations: true,
-            ai_setup: true,
-            white_label: false, // Need Royalty Pro for white-label
-            priority_support: true,
+            // Messaging limits
+            emails_monthly: 5000,
+            sms_monthly: 0,
+            // Royal AI capabilities
+            royal_chat: false,
+            max_automations: 0,
+            review_mode: false,
+            autonomous_mode: false,
+            business_learning: false,
+            fatigue_protection: false,
+            performance_metrics: false,
+            visit_attribution: false,
+            // Branding & support
+            white_label: false,
+            email_support: true,
+            priority_support: false,
+            dedicated_support: false,
             can_upgrade_to_pro: true
         }
     },
 
-    // Royalty Pro add-on for LTD users
+    // Royalty Pro add-on for LTD users - unlocks Growth-level AI features
     royalty_pro: {
         name: 'Royalty Pro',
-        price_monthly: 39,
-        intelligence_monthly: -1, // unlimited
-        white_label: true
+        tagline: 'Let Royal Run Your Marketing',
+        price_monthly: 49,
+        // Additional messaging (on top of base LTD)
+        emails_monthly_bonus: 10000,
+        sms_monthly: 500,
+        // Unlocks Growth-level Royal AI capabilities
+        royal_chat: true,
+        max_automations: -1,
+        review_mode: true,
+        autonomous_mode: true,
+        business_learning: true,
+        fatigue_protection: true,
+        performance_metrics: true,
+        visit_attribution: true,
+        // Branding & support upgrades
+        white_label: true,
+        priority_support: true
+    },
+
+    // Add-on bundles (one-time purchases)
+    bundles: {
+        sms_100: {
+            name: '100 SMS',
+            price: 15,
+            sms_credits: 100
+        },
+        email_5000: {
+            name: '5,000 Emails',
+            price: 10,
+            email_credits: 5000
+        }
     }
 };
 
@@ -151,8 +270,22 @@ function getPlanLimits(org) {
 
             // Apply Royalty Pro add-on if active
             if (org.has_royalty_pro) {
-                baseLimits.intelligence_monthly = PLAN_LIMITS.royalty_pro.intelligence_monthly;
-                baseLimits.white_label = PLAN_LIMITS.royalty_pro.white_label;
+                const pro = PLAN_LIMITS.royalty_pro;
+                // Add bonus emails on top of base
+                baseLimits.emails_monthly = baseLimits.emails_monthly + pro.emails_monthly_bonus;
+                baseLimits.sms_monthly = pro.sms_monthly;
+                // Unlock all Royal AI capabilities
+                baseLimits.royal_chat = pro.royal_chat;
+                baseLimits.max_automations = pro.max_automations;
+                baseLimits.review_mode = pro.review_mode;
+                baseLimits.autonomous_mode = pro.autonomous_mode;
+                baseLimits.business_learning = pro.business_learning;
+                baseLimits.fatigue_protection = pro.fatigue_protection;
+                baseLimits.performance_metrics = pro.performance_metrics;
+                baseLimits.visit_attribution = pro.visit_attribution;
+                // Branding & support
+                baseLimits.white_label = pro.white_label;
+                baseLimits.priority_support = pro.priority_support;
                 baseLimits.has_royalty_pro = true;
             }
             return baseLimits;
@@ -215,11 +348,23 @@ function checkLimit(org, usage, limitType, increment = 1) {
     const limits = getOrgLimits(org);
     const limit = limits[limitType];
 
-    // Feature not available at all (e.g., intelligence for free users)
-    if (limit === 0 && limitType === 'intelligence_monthly') {
+    // Boolean feature check (e.g., autonomous_mode, visit_attribution)
+    if (typeof limit === 'boolean') {
+        if (!limit) {
+            return {
+                allowed: false,
+                message: getFeatureUpgradeMessage(limitType, org),
+                upgradeRequired: true
+            };
+        }
+        return { allowed: true };
+    }
+
+    // Feature not available at all (quota = 0)
+    if (limit === 0) {
         return {
             allowed: false,
-            message: getIntelligenceUpgradeMessage(org),
+            message: getFeatureUpgradeMessage(limitType, org),
             upgradeRequired: true,
             current: 0,
             limit: 0
@@ -237,7 +382,7 @@ function checkLimit(org, usage, limitType, increment = 1) {
     if (newUsage > limit) {
         return {
             allowed: false,
-            message: getLimitMessage(limitType, limit, org.plan_type),
+            message: getLimitMessage(limitType, limit, org),
             upgradeRequired: true,
             current: currentUsage,
             limit: limit
@@ -265,8 +410,16 @@ function checkLimit(org, usage, limitType, increment = 1) {
 function formatLimitName(limitType) {
     const names = {
         members: 'members',
-        intelligence_monthly: 'AI insights this month',
-        automations: 'automations'
+        emails_monthly: 'emails this month',
+        sms_monthly: 'SMS this month',
+        max_automations: 'AI automations',
+        // Boolean features
+        royal_chat: 'Royal AI chat',
+        autonomous_mode: 'Autonomous Mode',
+        business_learning: 'Business Learning',
+        fatigue_protection: 'Fatigue Protection',
+        performance_metrics: 'Performance Metrics',
+        visit_attribution: 'Visit Attribution'
     };
     return names[limitType] || limitType;
 }
@@ -274,31 +427,61 @@ function formatLimitName(limitType) {
 /**
  * Get limit exceeded message based on plan type
  */
-function getLimitMessage(limitType, limit, planType) {
+function getLimitMessage(limitType, limit, org) {
     const name = formatLimitName(limitType);
+    const planType = org.plan_type;
 
-    if (planType === 'appsumo_lifetime') {
-        if (limitType === 'intelligence_monthly') {
-            return 'Add Royalty Pro ($39/mo) to unlock unlimited AI Intelligence.';
+    // SMS/Email specific messages with bundle upsell
+    if (limitType === 'sms_monthly') {
+        if (planType === 'appsumo_lifetime' && !org.has_royalty_pro) {
+            return 'SMS campaigns require Royalty Pro ($49/mo). Unlock 500 SMS/month plus Royal AI.';
         }
-        return `You've reached your ${name} limit (${formatLimit(limit)}). Stack another AppSumo code to increase your limits.`;
+        return `You've used all ${formatLimit(limit)} SMS this month. Purchase an SMS bundle ($15/100) or wait for monthly reset.`;
     }
 
-    if (planType === 'subscription') {
-        return `You've reached your ${name} limit (${formatLimit(limit)}). Upgrade to a higher tier for more capacity.`;
+    if (limitType === 'emails_monthly') {
+        return `You've used all ${formatLimit(limit)} emails this month. Purchase an email bundle ($10/5,000) or wait for monthly reset.`;
+    }
+
+    // Automation limit
+    if (limitType === 'max_automations') {
+        if (planType === 'free') {
+            return 'Upgrade to Starter ($79/mo) to create AI automations.';
+        }
+        return `You've reached your limit of ${limit} automations. Upgrade to Growth ($199/mo) for unlimited automations.`;
+    }
+
+    // Member limit
+    if (limitType === 'members') {
+        if (planType === 'appsumo_lifetime') {
+            return `You've reached your ${formatLimit(limit)} member limit. Stack another AppSumo code to increase your limit.`;
+        }
+        return `You've reached your ${formatLimit(limit)} member limit. Upgrade to the next tier for more capacity.`;
     }
 
     return `You've reached your ${name} limit (${formatLimit(limit)}). Upgrade to unlock more capacity.`;
 }
 
 /**
- * Get intelligence upgrade message based on plan type
+ * Get feature upgrade message for boolean capabilities
  */
-function getIntelligenceUpgradeMessage(org) {
-    if (org.plan_type === 'appsumo_lifetime') {
-        return 'AI Intelligence is available with Royalty Pro ($39/mo). Get unlimited insights and white-label branding.';
-    }
-    return 'Upgrade to Starter ($49/mo) to unlock AI Intelligence with 30 insights per month.';
+function getFeatureUpgradeMessage(feature, org) {
+    const messages = {
+        // Royal AI features
+        royal_chat: org.plan_type === 'appsumo_lifetime'
+            ? 'Royal AI chat requires Royalty Pro ($49/mo). Let Royal help run your marketing.'
+            : 'Upgrade to Starter ($79/mo) to chat with Royal and get AI recommendations.',
+        autonomous_mode: 'Autonomous Mode is available on Growth ($199/mo). Let Royal send campaigns without asking.',
+        business_learning: 'Business Learning is available on Growth ($199/mo). Royal learns your margins, busy times, and customer patterns.',
+        fatigue_protection: 'Fatigue Protection is available on Growth ($199/mo). Royal knows when to back off.',
+        performance_metrics: 'Performance Metrics are available on Growth ($199/mo). See which automations drive results.',
+        visit_attribution: 'Visit Attribution is available on Scale ($499/mo). Link automations to actual store visits.',
+        // Other features
+        white_label: 'White-label branding is available on Scale ($499/mo) or with Royalty Pro.',
+        priority_support: 'Priority support is available on Growth ($199/mo) and above.',
+        dedicated_support: 'Dedicated support is available on Scale ($499/mo).'
+    };
+    return messages[feature] || `This feature requires a plan upgrade.`;
 }
 
 /**
@@ -313,7 +496,7 @@ function getUpgradeOptions(org) {
             options.push({
                 type: 'royalty_pro',
                 label: 'Add Royalty Pro',
-                description: '$39/month - Unlimited Intelligence + White-label',
+                description: '$49/month - Royal AI + 500 SMS + White-label',
                 action: 'upgrade',
                 tier: 'royalty_pro',
                 featured: true
@@ -330,15 +513,25 @@ function getUpgradeOptions(org) {
     } else if (org.plan_type === 'subscription') {
         // Subscription users can upgrade tiers
         const upgrades = {
-            starter: { tier: 'growth', name: 'Growth', price: 149 },
-            growth: { tier: 'scale', name: 'Scale', price: 399 }
+            starter: {
+                tier: 'growth',
+                name: 'Growth',
+                price: 199,
+                description: 'Autonomous Mode + unlimited automations'
+            },
+            growth: {
+                tier: 'scale',
+                name: 'Scale',
+                price: 499,
+                description: 'Visit Attribution + white-label + unlimited members'
+            }
         };
         const upgrade = upgrades[org.subscription_tier];
         if (upgrade) {
             options.push({
                 type: 'upgrade_tier',
                 label: `Upgrade to ${upgrade.name}`,
-                description: `$${upgrade.price}/month - More members and insights`,
+                description: `$${upgrade.price}/month - ${upgrade.description}`,
                 action: 'upgrade',
                 tier: upgrade.tier
             });
@@ -348,7 +541,7 @@ function getUpgradeOptions(org) {
         options.push({
             type: 'subscription',
             label: 'Upgrade to Starter',
-            description: '$49/month - 500 members, 30 AI insights',
+            description: '$79/month - Royal AI + 2K emails + 100 SMS',
             action: 'upgrade',
             tier: 'starter',
             featured: true
@@ -382,56 +575,111 @@ function formatUsageForDashboard(org, usage) {
         }
     ];
 
-    // Only show intelligence metric if user has access
-    if (limits.intelligence_monthly !== 0) {
+    // Email metric (if available)
+    if (limits.emails_monthly > 0) {
         metrics.push({
-            key: 'intelligence',
-            label: 'AI Insights This Month',
-            used: usage.intelligence_used || 0,
-            limit: limits.intelligence_monthly,
-            percent: getUsagePercent(usage.intelligence_used || 0, limits.intelligence_monthly),
-            status: getUsageStatus(getUsagePercent(usage.intelligence_used || 0, limits.intelligence_monthly)),
-            icon: 'brain',
-            resets: true
+            key: 'emails',
+            label: 'Emails This Month',
+            used: usage.emails_sent || 0,
+            limit: limits.emails_monthly,
+            percent: getUsagePercent(usage.emails_sent || 0, limits.emails_monthly),
+            status: getUsageStatus(getUsagePercent(usage.emails_sent || 0, limits.emails_monthly)),
+            icon: 'mail',
+            resets: true,
+            bundle: PLAN_LIMITS.bundles.email_5000
+        });
+    }
+
+    // SMS metric (if available)
+    if (limits.sms_monthly > 0) {
+        metrics.push({
+            key: 'sms',
+            label: 'SMS This Month',
+            used: usage.sms_sent || 0,
+            limit: limits.sms_monthly,
+            percent: getUsagePercent(usage.sms_sent || 0, limits.sms_monthly),
+            status: getUsageStatus(getUsagePercent(usage.sms_sent || 0, limits.sms_monthly)),
+            icon: 'message-square',
+            resets: true,
+            bundle: PLAN_LIMITS.bundles.sms_100
+        });
+    }
+
+    // Automations metric (if limited)
+    if (limits.max_automations > 0 && limits.max_automations !== -1) {
+        metrics.push({
+            key: 'automations',
+            label: 'AI Automations',
+            used: usage.automations_count || 0,
+            limit: limits.max_automations,
+            percent: getUsagePercent(usage.automations_count || 0, limits.max_automations),
+            status: getUsageStatus(getUsagePercent(usage.automations_count || 0, limits.max_automations)),
+            icon: 'zap'
         });
     }
 
     return {
         plan: {
             name: limits.name,
+            tagline: limits.tagline,
             type: org.plan_type,
             badge: limits.badge || null,
             has_royalty_pro: limits.has_royalty_pro || false
         },
         metrics: metrics,
         features: {
-            automations: limits.automations,
-            ai_setup: limits.ai_setup,
+            // Royal AI capabilities
+            royal_chat: limits.royal_chat,
+            max_automations: limits.max_automations,
+            review_mode: limits.review_mode,
+            autonomous_mode: limits.autonomous_mode,
+            business_learning: limits.business_learning,
+            fatigue_protection: limits.fatigue_protection,
+            performance_metrics: limits.performance_metrics,
+            visit_attribution: limits.visit_attribution,
+            // Branding & support
             white_label: limits.white_label,
+            email_support: limits.email_support,
             priority_support: limits.priority_support,
-            intelligence: limits.intelligence_monthly !== 0
+            dedicated_support: limits.dedicated_support
         }
     };
 }
 
 /**
- * Check if organization can use Intelligence features (sync - basic check)
+ * Check if organization can use Royal AI chat (sync - basic check)
  */
-function canUseIntelligenceSync(org) {
+function canUseRoyalAI(org) {
     const limits = getOrgLimits(org);
-    return limits.intelligence_monthly !== 0;
+    return limits.royal_chat === true;
+}
+
+// Backwards compatibility alias
+function canUseIntelligenceSync(org) {
+    return canUseRoyalAI(org);
 }
 
 /**
- * Check Intelligence quota with usage (async - full check)
- * @param {string|object} orgIdOrObj - Organization ID or organization object
- * @returns {Promise<{allowed: boolean, used: number, limit: number}>}
+ * Check if organization can use a specific Royal AI capability
+ * @param {Object} org - Organization object
+ * @param {string} capability - Capability to check (autonomous_mode, business_learning, etc.)
+ * @returns {boolean}
  */
-async function canUseIntelligence(orgIdOrObj) {
+function hasCapability(org, capability) {
+    const limits = getOrgLimits(org);
+    return limits[capability] === true || limits[capability] === -1;
+}
+
+/**
+ * Check messaging quota (async - with current usage)
+ * @param {string|object} orgIdOrObj - Organization ID or organization object
+ * @param {string} type - 'email' or 'sms'
+ * @returns {Promise<{allowed: boolean, used: number, limit: number, remaining: number}>}
+ */
+async function checkMessagingQuota(orgIdOrObj, type = 'email') {
     // Handle both org ID and org object
     let org = orgIdOrObj;
     if (typeof orgIdOrObj === 'string') {
-        // Fetch org from Supabase
         if (typeof supabase !== 'undefined') {
             const { data } = await supabase
                 .from('organizations')
@@ -440,25 +688,26 @@ async function canUseIntelligence(orgIdOrObj) {
                 .single();
             org = data;
         } else {
-            return { allowed: false, used: 0, limit: 0 };
+            return { allowed: false, used: 0, limit: 0, remaining: 0 };
         }
     }
 
     if (!org) {
-        return { allowed: false, used: 0, limit: 0 };
+        return { allowed: false, used: 0, limit: 0, remaining: 0 };
     }
 
     const limits = getOrgLimits(org);
-    const monthlyLimit = limits.intelligence_monthly;
+    const limitKey = type === 'sms' ? 'sms_monthly' : 'emails_monthly';
+    const monthlyLimit = limits[limitKey];
 
-    // Free tier or no intelligence access
+    // No access
     if (monthlyLimit === 0) {
-        return { allowed: false, used: 0, limit: 0 };
+        return { allowed: false, used: 0, limit: 0, remaining: 0 };
     }
 
-    // Unlimited intelligence
+    // Unlimited
     if (monthlyLimit === -1) {
-        return { allowed: true, used: 0, limit: -1 };
+        return { allowed: true, used: 0, limit: -1, remaining: -1 };
     }
 
     // Check current month's usage
@@ -468,20 +717,42 @@ async function canUseIntelligence(orgIdOrObj) {
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
 
-        const { count } = await supabase
-            .from('ai_recommendations')
-            .select('*', { count: 'exact', head: true })
+        const usageColumn = type === 'sms' ? 'sms_sent' : 'emails_sent';
+        const { data } = await supabase
+            .from('usage_tracking')
+            .select(usageColumn)
             .eq('organization_id', org.id)
-            .gte('created_at', startOfMonth.toISOString());
+            .gte('period_start', startOfMonth.toISOString().split('T')[0])
+            .single();
 
-        used = count || 0;
+        used = data?.[usageColumn] || 0;
     }
 
+    const remaining = Math.max(0, monthlyLimit - used);
     return {
         allowed: used < monthlyLimit,
         used,
-        limit: monthlyLimit
+        limit: monthlyLimit,
+        remaining
     };
+}
+
+// Backwards compatibility - alias for old canUseIntelligence
+async function canUseIntelligence(orgIdOrObj) {
+    let org = orgIdOrObj;
+    if (typeof orgIdOrObj === 'string') {
+        if (typeof supabase !== 'undefined') {
+            const { data } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('id', orgIdOrObj)
+                .single();
+            org = data;
+        } else {
+            return { allowed: false };
+        }
+    }
+    return { allowed: canUseRoyalAI(org) };
 }
 
 /**
@@ -490,6 +761,16 @@ async function canUseIntelligence(orgIdOrObj) {
 function hasWhiteLabel(org) {
     const limits = getOrgLimits(org);
     return limits.white_label === true;
+}
+
+/**
+ * Check if organization can create more automations
+ */
+function canCreateAutomation(org, currentCount) {
+    const limits = getOrgLimits(org);
+    if (limits.max_automations === -1) return true;
+    if (limits.max_automations === 0) return false;
+    return currentCount < limits.max_automations;
 }
 
 // Export for use in other files
@@ -506,6 +787,13 @@ if (typeof window !== 'undefined') {
     window.isUnlimited = isUnlimited;
     window.setPlanAdminStatus = setPlanAdminStatus;
     window.isPlanAdmin = isPlanAdmin;
+    // New capability-based functions
+    window.canUseRoyalAI = canUseRoyalAI;
+    window.hasCapability = hasCapability;
+    window.checkMessagingQuota = checkMessagingQuota;
+    window.canCreateAutomation = canCreateAutomation;
+    window.getFeatureUpgradeMessage = getFeatureUpgradeMessage;
+    // Backwards compatibility
     window.canUseIntelligence = canUseIntelligence;
     window.canUseIntelligenceSync = canUseIntelligenceSync;
     window.hasWhiteLabel = hasWhiteLabel;
@@ -519,6 +807,12 @@ if (typeof window !== 'undefined') {
             scale: PLAN_LIMITS.subscription.scale,
             subscription: PLAN_LIMITS.subscription
         },
+        // New capability-based API
+        canUseRoyalAI: canUseRoyalAI,
+        hasCapability: hasCapability,
+        checkMessagingQuota: checkMessagingQuota,
+        canCreateAutomation: canCreateAutomation,
+        // Backwards compatibility
         canUseIntelligence: canUseIntelligence,
         getOrgLimits: getOrgLimits,
         checkLimit: checkLimit,

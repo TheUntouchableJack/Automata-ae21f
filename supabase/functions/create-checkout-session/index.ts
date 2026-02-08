@@ -14,16 +14,21 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // Price IDs (public, safe to include)
+// TODO: Create new Stripe products with updated pricing and replace these IDs
 const PRICES: Record<string, string> = {
-  // Subscription tiers
-  starter_monthly: 'price_1SwWtAGNy14i1og8Xplemzli',  // $49/mo
-  starter_annual: 'price_1SwWtBGNy14i1og85EaQF2Vk',   // $39/mo billed annually
-  growth_monthly: 'price_1SwWtBGNy14i1og8LAT4fAKf',   // $149/mo
-  growth_annual: 'price_1SwWtCGNy14i1og8qcVXfjCK',    // $119/mo billed annually
-  scale_monthly: 'price_1SwWtCGNy14i1og8pHjLGckq',    // $399/mo
-  scale_annual: 'price_1SwWtDGNy14i1og8X3CPiBcd',     // $319/mo billed annually
+  // Subscription tiers (NEW PRICING - Feb 2026)
+  starter_monthly: 'price_1SwWtAGNy14i1og8Xplemzli',  // $79/mo (was $49)
+  starter_annual: 'price_1SwWtBGNy14i1og85EaQF2Vk',   // $63/mo billed annually (was $39)
+  growth_monthly: 'price_1SwWtBGNy14i1og8LAT4fAKf',   // $199/mo (was $149)
+  growth_annual: 'price_1SwWtCGNy14i1og8qcVXfjCK',    // $159/mo billed annually (was $119)
+  scale_monthly: 'price_1SwWtCGNy14i1og8pHjLGckq',    // $499/mo (was $399)
+  scale_annual: 'price_1SwWtDGNy14i1og8X3CPiBcd',     // $399/mo billed annually (was $319)
   // Royalty Pro add-on for LTD users
-  royalty_pro_monthly: 'price_1SwWtDGNy14i1og83ujVvVND', // $39/mo
+  royalty_pro_monthly: 'price_1SwWtDGNy14i1og83ujVvVND', // $49/mo (was $39)
+  // Messaging bundles (one-time purchases)
+  // TODO: Create these in Stripe
+  // sms_bundle_100: 'price_XXX',    // $15 for 100 SMS
+  // email_bundle_5000: 'price_XXX', // $10 for 5,000 emails
 }
 
 const corsHeaders = {
@@ -87,6 +92,9 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Determine if this is a one-time bundle purchase
+    const isBundle = priceKey.startsWith('sms_bundle_') || priceKey.startsWith('email_bundle_')
+
     // Get organization
     const { data: org, error: orgError } = await supabase
       .from('organizations')
@@ -143,19 +151,25 @@ Deno.serve(async (req) => {
     // Base session config
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
-      mode: 'subscription',
+      mode: isBundle ? 'payment' : 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: {
+      metadata: {
+        organization_id: organizationId,
+        purchase_type: isBundle ? 'bundle' : 'subscription',
+        bundle_type: isBundle ? priceKey : undefined,
+      },
+      allow_promotion_codes: true,
+    }
+
+    // Add subscription-specific config
+    if (!isBundle) {
+      sessionConfig.subscription_data = {
         trial_period_days: 14,
         metadata: {
           organization_id: organizationId,
         },
-      },
-      metadata: {
-        organization_id: organizationId,
-      },
-      allow_promotion_codes: true,
+      }
     }
 
     // Embedded mode uses return_url, redirect mode uses success/cancel URLs
