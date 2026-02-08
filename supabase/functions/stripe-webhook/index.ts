@@ -14,17 +14,23 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Map Stripe price IDs to plan tiers
+// Map Stripe price IDs to plan tiers - Created Feb 2026
 const PRICE_TO_TIER: Record<string, { tier: string; billing: string; isAddOn?: boolean }> = {
-  // Subscription tiers
-  'price_1SwWtAGNy14i1og8Xplemzli': { tier: 'starter', billing: 'monthly' },
-  'price_1SwWtBGNy14i1og85EaQF2Vk': { tier: 'starter', billing: 'annual' },
-  'price_1SwWtBGNy14i1og8LAT4fAKf': { tier: 'growth', billing: 'monthly' },
-  'price_1SwWtCGNy14i1og8qcVXfjCK': { tier: 'growth', billing: 'annual' },
-  'price_1SwWtCGNy14i1og8pHjLGckq': { tier: 'scale', billing: 'monthly' },
-  'price_1SwWtDGNy14i1og8X3CPiBcd': { tier: 'scale', billing: 'annual' },
+  // Subscription tiers (Feb 2026 pricing)
+  'price_1SyfQDGNy14i1og8tkBn6MF7': { tier: 'starter', billing: 'monthly' },  // $79/mo
+  'price_1SyfQDGNy14i1og8r0NrGfNM': { tier: 'starter', billing: 'annual' },   // $63/mo
+  'price_1SyfQEGNy14i1og80NnddnzC': { tier: 'growth', billing: 'monthly' },   // $199/mo
+  'price_1SyfQEGNy14i1og8Ixg6I1Gz': { tier: 'growth', billing: 'annual' },    // $159/mo
+  'price_1SyfQFGNy14i1og8fTrCAFaS': { tier: 'scale', billing: 'monthly' },    // $499/mo
+  'price_1SyfQFGNy14i1og8DJu8DwfL': { tier: 'scale', billing: 'annual' },     // $399/mo
   // Royalty Pro add-on for LTD users
-  'price_1SwWtDGNy14i1og83ujVvVND': { tier: 'royalty_pro', billing: 'monthly', isAddOn: true },
+  'price_1SyfQGGNy14i1og8jvmoWMxo': { tier: 'royalty_pro', billing: 'monthly', isAddOn: true }, // $49/mo
+}
+
+// Map bundle types to credit amounts
+const BUNDLE_CREDITS: Record<string, { sms: number; email: number }> = {
+  'sms_bundle_100': { sms: 100, email: 0 },
+  'email_bundle_5000': { sms: 0, email: 5000 },
 }
 
 Deno.serve(async (req) => {
@@ -73,8 +79,32 @@ Deno.serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const organizationId = session.metadata?.organization_id
+        const purchaseType = session.metadata?.purchase_type
+        const bundleType = session.metadata?.bundle_type
 
-        if (organizationId && session.subscription) {
+        if (!organizationId) {
+          console.log('No organization ID in session metadata')
+          break
+        }
+
+        // Handle bundle purchases (one-time payments)
+        if (purchaseType === 'bundle' && bundleType) {
+          const credits = BUNDLE_CREDITS[bundleType]
+          if (credits) {
+            // Add credits using the add_messaging_credits RPC
+            await supabase.rpc('add_messaging_credits', {
+              p_organization_id: organizationId,
+              p_email_credits: credits.email,
+              p_sms_credits: credits.sms,
+            })
+
+            console.log(`Organization ${organizationId} purchased ${bundleType}: +${credits.email} emails, +${credits.sms} SMS`)
+          }
+          break
+        }
+
+        // Handle subscription purchases
+        if (session.subscription) {
           // Get subscription details
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
           const priceId = subscription.items.data[0]?.price.id

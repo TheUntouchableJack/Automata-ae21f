@@ -246,14 +246,71 @@ function isInQuietHours(member: Member): boolean {
 }
 
 // ============================================================================
+// QUOTA CHECKING
+// ============================================================================
+
+interface QuotaCheckResult {
+  allowed: boolean
+  remaining: number
+  limit: number
+  error?: string
+}
+
+async function checkAndIncrementQuota(
+  supabase: SupabaseClient,
+  organizationId: string,
+  channel: 'email' | 'sms',
+  count: number = 1
+): Promise<QuotaCheckResult> {
+  try {
+    // Use the appropriate increment function based on channel
+    const rpcName = channel === 'sms' ? 'increment_sms_usage' : 'increment_email_usage'
+
+    const { data, error } = await supabase.rpc(rpcName, {
+      p_organization_id: organizationId,
+      p_count: count
+    })
+
+    if (error) {
+      console.error(`Quota check error for ${channel}:`, error)
+      // On error, allow sending (fail open) but log it
+      return { allowed: true, remaining: -1, limit: -1, error: error.message }
+    }
+
+    const result = data?.[0] || data
+    const limitReached = result?.limit_reached === true
+    const monthlyLimit = result?.monthly_limit || 0
+
+    if (limitReached) {
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: monthlyLimit,
+        error: `Monthly ${channel} limit reached (${monthlyLimit})`
+      }
+    }
+
+    return {
+      allowed: true,
+      remaining: monthlyLimit - (result?.new_count || 0),
+      limit: monthlyLimit
+    }
+  } catch (err) {
+    console.error(`Quota check exception for ${channel}:`, err)
+    // Fail open on exceptions
+    return { allowed: true, remaining: -1, limit: -1, error: (err as Error).message }
+  }
+}
+
+// ============================================================================
 // BATCH PROCESSOR
 // ============================================================================
 
 async function processBatch(
   supabase: SupabaseClient,
   batch: MessageBatch
-): Promise<{ delivered: number; failed: number; skipped: number }> {
-  const stats = { delivered: 0, failed: 0, skipped: 0 }
+): Promise<{ delivered: number; failed: number; skipped: number; quota_exceeded?: boolean }> {
+  const stats = { delivered: 0, failed: 0, skipped: 0, quota_exceeded: false }
 
   // Update status to sending
   await supabase
@@ -345,6 +402,25 @@ async function processBatch(
     const body = interpolate(batch.body)
 
     let result: { success: boolean; message_id?: string; error?: string }
+
+    // Check quota for email and SMS channels
+    if (batch.channel === 'email' || batch.channel === 'sms') {
+      const quotaCheck = await checkAndIncrementQuota(supabase, batch.organization_id, batch.channel, 1)
+
+      if (!quotaCheck.allowed) {
+        results.push({
+          member_id: member.id,
+          channel: batch.channel,
+          status: 'skipped',
+          error: quotaCheck.error || 'Quota exceeded'
+        })
+        stats.skipped++
+        stats.quota_exceeded = true
+        // Stop processing this batch if quota is exceeded
+        console.log(`Quota exceeded for org ${batch.organization_id}, stopping batch processing`)
+        break
+      }
+    }
 
     switch (batch.channel) {
       case 'email':

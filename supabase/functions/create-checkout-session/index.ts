@@ -13,18 +13,17 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') as string, {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Price IDs (public, safe to include)
-// TODO: Create new Stripe products with updated pricing and replace these IDs
+// Price IDs (public, safe to include) - Created Feb 2026
 const PRICES: Record<string, string> = {
-  // Subscription tiers (NEW PRICING - Feb 2026)
-  starter_monthly: 'price_1SwWtAGNy14i1og8Xplemzli',  // $79/mo (was $49)
-  starter_annual: 'price_1SwWtBGNy14i1og85EaQF2Vk',   // $63/mo billed annually (was $39)
-  growth_monthly: 'price_1SwWtBGNy14i1og8LAT4fAKf',   // $199/mo (was $149)
-  growth_annual: 'price_1SwWtCGNy14i1og8qcVXfjCK',    // $159/mo billed annually (was $119)
-  scale_monthly: 'price_1SwWtCGNy14i1og8pHjLGckq',    // $499/mo (was $399)
-  scale_annual: 'price_1SwWtDGNy14i1og8X3CPiBcd',     // $399/mo billed annually (was $319)
+  // Subscription tiers (Feb 2026 pricing)
+  starter_monthly: 'price_1SyfQDGNy14i1og8tkBn6MF7',  // $79/mo
+  starter_annual: 'price_1SyfQDGNy14i1og8r0NrGfNM',   // $63/mo billed annually
+  growth_monthly: 'price_1SyfQEGNy14i1og80NnddnzC',   // $199/mo
+  growth_annual: 'price_1SyfQEGNy14i1og8Ixg6I1Gz',    // $159/mo billed annually
+  scale_monthly: 'price_1SyfQFGNy14i1og8fTrCAFaS',    // $499/mo
+  scale_annual: 'price_1SyfQFGNy14i1og8DJu8DwfL',     // $399/mo billed annually
   // Royalty Pro add-on for LTD users
-  royalty_pro_monthly: 'price_1SwWtDGNy14i1og83ujVvVND', // $49/mo (was $39)
+  royalty_pro_monthly: 'price_1SyfQGGNy14i1og8jvmoWMxo', // $49/mo
   // Messaging bundles (one-time purchases)
   // TODO: Create these in Stripe
   // sms_bundle_100: 'price_XXX',    // $15 for 100 SMS

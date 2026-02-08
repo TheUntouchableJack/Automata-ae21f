@@ -401,11 +401,24 @@ const CrownDashboard = (function() {
         if (!toggle) return;
 
         toggle.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const mode = btn.dataset.mode;
 
-                // Check if switching to autonomous and needs confirmation
+                // Check if switching to autonomous and user has capability
                 if (mode === 'autonomous' && modeState.current !== 'autonomous') {
+                    // Check plan capability using the new hasCapability function
+                    if (typeof hasCapability === 'function' && appState.organization) {
+                        const canUseAutonomous = hasCapability(appState.organization, 'autonomous_mode');
+                        if (!canUseAutonomous) {
+                            // Show upgrade message
+                            const message = typeof getFeatureUpgradeMessage === 'function'
+                                ? getFeatureUpgradeMessage('autonomous_mode', appState.organization)
+                                : 'Autonomous Mode is available on Growth ($199/mo). Upgrade to let Royal send campaigns without asking.';
+                            showStatusMessage(message, 'info', 5000);
+                            return;
+                        }
+                    }
+
                     const alreadyConfirmed = localStorage.getItem(STORAGE_KEYS.AUTONOMOUS_CONFIRMED) === 'true';
                     if (!alreadyConfirmed) {
                         showAutonomousModal();
@@ -1909,8 +1922,8 @@ const CrownDashboard = (function() {
     }
 
     async function loadPromptUsage() {
-        // Check plan limits using existing function
-        if (typeof PlanLimits === 'undefined' || typeof AppUtils === 'undefined' || typeof getCurrentUser !== 'function') return;
+        // Check plan limits using capability-based functions
+        if (typeof AppUtils === 'undefined' || typeof getCurrentUser !== 'function') return;
 
         try {
             const user = await getCurrentUser();
@@ -1920,19 +1933,27 @@ const CrownDashboard = (function() {
             if (!promptState.orgData || !promptState.orgData.organization) return;
 
             const org = promptState.orgData.organization;
-            const canUse = await PlanLimits.canUseIntelligence(org);
 
-            promptState.usage.allowed = canUse.allowed;
-            promptState.usage.message = canUse.message;
+            // Use new capability-based check (royal_chat)
+            const canUse = typeof canUseRoyalAI === 'function'
+                ? canUseRoyalAI(org)
+                : (typeof PlanLimits !== 'undefined' && PlanLimits.canUseIntelligence
+                    ? (await PlanLimits.canUseIntelligence(org)).allowed
+                    : true);
 
-            // Get limit details from plan
-            const tier = org.subscription_tier || org.plan_type || 'free';
-            const limits = PlanLimits.PLANS[tier] || PlanLimits.PLANS.free;
-            promptState.usage.limit = limits.intelligence_monthly;
-            promptState.usage.unlimited = limits.intelligence_monthly === -1 || limits.intelligence_monthly === Infinity;
+            promptState.usage.allowed = canUse;
+            promptState.usage.message = !canUse && typeof getFeatureUpgradeMessage === 'function'
+                ? getFeatureUpgradeMessage('royal_chat', org)
+                : '';
 
-            // Count usage this month (same as recommendations)
-            promptState.usage.used = canUse.currentUsage || 0;
+            // Get limit details from plan using getOrgLimits
+            const limits = typeof getOrgLimits === 'function'
+                ? getOrgLimits(org)
+                : (typeof PlanLimits !== 'undefined' ? PlanLimits.getOrgLimits(org) : {});
+
+            // No monthly quota anymore - Royal AI is capability-based
+            promptState.usage.limit = limits.max_automations || 0;
+            promptState.usage.unlimited = limits.max_automations === -1;
 
             updatePromptUI();
         } catch (e) {

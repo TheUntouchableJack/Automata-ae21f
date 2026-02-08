@@ -24,69 +24,89 @@ if (!process.env.STRIPE_SECRET_KEY) {
 const isLive = process.env.STRIPE_SECRET_KEY.startsWith('sk_live_');
 console.log(`\n🔑 Running in ${isLive ? 'LIVE' : 'TEST'} mode\n`);
 
-// Royalty subscription products
+// Royalty subscription products - Feb 2026 pricing
 const products = [
     {
         name: 'Royalty Starter',
-        description: 'For small businesses. Up to 500 members, 30 AI insights/month, AI-built loyalty program.',
+        description: 'Royal Helps You. 500 members, 2,000 emails/mo, 100 SMS/mo, 5 automations (review mode).',
         metadata: {
             tier: 'starter',
             members: '500',
-            intelligence_monthly: '30',
-            automations: 'true',
-            ai_setup: 'true',
+            emails_monthly: '2000',
+            sms_monthly: '100',
+            max_automations: '5',
+            royal_chat: 'true',
+            review_mode: 'true',
+            autonomous_mode: 'false',
             white_label: 'false'
         },
         prices: [
-            { amount: 4900, interval: 'month', nickname: 'Starter Monthly', lookup_key: 'starter_monthly' },
-            { amount: 46800, interval: 'year', nickname: 'Starter Annual (Save 20%)', lookup_key: 'starter_annual' } // $39/mo
+            { amount: 7900, interval: 'month', nickname: 'Starter Monthly', lookup_key: 'starter_monthly' },
+            { amount: 75600, interval: 'year', nickname: 'Starter Annual (Save 20%)', lookup_key: 'starter_annual' } // $63/mo
         ]
     },
     {
         name: 'Royalty Growth',
-        description: 'For growing businesses. Up to 2,000 members, 100 AI insights/month, priority support.',
+        description: 'Royal Runs Your Marketing. 2,000 members, 10,000 emails/mo, 500 SMS/mo, unlimited automations, Autonomous Mode.',
         metadata: {
             tier: 'growth',
             members: '2000',
-            intelligence_monthly: '100',
-            automations: 'true',
-            ai_setup: 'true',
-            white_label: 'false',
-            priority_support: 'true'
+            emails_monthly: '10000',
+            sms_monthly: '500',
+            max_automations: 'unlimited',
+            royal_chat: 'true',
+            review_mode: 'true',
+            autonomous_mode: 'true',
+            business_learning: 'true',
+            fatigue_protection: 'true',
+            priority_support: 'true',
+            white_label: 'false'
         },
         prices: [
-            { amount: 14900, interval: 'month', nickname: 'Growth Monthly', lookup_key: 'growth_monthly' },
-            { amount: 142800, interval: 'year', nickname: 'Growth Annual (Save 20%)', lookup_key: 'growth_annual' } // $119/mo
+            { amount: 19900, interval: 'month', nickname: 'Growth Monthly', lookup_key: 'growth_monthly' },
+            { amount: 190800, interval: 'year', nickname: 'Growth Annual (Save 20%)', lookup_key: 'growth_annual' } // $159/mo
         ]
     },
     {
         name: 'Royalty Scale',
-        description: 'For multi-location businesses. Unlimited members, unlimited AI insights, white-label branding.',
+        description: 'Royal Proves Your ROI. Unlimited members, 50,000 emails/mo, 2,000 SMS/mo, Visit Attribution, white-label.',
         metadata: {
             tier: 'scale',
             members: 'unlimited',
-            intelligence_monthly: 'unlimited',
-            automations: 'true',
-            ai_setup: 'true',
+            emails_monthly: '50000',
+            sms_monthly: '2000',
+            max_automations: 'unlimited',
+            royal_chat: 'true',
+            review_mode: 'true',
+            autonomous_mode: 'true',
+            business_learning: 'true',
+            fatigue_protection: 'true',
+            visit_attribution: 'true',
             white_label: 'true',
-            priority_support: 'true'
+            priority_support: 'true',
+            dedicated_support: 'true'
         },
         prices: [
-            { amount: 39900, interval: 'month', nickname: 'Scale Monthly', lookup_key: 'scale_monthly' },
-            { amount: 382800, interval: 'year', nickname: 'Scale Annual (Save 20%)', lookup_key: 'scale_annual' } // $319/mo
+            { amount: 49900, interval: 'month', nickname: 'Scale Monthly', lookup_key: 'scale_monthly' },
+            { amount: 478800, interval: 'year', nickname: 'Scale Annual (Save 20%)', lookup_key: 'scale_annual' } // $399/mo
         ]
     },
     {
         name: 'Royalty Pro Add-on',
-        description: 'Unlock unlimited AI Intelligence and white-label branding for lifetime deal holders.',
+        description: 'Let Royal Run Your Marketing. For AppSumo LTD users: unlocks Royal AI, +10,000 emails, 500 SMS, white-label.',
         metadata: {
             tier: 'royalty_pro',
             is_addon: 'true',
-            intelligence_monthly: 'unlimited',
+            emails_monthly_bonus: '10000',
+            sms_monthly: '500',
+            royal_chat: 'true',
+            autonomous_mode: 'true',
+            business_learning: 'true',
+            visit_attribution: 'true',
             white_label: 'true'
         },
         prices: [
-            { amount: 3900, interval: 'month', nickname: 'Royalty Pro Monthly', lookup_key: 'royalty_pro_monthly' }
+            { amount: 4900, interval: 'month', nickname: 'Royalty Pro Monthly', lookup_key: 'royalty_pro_monthly' }
         ]
     }
 ];
@@ -181,11 +201,11 @@ async function main() {
     console.log('}\n');
 
     console.log('✅ Done! Copy the price IDs above into your Edge Functions.');
-    console.log('\n📝 Summary:');
-    console.log('   - Starter: $49/mo or $39/mo annual');
-    console.log('   - Growth: $149/mo or $119/mo annual');
-    console.log('   - Scale: $399/mo or $319/mo annual');
-    console.log('   - Royalty Pro: $39/mo (add-on for LTD users)\n');
+    console.log('\n📝 Summary (Feb 2026 pricing):');
+    console.log('   - Starter: $79/mo or $63/mo annual');
+    console.log('   - Growth: $199/mo or $159/mo annual');
+    console.log('   - Scale: $499/mo or $399/mo annual');
+    console.log('   - Royalty Pro: $49/mo (add-on for LTD users)\n');
 }
 
 main().catch(console.error);
