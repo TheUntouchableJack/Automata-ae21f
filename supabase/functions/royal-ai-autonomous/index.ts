@@ -14,7 +14,7 @@ const corsHeaders = {
 }
 
 // ============================================================================
-// ACTION EXECUTORS
+// TYPES
 // ============================================================================
 
 interface ExecutionResult {
@@ -22,6 +22,165 @@ interface ExecutionResult {
   data?: Record<string, unknown>
   error?: string
 }
+
+interface RateLimitInfo {
+  allowed: boolean
+  remaining: number
+  limit: number
+  reason?: string
+}
+
+// ============================================================================
+// RATE LIMITING
+// ============================================================================
+
+/**
+ * Check if organization has remaining action quota for today
+ */
+async function checkRateLimit(
+  supabase: SupabaseClient,
+  orgId: string
+): Promise<RateLimitInfo> {
+  // Get org's daily limit
+  const { data: limit } = await supabase
+    .from('ai_rate_limits')
+    .select('daily_actions')
+    .eq('organization_id', orgId)
+    .single()
+
+  const dailyLimit = limit?.daily_actions || 20  // Default 20 actions/day
+
+  // Count today's executed actions
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const { count } = await supabase
+    .from('ai_action_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .in('status', ['executed', 'executing'])
+    .gte('executed_at', todayStart.toISOString())
+
+  const used = count || 0
+  const remaining = Math.max(0, dailyLimit - used)
+
+  return {
+    allowed: remaining > 0,
+    remaining,
+    limit: dailyLimit,
+    reason: remaining <= 0 ? 'Daily action limit reached' : undefined
+  }
+}
+
+// ============================================================================
+// AUTOMATION EXECUTION TRACKING
+// ============================================================================
+
+/**
+ * Record execution in automation_executions table for tracking
+ */
+async function recordAutomationExecution(
+  supabase: SupabaseClient,
+  action: Record<string, unknown>,
+  result: ExecutionResult
+): Promise<string | null> {
+  const automationDefId = action.automation_definition_id as string | null
+  const payload = action.action_payload as Record<string, unknown>
+  const appId = payload.app_id as string
+
+  // Only record if linked to an automation definition
+  if (!automationDefId) {
+    return null
+  }
+
+  const { data, error } = await supabase
+    .from('automation_executions')
+    .insert({
+      automation_id: automationDefId,
+      app_id: appId,
+      trigger_source: 'ai_autonomous',
+      trigger_context: {
+        action_queue_id: action.id,
+        action_type: action.action_type,
+        scheduled_for: action.scheduled_for
+      },
+      execution_result: result.data || {},
+      status: result.success ? 'success' : 'failed',
+      error_message: result.error
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    console.log('Failed to record automation execution:', error.message)
+    return null
+  }
+
+  return data?.id || null
+}
+
+/**
+ * Measure outcomes for enable_automation actions
+ */
+async function measureEnableAutomationOutcome(
+  supabase: SupabaseClient,
+  action: Record<string, unknown>
+): Promise<{ success_score: number; outcomes: MeasuredOutcome[] }> {
+  const payload = action.action_payload as Record<string, unknown>
+  const automationType = payload.automation_type as string
+  const appId = payload.app_id as string
+  const executedAt = new Date(action.executed_at as string)
+  const outcomes: MeasuredOutcome[] = []
+
+  // Find executions of this automation since it was enabled
+  const { count: executionCount } = await supabase
+    .from('automation_executions')
+    .select('id', { count: 'exact', head: true })
+    .eq('app_id', appId)
+    .gte('created_at', executedAt.toISOString())
+
+  // Count successful executions
+  const { count: successCount } = await supabase
+    .from('automation_executions')
+    .select('id', { count: 'exact', head: true })
+    .eq('app_id', appId)
+    .eq('status', 'success')
+    .gte('created_at', executedAt.toISOString())
+
+  const totalExecs = executionCount || 0
+  const successExecs = successCount || 0
+  const successRate = totalExecs > 0 ? successExecs / totalExecs : 0
+
+  outcomes.push({
+    metric: 'automation_executions',
+    value: totalExecs
+  })
+
+  outcomes.push({
+    metric: 'automation_success_rate',
+    value: successRate
+  })
+
+  // Score based on execution count and success rate
+  let successScore = 0.5
+  if (totalExecs >= 5 && successRate > 0.8) {
+    successScore = 0.9  // Highly effective
+  } else if (totalExecs >= 3 && successRate > 0.6) {
+    successScore = 0.7  // Moderately effective
+  } else if (totalExecs > 0 && successRate > 0.5) {
+    successScore = 0.5  // Neutral
+  } else if (totalExecs === 0) {
+    successScore = 0.5  // No data yet, neutral
+  } else {
+    successScore = 0.3  // Low effectiveness
+  }
+
+  return { success_score: successScore, outcomes }
+}
+
+// ============================================================================
+// ACTION EXECUTORS
+// ============================================================================
 
 /**
  * Execute a create_announcement action
@@ -493,7 +652,27 @@ async function measureActionOutcome(
 }
 
 /**
- * Save outcome learnings to knowledge store
+ * Determine contextual layer and category based on action type
+ */
+function getKnowledgeContext(actionType: string): { layer: string; category: string } {
+  switch (actionType) {
+    case 'create_announcement':
+      return { layer: 'operational', category: 'communication_effectiveness' }
+    case 'send_targeted_message':
+      return { layer: 'customer', category: 'engagement_drivers' }
+    case 'create_flash_promotion':
+      return { layer: 'growth', category: 'pricing_strategy' }
+    case 'award_bonus_points':
+      return { layer: 'customer', category: 'retention_mechanics' }
+    case 'enable_automation':
+      return { layer: 'operational', category: 'automation_performance' }
+    default:
+      return { layer: 'growth', category: 'action_outcome' }
+  }
+}
+
+/**
+ * Save outcome learnings to knowledge store with contextual layers
  */
 async function saveOutcomeLearning(
   supabase: SupabaseClient,
@@ -504,6 +683,7 @@ async function saveOutcomeLearning(
 ): Promise<void> {
   const actionType = action.action_type as string
   const payload = action.action_payload as Record<string, unknown>
+  const { layer, category } = getKnowledgeContext(actionType)
 
   let fact = ''
   let importance: 'critical' | 'high' | 'medium' | 'low' = 'medium'
@@ -512,20 +692,24 @@ async function saveOutcomeLearning(
     // Successful action - record what worked
     switch (actionType) {
       case 'create_announcement':
-        fact = `Announcement "${payload.title}" was effective (${Math.round(successScore * 100)}% success)`
+        fact = `Announcement "${payload.title}" was effective (${Math.round(successScore * 100)}% success score)`
         importance = 'high'
         break
       case 'send_targeted_message':
-        fact = `Targeted message to ${payload.segment} segment achieved ${Math.round(outcomes[0]?.value * 100)}% activation`
+        fact = `Targeted message to ${payload.segment} segment achieved ${Math.round((outcomes[0]?.value || 0) * 100)}% activation rate`
         importance = 'high'
         break
       case 'create_flash_promotion':
-        fact = `${payload.multiplier}x points promotion drove ${outcomes[0]?.value || 0} transactions`
+        fact = `${payload.multiplier}x points promotion drove ${outcomes[0]?.value || 0} transactions (successful)`
         importance = 'high'
         break
       case 'award_bonus_points':
-        fact = `Bonus points (${payload.points}) had ${Math.round(outcomes[0]?.value * 100)}% return rate`
+        fact = `Bonus points (${payload.points} pts) had ${Math.round((outcomes[0]?.value || 0) * 100)}% return rate`
         importance = 'medium'
+        break
+      case 'enable_automation':
+        fact = `${payload.automation_type} automation effective: ${outcomes[0]?.value || 0} executions, ${Math.round((outcomes[1]?.value || 0) * 100)}% success rate`
+        importance = 'high'
         break
     }
   } else if (successScore < 0.4) {
@@ -536,11 +720,19 @@ async function saveOutcomeLearning(
         importance = 'medium'
         break
       case 'send_targeted_message':
-        fact = `Message to ${payload.segment} segment underperformed - try different approach`
+        fact = `Message to ${payload.segment} segment underperformed - try different approach or timing`
         importance = 'medium'
         break
       case 'create_flash_promotion':
         fact = `${payload.multiplier}x promotion didn't lift transactions - may need higher multiplier or better targeting`
+        importance = 'medium'
+        break
+      case 'award_bonus_points':
+        fact = `Bonus points to ${payload.segment || 'segment'} didn't drive returns - consider timing or point amount`
+        importance = 'low'
+        break
+      case 'enable_automation':
+        fact = `${payload.automation_type} automation underperforming: ${outcomes[0]?.value || 0} executions, ${Math.round((outcomes[1]?.value || 0) * 100)}% success rate - needs tuning`
         importance = 'medium'
         break
     }
@@ -551,13 +743,19 @@ async function saveOutcomeLearning(
       .from('business_knowledge')
       .insert({
         organization_id: orgId,
-        layer: 'growth',
-        category: 'action_outcome',
+        layer,
+        category,
         fact,
         confidence: successScore,
         importance,
         source_type: 'inferred',
-        status: 'active'
+        status: 'active',
+        trigger_context: {
+          action_id: action.id,
+          action_type: actionType,
+          executed_at: action.executed_at,
+          measured_at: new Date().toISOString()
+        }
       })
   }
 }
@@ -570,8 +768,10 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
   executed: number
   failed: number
   measured: number
+  retried: number
+  rateLimited: number
 }> {
-  const stats = { executed: 0, failed: 0, measured: 0 }
+  const stats = { executed: 0, failed: 0, measured: 0, retried: 0, rateLimited: 0 }
 
   // 1. Process approved actions that are past their scheduled time
   const { data: pendingActions } = await supabase
@@ -586,6 +786,14 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
     const actionType = action.action_type as string
     const payload = action.action_payload as Record<string, unknown>
     const orgId = action.organization_id as string
+
+    // Check rate limit before executing
+    const rateLimit = await checkRateLimit(supabase, orgId)
+    if (!rateLimit.allowed) {
+      console.log(`Rate limited org ${orgId}: ${rateLimit.reason}`)
+      stats.rateLimited++
+      continue  // Skip this action, will retry next run
+    }
 
     // Mark as executing
     await supabase
@@ -631,6 +839,11 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
       })
       .eq('id', actionId)
 
+    // Record in automation_executions if linked to automation
+    if (result.success) {
+      await recordAutomationExecution(supabase, action, result)
+    }
+
     // Audit log
     await supabase
       .from('ai_audit_log')
@@ -653,7 +866,49 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
     }
   }
 
-  // 2. Measure outcomes for actions executed 24+ hours ago
+  // 2. Retry failed actions with exponential backoff (max 3 retries)
+  const { data: failedActions } = await supabase
+    .from('ai_action_queue')
+    .select('*')
+    .eq('status', 'failed')
+    .lt('retry_count', 3)
+    .limit(5)
+
+  for (const action of failedActions || []) {
+    const retryCount = (action.retry_count as number) || 0
+    const backoffMinutes = Math.pow(2, retryCount) * 5  // 5, 10, 20 minutes
+
+    // Calculate next retry time
+    const nextRetry = new Date()
+    nextRetry.setMinutes(nextRetry.getMinutes() + backoffMinutes)
+
+    // Re-queue for retry
+    await supabase
+      .from('ai_action_queue')
+      .update({
+        status: 'approved',
+        scheduled_for: nextRetry.toISOString(),
+        retry_count: retryCount + 1,
+        error_message: `Retry ${retryCount + 1}/3 scheduled for ${nextRetry.toISOString()}`,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', action.id)
+
+    stats.retried++
+  }
+
+  // 3. Mark actions that exhausted retries as permanently failed
+  await supabase
+    .from('ai_action_queue')
+    .update({
+      status: 'permanently_failed',
+      error_message: 'Max retries (3) exceeded',
+      updated_at: new Date().toISOString()
+    })
+    .eq('status', 'failed')
+    .gte('retry_count', 3)
+
+  // 4. Measure outcomes for actions executed 24+ hours ago
   const measureCutoff = new Date()
   measureCutoff.setHours(measureCutoff.getHours() - 24)
 
@@ -666,7 +921,17 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
     .limit(10)
 
   for (const action of actionsToMeasure || []) {
-    const { success_score, outcomes } = await measureActionOutcome(supabase, action)
+    const actionType = action.action_type as string
+    let outcome: { success_score: number; outcomes: MeasuredOutcome[] }
+
+    // Use specific measurement for enable_automation
+    if (actionType === 'enable_automation') {
+      outcome = await measureEnableAutomationOutcome(supabase, action)
+    } else {
+      outcome = await measureActionOutcome(supabase, action)
+    }
+
+    const { success_score, outcomes } = outcome
 
     // Update with measured outcome
     await supabase
@@ -691,7 +956,7 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
     stats.measured++
   }
 
-  // 3. Expire old pending actions
+  // 5. Expire old pending actions
   const expireCutoff = new Date()
   await supabase
     .from('ai_action_queue')
@@ -723,7 +988,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         timestamp: new Date().toISOString(),
-        stats
+        stats,
+        summary: `Executed: ${stats.executed}, Failed: ${stats.failed}, Retried: ${stats.retried}, Measured: ${stats.measured}, Rate Limited: ${stats.rateLimited}`
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
