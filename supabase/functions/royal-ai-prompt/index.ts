@@ -759,6 +759,66 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
     }
   },
   {
+    name: 'pause_automation',
+    description: 'Pause an automation due to poor performance (high bounce rate, low engagement). Records the reason and notifies the owner.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        automation_id: {
+          type: 'string',
+          description: 'UUID of the automation to pause'
+        },
+        reason: {
+          type: 'string',
+          description: 'Reason for pausing (e.g., "High bounce rate of 18%", "Low engagement")'
+        },
+        metrics: {
+          type: 'object',
+          description: 'Current performance metrics snapshot',
+          properties: {
+            bounce_rate_pct: { type: 'number' },
+            open_rate_pct: { type: 'number' },
+            click_rate_pct: { type: 'number' },
+            total_sent: { type: 'number' }
+          }
+        }
+      },
+      required: ['automation_id', 'reason']
+    }
+  },
+  {
+    name: 'get_recovery_suggestions',
+    description: 'Get automations that have been paused for 7+ days and are eligible for recovery. Returns suggested recovery configurations with reduced frequency.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        min_days_paused: {
+          type: 'number',
+          description: 'Minimum days an automation must be paused (default: 7)'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'recover_automation',
+    description: 'Re-enable a paused automation with reduced frequency settings. Use after reviewing recovery suggestions.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        automation_id: {
+          type: 'string',
+          description: 'UUID of the paused automation to recover'
+        },
+        new_frequency_days: {
+          type: 'number',
+          description: 'New max_frequency_days setting (should be higher than original to reduce send frequency)'
+        }
+      },
+      required: ['automation_id']
+    }
+  },
+  {
     name: 'save_knowledge',
     description: 'Save a learned fact to the business knowledge store. Use when you learn important business information that should be remembered.',
     input_schema: {
@@ -1948,6 +2008,159 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
         action: enable ? 'enable' : 'disable',
         automation_type: automationType,
         auto_approved: queueResult?.auto_approved
+      }
+    }
+  },
+
+  pause_automation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId } = ctx
+    const automationId = input.automation_id as string
+    const reason = input.reason as string
+    const metrics = input.metrics as Record<string, unknown> | undefined
+
+    if (!automationId || !reason) {
+      return { success: false, error: 'automation_id and reason are required' }
+    }
+
+    // Get automation details first
+    const { data: automation, error: fetchError } = await supabase
+      .from('automation_definitions')
+      .select('id, name, organization_id, is_enabled')
+      .eq('id', automationId)
+      .eq('organization_id', organizationId)
+      .single()
+
+    if (fetchError || !automation) {
+      return { success: false, error: 'Automation not found or access denied' }
+    }
+
+    if (!automation.is_enabled) {
+      return { success: false, error: 'Automation is already disabled' }
+    }
+
+    // Pause the automation
+    const { error: updateError } = await supabase
+      .from('automation_definitions')
+      .update({
+        is_enabled: false,
+        paused_at: new Date().toISOString(),
+        pause_reason: reason,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', automationId)
+
+    if (updateError) {
+      return { success: false, error: updateError.message }
+    }
+
+    // Log the pause event
+    await supabase
+      .from('automation_pause_events')
+      .insert({
+        automation_id: automationId,
+        organization_id: organizationId,
+        event_type: 'manual_pause',
+        reason,
+        metrics_snapshot: metrics ? {
+          bounce_rate_pct: metrics.bounce_rate_pct,
+          open_rate_pct: metrics.open_rate_pct,
+          click_rate_pct: metrics.click_rate_pct,
+          total_sent: metrics.total_sent
+        } : null,
+        triggered_by: 'ai'
+      })
+
+    return {
+      success: true,
+      data: {
+        automation_id: automationId,
+        name: automation.name,
+        paused: true,
+        reason
+      }
+    }
+  },
+
+  get_recovery_suggestions: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId } = ctx
+    const minDaysPaused = (input.min_days_paused as number) || 7
+
+    // Call the RPC function
+    const { data, error } = await supabase.rpc('get_recovery_candidates', {
+      p_organization_id: organizationId,
+      p_min_days_paused: minDaysPaused
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    // For each candidate, generate a recovery suggestion
+    const suggestions = (data || []).map((candidate: Record<string, unknown>) => {
+      const originalFreq = (candidate.original_frequency_days as number) || 7
+      const suggestedFreq = Math.max(originalFreq * 2, 7)
+
+      return {
+        automation_id: candidate.automation_id,
+        name: candidate.name,
+        pause_reason: candidate.pause_reason,
+        days_paused: candidate.days_paused,
+        recovery_attempts: candidate.recovery_attempts,
+        suggested_config: {
+          original_frequency_days: originalFreq,
+          suggested_frequency_days: suggestedFreq,
+          frequency_reduction_pct: 50
+        }
+      }
+    })
+
+    return {
+      success: true,
+      data: {
+        candidates: suggestions,
+        count: suggestions.length,
+        min_days_paused: minDaysPaused
+      }
+    }
+  },
+
+  recover_automation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId } = ctx
+    const automationId = input.automation_id as string
+    const newFrequencyDays = input.new_frequency_days as number | undefined
+
+    if (!automationId) {
+      return { success: false, error: 'automation_id is required' }
+    }
+
+    // Build recovery config
+    const recoveryConfig = newFrequencyDays
+      ? { suggested_frequency_days: newFrequencyDays }
+      : null
+
+    // Call the execute_automation_recovery RPC
+    const { data, error } = await supabase.rpc('execute_automation_recovery', {
+      p_automation_id: automationId,
+      p_recovery_config: recoveryConfig
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    const result = data as Record<string, unknown>
+    if (!result.success) {
+      return { success: false, error: result.error as string }
+    }
+
+    return {
+      success: true,
+      data: {
+        automation_id: result.automation_id,
+        name: result.name,
+        recovered: true,
+        new_frequency_days: result.new_frequency_days,
+        recovery_attempt: result.recovery_attempt
       }
     }
   },

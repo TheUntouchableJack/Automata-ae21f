@@ -482,6 +482,162 @@ async function executeAwardPoints(
 }
 
 /**
+ * Execute a send_weekly_digest action
+ */
+async function executeSendWeeklyDigest(
+  supabase: SupabaseClient,
+  payload: Record<string, unknown>,
+  organizationId: string
+): Promise<ExecutionResult> {
+  const digestData = payload.digest_data as Record<string, unknown>
+  const weekStart = payload.week_start as string
+  const weekEnd = payload.week_end as string
+
+  if (!digestData) {
+    return { success: false, error: 'No digest data provided' }
+  }
+
+  // Get organization owner email
+  const { data: owner, error: ownerError } = await supabase
+    .from('organization_members')
+    .select(`
+      profiles!inner(id, email, first_name)
+    `)
+    .eq('organization_id', organizationId)
+    .eq('role', 'owner')
+    .single()
+
+  if (ownerError || !owner?.profiles?.email) {
+    log('warn', 'Owner email not found for digest', { organizationId, error: ownerError?.message })
+    return { success: false, error: 'Owner email not found' }
+  }
+
+  const ownerEmail = owner.profiles.email as string
+  const ownerName = (owner.profiles.first_name as string) || 'there'
+
+  // Format digest email
+  const emailSubject = `Weekly Automation Report: ${weekStart} - ${weekEnd}`
+  const emailBody = formatDigestEmail(digestData, ownerName)
+
+  // Get organization's app for message batch
+  const { data: app } = await supabase
+    .from('customer_apps')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .limit(1)
+    .single()
+
+  if (!app) {
+    log('warn', 'No app found for organization', { organizationId })
+    return { success: false, error: 'No app found for organization' }
+  }
+
+  // Create message batch for digest email
+  const { data: batch, error: batchError } = await supabase
+    .from('app_message_batches')
+    .insert({
+      app_id: app.id,
+      organization_id: organizationId,
+      channel: 'email',
+      subject: emailSubject,
+      body: emailBody,
+      segment: 'custom',
+      member_ids: [],  // Not member-targeted, this is owner-targeted
+      created_by: 'automation',
+      status: 'scheduled',
+      scheduled_for: new Date().toISOString(),
+      total_recipients: 1
+    })
+    .select('id')
+    .single()
+
+  if (batchError) {
+    log('error', 'Failed to create digest batch', { error: batchError.message })
+    return { success: false, error: batchError.message }
+  }
+
+  // Mark digest snapshot as sent
+  await supabase
+    .from('weekly_digest_snapshots')
+    .update({
+      digest_sent_at: new Date().toISOString(),
+      digest_channel: 'email'
+    })
+    .eq('organization_id', organizationId)
+    .eq('week_start', weekStart)
+
+  log('info', 'Weekly digest queued', { organizationId, batchId: batch?.id, recipient: ownerEmail })
+
+  return {
+    success: true,
+    data: {
+      batch_id: batch?.id,
+      recipient: ownerEmail,
+      week_start: weekStart,
+      week_end: weekEnd
+    }
+  }
+}
+
+/**
+ * Format digest email content
+ */
+function formatDigestEmail(digest: Record<string, unknown>, firstName: string): string {
+  const topPerformers = (digest.top_performers as Array<Record<string, unknown>>) || []
+  const underperformers = (digest.underperformers as Array<Record<string, unknown>>) || []
+  const newlyPaused = (digest.newly_paused as Array<Record<string, unknown>>) || []
+  const recoveryCandidates = (digest.recovery_candidates as Array<Record<string, unknown>>) || []
+
+  let body = `Hi ${firstName},\n\n`
+  body += `Here's your weekly automation performance summary for ${digest.week_start} to ${digest.week_end}.\n\n`
+
+  body += `=== OVERVIEW ===\n`
+  body += `Total Automations: ${digest.total_automations}\n`
+  body += `Active: ${digest.active_automations} | Paused: ${digest.paused_automations}\n`
+  body += `Messages Sent: ${digest.total_messages_sent || 0}\n`
+  body += `Avg Open Rate: ${(digest.avg_open_rate as number)?.toFixed(1) || 0}%\n\n`
+
+  if (topPerformers.length > 0) {
+    body += `=== TOP PERFORMERS ===\n`
+    topPerformers.forEach((p) => {
+      body += `- ${p.name}: ${p.open_rate_pct}% open rate (${p.total_sent} sent)\n`
+    })
+    body += `\n`
+  }
+
+  if (underperformers.length > 0) {
+    body += `=== NEEDS ATTENTION ===\n`
+    underperformers.forEach((u) => {
+      const issue = u.issue === 'high_bounce' ? 'high bounce rate' : 'low open rate'
+      body += `- ${u.name}: ${issue} (${u.open_rate_pct}% opens, ${u.bounce_rate_pct}% bounces)\n`
+    })
+    body += `\n`
+  }
+
+  if (newlyPaused.length > 0) {
+    body += `=== AUTO-PAUSED THIS WEEK ===\n`
+    newlyPaused.forEach((p) => {
+      body += `- ${p.name}: ${p.reason}\n`
+    })
+    body += `\n`
+  }
+
+  if (recoveryCandidates.length > 0) {
+    body += `=== RECOVERY CANDIDATES ===\n`
+    body += `These automations have been paused for 7+ days and may be ready to try again:\n`
+    recoveryCandidates.forEach((r) => {
+      body += `- ${r.name} (paused ${r.days_paused} days)\n`
+    })
+    body += `\n`
+  }
+
+  body += `View full details in your Intelligence dashboard.\n\n`
+  body += `- Your Royalty AI`
+
+  return body
+}
+
+/**
  * Execute an enable_automation action
  */
 async function executeEnableAutomation(
@@ -909,6 +1065,9 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
           break
         case 'enable_automation':
           result = await executeEnableAutomation(supabase, payload)
+          break
+        case 'send_weekly_digest':
+          result = await executeSendWeeklyDigest(supabase, payload, orgId)
           break
         default:
           result = { success: false, error: `Unknown action type: ${actionType}` }
