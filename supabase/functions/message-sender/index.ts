@@ -9,6 +9,12 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const resendApiKey = Deno.env.get('RESEND_API_KEY')
 
+// Twilio configuration
+const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID')
+const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN')
+const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER')
+const twilioWebhookUrl = `${supabaseUrl}/functions/v1/twilio-webhook`
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://royaltyapp.ai',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -157,7 +163,7 @@ async function sendInApp(
 }
 
 // ============================================================================
-// SMS (Twilio - stubbed)
+// SMS (Twilio)
 // ============================================================================
 
 async function sendSms(
@@ -168,9 +174,46 @@ async function sendSms(
     return { success: false, error: 'No phone number' }
   }
 
-  // Stubbed - would use Twilio
-  console.log('[STUB] Would send SMS:', { phone: phone.slice(0, 6) + '***', body: body.slice(0, 50) })
-  return { success: true, message_id: `stub_sms_${Date.now()}` }
+  // Check if Twilio is configured
+  if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+    console.log('[STUB] Would send SMS:', { phone: phone.slice(0, 6) + '***', body: body.slice(0, 50) })
+    return { success: true, message_id: `stub_sms_${Date.now()}` }
+  }
+
+  // Real Twilio API call
+  try {
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(twilioAccountSid + ':' + twilioAuthToken)}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          To: phone,
+          From: twilioPhoneNumber,
+          Body: body,
+          StatusCallback: twilioWebhookUrl
+        })
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok || data.error_code) {
+      console.error('Twilio API error:', data)
+      return {
+        success: false,
+        error: data.message || data.error_message || 'Twilio API error'
+      }
+    }
+
+    return { success: true, message_id: data.sid }
+  } catch (error) {
+    console.error('Twilio request failed:', error)
+    return { success: false, error: (error as Error).message }
+  }
 }
 
 // ============================================================================
