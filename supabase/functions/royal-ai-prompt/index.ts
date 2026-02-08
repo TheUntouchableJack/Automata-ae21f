@@ -1024,47 +1024,167 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   },
 
   // ---------------------------------------------------------------------------
-  // External Research Tools (Placeholder - will need search API integration)
+  // External Research Tools (Structured for Serper API integration)
   // ---------------------------------------------------------------------------
+
   search_competitors: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
-    const query = (input.query as string) || `${input.industry || 'business'} competitors ${input.location || ''}`.trim()
-    // TODO: Integrate with search API (Serper, SerpAPI, Brave Search)
-    return {
-      success: true,
-      data: {
-        query: query,
-        results: [],
-        note: 'Web search API not yet configured. Configure SEARCH_API_KEY for real results.'
-      },
-      metadata: { source: 'placeholder' }
+    const { supabase, organizationId } = ctx
+    const industry = (input.industry as string) || 'business'
+    const location = (input.location as string) || ''
+    const query = (input.query as string) || `${industry} competitors ${location}`.trim()
+    const serperKey = Deno.env.get('SERPER_API_KEY')
+
+    // Stub response - ready for Serper integration
+    if (!serperKey) {
+      const stubInsights = [
+        `To research ${industry} competitors${location ? ` in ${location}` : ''}, I would search for:`,
+        `• Direct competitors offering similar products/services`,
+        `• Their pricing models and market positioning`,
+        `• Customer reviews and satisfaction levels`,
+        `• Marketing strategies and channels used`
+      ]
+
+      // Save stub as knowledge to test the flow
+      await supabase.from('business_knowledge').insert({
+        organization_id: organizationId,
+        layer: 'market',
+        category: 'competition',
+        fact: `Research needed: ${industry} competitor analysis${location ? ` for ${location}` : ''}`,
+        confidence: 0.3,
+        importance: 'medium',
+        source_type: 'research_stub',
+        status: 'active'
+      }).select()
+
+      return {
+        success: true,
+        data: {
+          query,
+          insights: stubInsights,
+          results: [],
+          api_status: 'not_configured',
+          action_required: 'Add SERPER_API_KEY to Supabase secrets for live web search'
+        },
+        metadata: { source: 'stub', saved_to_knowledge: true }
+      }
     }
+
+    // TODO: Real Serper API call when key is present
+    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
   },
 
   search_regulations: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
-    const query = `${input.topic} regulations ${input.state || ''} ${input.industry || ''}`.trim()
-    return {
-      success: true,
-      data: { query, results: [], note: 'Web search API not yet configured.' },
-      metadata: { source: 'placeholder' }
+    const { supabase, organizationId } = ctx
+    const topic = (input.topic as string) || 'business'
+    const state = (input.state as string) || ''
+    const industry = (input.industry as string) || ''
+    const query = `${topic} regulations ${state} ${industry}`.trim()
+    const serperKey = Deno.env.get('SERPER_API_KEY')
+
+    if (!serperKey) {
+      const stubInsights = [
+        `Regulatory research for ${topic}${state ? ` in ${state}` : ''}:`,
+        `• Federal/state compliance requirements`,
+        `• Industry-specific licensing needs`,
+        `• Recent regulatory changes (2025-2026)`,
+        `• Common compliance pitfalls to avoid`
+      ]
+
+      await supabase.from('business_knowledge').insert({
+        organization_id: organizationId,
+        layer: 'market',
+        category: 'regulations',
+        fact: `Research needed: ${topic} regulatory requirements${state ? ` for ${state}` : ''}`,
+        confidence: 0.3,
+        importance: 'high',
+        source_type: 'research_stub',
+        status: 'active'
+      }).select()
+
+      return {
+        success: true,
+        data: { query, insights: stubInsights, results: [], api_status: 'not_configured' },
+        metadata: { source: 'stub', saved_to_knowledge: true }
+      }
     }
+
+    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
   },
 
   search_market_trends: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
-    const query = `${input.industry} ${input.topic || 'trends'} ${input.timeframe || '2026'}`.trim()
-    return {
-      success: true,
-      data: { query, results: [], note: 'Web search API not yet configured.' },
-      metadata: { source: 'placeholder' }
+    const { supabase, organizationId } = ctx
+    const industry = (input.industry as string) || 'retail'
+    const topic = (input.topic as string) || 'trends'
+    const timeframe = (input.timeframe as string) || '2026'
+    const query = `${industry} ${topic} ${timeframe}`.trim()
+    const serperKey = Deno.env.get('SERPER_API_KEY')
+
+    if (!serperKey) {
+      const stubInsights = [
+        `Market trend analysis for ${industry} (${timeframe}):`,
+        `• Consumer behavior shifts`,
+        `• Technology adoption patterns`,
+        `• Economic factors affecting the industry`,
+        `• Emerging opportunities and threats`
+      ]
+
+      await supabase.from('business_knowledge').insert({
+        organization_id: organizationId,
+        layer: 'market',
+        category: 'trends',
+        fact: `Research needed: ${industry} market trends for ${timeframe}`,
+        confidence: 0.3,
+        importance: 'medium',
+        source_type: 'research_stub',
+        status: 'active'
+      }).select()
+
+      return {
+        success: true,
+        data: { query, insights: stubInsights, results: [], api_status: 'not_configured' },
+        metadata: { source: 'stub', saved_to_knowledge: true }
+      }
     }
+
+    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
   },
 
   search_benchmarks: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
-    const query = `${input.industry} ${input.metric} benchmark ${input.business_size || 'small business'}`.trim()
-    return {
-      success: true,
-      data: { query, results: [], note: 'Web search API not yet configured.' },
-      metadata: { source: 'placeholder' }
+    const { supabase, organizationId } = ctx
+    const industry = (input.industry as string) || 'retail'
+    const metric = (input.metric as string) || 'customer retention'
+    const businessSize = (input.business_size as string) || 'small business'
+    const query = `${industry} ${metric} benchmark ${businessSize}`.trim()
+    const serperKey = Deno.env.get('SERPER_API_KEY')
+
+    if (!serperKey) {
+      const stubInsights = [
+        `Industry benchmark research for ${industry}:`,
+        `• ${metric} standards for ${businessSize}`,
+        `• Top/median/bottom quartile performance`,
+        `• Key factors driving benchmark performance`,
+        `• How to measure and improve your metrics`
+      ]
+
+      await supabase.from('business_knowledge').insert({
+        organization_id: organizationId,
+        layer: 'market',
+        category: 'benchmarks',
+        fact: `Research needed: ${industry} ${metric} benchmarks for ${businessSize}`,
+        confidence: 0.3,
+        importance: 'medium',
+        source_type: 'research_stub',
+        status: 'active'
+      }).select()
+
+      return {
+        success: true,
+        data: { query, insights: stubInsights, results: [], api_status: 'not_configured' },
+        metadata: { source: 'stub', saved_to_knowledge: true }
+      }
     }
+
+    return { success: true, data: { query, results: [], api_status: 'ready' }, metadata: { source: 'serper' } }
   },
 
   // ---------------------------------------------------------------------------
