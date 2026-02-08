@@ -1195,8 +1195,8 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     let rankings: Record<string, unknown> | null = null
 
     if (includePerformance) {
-      // Get performance from automation_definitions table
-      const { data: perfData } = await supabase.rpc('get_automation_performance', {
+      // Get performance with correlation from automation_definitions table
+      const { data: perfData } = await supabase.rpc('get_automation_performance_with_correlation', {
         p_organization_id: organizationId,
         p_app_id: targetAppId || null,
         p_days: days
@@ -1216,7 +1216,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       [p.automation_id as string, p]
     ))
 
-    // Enhance automations with performance data if available
+    // Enhance automations with performance and correlation data if available
     const enhancedAutomations = (automations || []).map(a => {
       const perf = perfMap.get(a.id)
       return {
@@ -1226,9 +1226,14 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
           success_rate_pct: perf.success_rate_pct,
           total_sent: perf.total_sent,
           open_rate_pct: perf.open_rate_pct,
-          click_rate_pct: perf.click_rate_pct,
-          bounce_rate_pct: perf.bounce_rate_pct,
-          last_triggered_at: perf.last_triggered_at
+          click_rate_pct: perf.click_rate_pct
+        } : null,
+        correlation: perf ? {
+          executions_in_period: perf.executions_in_period,
+          attributed_visits: perf.attributed_visits,
+          visit_rate_pct: perf.visit_rate_pct,
+          avg_success_score: perf.avg_success_score,
+          avg_days_to_visit: perf.avg_days_to_visit
         } : null
       }
     })
