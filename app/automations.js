@@ -3,7 +3,9 @@ let currentUser = null;
 let currentOrganization = null;
 let allAutomations = [];
 let allProjects = [];
+let lifecycleAutomations = [];  // Lifecycle automations from automation_definitions
 let currentFilter = 'all';
+let currentView = 'project';  // 'project' or 'lifecycle'
 let searchQuery = '';
 let selectedIcon = 'workflow';
 let selectedTemplateId = null;
@@ -40,7 +42,8 @@ async function initAutomations() {
     // Load projects and automations in parallel (optimized)
     await Promise.all([
         loadProjects(),
-        loadAutomations()
+        loadAutomations(),
+        loadLifecycleAutomations()
     ]);
 
     // Setup event listeners
@@ -141,17 +144,116 @@ async function loadAutomations() {
     }
 }
 
+// ===== Load Lifecycle Automations =====
+async function loadLifecycleAutomations() {
+    if (!currentOrganization) return;
+
+    try {
+        // Load lifecycle automations from automation_definitions
+        // Include both org-specific and system templates that are enabled
+        const { data: automations, error } = await supabase
+            .from('automation_definitions')
+            .select(`
+                *,
+                automation_executions (
+                    id,
+                    status,
+                    created_at
+                )
+            `)
+            .or(`organization_id.eq.${currentOrganization.id},and(is_template.eq.true,organization_id.is.null)`)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) throw error;
+
+        // Calculate execution stats for each automation
+        lifecycleAutomations = (automations || []).map(a => {
+            const executions = a.automation_executions || [];
+            const last7Days = executions.filter(e => {
+                const execDate = new Date(e.created_at);
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return execDate >= weekAgo;
+            });
+            const successCount = last7Days.filter(e => e.status === 'success').length;
+
+            return {
+                ...a,
+                execution_count_7d: last7Days.length,
+                success_rate_7d: last7Days.length > 0 ? Math.round((successCount / last7Days.length) * 100) : 0
+            };
+        });
+
+        updateCounts();
+
+    } catch (error) {
+        console.error('Error loading lifecycle automations:', error);
+    }
+}
+
+// ===== Toggle Lifecycle Automation =====
+async function toggleLifecycleAutomation(id, enable) {
+    try {
+        const { error } = await supabase
+            .from('automation_definitions')
+            .update({ is_enabled: enable, updated_at: new Date().toISOString() })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Update local data
+        const automation = lifecycleAutomations.find(a => a.id === id);
+        if (automation) automation.is_enabled = enable;
+
+        updateCounts();
+        renderAutomations();
+
+        if (enable && typeof celebrate === 'function') {
+            celebrate({ intensity: 'subtle' });
+        }
+
+    } catch (error) {
+        console.error('Error toggling automation:', error);
+        showToast('Error updating automation', 'error');
+    }
+}
+
+window.toggleLifecycleAutomation = toggleLifecycleAutomation;
+
 // ===== Update Filter Counts =====
 function updateCounts() {
-    const activeCount = allAutomations.filter(a => a.is_active && !a.is_archived).length;
-    const inactiveCount = allAutomations.filter(a => !a.is_active && !a.is_archived).length;
-    const archivedCount = allAutomations.filter(a => a.is_archived).length;
-    const allCount = allAutomations.filter(a => !a.is_archived).length;
+    if (currentView === 'lifecycle') {
+        // Lifecycle automations counts
+        const enabledCount = lifecycleAutomations.filter(a => a.is_enabled).length;
+        const disabledCount = lifecycleAutomations.filter(a => !a.is_enabled).length;
+        const aiEnabledCount = lifecycleAutomations.filter(a => a.ai_can_enable && a.is_enabled).length;
+        const allCount = lifecycleAutomations.length;
 
-    document.getElementById('count-all').textContent = allCount;
-    document.getElementById('count-active').textContent = activeCount;
-    document.getElementById('count-inactive').textContent = inactiveCount;
-    document.getElementById('count-archived').textContent = archivedCount;
+        document.getElementById('count-all').textContent = allCount;
+        document.getElementById('count-active').textContent = enabledCount;
+        document.getElementById('count-inactive').textContent = disabledCount;
+        document.getElementById('count-archived').textContent = aiEnabledCount;
+
+        // Update tab labels for lifecycle view
+        const tabs = document.querySelectorAll('.filter-tab');
+        if (tabs[3]) tabs[3].innerHTML = `AI-Enabled <span class="count" id="count-archived">${aiEnabledCount}</span>`;
+    } else {
+        // Project automations counts (original)
+        const activeCount = allAutomations.filter(a => a.is_active && !a.is_archived).length;
+        const inactiveCount = allAutomations.filter(a => !a.is_active && !a.is_archived).length;
+        const archivedCount = allAutomations.filter(a => a.is_archived).length;
+        const allCount = allAutomations.filter(a => !a.is_archived).length;
+
+        document.getElementById('count-all').textContent = allCount;
+        document.getElementById('count-active').textContent = activeCount;
+        document.getElementById('count-inactive').textContent = inactiveCount;
+        document.getElementById('count-archived').textContent = archivedCount;
+
+        // Reset tab label
+        const tabs = document.querySelectorAll('.filter-tab');
+        if (tabs[3]) tabs[3].innerHTML = `Archived <span class="count" id="count-archived">${archivedCount}</span>`;
+    }
 }
 
 // ===== Render Automations =====
@@ -159,6 +261,12 @@ function renderAutomations() {
     const grid = document.getElementById('automations-grid');
     const emptyState = document.getElementById('empty-state');
     const paginationContainer = document.getElementById('pagination');
+
+    // Use lifecycle or project automations based on current view
+    if (currentView === 'lifecycle') {
+        renderLifecycleAutomations();
+        return;
+    }
 
     // Filter automations
     let filtered = allAutomations;
@@ -251,6 +359,162 @@ function renderAutomations() {
 
     // Render pagination
     renderPagination(totalItems, totalPages);
+}
+
+// ===== Render Lifecycle Automations =====
+function renderLifecycleAutomations() {
+    const grid = document.getElementById('automations-grid');
+    const emptyState = document.getElementById('empty-state');
+    const paginationContainer = document.getElementById('pagination');
+
+    // Filter lifecycle automations
+    let filtered = lifecycleAutomations;
+
+    // Apply status filter
+    switch (currentFilter) {
+        case 'active':
+            filtered = filtered.filter(a => a.is_enabled);
+            break;
+        case 'inactive':
+            filtered = filtered.filter(a => !a.is_enabled);
+            break;
+        case 'archived':  // In lifecycle view, this is "AI-Enabled"
+            filtered = filtered.filter(a => a.ai_can_enable && a.is_enabled);
+            break;
+        default: // 'all'
+            // Show all
+            break;
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(a =>
+            a.name.toLowerCase().includes(query) ||
+            (a.description && a.description.toLowerCase().includes(query)) ||
+            (a.category && a.category.toLowerCase().includes(query))
+        );
+    }
+
+    if (filtered.length === 0) {
+        grid.style.display = 'none';
+        emptyState.style.display = 'block';
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        updateEmptyState();
+        return;
+    }
+
+    // Pagination
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    emptyState.style.display = 'none';
+    grid.style.display = 'grid';
+
+    grid.innerHTML = paginatedItems.map(automation => {
+        const isEnabled = automation.is_enabled;
+        const statusClass = isEnabled ? 'active' : 'inactive';
+        const statusText = isEnabled ? 'Enabled' : 'Disabled';
+        const aiEnabled = automation.ai_can_enable;
+        const category = formatCategory(automation.category);
+        const triggerType = formatTriggerType(automation.trigger_type);
+        const execCount = automation.execution_count_7d || 0;
+        const successRate = automation.success_rate_7d || 0;
+
+        const categoryIcon = getCategoryIcon(automation.category);
+
+        return `
+            <div class="automation-card lifecycle-card ${isEnabled ? '' : 'disabled'}" data-id="${automation.id}">
+                <div class="automation-card-icon">
+                    ${categoryIcon}
+                </div>
+                ${aiEnabled ? '<span class="ai-badge" title="AI can manage this automation">AI</span>' : ''}
+                <span class="automation-card-badge ${statusClass}">${statusText}</span>
+                <h3 class="automation-card-title">${escapeHtml(automation.name)}</h3>
+                <p class="automation-card-desc">${escapeHtml(automation.description || `${category} automation`)}</p>
+                <div class="automation-card-stats">
+                    <span class="stat" title="Executions in last 7 days">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M7 1V7L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        ${execCount} runs
+                    </span>
+                    ${execCount > 0 ? `<span class="stat success" title="Success rate">${successRate}%</span>` : ''}
+                </div>
+                <div class="automation-card-meta">
+                    <span class="automation-card-project">${category}</span>
+                    <span class="automation-card-frequency">${triggerType}</span>
+                    <div class="automation-card-actions">
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleLifecycleAutomation('${automation.id}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    renderPagination(totalItems, totalPages);
+}
+
+// ===== Lifecycle Helpers =====
+function formatCategory(category) {
+    const categories = {
+        'welcome': 'Welcome',
+        'engagement': 'Engagement',
+        'retention': 'Retention',
+        'recovery': 'Recovery',
+        'behavioral': 'Behavioral',
+        'proactive': 'Proactive'
+    };
+    return categories[category] || category || 'Automation';
+}
+
+function formatTriggerType(type) {
+    const types = {
+        'event': 'Event-based',
+        'schedule': 'Scheduled',
+        'condition': 'Conditional',
+        'ai': 'AI-triggered'
+    };
+    return types[type] || type || 'Manual';
+}
+
+function getCategoryIcon(category) {
+    const icons = {
+        'welcome': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`,
+        'engagement': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`,
+        'retention': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>`,
+        'recovery': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M21 3V9H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 21V15H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`,
+        'behavioral': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`,
+        'proactive': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`
+    };
+    return icons[category] || icons['engagement'];
 }
 
 // ===== Pagination Functions =====
@@ -425,22 +689,44 @@ function updateEmptyState() {
     const title = document.getElementById('empty-title');
     const message = document.getElementById('empty-message');
 
-    switch (currentFilter) {
-        case 'active':
-            title.textContent = 'No active automations';
-            message.textContent = 'Activate an automation from its settings page.';
-            break;
-        case 'inactive':
-            title.textContent = 'No inactive automations';
-            message.textContent = 'All your automations are currently active!';
-            break;
-        case 'archived':
-            title.textContent = 'No archived automations';
-            message.textContent = 'Archived automations will appear here.';
-            break;
-        default:
-            title.textContent = searchQuery ? 'No automations found' : 'No automations yet';
-            message.textContent = searchQuery ? 'Try a different search term.' : 'Create your first automation from a project.';
+    if (currentView === 'lifecycle') {
+        // Lifecycle view empty states
+        switch (currentFilter) {
+            case 'active':
+                title.textContent = 'No enabled automations';
+                message.textContent = 'Enable a lifecycle automation to start engaging customers.';
+                break;
+            case 'inactive':
+                title.textContent = 'No disabled automations';
+                message.textContent = 'All lifecycle automations are currently enabled!';
+                break;
+            case 'archived':  // AI-Enabled in lifecycle view
+                title.textContent = 'No AI-enabled automations';
+                message.textContent = 'The AI hasn\'t enabled any automations yet.';
+                break;
+            default:
+                title.textContent = searchQuery ? 'No automations found' : 'No lifecycle automations';
+                message.textContent = searchQuery ? 'Try a different search term.' : 'Lifecycle automations help engage customers automatically.';
+        }
+    } else {
+        // Project view empty states (original)
+        switch (currentFilter) {
+            case 'active':
+                title.textContent = 'No active automations';
+                message.textContent = 'Activate an automation from its settings page.';
+                break;
+            case 'inactive':
+                title.textContent = 'No inactive automations';
+                message.textContent = 'All your automations are currently active!';
+                break;
+            case 'archived':
+                title.textContent = 'No archived automations';
+                message.textContent = 'Archived automations will appear here.';
+                break;
+            default:
+                title.textContent = searchQuery ? 'No automations found' : 'No automations yet';
+                message.textContent = searchQuery ? 'Try a different search term.' : 'Create your first automation from a project.';
+        }
     }
 }
 
@@ -553,6 +839,32 @@ window.deleteAutomation = deleteAutomation;
 // ===== Event Listeners =====
 function setupEventListeners() {
     // User menu and logout are now handled by sidebar.js
+
+    // View toggle (Project vs Lifecycle)
+    AppUtils.delegate('.view-toggle', 'click', '.view-toggle-btn', (event, btn) => {
+        document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentView = btn.dataset.view;
+        currentFilter = 'all';  // Reset filter when switching views
+        resetPagination();
+        updateCounts();
+        renderAutomations();
+
+        // Update filter tab labels based on view
+        const archivedTab = document.querySelector('.filter-tab[data-filter="archived"]');
+        if (archivedTab) {
+            if (currentView === 'lifecycle') {
+                archivedTab.innerHTML = `AI-Enabled <span class="count" id="count-archived">0</span>`;
+            } else {
+                archivedTab.innerHTML = `Archived <span class="count" id="count-archived">0</span>`;
+            }
+        }
+
+        // Reset all filter tabs to show 'all' as active
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.filter-tab[data-filter="all"]')?.classList.add('active');
+        updateCounts();
+    });
 
     // Filter tabs with event delegation (optimized)
     AppUtils.delegate('.filters', 'click', '.filter-tab', (event, tab) => {

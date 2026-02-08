@@ -534,6 +534,137 @@
             align-items: center;
         }
 
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 4px;
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-lg);
+            width: fit-content;
+        }
+
+        .view-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .view-toggle-btn:hover {
+            color: var(--color-text);
+        }
+
+        .view-toggle-btn.active {
+            background: var(--color-bg);
+            color: var(--color-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .view-toggle-btn svg {
+            flex-shrink: 0;
+        }
+
+        /* AI Badge */
+        .ai-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+            color: white;
+            border-radius: var(--radius-full);
+        }
+
+        /* Lifecycle Card Stats */
+        .automation-card-stats {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .automation-card-stats .stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .automation-card-stats .stat.success {
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-border);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--gradient-primary);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Disabled lifecycle card */
+        .automation-card.lifecycle-card.disabled {
+            opacity: 0.7;
+        }
+
+        .automation-card.lifecycle-card.disabled .automation-card-icon {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-muted);
+        }
+
         .search-filter-bar {
             display: flex;
             gap: 12px;
@@ -695,6 +826,26 @@
             </div>
 
             <div class="container">
+                <!-- View Toggle -->
+                <div class="view-toggle">
+                    <button class="view-toggle-btn active" data-view="project">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                            <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                            <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                            <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        Project Automations
+                    </button>
+                    <button class="view-toggle-btn" data-view="lifecycle">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M8 4V8L10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        Lifecycle Automations
+                    </button>
+                </div>
+
                 <!-- Search & Filter Bar -->
                 <div class="search-filter-bar">
                     <div class="search-box">
@@ -707,7 +858,7 @@
                 </div>
 
                 <!-- Filter Tabs -->
-                <div class="filter-tabs">
+                <div class="filter-tabs filters">
                     <button class="filter-tab active" data-filter="all">
                         All <span class="count" id="count-all">0</span>
                     </button>
