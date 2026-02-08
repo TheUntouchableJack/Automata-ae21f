@@ -2502,13 +2502,14 @@
                 const phoneRaw = document.getElementById('phone').value.trim();
                 const phoneFormatted = phoneRaw ? formatPhoneE164(phoneRaw) : null;
 
+                // PIN is sent plaintext and hashed server-side with bcrypt
                 const { data: result, error } = await supabaseClient.rpc('customer_app_signup', {
                     p_app_id: currentApp.id,
                     p_first_name: document.getElementById('first-name').value.trim(),
                     p_last_name: document.getElementById('last-name').value.trim(),
                     p_email: document.getElementById('email').value.trim().toLowerCase(),
                     p_phone: phoneFormatted,
-                    p_pin_hash: await hashPin(pin)
+                    p_pin: pin  // Plaintext - hashed server-side with bcrypt
                 });
 
                 if (error) throw error;
@@ -2544,10 +2545,11 @@
             btn.textContent = 'Logging in...';
 
             try {
+                // PIN is sent plaintext and verified server-side with bcrypt
                 const { data, error } = await supabaseClient.rpc('verify_app_member_login', {
                     p_app_id: currentApp.id,
                     p_email: email,
-                    p_pin_hash: await hashPin(pin)
+                    p_pin: pin  // Plaintext - verified server-side with bcrypt
                 });
 
                 if (error) throw error;
@@ -2570,11 +2572,7 @@
             window.location.href = `/customer-app/app.html?slug=${appSlug}`;
         });
 
-        async function hashPin(pin) {
-            const data = new TextEncoder().encode(pin + 'automata_salt');
-            const hash = await crypto.subtle.digest('SHA-256', data);
-            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
+        // hashPin function removed - PIN hashing now done server-side with bcrypt
 
         function generateToken(memberId, appId) {
             return btoa(JSON.stringify({ member_id: memberId, app_id: appId, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 }));

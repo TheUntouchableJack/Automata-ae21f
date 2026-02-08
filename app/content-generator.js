@@ -465,14 +465,17 @@ async function callGenerateArticleAPI(topic, context) {
     const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
     const SUPABASE_ANON_KEY = supabase.supabaseKey || localStorage.getItem('supabase.auth.token');
 
-    // Get the session for auth
-    const { data: { session } } = await supabase.auth.getSession();
+    // Get valid session with auto-refresh if token is expired/expiring
+    const session = await getValidSession();
+    if (!session) {
+        throw new Error('Session expired. Please refresh the page and log in again.');
+    }
 
     const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-article`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || ''}`,
+            'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
             topic: {

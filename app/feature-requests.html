@@ -391,7 +391,12 @@
             alert('Added to roadmap! Go to Roadmap to make it public.');
         }
 
+        // Escape HTML - delegates to AppUtils
         function escapeHtml(text) {
+            if (typeof AppUtils !== 'undefined' && typeof AppUtils.escapeHtml === 'function') {
+                return AppUtils.escapeHtml(text);
+            }
+            // Fallback for safety
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;

@@ -133,6 +133,8 @@
                             <div class="chart-header">
                                 <h3 data-i18n="dashboard.memberGrowth">Member Growth</h3>
                                 <div class="chart-period-selector">
+                                    <button class="period-btn" data-days="1" data-i18n="dashboard.today">Today</button>
+                                    <button class="period-btn" data-days="3">3D</button>
                                     <button class="period-btn active" data-days="7">7D</button>
                                     <button class="period-btn" data-days="30">30D</button>
                                     <button class="period-btn" data-days="90">90D</button>
@@ -322,7 +324,16 @@
                 <aside class="dashboard-preview-col" id="dashboard-preview-col" style="display: none;">
                     <div class="preview-panel">
                         <div class="preview-panel-header">
-                            <h3 data-i18n="dashboard.previewTitle">Your App</h3>
+                            <div class="preview-header-title">
+                                <h3 data-i18n="dashboard.previewTitle">Your App</h3>
+                                <div class="app-switcher" id="app-switcher" style="display: none;">
+                                    <button class="app-switcher-btn" id="app-switcher-btn" type="button">
+                                        <span id="app-switcher-current">App Name</span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </button>
+                                    <div class="app-switcher-menu" id="app-switcher-menu"></div>
+                                </div>
+                            </div>
                             <div class="preview-panel-actions">
                                 <a href="/app/app-builder.html" class="btn btn-sm btn-primary" id="preview-edit-btn" data-i18n="dashboard.previewCustomize">Customize</a>
                                 <button class="btn btn-sm btn-ghost preview-hide-btn" id="preview-hide-btn" data-i18n-title="dashboard.previewHide" title="Hide preview">
@@ -446,6 +457,6 @@
     <script src="undo-toast.js?v=1"></script>
     <script src="sidebar.js?v=16"></script>
     <script src="ai-feed.js?v=2"></script>
-    <script src="dashboard.js?v=18"></script>
+    <script src="dashboard.js?v=19"></script>
 </body>
 </html>

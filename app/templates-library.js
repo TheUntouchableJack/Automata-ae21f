@@ -11,6 +11,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['all'],
         targetSegment: 'all',
+        difficulty: 'easy',
+        estimatedCost: '$0',
+        timeframe: '1 day',
         config: {
             triggerField: 'birthday',
             daysBeforeOrAfter: 0
@@ -25,6 +28,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'weekly',
         industries: ['retail', 'food'],
         targetSegment: 'tag:vip',
+        difficulty: 'easy',
+        estimatedCost: '$0',
+        timeframe: '1 day',
         config: {
             pointsThreshold: 100
         }
@@ -38,6 +44,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['food'],
         targetSegment: 'all',
+        difficulty: 'easy',
+        estimatedCost: '$0',
+        timeframe: '1 day',
         config: {
             sendTime: '15:00'
         }
@@ -51,6 +60,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['health', 'service'],
         targetSegment: 'project',
+        difficulty: 'easy',
+        estimatedCost: '$0',
+        timeframe: '1 day',
         config: {
             reminderDays: [1, 7]
         }
@@ -64,6 +76,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['all'],
         targetSegment: 'project',
+        difficulty: 'easy',
+        estimatedCost: '$0',
+        timeframe: '1 day',
         config: {
             daysAfterVisit: 1
         }
@@ -77,6 +92,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'weekly',
         industries: ['all'],
         targetSegment: 'tag:inactive',
+        difficulty: 'medium',
+        estimatedCost: '$0',
+        timeframe: '2-3 days',
         config: {
             inactiveDays: 30
         }
@@ -90,6 +108,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['all'],
         targetSegment: 'tag:new',
+        difficulty: 'medium',
+        estimatedCost: '$0',
+        timeframe: '3-5 days',
         config: {
             emailCount: 3,
             daysBetween: 2
@@ -104,6 +125,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'monthly',
         industries: ['all'],
         targetSegment: 'all',
+        difficulty: 'medium',
+        estimatedCost: '$0',
+        timeframe: '1 week',
         config: {
             sendDay: 1
         }
@@ -117,6 +141,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'weekly',
         industries: ['all'],
         targetSegment: 'project',
+        difficulty: 'easy',
+        estimatedCost: '$0',
+        timeframe: '1 day',
         config: {
             daysAfterPurchase: 7
         }
@@ -130,6 +157,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['service'],
         targetSegment: 'project',
+        difficulty: 'medium',
+        estimatedCost: '$0',
+        timeframe: '2-3 days',
         config: {
             reminderDays: [30, 7, 1]
         }
@@ -143,6 +173,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['retail'],
         targetSegment: 'all',
+        difficulty: 'hard',
+        estimatedCost: '$50/mo',
+        timeframe: '1-2 weeks',
         config: {
             hoursAfterAbandon: 24
         }
@@ -156,6 +189,9 @@ const TEMPLATES_LIBRARY = [
         frequency: 'daily',
         industries: ['all'],
         targetSegment: 'project',
+        difficulty: 'easy',
+        estimatedCost: '$0',
+        timeframe: '1 day',
         config: {
             triggerEvent: 'purchase'
         }

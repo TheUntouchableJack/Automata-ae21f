@@ -469,13 +469,11 @@ async function handleJoin(formData) {
     }
 
     try {
-        // Hash the PIN
-        const pinHash = await hashPin(formData.pin);
-
         let token, welcomePoints;
 
         if (USE_SECURE_TOKENS) {
             // Use Edge Function for secure server-side token generation
+            // PIN is sent plaintext and hashed server-side with bcrypt
             const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-member-token`, {
                 method: 'POST',
                 headers: {
@@ -489,7 +487,7 @@ async function handleJoin(formData) {
                     last_name: formData.lastName || '',
                     email: formData.email || null,
                     phone: formData.phone || null,
-                    pin_hash: pinHash
+                    pin: formData.pin  // Plaintext - hashed server-side with bcrypt
                 })
             });
 
@@ -507,13 +505,14 @@ async function handleJoin(formData) {
             welcomePoints = result.welcome_points;
         } else {
             // Fallback: Use atomic RPC for signup (creates member, transaction, and event in one call)
+            // PIN is sent plaintext and hashed server-side with bcrypt
             const { data, error } = await supabaseClient.rpc('customer_app_signup', {
                 p_app_id: currentApp.id,
                 p_first_name: formData.firstName,
                 p_last_name: formData.lastName || '',
                 p_email: formData.email || null,
                 p_phone: formData.phone || null,
-                p_pin_hash: pinHash
+                p_pin: formData.pin  // Plaintext - hashed server-side with bcrypt
             });
 
             if (error) {
@@ -575,11 +574,11 @@ async function handleLogin(pin) {
     }
 
     try {
-        const pinHash = await hashPin(pin);
         let token;
 
         if (USE_SECURE_TOKENS) {
             // Use Edge Function for secure server-side token generation
+            // PIN is sent plaintext and verified server-side with bcrypt
             const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-member-token`, {
                 method: 'POST',
                 headers: {
@@ -591,7 +590,7 @@ async function handleLogin(pin) {
                     app_id: currentApp.id,
                     email: email || null,
                     phone: phone || null,
-                    pin_hash: pinHash
+                    pin: pin  // Plaintext - verified server-side with bcrypt
                 })
             });
 
@@ -627,11 +626,12 @@ async function handleLogin(pin) {
                 console.warn('Rate limit check failed, continuing:', e);
             }
 
+            // PIN is sent plaintext and verified server-side with bcrypt
             const { data, error } = await supabaseClient.rpc('verify_app_member_login', {
                 p_app_id: currentApp.id,
                 p_email: email || null,
                 p_phone: phone || null,
-                p_pin_hash: pinHash
+                p_pin: pin  // Plaintext - verified server-side with bcrypt
             });
 
             if (error) {
@@ -677,12 +677,7 @@ function generateClientToken(memberId) {
     return `${header}.${payload}.${signature}`;
 }
 
-async function hashPin(pin) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pin + 'automata_salt');
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(hash)));
-}
+// hashPin function removed - PIN hashing now done server-side with bcrypt
 
 // ===== Data Loading =====
 async function loadRecentActivity() {

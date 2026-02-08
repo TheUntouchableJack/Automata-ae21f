@@ -28,6 +28,7 @@ const CrownScene = (function() {
     let glowIntensity = 1.0;
     let targetGlowIntensity = 1.0;
     let pulseDecay = 0;
+    let analyzingStartTime = 0;  // Track when analyzing started for warmth shift
 
     // Mouse tracking
     let mouseX = 0, mouseY = 0;
@@ -380,10 +381,11 @@ const CrownScene = (function() {
         let morphIntensity = 0.015; // idle — barely visible movement
 
         if (crownState === 'analyzing') {
-            // Subtle "talking" animation
+            // Enhanced "thinking" animation - more dramatic
             const talkPulse = Math.sin(elapsed * 10) * 0.5 + 0.5;
-            const breathPulse = Math.sin(elapsed * 2) * 0.3 + 0.7;
-            morphIntensity = 0.025 * breathPulse + 0.015 * talkPulse;
+            const breathPulse = Math.sin(elapsed * 2.5) * 0.4 + 0.6;  // Faster, deeper breathing
+            const thinkWobble = Math.sin(elapsed * 5) * 0.02;  // Extra wobble
+            morphIntensity = 0.04 * breathPulse + 0.02 * talkPulse + thinkWobble;
         } else if (crownState === 'autonomous') {
             morphIntensity = 0.02 + Math.sin(elapsed * 1.5) * 0.005;
         } else if (crownState === 'pulsing') {
@@ -447,7 +449,8 @@ const CrownScene = (function() {
                 orbGroup.rotation.x = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, orbGroup.rotation.x));
             } else {
                 // Auto-rotation when not spinning manually
-                const rotSpeed = crownState === 'analyzing' ? 0.004 :
+                // 4x faster rotation during analyzing (0.008 vs 0.002)
+                const rotSpeed = crownState === 'analyzing' ? 0.008 :
                                  crownState === 'autonomous' ? 0.003 : 0.002;
                 orbGroup.rotation.y += rotSpeed * timeScale;
 
@@ -456,14 +459,30 @@ const CrownScene = (function() {
             }
 
             // Bouncy, organic float (combination of sine waves)
-            const bounce1 = Math.sin(adjustedElapsed * 0.8) * 0.06;
-            const bounce2 = Math.sin(adjustedElapsed * 1.6) * 0.02;
-            const bounce3 = Math.sin(adjustedElapsed * 0.5) * 0.03;
+            let bounce1, bounce2, bounce3;
+
+            if (crownState === 'analyzing') {
+                // Enhanced "thinking" bounce - 3x amplitude, faster rhythm
+                bounce1 = Math.sin(elapsed * 2.5) * 0.12;  // 3x amplitude, faster
+                bounce2 = Math.sin(elapsed * 3.2) * 0.04;  // Secondary bounce
+                bounce3 = Math.sin(elapsed * 1.8) * 0.05;  // Tertiary bounce
+
+                // Add X-axis sway during thinking
+                const thinkingSway = Math.sin(elapsed * 1.8) * 0.05;
+                orbGroup.position.x += (thinkingSway - orbGroup.position.x * 0.5) * 0.1;
+            } else {
+                bounce1 = Math.sin(adjustedElapsed * 0.8) * 0.06;
+                bounce2 = Math.sin(adjustedElapsed * 1.6) * 0.02;
+                bounce3 = Math.sin(adjustedElapsed * 0.5) * 0.03;
+            }
+
             orbBaseY = bounce1 + bounce2 + bounce3;
             orbGroup.position.y = orbBaseY;
 
-            // Curiosity lean (smooth)
-            orbGroup.position.x += (curiousLeanX - orbGroup.position.x) * 0.02;
+            // Curiosity lean (smooth) - only when not analyzing
+            if (crownState !== 'analyzing') {
+                orbGroup.position.x += (curiousLeanX - orbGroup.position.x) * 0.02;
+            }
 
             // Apply breathing scale (when not analyzing)
             if (crownState !== 'analyzing') {
@@ -525,8 +544,9 @@ const CrownScene = (function() {
         camera.position.y += (targetCamY - camera.position.y) * 0.03;
         camera.lookAt(0, 0, 0);
 
-        // Update materials
-        CrownMaterials.update(adjustedElapsed, glowIntensity, crownState);
+        // Update materials with analyzing time for warmth shift
+        const analyzingTime = crownState === 'analyzing' && clock ? clock.getElapsedTime() - analyzingStartTime : 0;
+        CrownMaterials.update(adjustedElapsed, glowIntensity, crownState, analyzingTime);
 
         // Render
         renderFrame();
@@ -731,7 +751,20 @@ const CrownScene = (function() {
 
     // Public API
     function setState(newState) {
+        // Track when analyzing started for warmth shift
+        if (newState === 'analyzing' && crownState !== 'analyzing') {
+            analyzingStartTime = clock ? clock.getElapsedTime() : 0;
+        }
         crownState = newState;
+    }
+
+    function getState() {
+        return crownState;
+    }
+
+    function getAnalyzingTime() {
+        if (crownState !== 'analyzing' || !clock) return 0;
+        return clock.getElapsedTime() - analyzingStartTime;
     }
 
     function setGlow(intensity) {
@@ -762,10 +795,12 @@ const CrownScene = (function() {
         init,
         destroy,
         setState,
+        getState,
         setGlow,
         pulseOnce,
         setTheme,
         getScene,
+        getAnalyzingTime,
     };
 })();
 

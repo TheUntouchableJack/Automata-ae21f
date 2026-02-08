@@ -200,7 +200,6 @@ async function initAppBuilder() {
         const appId = urlParams.get('id');
         const presetProjectId = urlParams.get('projectId'); // Pre-select project if creating from project page
         linkAutomationId = urlParams.get('linkAutomation'); // Store for later linking
-        console.log('[App Builder] URL params - id:', appId, 'projectId:', presetProjectId);
 
         // Update slug prefix to show current domain
         const slugPrefix = document.querySelector('.slug-prefix');
@@ -362,7 +361,6 @@ async function loadProjects() {
 }
 
 async function loadApp(appId) {
-    console.log('[App Builder] Loading app:', appId);
     document.getElementById('loading').style.display = 'flex';
 
     try {
@@ -385,7 +383,6 @@ async function loadApp(appId) {
             throw error;
         }
 
-        console.log('[App Builder] App loaded:', data.name, data.id);
         currentApp = data;
 
         // Update title
@@ -934,14 +931,9 @@ async function linkAppToAutomation(appId, automationId) {
             .update({ app_id: appId })
             .eq('id', automationId);
 
-        if (error) {
-            console.error('Failed to link app to automation:', error);
-            // Non-blocking - app was created successfully
-        } else {
-            console.log('App linked to automation:', automationId);
-        }
+        // Non-blocking - app was created successfully
     } catch (error) {
-        console.error('Error linking app to automation:', error);
+        // Silent fail - app was created successfully
     }
 }
 

@@ -1866,6 +1866,284 @@ blockquote {
     color: var(--color-text-muted);
 }
 
+/* ===== Card Header Layout ===== */
+.recommendation-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.recommendation-card-badges {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ===== Difficulty Badges ===== */
+.difficulty-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    text-transform: capitalize;
+    letter-spacing: 0.03em;
+}
+
+.difficulty-badge.easy {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.difficulty-badge.medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.difficulty-badge.hard {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* ===== Card Details Row ===== */
+.recommendation-card-details {
+    display: flex;
+    gap: 16px;
+    margin: 12px 0 16px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.detail-item svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+/* ===== Implement Toggle Button ===== */
+.implement-toggle {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.implement-toggle:hover {
+    border-color: var(--color-primary-light);
+    color: var(--color-primary);
+    background: var(--color-bg);
+}
+
+.implement-toggle .implement-check {
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all var(--transition-base);
+}
+
+.recommendation-card.selected .implement-toggle {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.recommendation-card.selected .implement-toggle .implement-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Override card layout for flex column */
+.recommendation-card {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== Onboarding Sticky Footer ===== */
+.onboarding-sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
+    padding: 16px 0;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+}
+
+.onboarding-sticky-footer.visible {
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.sticky-footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sticky-footer-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: var(--color-text-secondary);
+}
+
+.selected-plans-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 50%;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* ===== Info-Gathering Section ===== */
+.info-gathering {
+    padding: 60px 0 100px;
+    background: var(--color-bg-secondary);
+}
+
+.info-gathering-card {
+    max-width: 580px;
+    margin: 0 auto;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    box-shadow: var(--shadow-lg);
+}
+
+.info-gathering-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.info-gathering-step {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-primary);
+    background: rgba(124, 58, 237, 0.08);
+    border-radius: var(--radius-full);
+    margin-bottom: 12px;
+}
+
+.info-gathering-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.info-gathering-header p {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+}
+
+.info-gathering-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-gathering-form .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.info-gathering-form label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.info-gathering-form input,
+.info-gathering-form select {
+    padding: 12px 16px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.info-gathering-form input:focus,
+.info-gathering-form select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.info-gathering-form input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.info-gathering-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.info-gathering-actions .btn {
+    width: 100%;
+    max-width: 320px;
+}
+
+.skip-link {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 16px;
+    transition: color var(--transition-fast);
+}
+
+.skip-link:hover {
+    color: var(--color-primary);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1024px) {
     .hero-content {
@@ -1981,6 +2259,22 @@ blockquote {
 
     .selection-counter {
         align-self: flex-start;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .info-gathering-card {
+        padding: 24px;
+    }
+
+    .sticky-footer-content {
+        gap: 12px;
+    }
+
+    .sticky-footer-info span:not(.selected-plans-count) {
+        display: none;
     }
 
     .comparison {

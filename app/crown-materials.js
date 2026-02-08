@@ -102,14 +102,21 @@ const CrownMaterials = (function() {
     }
 
     // Update materials — gentle dreamy animation
-    function update(elapsed, glowIntensity, state) {
+    function update(elapsed, glowIntensity, state, analyzingTime = 0) {
         // Shell: very slow, subtle color shifts
         shellMaterials.forEach(mat => {
             // Very slow iridescence shift
             mat.iridescenceIOR = 1.28 + Math.sin(elapsed * 0.2) * 0.04;
 
             // Gentle color drift in blue-purple range
-            const hueShift = Math.sin(elapsed * 0.05) * 0.02;
+            let hueShift = Math.sin(elapsed * 0.05) * 0.02;
+
+            // Color warmth shift during analyzing - blue to purple over 10 seconds
+            if (state === 'analyzing') {
+                const warmth = Math.min(analyzingTime / 10, 1); // 0→1 over 10 seconds
+                hueShift += warmth * 0.08; // Shift toward purple
+            }
+
             mat.color.setHSL(0.62 + hueShift, 0.35, 0.62); // Blue-ish
 
             // Soft sheen animation
@@ -119,9 +126,16 @@ const CrownMaterials = (function() {
             // Soft emissive breathing
             let emissiveBase = 0.12 + Math.sin(elapsed * 0.8) * 0.03;
             if (state === 'analyzing') {
-                emissiveBase = 0.18 + Math.sin(elapsed * 4) * 0.05;
+                // Enhanced glow pulsing during analyzing - 1.0 → 1.4 breathing
+                const glowPulse = 1.0 + Math.sin(elapsed * 2.5) * 0.4;
+                emissiveBase = 0.22 * glowPulse + Math.sin(elapsed * 5) * 0.03;
+                // Shell opacity pulse during analyzing
+                mat.opacity = 0.65 + Math.sin(elapsed * 1.5) * 0.1; // 0.55-0.75 range
             } else if (state === 'autonomous') {
                 emissiveBase = 0.14 + Math.sin(elapsed * 1.5) * 0.03;
+                mat.opacity = 0.7;
+            } else {
+                mat.opacity = 0.7;
             }
             mat.emissiveIntensity = emissiveBase * glowIntensity;
         });
