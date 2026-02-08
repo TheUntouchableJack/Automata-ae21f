@@ -2937,7 +2937,9 @@ Use read tools proactively to provide data-driven answers rather than guessing.
 4. Only generate action cards when they explicitly ask "what should I do" or similar
 5. Keep responses concise but helpful
 6. When you learn new facts about the business, acknowledge them naturally
-7. Use tools to look up real data before giving specific numbers or recommendations${discoveryPrompt}`
+7. Use tools to look up real data before giving specific numbers or recommendations
+8. ALWAYS call read_automations before suggesting new automations - check what's already running
+9. Don't suggest automations that duplicate or overlap with existing ones${discoveryPrompt}`
   }
 
   // Review mode: structured card generation (existing behavior)
@@ -3018,6 +3020,17 @@ When suggesting automations, use these template_id values:
 - "streak-bonus" - Bonus for consecutive visits
 - "milestone" - Celebrate point milestones
 - "review-request" - Ask for reviews after visits
+
+## Automation Awareness
+IMPORTANT: Before suggesting any new automation:
+1. ALWAYS call read_automations first to see what's already active
+2. Check for overlapping triggers - don't suggest "win-back" if one exists
+3. Consider if an existing automation could be modified instead
+4. Note total active automations - more than 5-6 active may fatigue customers
+
+When a similar automation exists, respond like:
+- "You already have a win-back automation running. Want to adjust its timing instead?"
+- "I see you have 6 active automations. Before adding more, let's check their performance."
 
 ## Guidelines
 1. Generate 1-3 relevant idea cards per response
