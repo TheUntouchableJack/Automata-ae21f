@@ -610,7 +610,7 @@
 /* Toast Messages */
 .toast {
     position: fixed;
-    bottom: 24px;
+    top: 80px;
     right: 24px;
     padding: 16px 24px;
     background: var(--color-surface);
@@ -632,11 +632,11 @@
 @keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateX(20px);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateX(0);
     }
 }
 

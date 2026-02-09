@@ -828,7 +828,7 @@ function deleteAutomation(id, name) {
 
             } catch (error) {
                 console.error('Error deleting automation:', error);
-                alert('Error deleting automation. Please try again.');
+                alert(window.t ? window.t('errors.deletingAutomation') : 'Error deleting automation. Please try again.');
             }
         }
     });
@@ -1160,7 +1160,7 @@ async function handleCreateFromScratch(e) {
 
     } catch (error) {
         console.error('Error creating automation:', error);
-        alert('Error creating automation. Please try again.');
+        alert(window.t ? window.t('errors.creatingAutomation') : 'Error creating automation. Please try again.');
         btn.disabled = false;
         btn.textContent = originalText;
         isSubmitting = false;  // Reset guard on error
@@ -1218,7 +1218,7 @@ async function handleCreateFromTemplate(e) {
 
     } catch (error) {
         console.error('Error creating automation:', error);
-        alert('Error creating automation. Please try again.');
+        alert(window.t ? window.t('errors.creatingAutomation') : 'Error creating automation. Please try again.');
         btn.disabled = false;
         btn.textContent = originalText;
         isSubmitting = false;  // Reset guard on error

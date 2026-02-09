@@ -742,7 +742,7 @@ function handleFileSelect(file) {
         },
         error: (error) => {
             console.error('CSV parse error:', error);
-            alert('Error parsing CSV file. Please check the file format.');
+            alert(window.t ? window.t('errors.parsingCsv') : 'Error parsing CSV file. Please check the file format.');
         }
     });
 }
@@ -924,7 +924,7 @@ async function handleCsvImport() {
 
     // Validate CSV data exists
     if (!csvData?.data?.length) {
-        alert('No CSV data to import. Please upload a file first.');
+        alert(window.t ? window.t('errors.noCsvData') : 'No CSV data to import. Please upload a file first.');
         importBtn.disabled = false;
         importBtn.textContent = 'Import Customers';
         return;
@@ -933,7 +933,7 @@ async function handleCsvImport() {
     // Validate at least one column is mapped
     const mappedColumns = Object.entries(columnMapping).filter(([_, v]) => v);
     if (mappedColumns.length === 0) {
-        alert('Please map at least one column before importing.');
+        alert(window.t ? window.t('errors.mapColumnsFirst') : 'Please map at least one column before importing.');
         importBtn.disabled = false;
         importBtn.textContent = 'Import Customers';
         return;
@@ -1042,7 +1042,7 @@ async function handleCsvImport() {
 
     } catch (error) {
         console.error('Error importing CSV:', error);
-        alert('Error importing customers. Please try again.');
+        alert(window.t ? window.t('errors.importingCustomers') : 'Error importing customers. Please try again.');
         importBtn.disabled = false;
         importBtn.textContent = 'Import Customers';
         isSubmitting = false;  // Reset guard on error

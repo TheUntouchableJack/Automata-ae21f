@@ -40,105 +40,8 @@ const IntelligencePage = (function() {
         low: 'Low Impact'
     };
 
-    // AI Recommendation Templates - Define what gets created
-    const AI_TEMPLATES = {
-        'welcome-email': {
-            projectName: 'Customer Onboarding',
-            projectDesc: 'Automated welcome and onboarding for new customers',
-            automation: {
-                name: 'Welcome Email Series',
-                description: 'Automatically welcome new customers with a personalized email series',
-                type: 'email',
-                frequency: 'daily',
-                icon: 'welcome',
-                template_id: 'welcome-series'
-            }
-        },
-        'follow-up': {
-            projectName: 'Customer Follow-ups',
-            projectDesc: 'Automated follow-up communications after customer interactions',
-            automation: {
-                name: 'Post-Visit Follow-up',
-                description: 'Send thank you messages and collect feedback after visits',
-                type: 'email',
-                frequency: 'daily',
-                icon: 'follow_up',
-                template_id: 'post-visit-follow-up'
-            }
-        },
-        're-engagement': {
-            projectName: 'Customer Retention',
-            projectDesc: 'Win back inactive customers and prevent churn',
-            automation: {
-                name: 'Win-Back Campaign',
-                description: 'Re-engage customers who haven\'t visited in 30+ days',
-                type: 'email',
-                frequency: 'weekly',
-                icon: 'win_back',
-                template_id: 'win-back-campaign'
-            }
-        },
-        'birthday': {
-            projectName: 'Customer Celebrations',
-            projectDesc: 'Celebrate customer milestones and special days',
-            automation: {
-                name: 'Birthday Rewards',
-                description: 'Send personalized birthday greetings with special offers',
-                type: 'email',
-                frequency: 'daily',
-                icon: 'birthday',
-                template_id: 'birthday-rewards'
-            }
-        },
-        'review-request': {
-            projectName: 'Reputation Management',
-            projectDesc: 'Build your online reputation through customer reviews',
-            automation: {
-                name: 'Review Requests',
-                description: 'Ask satisfied customers for reviews at the right time',
-                type: 'email',
-                frequency: 'weekly',
-                icon: 'feedback',
-                template_id: 'review-request'
-            }
-        },
-        'newsletter': {
-            projectName: 'Customer Communications',
-            projectDesc: 'Keep customers informed and engaged',
-            automation: {
-                name: 'Monthly Newsletter',
-                description: 'Monthly updates, news, and curated content for your audience',
-                type: 'email',
-                frequency: 'monthly',
-                icon: 'newsletter',
-                template_id: 'monthly-newsletter'
-            }
-        },
-        'loyalty': {
-            projectName: 'Loyalty Program',
-            projectDesc: 'Reward and retain your best customers',
-            automation: {
-                name: 'Loyalty Rewards',
-                description: 'Automatically reward customers with points and VIP perks',
-                type: 'workflow',
-                frequency: 'weekly',
-                icon: 'loyalty',
-                template_id: 'loyalty-program'
-            }
-        },
-        'thank-you': {
-            projectName: 'Customer Appreciation',
-            projectDesc: 'Show gratitude to your customers',
-            automation: {
-                name: 'Thank You Notes',
-                description: 'Send personalized thank you messages after visits',
-                type: 'email',
-                frequency: 'daily',
-                icon: 'thank_you',
-                template_id: 'thank-you-note'
-            }
-        }
-    };
+    // AI Recommendation Templates - loaded from shared/ai-templates.js
+    const AI_TEMPLATES = window.AI_TEMPLATES;
 
     // Track created app for the banner
     let createdAppSlug = null;
@@ -531,7 +434,7 @@ const IntelligencePage = (function() {
     function showAppCreationError(errorMessage) {
         const container = document.querySelector('.app-main') || document.querySelector('main');
         if (!container) {
-            alert('Failed to create your loyalty app. Please try again.');
+            alert(window.t ? window.t('errors.creatingApp') : 'Failed to create your loyalty app. Please try again.');
             return;
         }
 
@@ -1167,7 +1070,7 @@ const IntelligencePage = (function() {
 
         } catch (error) {
             console.error('Error analyzing business:', error);
-            alert('Error analyzing business data. Please try again.');
+            alert(window.t ? window.t('errors.analyzingBusiness') : 'Error analyzing business data. Please try again.');
             showEmptyState();
         } finally {
             isAnalyzing = false;
@@ -1477,7 +1380,7 @@ const IntelligencePage = (function() {
             // Get template
             const template = AI_TEMPLATES[payload.template_id];
             if (!template) {
-                alert('Template not found. Please try again.');
+                alert(window.t ? window.t('errors.templateNotFound') : 'Template not found. Please try again.');
                 return;
             }
 
@@ -1495,7 +1398,7 @@ const IntelligencePage = (function() {
 
             if (projectError) {
                 console.error('Error creating project:', projectError);
-                alert('Error creating project. Please try again.');
+                alert(window.t ? window.t('errors.creatingProject') : 'Error creating project. Please try again.');
                 return;
             }
 
@@ -1565,7 +1468,7 @@ const IntelligencePage = (function() {
 
         } catch (err) {
             console.error('Error implementing recommendation:', err);
-            alert('Error creating project. Please try again.');
+            alert(window.t ? window.t('errors.creatingProject') : 'Error creating project. Please try again.');
 
             if (button) {
                 button.disabled = false;

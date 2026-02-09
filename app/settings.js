@@ -66,7 +66,7 @@ async function loadUserProfile() {
 
     if (error) {
         console.error('Error loading profile:', error);
-        showToast('Unable to load your profile', 'error');
+        showToast(window.t ? window.t('toasts.profileLoading') : 'Unable to load your profile', 'error');
         return;
     }
 
@@ -83,7 +83,7 @@ async function loadOrganization() {
 
     if (memberError || !memberships || memberships.length === 0) {
         console.error('No organization found');
-        showToast('Unable to load organization. Please refresh.', 'error');
+        showToast(window.t ? window.t('toasts.orgLoading') : 'Unable to load organization. Please refresh.', 'error');
         return;
     }
 
@@ -98,7 +98,7 @@ async function loadOrganization() {
 
     if (orgError) {
         console.error('Error loading organization:', orgError);
-        showToast('Unable to load organization details', 'error');
+        showToast(window.t ? window.t('toasts.orgDetailsLoading') : 'Unable to load organization details', 'error');
         return;
     }
 
@@ -135,7 +135,7 @@ async function loadTeamMembers() {
 
     if (error) {
         console.error('Error loading team members:', error);
-        showToast('Unable to load team members', 'error');
+        showToast(window.t ? window.t('toasts.teamLoading') : 'Unable to load team members', 'error');
         return;
     }
 
@@ -565,7 +565,7 @@ async function handleCheckoutComplete() {
     closeCheckoutModal();
 
     // Show success message
-    showToast('Subscription activated! Welcome to your new plan.', 'success');
+    showToast(window.t ? window.t('toasts.subscriptionActivated') : 'Subscription activated! Welcome to your new plan.', 'success');
     celebrate();
 
     // Reload organization data to reflect new plan
@@ -842,7 +842,7 @@ async function loadActivityLogs(reset = false) {
 
     } catch (error) {
         console.error('Error loading activity logs:', error);
-        showToast('Unable to load activity logs', 'error');
+        showToast(window.t ? window.t('toasts.activityLoading') : 'Unable to load activity logs', 'error');
         feed.innerHTML = '';
         empty.style.display = 'block';
     }
@@ -1090,7 +1090,7 @@ async function handleSaveAISettings() {
 
         // Validate
         if (dailyLimit < 1 || dailyLimit > 100) {
-            showToast('Daily limit must be between 1 and 100', 'error');
+            showToast(window.t ? window.t('toasts.dailyLimitInvalid') : 'Daily limit must be between 1 and 100', 'error');
             btn.disabled = false;
             btn.innerHTML = originalText;
             return;
@@ -1114,11 +1114,11 @@ async function handleSaveAISettings() {
         currentOrganization.ai_daily_action_limit = dailyLimit;
         currentOrganization.ai_allowed_actions = allowedActions;
 
-        showToast('AI settings saved!', 'success');
+        showToast(window.t ? window.t('toasts.aiSettingsSaved') : 'AI settings saved!', 'success');
         celebrate();
     } catch (err) {
         console.error('Error saving AI settings:', err);
-        showToast('Failed to save AI settings', 'error');
+        showToast(window.t ? window.t('toasts.aiSettingsFailed') : 'Failed to save AI settings', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -1249,12 +1249,12 @@ function setupEventListeners() {
     // Check for successful checkout return
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
-        showToast('Subscription activated! Welcome to your new plan.', 'success');
+        showToast(window.t ? window.t('toasts.subscriptionActivated') : 'Subscription activated! Welcome to your new plan.', 'success');
         celebrate();
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.get('canceled') === 'true') {
-        showToast('Checkout canceled. No charges were made.', 'info');
+        showToast(window.t ? window.t('toasts.checkoutCanceled') : 'Checkout canceled. No charges were made.', 'info');
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
@@ -1320,11 +1320,11 @@ async function handleProfileSave(e) {
         updateHeaderUserInfo();
         updateAvatarDisplay();
 
-        showToast('Profile saved!', 'success');
+        showToast(window.t ? window.t('toasts.profileSaved') : 'Profile saved!', 'success');
         celebrate();
     } catch (err) {
         console.error('Error saving profile:', err);
-        showToast('Failed to save profile', 'error');
+        showToast(window.t ? window.t('toasts.profileSaveFailed') : 'Failed to save profile', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -1340,12 +1340,12 @@ async function handleAvatarUpload(e) {
     const maxSize = 2 * 1024 * 1024; // 2MB
 
     if (!allowedTypes.includes(file.type)) {
-        showToast('Please upload a valid image (JPG, PNG, GIF, or WebP)', 'error');
+        showToast(window.t ? window.t('toasts.invalidImage') : 'Please upload a valid image (JPG, PNG, GIF, or WebP)', 'error');
         return;
     }
 
     if (file.size > maxSize) {
-        showToast('Image must be smaller than 2MB', 'error');
+        showToast(window.t ? window.t('toasts.imageTooLarge') : 'Image must be smaller than 2MB', 'error');
         return;
     }
 
@@ -1380,11 +1380,11 @@ async function handleAvatarUpload(e) {
         updateAvatarDisplay();
         updateHeaderUserInfo();
 
-        showToast('Photo uploaded!', 'success');
+        showToast(window.t ? window.t('toasts.photoUploaded') : 'Photo uploaded!', 'success');
         celebrate();
     } catch (err) {
         console.error('Error uploading avatar:', err);
-        showToast('Failed to upload photo. Make sure the avatars bucket exists.', 'error');
+        showToast(window.t ? window.t('toasts.photoUploadFailed') : 'Failed to upload photo. Make sure the avatars bucket exists.', 'error');
     }
 
     // Reset input
@@ -1419,10 +1419,10 @@ async function handleAvatarRemove() {
         updateAvatarDisplay();
         updateHeaderUserInfo();
 
-        showToast('Photo removed', 'success');
+        showToast(window.t ? window.t('toasts.photoRemoved') : 'Photo removed', 'success');
     } catch (err) {
         console.error('Error removing avatar:', err);
-        showToast('Failed to remove photo', 'error');
+        showToast(window.t ? window.t('toasts.photoRemoveFailed') : 'Failed to remove photo', 'error');
     }
 }
 
@@ -1433,12 +1433,12 @@ async function handlePasswordChange(e) {
     const confirmPassword = document.getElementById('confirm-password').value;
 
     if (newPassword !== confirmPassword) {
-        showToast('Passwords do not match', 'error');
+        showToast(window.t ? window.t('toasts.passwordMismatch') : 'Passwords do not match', 'error');
         return;
     }
 
     if (newPassword.length < 6) {
-        showToast('Password must be at least 6 characters', 'error');
+        showToast(window.t ? window.t('toasts.passwordTooShort') : 'Password must be at least 6 characters', 'error');
         return;
     }
 
@@ -1458,7 +1458,7 @@ async function handlePasswordChange(e) {
         document.getElementById('password-form').reset();
         document.getElementById('password-strength').style.display = 'none';
 
-        showToast('Password updated successfully!', 'success');
+        showToast(window.t ? window.t('toasts.passwordUpdated') : 'Password updated successfully!', 'success');
         celebrate();
     } catch (err) {
         console.error('Error updating password:', err);
@@ -1505,7 +1505,7 @@ async function handleInvite(e) {
     // Check team member limit
     const totalMembers = teamMembers.length + pendingInvitations.length;
     if (orgLimits.team_members !== -1 && totalMembers >= orgLimits.team_members) {
-        showToast('You\'ve reached your team member limit. Upgrade to invite more.', 'error');
+        showToast(window.t ? window.t('toasts.teamLimitReached') : 'You\'ve reached your team member limit. Upgrade to invite more.', 'error');
         return;
     }
 
@@ -1521,7 +1521,7 @@ async function handleInvite(e) {
 
         if (error) {
             if (error.code === '23505') {
-                showToast('This email has already been invited', 'error');
+                showToast(window.t ? window.t('toasts.emailAlreadyInvited') : 'This email has already been invited', 'error');
             } else {
                 throw error;
             }
@@ -1539,7 +1539,7 @@ async function handleInvite(e) {
         celebrate();
     } catch (err) {
         console.error('Error sending invitation:', err);
-        showToast('Failed to send invitation', 'error');
+        showToast(window.t ? window.t('toasts.inviteFailed') : 'Failed to send invitation', 'error');
     }
 }
 
@@ -1563,10 +1563,10 @@ async function handleRoleChange(memberId, newRole) {
         await loadTeamMembers();
         renderTeam();
 
-        showToast('Role updated', 'success');
+        showToast(window.t ? window.t('toasts.roleUpdated') : 'Role updated', 'success');
     } catch (err) {
         console.error('Error updating role:', err);
-        showToast('Failed to update role', 'error');
+        showToast(window.t ? window.t('toasts.roleUpdateFailed') : 'Failed to update role', 'error');
     }
 }
 
@@ -1602,10 +1602,10 @@ async function handleRemoveMember(memberId) {
                 await loadTeamMembers();
                 renderTeam();
 
-                showToast('Member removed', 'success');
+                showToast(window.t ? window.t('toasts.memberRemoved') : 'Member removed', 'success');
             } catch (err) {
                 console.error('Error removing member:', err);
-                showToast('Failed to remove member', 'error');
+                showToast(window.t ? window.t('toasts.memberRemoveFailed') : 'Failed to remove member', 'error');
             }
         }
     });
@@ -1630,10 +1630,10 @@ async function handleCancelInvitation(invitationId) {
         await loadPendingInvitations();
         renderTeam();
 
-        showToast('Invitation cancelled', 'success');
+        showToast(window.t ? window.t('toasts.inviteCanceled') : 'Invitation cancelled', 'success');
     } catch (err) {
         console.error('Error cancelling invitation:', err);
-        showToast('Failed to cancel invitation', 'error');
+        showToast(window.t ? window.t('toasts.inviteCancelFailed') : 'Failed to cancel invitation', 'error');
     }
 }
 
@@ -1668,7 +1668,7 @@ function handleDeleteAccount() {
                 window.location.href = '/?account_deleted=true';
             } catch (err) {
                 console.error('Error deleting account:', err);
-                showToast('Failed to delete account. Please contact support.', 'error');
+                showToast(window.t ? window.t('toasts.deleteAccountFailed') : 'Failed to delete account. Please contact support.', 'error');
             }
         }
     });
@@ -1698,7 +1698,10 @@ function handleAdvancedModeToggle(e) {
         });
     }
 
-    showToast(isAdvanced ? 'Advanced mode enabled' : 'Simplified view enabled', 'success');
+    const advMsg = isAdvanced
+        ? (window.t ? window.t('toasts.advancedModeEnabled') : 'Advanced mode enabled')
+        : (window.t ? window.t('toasts.simplifiedViewEnabled') : 'Simplified view enabled');
+    showToast(advMsg, 'success');
 }
 
 // ===== Utilities =====

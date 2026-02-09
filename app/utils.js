@@ -514,12 +514,11 @@ const AppUtils = (function() {
         style.textContent = `
             .app-toast-container {
                 position: fixed;
-                bottom: 24px;
-                left: 50%;
-                transform: translateX(-50%);
+                top: 80px;
+                right: 24px;
                 z-index: 10000;
                 display: flex;
-                flex-direction: column-reverse;
+                flex-direction: column;
                 gap: 8px;
                 pointer-events: none;
             }
@@ -570,22 +569,22 @@ const AppUtils = (function() {
             @keyframes toastSlideIn {
                 from {
                     opacity: 0;
-                    transform: translateY(10px);
+                    transform: translateX(20px);
                 }
                 to {
                     opacity: 1;
-                    transform: translateY(0);
+                    transform: translateX(0);
                 }
             }
 
             @keyframes toastSlideOut {
                 from {
                     opacity: 1;
-                    transform: translateY(0);
+                    transform: translateX(0);
                 }
                 to {
                     opacity: 0;
-                    transform: translateY(10px);
+                    transform: translateX(20px);
                 }
             }
         `;

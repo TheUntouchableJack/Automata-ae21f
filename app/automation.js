@@ -426,7 +426,7 @@ async function toggleAutomation(isActive) {
 
     } catch (error) {
         console.error('Error toggling automation:', error);
-        showToast('Error updating automation', 'error');
+        showToast(window.t ? window.t('toasts.automationUpdateFailed') : 'Error updating automation', 'error');
         document.getElementById('automation-toggle').checked = !isActive;
     }
 }
@@ -476,11 +476,11 @@ async function handleGenerate() {
         // Reload posts
         await loadPosts(currentAutomation.id);
 
-        showToast('Post generated! (AI integration coming soon)', 'success');
+        showToast(window.t ? window.t('toasts.postGenerated') : 'Post generated!', 'success');
 
     } catch (error) {
         console.error('Error generating post:', error);
-        showToast('Error generating post', 'error');
+        showToast(window.t ? window.t('toasts.postGenerateFailed') : 'Error generating post', 'error');
     } finally {
         generateBtn.disabled = false;
         generateBtn.innerHTML = originalText;
@@ -512,7 +512,7 @@ async function publishPost(postId) {
 
     } catch (error) {
         console.error('Error publishing post:', error);
-        showToast('Error publishing post', 'error');
+        showToast(window.t ? window.t('toasts.postPublishFailed') : 'Error publishing post', 'error');
     }
 }
 
@@ -559,7 +559,7 @@ function deletePost(postId) {
 
             } catch (error) {
                 console.error('Error deleting post:', error);
-                showToast('Error deleting post', 'error');
+                showToast(window.t ? window.t('toasts.postDeleteFailed') : 'Error deleting post', 'error');
             }
         }
     });
@@ -627,7 +627,7 @@ async function handleSaveDetails(e) {
 
     } catch (error) {
         console.error('Error saving details:', error);
-        showToast('Error saving details', 'error');
+        showToast(window.t ? window.t('toasts.detailsSaveFailed') : 'Error saving details', 'error');
         saveBtn.disabled = false;
         saveBtn.textContent = originalText;
     }
@@ -679,7 +679,7 @@ async function handleSaveBlogSettings(e) {
 
     } catch (error) {
         console.error('Error saving blog settings:', error);
-        showToast('Error saving blog settings', 'error');
+        showToast(window.t ? window.t('toasts.blogSettingsSaveFailed') : 'Error saving blog settings', 'error');
         saveBtn.disabled = false;
         saveBtn.textContent = originalText;
     }
@@ -719,7 +719,7 @@ function handleDeleteAutomation() {
 
             } catch (error) {
                 console.error('Error deleting automation:', error);
-                showToast('Error deleting automation', 'error');
+                showToast(window.t ? window.t('toasts.automationDeleteFailed') : 'Error deleting automation', 'error');
             }
         }
     });
@@ -776,7 +776,7 @@ async function showAppSelector() {
         if (error) throw error;
 
         if (!apps || apps.length === 0) {
-            showToast('No customer apps found. Create one first.', 'info');
+            showToast(window.t ? window.t('toasts.noAppsFound') : 'No customer apps found. Create one first.', 'info');
             return;
         }
 
@@ -856,7 +856,7 @@ async function showAppSelector() {
 
     } catch (error) {
         console.error('Error loading apps:', error);
-        showToast('Error loading apps', 'error');
+        showToast(window.t ? window.t('toasts.appsLoadFailed') : 'Error loading apps', 'error');
     }
 }
 
@@ -877,7 +877,7 @@ async function connectApp(appId) {
 
     } catch (error) {
         console.error('Error connecting app:', error);
-        showToast('Error connecting app', 'error');
+        showToast(window.t ? window.t('toasts.appConnectFailed') : 'Error connecting app', 'error');
     }
 }
 
@@ -897,7 +897,7 @@ async function disconnectApp() {
 
     } catch (error) {
         console.error('Error disconnecting app:', error);
-        showToast('Error disconnecting app', 'error');
+        showToast(window.t ? window.t('toasts.appDisconnectFailed') : 'Error disconnecting app', 'error');
     }
 }
 

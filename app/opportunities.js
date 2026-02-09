@@ -140,7 +140,7 @@ async function startAutomation(id) {
 
     } catch (error) {
         console.error('Error starting automation:', error);
-        alert('Error starting automation. Please try again.');
+        alert(window.t ? window.t('errors.startingAutomation') : 'Error starting automation. Please try again.');
     }
 }
 
@@ -159,7 +159,7 @@ async function dismissOpportunity(id) {
 
     } catch (error) {
         console.error('Error dismissing opportunity:', error);
-        alert('Error dismissing opportunity. Please try again.');
+        alert(window.t ? window.t('errors.dismissingOpportunity') : 'Error dismissing opportunity. Please try again.');
     }
 }
 
@@ -279,7 +279,7 @@ async function generateOpportunities(project) {
 
     } catch (error) {
         console.error('Error generating opportunities:', error);
-        alert('Error generating opportunities. Please try again.');
+        alert(window.t ? window.t('errors.generatingOpportunities') : 'Error generating opportunities. Please try again.');
     } finally {
         analyzeBtn.disabled = false;
         analyzeBtn.innerHTML = `

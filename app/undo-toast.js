@@ -27,12 +27,11 @@ function _injectUndoToastStyles() {
     style.textContent = `
         .undo-toast-container {
             position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 80px;
+            right: 24px;
             z-index: 10000;
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;
             gap: 12px;
             pointer-events: none;
         }
@@ -61,22 +60,22 @@ function _injectUndoToastStyles() {
         @keyframes undoToastSlideIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateX(20px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateX(0);
             }
         }
 
         @keyframes undoToastSlideOut {
             from {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateX(0);
             }
             to {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateX(20px);
             }
         }
 

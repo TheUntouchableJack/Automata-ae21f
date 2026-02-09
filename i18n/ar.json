@@ -22,7 +22,11 @@
         "admin": "المسؤول",
         "launchPlan": "خطة الإطلاق",
         "intelligence": "الذكاء",
-        "support": "الدعم"
+        "support": "الدعم",
+        "askRoyal": "Ask Royal AI",
+        "chatEmpty": "Start a conversation...",
+        "chatPlaceholder": "Quick question?",
+        "fullChat": "Open full chat"
     },
     "launchPlan": {
         "title": "خطة الإطلاق",
@@ -458,7 +462,8 @@
         },
         "modes": {
             "review": "مراجعة",
-            "autonomous": "تلقائي"
+            "autonomous": "تلقائي",
+            "manual": "Manual"
         },
         "cards": {
             "title": "نشاط الذكاء الاصطناعي",
@@ -467,11 +472,37 @@
             "acceptAction": "قبول",
             "dismissAction": "تجاهل",
             "viewDetails": "عرض التفاصيل",
-            "undoAction": "تراجع"
+            "undoAction": "تراجع",
+            "reacceptAction": "Re-accept"
         },
         "theme": {
             "dark": "الوضع الداكن",
             "light": "الوضع الفاتح"
+        },
+        "tabs": {
+            "chat": "Chat",
+            "actions": "Actions",
+            "intel": "Intel"
+        },
+        "intel": {
+            "emptyTitle": "All caught up!",
+            "emptyDesc": "Royal AI has all the info it needs for now."
+        },
+        "filters": {
+            "new": "New",
+            "rejected": "Rejected",
+            "accepted": "Accepted"
+        },
+        "history": "History",
+        "llmModel": "Sonnet 4",
+        "autonomousModal": {
+            "title": "Enable Autonomous Mode?",
+            "description": "Royal AI will take actions automatically on your behalf. You'll be notified of all changes.",
+            "tosPrefix": "By enabling, you agree to our",
+            "tosLink": "Terms of Service",
+            "dontShowAgain": "Don't show this again",
+            "cancel": "Cancel",
+            "enable": "Enable Autonomous"
         }
     },
     "projects": {
@@ -1119,5 +1150,159 @@
         "createPasswordPlaceholder": "أنشئ كلمة مرور",
         "createAccountBtn": "إنشاء حساب",
         "hasAccount": "لديك حساب بالفعل؟"
+    },
+    "supportSettings": {
+        "title": "Support Settings",
+        "subtitle": "Configure AI support and customer service options",
+        "selectApp": "Select an App",
+        "selectAppDesc": "Choose a loyalty app above to configure its support settings.",
+        "aiSupport": {
+            "title": "AI Support Agent",
+            "desc": "Enable 24/7 AI-powered customer support",
+            "info": "When enabled, customers can chat with an AI agent that answers questions about your business, points, rewards, and more. The AI uses your FAQ and Knowledge Base to provide accurate answers."
+        },
+        "autonomy": {
+            "title": "AI Autonomy Mode",
+            "desc": "Control how independently the AI operates",
+            "autoPilot": "Auto Pilot",
+            "autoPilotDesc": "AI responds automatically to customers. You get notified of conversations and can review them anytime.",
+            "manualApprove": "Manual Approve",
+            "manualApproveDesc": "AI drafts responses but waits for your approval before sending. Best for sensitive businesses.",
+            "recommended": "Recommended"
+        },
+        "escalation": {
+            "title": "Escalation Rules",
+            "desc": "When should AI transfer to a human?",
+            "keywords": "Escalation Keywords",
+            "keywordsHint": "AI will offer to connect with a human when customers use these words (comma-separated)",
+            "maxTurns": "Max AI Turns Before Escalation",
+            "maxTurnsHint": "If the customer isn't satisfied after this many exchanges, offer human support",
+            "negativeSentiment": "Escalate when negative sentiment is detected",
+            "lowConfidence": "Escalate when AI confidence is low"
+        },
+        "hours": {
+            "title": "Business Hours",
+            "desc": "Set when human support is available",
+            "weekdays": "Monday - Friday",
+            "saturday": "Saturday",
+            "sundayClosed": "Closed on Sunday",
+            "timezone": "Timezone"
+        },
+        "afterHours": {
+            "title": "After Hours Message",
+            "desc": "Message shown when human support isn't available"
+        },
+        "welcome": {
+            "title": "AI Welcome Message",
+            "desc": "First message customers see when starting a chat"
+        },
+        "save": "Save Settings",
+        "saving": "Saving...",
+        "saved": "Settings saved",
+        "error": "Error saving settings"
+    },
+    "errors": {
+        "generic": "Something went wrong. Please try again.",
+        "promptLimit": "You've reached your monthly prompt limit. Upgrade your plan for more.",
+        "failedResponse": "Failed to get response. Please try again.",
+        "creatingApp": "Failed to create your loyalty app. Please try again.",
+        "analyzingBusiness": "Error analyzing business data. Please try again.",
+        "templateNotFound": "Template not found. Please try again.",
+        "creatingProject": "Error creating project. Please try again.",
+        "deletingAutomation": "Error deleting automation. Please try again.",
+        "creatingAutomation": "Error creating automation. Please try again.",
+        "parsingCsv": "Error parsing CSV file. Please check the file format.",
+        "noCsvData": "No CSV data to import. Please upload a file first.",
+        "mapColumnsFirst": "Please map at least one column before importing.",
+        "importingCustomers": "Error importing customers. Please try again.",
+        "fillAllFields": "Please fill in all fields",
+        "submitFailed": "Failed to submit. Please try again.",
+        "adminOnly": "This page is for administrators only.",
+        "startingAutomation": "Error starting automation. Please try again.",
+        "dismissingOpportunity": "Error dismissing opportunity. Please try again.",
+        "generatingOpportunities": "Error generating opportunities. Please try again.",
+        "updatingAutomation": "Error updating automation",
+        "generatingPost": "Error generating post",
+        "publishingPost": "Error publishing post",
+        "deletingPost": "Error deleting post",
+        "savingDetails": "Error saving details",
+        "savingBlogSettings": "Error saving blog settings",
+        "loadingApps": "Error loading apps",
+        "connectingApp": "Error connecting app",
+        "disconnectingApp": "Error disconnecting app",
+        "archivingAutomation": "Error archiving automation",
+        "restoringAutomation": "Error restoring automation",
+        "copyFailed": "Could not copy — please copy the URL manually",
+        "noCustomerApps": "No customer apps found. Create one first."
+    },
+    "toasts": {
+        "profileLoading": "Unable to load your profile",
+        "orgLoading": "Unable to load organization. Please refresh.",
+        "orgDetailsLoading": "Unable to load organization details",
+        "teamLoading": "Unable to load team members",
+        "checkoutFailed": "Failed to start checkout",
+        "checkoutFormFailed": "Failed to load checkout form",
+        "subscriptionActivated": "Subscription activated! Welcome to your new plan.",
+        "billingPortalFailed": "Failed to open billing portal",
+        "subscriptionCanceled": "Subscription scheduled to cancel. You'll keep access until the end of your billing period.",
+        "cancelFailed": "Failed to cancel subscription",
+        "subscriptionReactivated": "Subscription reactivated! Your plan will continue as normal.",
+        "activityLoading": "Unable to load activity logs",
+        "dailyLimitInvalid": "Daily limit must be between 1 and 100",
+        "aiSettingsSaved": "AI settings saved!",
+        "aiSettingsFailed": "Failed to save AI settings",
+        "checkoutCanceled": "Checkout canceled. No charges were made.",
+        "profileSaved": "Profile saved!",
+        "profileSaveFailed": "Failed to save profile",
+        "invalidImage": "Please upload a valid image (JPG, PNG, GIF, or WebP)",
+        "imageTooLarge": "Image must be smaller than 2MB",
+        "photoUploaded": "Photo uploaded!",
+        "photoUploadFailed": "Failed to upload photo. Make sure the avatars bucket exists.",
+        "photoRemoved": "Photo removed",
+        "photoRemoveFailed": "Failed to remove photo",
+        "passwordMismatch": "Passwords do not match",
+        "passwordTooShort": "Password must be at least 6 characters",
+        "passwordUpdated": "Password updated successfully!",
+        "teamLimitReached": "You've reached your team member limit. Upgrade to invite more.",
+        "emailAlreadyInvited": "This email has already been invited",
+        "inviteSent": "Invitation sent to {email}",
+        "inviteFailed": "Failed to send invitation",
+        "roleUpdated": "Role updated",
+        "roleUpdateFailed": "Failed to update role",
+        "memberRemoved": "Member removed",
+        "memberRemoveFailed": "Failed to remove member",
+        "inviteCanceled": "Invitation cancelled",
+        "inviteCancelFailed": "Failed to cancel invitation",
+        "deleteAccountFailed": "Failed to delete account. Please contact support.",
+        "advancedModeEnabled": "Advanced mode enabled",
+        "simplifiedViewEnabled": "Simplified view enabled",
+        "automationUpdated": "Automation updated",
+        "automationUpdateFailed": "Error updating automation",
+        "postGenerated": "Post generated!",
+        "postGenerateFailed": "Error generating post",
+        "postPublished": "Post published!",
+        "postPublishFailed": "Error publishing post",
+        "postDeleted": "Post deleted",
+        "postDeleteFailed": "Error deleting post",
+        "detailsSaved": "Details saved",
+        "detailsSaveFailed": "Error saving details",
+        "blogSettingsSaved": "Blog settings saved",
+        "blogSettingsFailed": "Error saving blog settings",
+        "automationDeleted": "Automation deleted",
+        "automationDeleteFailed": "Error deleting automation",
+        "appsLoading": "Error loading apps",
+        "appConnected": "App connected",
+        "appConnectFailed": "Error connecting app",
+        "appDisconnected": "App disconnected",
+        "appDisconnectFailed": "Error disconnecting app",
+        "automationArchived": "Automation archived",
+        "automationArchiveFailed": "Error archiving automation",
+        "automationRestored": "Automation restored",
+        "automationRestoreFailed": "Error restoring automation",
+        "copied": "Copied!",
+        "copyFailed": "Could not copy — please copy the URL manually",
+        "blogSettingsSaveFailed": "Error saving blog settings",
+        "appsLoadFailed": "Error loading apps",
+        "noAppsFound": "No customer apps found. Create one first."
     }
 }

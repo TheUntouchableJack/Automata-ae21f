@@ -93,7 +93,7 @@
         // Check if user is admin
         if (userRole !== 'owner' && userRole !== 'admin') {
             // Redirect non-admins
-            alert('This page is for administrators only.');
+            alert(window.t ? window.t('errors.adminOnly') : 'This page is for administrators only.');
             window.location.href = 'dashboard.html';
             return;
         }

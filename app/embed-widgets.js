@@ -287,7 +287,7 @@ async function submitCustomRequest(event, form) {
     const email = form.email.value.trim();
 
     if (!description || !email) {
-        alert('Please fill in all fields');
+        alert(window.t ? window.t('errors.fillAllFields') : 'Please fill in all fields');
         return;
     }
 
@@ -322,7 +322,7 @@ async function submitCustomRequest(event, form) {
         console.error('Error submitting request:', error);
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
-        alert('Failed to submit. Please try again.');
+        alert(window.t ? window.t('errors.submitFailed') : 'Failed to submit. Please try again.');
     }
 }
 
