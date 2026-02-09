@@ -849,75 +849,6 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
       },
       required: ['layer', 'category', 'fact']
     }
-  },
-  // ---------------------------------------------------------------------------
-  // DATA COLLECTION TOOLS - Analyze gaps and suggest collection strategies
-  // ---------------------------------------------------------------------------
-  {
-    name: 'analyze_data_gaps',
-    description: 'Analyze customer data completeness (phone, email, birthday coverage). Use before suggesting SMS/email campaigns to understand reach. Returns coverage percentages and collection opportunities.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        target_field: {
-          type: 'string',
-          description: 'Specific field to analyze, or "all" for full coverage report',
-          enum: ['phone', 'email', 'birthday', 'all']
-        }
-      },
-      required: []
-    }
-  },
-  {
-    name: 'suggest_data_collection',
-    description: 'Get data collection strategy recommendations based on industry learnings. Use when phone/email coverage is low and user wants to improve it. Returns best strategies with expected conversion rates.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        target_field: {
-          type: 'string',
-          description: 'What data to collect',
-          enum: ['phone', 'email', 'birthday', 'preferences']
-        },
-        create_campaign: {
-          type: 'boolean',
-          description: 'Create a collection campaign with the best strategy (default: false, just show recommendations)'
-        }
-      },
-      required: ['target_field']
-    }
-  },
-  {
-    name: 'start_collection_campaign',
-    description: 'Start a data collection campaign for a specific customer segment. Sends collection requests via SMS with value proposition (e.g., "Get your receipt texted"). Respects cooling off periods and max ask limits.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        target_field: {
-          type: 'string',
-          description: 'What data to collect',
-          enum: ['phone', 'email', 'birthday', 'preferences']
-        },
-        strategy_type: {
-          type: 'string',
-          description: 'Collection strategy to use',
-          enum: ['receipt_sms', 'order_ready', 'waitlist', 'points_bonus', 'free_treat', 'flash_deals', 'vip_early_access', 'birthday_points', 'digital_receipt', 'weekly_deals', 'personalization_quiz', 'favorite_item']
-        },
-        value_proposition: {
-          type: 'string',
-          description: 'Custom message to send (optional - will use strategy default if not provided)'
-        },
-        incentive_points: {
-          type: 'number',
-          description: 'Bonus points to offer (default: based on strategy)'
-        },
-        limit: {
-          type: 'number',
-          description: 'Max customers to contact in this batch (default: 50, max: 200)'
-        }
-      },
-      required: ['target_field', 'strategy_type']
-    }
   }
 ]
 
@@ -2276,367 +2207,6 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
         importance
       }
     }
-  },
-
-  // ---------------------------------------------------------------------------
-  // DATA COLLECTION TOOLS
-  // ---------------------------------------------------------------------------
-  analyze_data_gaps: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
-    const { supabase, organizationId } = ctx
-    const targetField = (input.target_field as string) || 'all'
-
-    // Get coverage stats
-    const { data: coverage, error: coverageError } = await supabase.rpc('get_data_coverage_stats', {
-      p_organization_id: organizationId,
-      p_field: targetField
-    })
-
-    if (coverageError) {
-      return { success: false, error: coverageError.message }
-    }
-
-    // Get active collection campaigns
-    const { data: campaigns } = await supabase
-      .from('data_collection_campaigns')
-      .select('id, target_field, strategy_type, strategy_name, attempts, successes, status')
-      .eq('organization_id', organizationId)
-      .eq('status', 'active')
-      .order('successes', { ascending: false })
-      .limit(5)
-
-    // Get industry benchmarks for recommendations
-    const { data: businessProfile } = await supabase
-      .from('business_profiles')
-      .select('industry')
-      .eq('organization_id', organizationId)
-      .single()
-
-    const industry = businessProfile?.industry || null
-
-    // Build proper filter for industry - PostgREST doesn't support eq.null
-    const industryFilter = industry
-      ? `industry.eq.${industry},industry.is.null`
-      : 'industry.is.null'
-
-    const { data: benchmarks } = await supabase
-      .from('collection_strategy_performance')
-      .select('strategy_type, target_field, avg_conversion_rate, best_value_proposition, confidence_score')
-      .or(industryFilter)
-      .gt('confidence_score', 0.7)
-      .order('avg_conversion_rate', { ascending: false })
-      .limit(10)
-
-    // Build opportunities based on low coverage
-    const opportunities: Array<{ field: string; coverage_pct: number; recommendation: string }> = []
-
-    // Null check - if coverage RPC failed, return early
-    if (!coverage) {
-      return {
-        success: true,
-        data: {
-          coverage: { total_members: 0, phone_pct: 0, email_pct: 0, birthday_pct: 0 },
-          active_campaigns: campaigns || [],
-          opportunities: [],
-          industry_benchmarks: benchmarks || [],
-          total_members: 0
-        }
-      }
-    }
-
-    const coverageData = coverage as Record<string, number>
-
-    if (coverageData.phone_pct < 50) {
-      opportunities.push({
-        field: 'phone',
-        coverage_pct: coverageData.phone_pct,
-        recommendation: `Only ${coverageData.phone_pct}% of customers have phone numbers. Consider "Order Ready Text" or "Receipt via SMS" campaign.`
-      })
-    }
-    if (coverageData.email_pct < 50) {
-      opportunities.push({
-        field: 'email',
-        coverage_pct: coverageData.email_pct,
-        recommendation: `Only ${coverageData.email_pct}% of customers have emails. Consider "Digital Receipt" campaign.`
-      })
-    }
-    if (coverageData.birthday_pct < 30) {
-      opportunities.push({
-        field: 'birthday',
-        coverage_pct: coverageData.birthday_pct,
-        recommendation: `Only ${coverageData.birthday_pct}% of customers shared birthdays. Consider "Birthday Club" with free treat.`
-      })
-    }
-
-    return {
-      success: true,
-      data: {
-        coverage: coverageData,
-        active_campaigns: campaigns || [],
-        opportunities,
-        industry_benchmarks: benchmarks || [],
-        total_members: coverageData.total_members
-      }
-    }
-  },
-
-  suggest_data_collection: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
-    const { supabase, organizationId } = ctx
-    const targetField = input.target_field as string
-    const createCampaign = input.create_campaign as boolean
-
-    if (!targetField) {
-      return { success: false, error: 'target_field is required' }
-    }
-
-    // Get business industry
-    const { data: businessProfile } = await supabase
-      .from('business_profiles')
-      .select('industry')
-      .eq('organization_id', organizationId)
-      .single()
-
-    const industry = businessProfile?.industry || null
-
-    // Build proper filter for industry - PostgREST doesn't support eq.null
-    const industryFilter = industry
-      ? `industry.eq.${industry},industry.is.null`
-      : 'industry.is.null'
-
-    // Get best strategies for this industry and target field
-    const { data: strategies, error } = await supabase
-      .from('collection_strategy_performance')
-      .select('*')
-      .eq('target_field', targetField)
-      .or(industryFilter)
-      .gt('confidence_score', 0.6)
-      .order('avg_conversion_rate', { ascending: false })
-      .limit(5)
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    if (!strategies?.length) {
-      return {
-        success: true,
-        data: {
-          message: 'No proven strategies found for this combination. Try a general approach.',
-          suggestions: [
-            { strategy_type: 'points_bonus', expected_conversion: 0.40, value_proposition: `Add your ${targetField} for 50 bonus points` }
-          ]
-        }
-      }
-    }
-
-    const topStrategy = strategies[0]
-
-    // Check if campaign already exists
-    const { data: existing } = await supabase
-      .from('data_collection_campaigns')
-      .select('id, attempts, successes, status')
-      .eq('organization_id', organizationId)
-      .eq('target_field', targetField)
-      .eq('strategy_type', topStrategy.strategy_type)
-      .eq('status', 'active')
-      .single()
-
-    if (existing) {
-      const convRate = existing.attempts > 0 ? (existing.successes / existing.attempts * 100).toFixed(1) : 0
-      return {
-        success: true,
-        data: {
-          existing_campaign: true,
-          campaign_id: existing.id,
-          current_conversion_rate: convRate,
-          message: `You already have an active "${topStrategy.strategy_type}" campaign with ${convRate}% conversion.`
-        }
-      }
-    }
-
-    // Create campaign if requested
-    if (createCampaign) {
-      const { data: newCampaign, error: createError } = await supabase
-        .from('data_collection_campaigns')
-        .insert({
-          organization_id: organizationId,
-          target_field: targetField,
-          strategy_type: topStrategy.strategy_type,
-          strategy_name: topStrategy.best_value_proposition || `${targetField} Collection`,
-          value_proposition: topStrategy.best_value_proposition,
-          incentive_points: topStrategy.optimal_incentive_points || 0,
-          status: 'active'
-        })
-        .select('id')
-        .single()
-
-      if (createError) {
-        return { success: false, error: createError.message }
-      }
-
-      return {
-        success: true,
-        data: {
-          created: true,
-          campaign_id: newCampaign.id,
-          strategy: topStrategy.strategy_type,
-          expected_conversion: (topStrategy.avg_conversion_rate * 100).toFixed(0) + '%',
-          value_proposition: topStrategy.best_value_proposition,
-          message: `Created "${topStrategy.strategy_type}" campaign. Expected conversion: ${(topStrategy.avg_conversion_rate * 100).toFixed(0)}%`
-        }
-      }
-    }
-
-    return {
-      success: true,
-      data: {
-        recommendations: strategies.map(s => ({
-          strategy_type: s.strategy_type,
-          expected_conversion: (s.avg_conversion_rate * 100).toFixed(0) + '%',
-          confidence: (s.confidence_score * 100).toFixed(0) + '%',
-          value_proposition: s.best_value_proposition,
-          incentive_points: s.optimal_incentive_points
-        })),
-        best_strategy: topStrategy.strategy_type,
-        message: `Recommended: "${topStrategy.strategy_type}" with ${(topStrategy.avg_conversion_rate * 100).toFixed(0)}% expected conversion`
-      }
-    }
-  },
-
-  start_collection_campaign: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
-    const { supabase, organizationId, appId } = ctx
-    const targetField = input.target_field as string
-    const strategyType = input.strategy_type as string
-    const customMessage = input.value_proposition as string | undefined
-    const incentivePoints = input.incentive_points as number | undefined
-    const limit = Math.min((input.limit as number) || 50, 200)
-
-    if (!targetField || !strategyType) {
-      return { success: false, error: 'target_field and strategy_type are required' }
-    }
-
-    // Get or create campaign
-    let { data: campaign } = await supabase
-      .from('data_collection_campaigns')
-      .select('id, value_proposition, incentive_points')
-      .eq('organization_id', organizationId)
-      .eq('target_field', targetField)
-      .eq('strategy_type', strategyType)
-      .eq('status', 'active')
-      .single()
-
-    if (!campaign) {
-      // Get strategy defaults from performance table
-      const { data: strategyDefaults } = await supabase
-        .from('collection_strategy_performance')
-        .select('best_value_proposition, optimal_incentive_points')
-        .eq('target_field', targetField)
-        .eq('strategy_type', strategyType)
-        .single()
-
-      const { data: newCampaign, error: createError } = await supabase
-        .from('data_collection_campaigns')
-        .insert({
-          organization_id: organizationId,
-          target_field: targetField,
-          strategy_type: strategyType,
-          strategy_name: `${targetField} - ${strategyType}`,
-          value_proposition: customMessage || strategyDefaults?.best_value_proposition || `Share your ${targetField} for rewards!`,
-          incentive_points: incentivePoints ?? strategyDefaults?.optimal_incentive_points ?? 25,
-          status: 'active'
-        })
-        .select('id, value_proposition, incentive_points')
-        .single()
-
-      if (createError) {
-        return { success: false, error: createError.message }
-      }
-      campaign = newCampaign
-    }
-
-    // Get eligible targets
-    const { data: eligibleMembers, error: eligibleError } = await supabase.rpc('get_eligible_collection_targets', {
-      p_organization_id: organizationId,
-      p_target_field: targetField,
-      p_limit: limit
-    })
-
-    if (eligibleError) {
-      return { success: false, error: eligibleError.message }
-    }
-
-    if (!eligibleMembers?.length) {
-      return {
-        success: true,
-        data: {
-          campaign_id: campaign.id,
-          targets_found: 0,
-          message: 'No eligible members found. They may all have the data, be in cooling off, or opted out.'
-        }
-      }
-    }
-
-    // For phone collection, we need existing phone numbers to send SMS
-    // For other fields, we can use existing contact methods
-    const contactable = (eligibleMembers as Array<{ member_id: string; phone: string; email: string }>).filter(m => {
-      if (targetField === 'phone') {
-        // Can't SMS someone without a phone - need alternative contact
-        return m.email // Would need to email them a link
-      }
-      return m.phone || m.email
-    })
-
-    if (!contactable.length) {
-      return {
-        success: true,
-        data: {
-          campaign_id: campaign.id,
-          targets_found: eligibleMembers.length,
-          contactable: 0,
-          message: `Found ${eligibleMembers.length} members missing ${targetField}, but none have contact methods to reach them.`
-        }
-      }
-    }
-
-    // Record pending attempts for contactable members
-    const attempts = contactable.slice(0, limit).map(m => ({
-      campaign_id: campaign.id,
-      member_id: m.member_id,
-      organization_id: organizationId,
-      touchpoint: 'automated_campaign',
-      channel: m.phone ? 'sms' : 'email',
-      outcome: 'pending'
-    }))
-
-    const { error: insertError } = await supabase
-      .from('data_collection_attempts')
-      .insert(attempts)
-
-    if (insertError) {
-      return { success: false, error: insertError.message }
-    }
-
-    // Mark members as having pending collection
-    const memberIds = contactable.slice(0, limit).map(m => m.member_id)
-    await supabase
-      .from('app_members')
-      .update({
-        pending_collection_type: targetField,
-        pending_collection_campaign_id: campaign.id,
-        pending_collection_sent_at: new Date().toISOString()
-      })
-      .in('id', memberIds)
-
-    return {
-      success: true,
-      data: {
-        campaign_id: campaign.id,
-        targets_found: eligibleMembers.length,
-        messages_queued: attempts.length,
-        value_proposition: campaign.value_proposition,
-        incentive_points: campaign.incentive_points,
-        message: `Queued ${attempts.length} collection messages for ${targetField}. Members will receive: "${campaign.value_proposition}"`
-      }
-    }
   }
 }
 
@@ -2689,6 +2259,13 @@ async function callClaudeWithTools(
   while (iterations < TOOL_USE_CONFIG.maxIterations) {
     iterations++
 
+    // Add cache_control to the last tool for prompt caching
+    const toolsWithCache = ROYAL_AI_TOOLS.map((tool, i) =>
+      i === ROYAL_AI_TOOLS.length - 1
+        ? { ...tool, cache_control: { type: 'ephemeral' } }
+        : tool
+    )
+
     const response = await fetchWithTimeout(
       'https://api.anthropic.com/v1/messages',
       {
@@ -2697,13 +2274,20 @@ async function callClaudeWithTools(
           'Content-Type': 'application/json',
           'x-api-key': ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01',
+          'anthropic-beta': 'prompt-caching-2024-07-31',
         },
         body: JSON.stringify({
           model: MODEL_ID,
           max_tokens: maxTokens,
-          system: systemPrompt,
+          system: [
+            {
+              type: 'text',
+              text: systemPrompt,
+              cache_control: { type: 'ephemeral' }
+            }
+          ],
           messages: currentMessages,
-          tools: ROYAL_AI_TOOLS,
+          tools: toolsWithCache,
         }),
       },
       API_TIMEOUT_MS
@@ -3408,7 +2992,7 @@ async function getNextDiscoveryQuestionV2(
   }
 }
 
-// Call Claude API with conversation history
+// Call Claude API with conversation history (with prompt caching)
 async function callClaude(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
@@ -3422,11 +3006,18 @@ async function callClaude(
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31',
       },
       body: JSON.stringify({
         model: MODEL_ID,
         max_tokens: maxTokens,
-        system: systemPrompt,
+        system: [
+          {
+            type: 'text',
+            text: systemPrompt,
+            cache_control: { type: 'ephemeral' }
+          }
+        ],
         messages,
       }),
     },
@@ -3923,7 +3514,7 @@ Deno.serve(async (req) => {
       .select('prompt_text, response, mode')
       .eq('thread_id', currentThreadId)
       .order('created_at', { ascending: true })
-      .limit(10) // Last 10 exchanges for context
+      .limit(5) // Last 5 exchanges for context (reduced for token efficiency)
 
     // Build conversation messages
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> = []

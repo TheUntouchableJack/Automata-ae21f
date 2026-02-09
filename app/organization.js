@@ -10,9 +10,9 @@ let currentUserRole = null;
 
 // Plan limits by tier
 const PLAN_LIMITS = {
-    free: { projects: 3, automations: 5, apps: 1, members: 2 },
-    starter: { projects: 10, automations: 25, apps: 5, members: 5 },
-    pro: { projects: 50, automations: 100, apps: 20, members: 20 },
+    free: { projects: 3, automations: 0, apps: 1, members: 2 },
+    pro: { projects: 50, automations: Infinity, apps: 20, members: 20 },
+    max: { projects: Infinity, automations: Infinity, apps: Infinity, members: Infinity },
     enterprise: { projects: Infinity, automations: Infinity, apps: Infinity, members: Infinity }
 };
 
@@ -91,8 +91,8 @@ async function loadOrganizationInfo() {
     const plan = currentOrganization.plan || 'free';
     const planLabels = {
         free: 'Free Plan',
-        starter: 'Starter Plan',
         pro: 'Pro Plan',
+        max: 'Max Plan',
         enterprise: 'Enterprise'
     };
     document.getElementById('org-plan').textContent = planLabels[plan] || 'Free Plan';

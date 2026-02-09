@@ -316,7 +316,7 @@ const CrownDashboard = (function() {
                             // Show upgrade message
                             const message = typeof getFeatureUpgradeMessage === 'function'
                                 ? getFeatureUpgradeMessage('autonomous_mode', appState.organization)
-                                : 'Autonomous Mode is available on Growth ($199/mo). Upgrade to let Royal send campaigns without asking.';
+                                : 'Autonomous Mode is available on Pro ($299/mo). Upgrade to let Royal send campaigns without asking.';
                             showStatusMessage(message, 'info', 5000);
                             return;
                         }

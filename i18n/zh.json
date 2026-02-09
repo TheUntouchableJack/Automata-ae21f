@@ -184,47 +184,49 @@
         "viewFullPricing": "查看完整价格详情和AppSumo终身优惠 →",
         "free": {
             "name": "免费版",
-            "desc": "免费试用",
-            "f1": "最多50名会员",
-            "f2": "一键自动化",
-            "f3": "二维码签到",
-            "f4": "积分与奖励",
-            "cta": "开始免费Beta"
+            "desc": "体验Royal",
+            "f1": "最多250位客户",
+            "f2": "完整会员计划",
+            "f3": "每月20次Royal聊天",
+            "f4": "积分、奖励和推荐",
+            "cta": "免费开始"
         },
-        "starter": {
-            "name": "Starter",
-            "desc": "适合小型企业",
-            "f1": "最多500名会员",
-            "f2": "每月30条AI洞察",
-            "f3": "AI构建会员计划",
-            "f4": "邮件支持",
-            "cta": "加入Beta"
+        "pro": {
+            "name": "Pro专业版",
+            "desc": "Royal管理您的营销",
+            "f1": "无限客户",
+            "f2": "每月10,000封邮件 + 500条短信",
+            "f3": "无限Royal AI + 自主模式",
+            "f4": "业务学习和分析",
+            "cta": "开始试用"
         },
-        "growth": {
-            "name": "Growth",
-            "desc": "适合成长型企业",
-            "f1": "最多2,000名会员",
-            "f2": "每月100条AI洞察",
-            "f3": "优先支持",
-            "f4": "高级分析",
-            "cta": "加入Beta"
+        "max": {
+            "name": "Max旗舰版",
+            "desc": "Royal证明您的ROI",
+            "f1": "Pro的所有功能",
+            "f2": "每月50,000封邮件 + 2,000条短信",
+            "f3": "访问归因（证明ROI）",
+            "f4": "白标 + 优先支持",
+            "cta": "开始试用"
         },
-        "scale": {
-            "name": "Scale",
-            "desc": "适合多店铺",
-            "f1": "无限会员",
-            "f2": "无限AI洞察",
-            "f3": "白标品牌",
-            "f4": "专属支持",
-            "cta": "加入Beta"
+        "enterprise": {
+            "name": "企业版",
+            "desc": "定制解决方案",
+            "price": "定制",
+            "period": "定价",
+            "f1": "Max的所有功能",
+            "f2": "专属支持和SLA",
+            "f3": "API访问",
+            "f4": "自定义集成",
+            "cta": "联系我们"
         },
         "royaltyPro": {
-            "name": "Royalty Pro",
+            "name": "Royal Pro",
             "desc": "适合终身优惠持有者",
-            "f1": "无限AI洞察",
+            "f1": "无限Royal AI + 自主模式",
             "f2": "白标品牌",
             "f3": "随时取消",
-            "cta": "添加Royalty Pro"
+            "cta": "添加Royal Pro"
         }
     },
     "cta": {
@@ -254,8 +256,8 @@
             "subtitle": "关于每个方案您需要了解的一切",
             "features": "功能",
             "coreLimits": "核心限制",
-            "members": "会员数",
-            "aiInsights": "每月AI洞察",
+            "customers": "客户数",
+            "aiInsights": "每月Royal AI",
             "loyaltyFeatures": "会员功能",
             "pointsRewards": "积分与奖励",
             "qrCheckins": "二维码签到",
@@ -265,7 +267,7 @@
             "aiFeatures": "AI功能",
             "oneClickAutomations": "一键自动化",
             "aiBuiltProgram": "AI构建会员计划",
-            "aiIntelligence": "AI智能洞察",
+            "aiIntelligence": "Royal AI智能",
             "automatedCampaigns": "自动化活动",
             "brandingSupport": "品牌与支持",
             "whiteLabel": "白标品牌",
@@ -276,7 +278,7 @@
         "appsumo": {
             "limitedTime": "限时优惠",
             "title": "AppSumo终身优惠",
-            "subtitle": "一次付费，终身使用Royalty。无月费，永远不收。AI构建您的会员计划，自动化永久运行。",
+            "subtitle": "一次付费，终身使用Royal。无月费，永远不收。AI构建您的会员计划，自动化永久运行。",
             "tier1": "等级1",
             "tier2": "等级2",
             "tier3": "等级3",
@@ -288,17 +290,17 @@
             "strike3": "价值$4,788/年",
             "oneTime": "一次性付款",
             "mostPopular": "最受欢迎",
-            "t1f1": "500名会员",
+            "t1f1": "500位客户",
             "t1f2": "AI构建会员计划",
             "t1f3": "包含所有自动化",
             "t1f4": "积分、等级与奖励",
             "t1f5": "终身更新",
-            "t2f1": "2,000名会员",
+            "t2f1": "2,000位客户",
             "t2f2": "AI构建会员计划",
             "t2f3": "包含所有自动化",
             "t2f4": "优先支持",
             "t2f5": "终身更新",
-            "t3f1": "无限会员",
+            "t3f1": "无限客户",
             "t3f2": "AI构建会员计划",
             "t3f3": "包含所有自动化",
             "t3f4": "优先支持",
@@ -307,34 +309,34 @@
             "guarantee": "通过AppSumo享60天退款保证"
         },
         "royaltyPro": {
-            "title": "Royalty Pro — 终身优惠持有者专属",
-            "desc": "想让AI智能持续分析您的会员并建议下一步行动？添加Royalty Pro解锁无限AI洞察和白标品牌。",
-            "f1": "无限AI洞察",
+            "title": "Royal Pro — 终身优惠持有者专属",
+            "desc": "想让Royal AI持续分析您的客户并建议下一步行动？添加Royal Pro解锁无限Royal AI和白标品牌。",
+            "f1": "无限Royal AI + 自主模式",
             "f2": "白标品牌",
             "f3": "随时取消",
             "priceLabel": "添加到您的终身优惠",
             "pricePeriod": "/月",
-            "cta": "添加Royalty Pro"
+            "cta": "添加Royal Pro"
         },
         "faq": {
             "title": "常见问题",
             "subtitle": "关于定价您需要了解的一切",
-            "q1": "什么是\"会员\"？",
-            "a1": "会员是加入您会员计划的客户。每个唯一的邮箱或手机号算作一名会员，无论他们到访多少次。",
-            "q2": "什么是\"AI洞察\"？",
-            "a2": "AI洞察是我们智能系统提供的建议。它分析您的会员数据并建议操作，如\"向23名不活跃会员发送召回活动\"或\"祝贺小李升级到金牌等级。\"",
+            "q1": "什么是\"客户\"？",
+            "a1": "客户是加入您会员计划的人。每个唯一的邮箱或手机号算作一位客户，无论他们到访多少次。",
+            "q2": "什么是\"Royal AI\"？",
+            "a2": "Royal AI是我们的智能助手。它分析您的客户数据并建议操作，如\"向23位不活跃客户发送召回活动\"或\"祝贺小李升级到金牌等级。\"",
             "q3": "开始需要信用卡吗？",
             "a3": "不需要。您可以使用免费计划开始，或在不输入信用卡的情况下开始14天任何付费计划的试用。准备好时再升级。",
             "q4": "终身优惠和订阅有什么区别？",
-            "a4": "AppSumo终身优惠(LTD)买家只需支付一次，即可永久使用。LTD包含AI构建的会员计划设置、自动化、积分和邮件活动。持续AI学习和自主模式需要订阅Royalty Pro（$49/月）。",
+            "a4": "AppSumo终身优惠(LTD)买家只需支付一次，即可永久使用。LTD包含AI构建的会员计划设置、自动化、积分和邮件活动。持续AI学习和自主模式需要订阅Royal Pro（$79/月）。",
             "q5": "可以随时更换方案吗？",
             "a5": "可以！随时升级或降级。升级时按比例收取差价。降级时获得未来账单的抵扣额度。",
             "q6": "什么是白标品牌？",
-            "a6": "白标会移除客户端会员应用上的\"Powered by Royalty\"品牌标识。您的客户只看到您的品牌。",
+            "a6": "白标会移除客户端会员应用上的\"Powered by Royal\"品牌标识。您的客户只看到您的品牌。",
             "q7": "有退款保证吗？",
             "a7": "有！订阅享30天退款保证。AppSumo优惠通过其平台享有60天退款政策。",
             "q8": "可以叠加AppSumo代码吗？",
-            "a8": "可以！每个代码增加您的会员上限。等级1 = 500名会员，等级2 = 2,000名会员，等级3 = 无限会员。叠加以达到您需要的等级。"
+            "a8": "可以！每个代码增加您的客户上限。等级1 = 500位客户，等级2 = 2,000位客户，等级3 = 无限客户。叠加以达到您需要的等级。"
         }
     },
     "footer": {
@@ -930,8 +932,8 @@
             "subtitle": "查看您的订阅和使用情况",
             "currentPlan": "当前计划",
             "features": "功能",
-            "members": "会员",
-            "aiInsights": "AI洞察/月",
+            "customers": "客户",
+            "aiInsights": "Royal AI/月",
             "automations": "自动化",
             "whiteLabel": "白标",
             "included": "已包含",
@@ -939,9 +941,9 @@
             "unlimited": "无限制",
             "upgrade": "升级计划",
             "redeem": "兑换代码",
-            "royaltyPro": "Royalty Pro",
-            "royaltyProActive": "已激活",
-            "addRoyaltyPro": "添加Royalty Pro",
+            "royalPro": "Royal Pro",
+            "royalProActive": "已激活",
+            "addRoyalPro": "添加Royal Pro",
             "billingNote": "14天免费试用，之后按月或按年计费。随时取消。"
         },
         "activity": {

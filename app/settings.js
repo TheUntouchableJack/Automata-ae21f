@@ -330,7 +330,7 @@ function renderPlan() {
 
     featuresHtml.push(`
         <div class="feature-item">
-            <span class="feature-label">Members</span>
+            <span class="feature-label">Customers</span>
             <span class="feature-value">${formatLimit(orgLimits.members)}</span>
         </div>
     `);
@@ -385,7 +385,7 @@ function renderPlan() {
 function updateUpgradePlansVisibility() {
     const currentTier = currentOrganization?.subscription_tier;
     const planType = currentOrganization?.plan_type;
-    const tierOrder = ['starter', 'growth', 'scale'];
+    const tierOrder = ['pro', 'max'];
     const currentIndex = tierOrder.indexOf(currentTier);
     const upgradeSection = document.getElementById('upgrade-section');
     const royaltyProSection = document.getElementById('royalty-pro-section');
@@ -394,7 +394,7 @@ function updateUpgradePlansVisibility() {
     if (planType === 'subscription') {
         document.querySelectorAll('.upgrade-plan-card').forEach(card => {
             const planTier = card.dataset.plan;
-            if (planTier === 'royalty_pro') return; // Skip Royalty Pro card
+            if (planTier === 'royalty_pro' || planTier === 'enterprise') return; // Skip Royalty Pro and Enterprise cards
 
             const planIndex = tierOrder.indexOf(planTier);
 
@@ -405,8 +405,8 @@ function updateUpgradePlansVisibility() {
             }
         });
 
-        // If on scale (highest), hide upgrade section
-        if (currentTier === 'scale') {
+        // If on max (highest subscription tier), hide upgrade section
+        if (currentTier === 'max') {
             upgradeSection.style.display = 'none';
         }
 
