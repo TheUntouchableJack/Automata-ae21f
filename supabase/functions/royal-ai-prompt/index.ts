@@ -2313,16 +2313,36 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
     const industry = businessProfile?.industry || null
 
+    // Build proper filter for industry - PostgREST doesn't support eq.null
+    const industryFilter = industry
+      ? `industry.eq.${industry},industry.is.null`
+      : 'industry.is.null'
+
     const { data: benchmarks } = await supabase
       .from('collection_strategy_performance')
       .select('strategy_type, target_field, avg_conversion_rate, best_value_proposition, confidence_score')
-      .or(`industry.eq.${industry},industry.is.null`)
+      .or(industryFilter)
       .gt('confidence_score', 0.7)
       .order('avg_conversion_rate', { ascending: false })
       .limit(10)
 
     // Build opportunities based on low coverage
     const opportunities: Array<{ field: string; coverage_pct: number; recommendation: string }> = []
+
+    // Null check - if coverage RPC failed, return early
+    if (!coverage) {
+      return {
+        success: true,
+        data: {
+          coverage: { total_members: 0, phone_pct: 0, email_pct: 0, birthday_pct: 0 },
+          active_campaigns: campaigns || [],
+          opportunities: [],
+          industry_benchmarks: benchmarks || [],
+          total_members: 0
+        }
+      }
+    }
+
     const coverageData = coverage as Record<string, number>
 
     if (coverageData.phone_pct < 50) {
@@ -2377,12 +2397,17 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
     const industry = businessProfile?.industry || null
 
+    // Build proper filter for industry - PostgREST doesn't support eq.null
+    const industryFilter = industry
+      ? `industry.eq.${industry},industry.is.null`
+      : 'industry.is.null'
+
     // Get best strategies for this industry and target field
     const { data: strategies, error } = await supabase
       .from('collection_strategy_performance')
       .select('*')
       .eq('target_field', targetField)
-      .or(`industry.eq.${industry},industry.is.null`)
+      .or(industryFilter)
       .gt('confidence_score', 0.6)
       .order('avg_conversion_rate', { ascending: false })
       .limit(5)
