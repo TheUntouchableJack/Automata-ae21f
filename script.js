@@ -17,43 +17,47 @@ let lastFocusedElement = null;
 
 // All focusable elements in the drawer
 function getFocusableElements() {
-    return mobileMenuDrawer.querySelectorAll(
+    return mobileMenuDrawer?.querySelectorAll(
         'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    );
+    ) || [];
 }
 
 function openMobileMenu() {
+    if (!mobileMenuDrawer) return;
+
     // Store current focus
     lastFocusedElement = document.activeElement;
 
     // Add active classes
-    mobileMenuBtn.classList.add('active');
-    mobileMenuOverlay.classList.add('active');
+    mobileMenuBtn?.classList.add('active');
+    mobileMenuOverlay?.classList.add('active');
     mobileMenuDrawer.classList.add('active');
     document.body.classList.add('mobile-menu-open');
 
     // Update ARIA
-    mobileMenuOverlay.setAttribute('aria-hidden', 'false');
+    mobileMenuOverlay?.setAttribute('aria-hidden', 'false');
     mobileMenuDrawer.setAttribute('aria-hidden', 'false');
-    mobileMenuBtn.setAttribute('aria-expanded', 'true');
+    mobileMenuBtn?.setAttribute('aria-expanded', 'true');
 
     // Focus the close button
     setTimeout(() => {
-        mobileMenuClose.focus();
+        mobileMenuClose?.focus();
     }, 100);
 }
 
 function closeMobileMenu() {
+    if (!mobileMenuDrawer) return;
+
     // Remove active classes
-    mobileMenuBtn.classList.remove('active');
-    mobileMenuOverlay.classList.remove('active');
+    mobileMenuBtn?.classList.remove('active');
+    mobileMenuOverlay?.classList.remove('active');
     mobileMenuDrawer.classList.remove('active');
     document.body.classList.remove('mobile-menu-open');
 
     // Update ARIA
-    mobileMenuOverlay.setAttribute('aria-hidden', 'true');
+    mobileMenuOverlay?.setAttribute('aria-hidden', 'true');
     mobileMenuDrawer.setAttribute('aria-hidden', 'true');
-    mobileMenuBtn.setAttribute('aria-expanded', 'false');
+    mobileMenuBtn?.setAttribute('aria-expanded', 'false');
 
     // Restore focus
     if (lastFocusedElement) {
@@ -71,16 +75,14 @@ function handleFocusTrap(e) {
 
     if (e.key === 'Tab') {
         if (e.shiftKey) {
-            // Shift + Tab
             if (document.activeElement === firstFocusable) {
                 e.preventDefault();
-                lastFocusable.focus();
+                lastFocusable?.focus();
             }
         } else {
-            // Tab
             if (document.activeElement === lastFocusable) {
                 e.preventDefault();
-                firstFocusable.focus();
+                firstFocusable?.focus();
             }
         }
     }
@@ -113,12 +115,11 @@ if (mobileMenuBtn && mobileMenuDrawer) {
     // Focus trap
     document.addEventListener('keydown', handleFocusTrap);
 
-    // Close on navigation link click (smooth scroll then close)
+    // Close on navigation link click
     mobileMenuLinks.forEach(link => {
         link.addEventListener('click', () => {
             const href = link.getAttribute('href');
-            if (href.startsWith('#')) {
-                // Close menu after a short delay to show the tap feedback
+            if (href?.startsWith('#')) {
                 setTimeout(closeMobileMenu, 150);
             }
         });
@@ -128,7 +129,7 @@ if (mobileMenuBtn && mobileMenuDrawer) {
     mobileMenuCTA.forEach(link => {
         link.addEventListener('click', () => {
             const href = link.getAttribute('href');
-            if (href.startsWith('#')) {
+            if (href?.startsWith('#')) {
                 setTimeout(closeMobileMenu, 150);
             }
         });
@@ -145,8 +146,6 @@ if (mobileMenuBtn && mobileMenuDrawer) {
         }, 100);
     });
 }
-
-// Note: Mobile language selector is handled by i18n.js (setupLanguageSelectors)
 
 // ===== Smooth Scroll for Anchor Links =====
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
