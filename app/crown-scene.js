@@ -730,8 +730,8 @@ const CrownScene = (function() {
             starField = null;
         }
 
-        // Reset swirl meshes
-        swirlMeshes = [];
+        // Reset wave meshes
+        waveMeshes = [];
 
         if (composer) {
             composer.dispose();

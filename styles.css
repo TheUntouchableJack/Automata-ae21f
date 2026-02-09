@@ -115,6 +115,7 @@ body {
 .social-proof,
 .pricing,
 .cta-section,
+.info-gathering,
 .footer {
     position: relative;
     z-index: 1;
@@ -190,6 +191,57 @@ h4 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    background-size: 200% 200%;
+    animation: gradientShift 6s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* ===== Hero Animations ===== */
+
+/* Staggered element reveal on page load */
+.hero-badge,
+.hero-title #title-line-1,
+.hero-title > .gradient-text,
+.hero-subtitle {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: heroReveal 0.6s ease-out forwards;
+}
+
+.hero-badge { animation-delay: 0s; }
+.hero-title #title-line-1 { animation-delay: 0.1s; }
+.hero-title > .gradient-text { animation-delay: 0.2s; }
+.hero-subtitle { animation-delay: 0.3s; }
+
+@keyframes heroReveal {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Discovery card breathing animation */
+.discovery-card {
+    animation: cardFloat 4s ease-in-out infinite;
+}
+
+@keyframes cardFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+/* Pause floating when user is interacting */
+.discovery-card:focus-within {
+    animation-play-state: paused;
+    transform: translateY(-2px);
+}
+
+/* Enhanced input focus glow */
+.discovery-input:focus {
+    box-shadow:
+        0 0 0 3px rgba(124, 58, 237, 0.1),
+        0 0 20px rgba(124, 58, 237, 0.15);
 }
 
 /* ===== Buttons ===== */
@@ -344,6 +396,210 @@ h4 {
     height: 2px;
     background: var(--color-text);
     border-radius: 2px;
+    transition: all var(--transition-base);
+    transform-origin: center;
+}
+
+/* Hamburger to X animation */
+.mobile-menu-btn.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-btn.active span:nth-child(2) {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+.mobile-menu-btn.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* ===== Mobile Menu Drawer ===== */
+
+/* Overlay - darkens background */
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-base), visibility var(--transition-base);
+    z-index: 999;
+}
+
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Drawer - slides in from right */
+.mobile-menu-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    max-width: 85vw;
+    background: var(--color-bg);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.15);
+    transform: translateX(100%);
+    transition: transform var(--transition-slow);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.mobile-menu-drawer.active {
+    transform: translateX(0);
+}
+
+/* Header with logo and close button */
+.mobile-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.mobile-menu-header .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mobile-menu-header .logo-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.mobile-menu-header .logo-text {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.mobile-menu-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--color-bg-secondary);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.mobile-menu-close:hover {
+    background: var(--color-bg-tertiary);
+}
+
+.mobile-menu-close:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Navigation links */
+.mobile-menu-nav {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mobile-menu-link {
+    display: block;
+    padding: 14px 16px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.mobile-menu-link:hover,
+.mobile-menu-link:focus {
+    background: var(--color-bg-secondary);
+    color: var(--color-primary);
+}
+
+.mobile-menu-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+}
+
+/* CTA buttons */
+.mobile-menu-cta {
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+/* Footer with language selector */
+.mobile-menu-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border-light);
+    background: var(--color-bg-secondary);
+    position: relative;  /* For dropdown positioning */
+}
+
+.mobile-lang-selector {
+    width: 100%;
+    position: relative;
+}
+
+.mobile-lang-selector .lang-selector-btn {
+    width: 100%;
+    justify-content: space-between;
+    padding: 12px 16px;
+}
+
+.mobile-lang-selector .lang-dropdown {
+    position: absolute;
+    bottom: calc(100% + 8px);  /* Expand upward */
+    top: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.12);
+}
+
+.mobile-lang-selector .lang-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+
+/* Body scroll lock when menu is open */
+body.mobile-menu-open {
+    overflow: hidden;
+}
+
+/* Ensure drawer is hidden on desktop */
+@media (min-width: 769px) {
+    .mobile-menu-overlay,
+    .mobile-menu-drawer {
+        display: none !important;
+    }
 }
 
 /* ===== Hero Section ===== */
@@ -352,13 +608,142 @@ h4 {
     background: transparent;
 }
 
-.hero .container {
+/* Split layout for desktop */
+.hero-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    align-items: center;
+}
+
+@media (min-width: 1024px) {
+    .hero-split {
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+    }
+}
+
+/* Left side: Intro content */
+.hero-left {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
 }
 
+@media (min-width: 1024px) {
+    .hero-left {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .hero-left .hero-badge {
+        align-self: flex-start;
+    }
+
+    .hero-left .hero-title {
+        text-align: left;
+    }
+
+    .hero-left .hero-subtitle {
+        text-align: left;
+        max-width: 500px;
+    }
+
+    .hero-left .hero-stats {
+        justify-content: flex-start;
+    }
+}
+
+/* Right side: 3D Sphere (desktop only) */
+.hero-right {
+    display: none;
+    position: relative;
+    min-height: 560px;
+    /* Debug: visible background to verify layout */
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(99, 102, 241, 0.08) 100%);
+    border-radius: var(--radius-xl);
+}
+
+@media (min-width: 1024px) {
+    .hero-right {
+        display: block;
+    }
+}
+
+/* Sphere container */
+.hero-sphere-container {
+    position: relative;
+    width: 100%;
+    height: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#hero-crown-canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-xl);
+}
+
+/* Desktop discovery card - floating over sphere */
+.discovery-card-desktop {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 380px;
+    padding: 28px;
+    margin-bottom: 0;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.12),
+        0 8px 24px rgba(124, 58, 237, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    z-index: 10;
+}
+
+.discovery-card-desktop .discovery-title {
+    font-size: 1.25rem;
+    margin-bottom: 6px;
+}
+
+.discovery-card-desktop .discovery-subtitle {
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.discovery-card-desktop .discovery-input {
+    min-height: 60px;
+    font-size: 14px;
+}
+
+.discovery-card-desktop .discovery-btn {
+    margin-top: 16px;
+    padding: 14px 20px;
+    font-size: 15px;
+}
+
+/* Mobile discovery card - shown inline */
+.discovery-card-mobile {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    margin: 32px auto;
+}
+
+@media (min-width: 1024px) {
+    .discovery-card-mobile {
+        display: none;
+    }
+}
+
+/* Legacy support - keep old class working */
 .hero-content {
     display: flex;
     flex-direction: column;
@@ -391,12 +776,18 @@ h4 {
     height: 8px;
     background: var(--color-accent);
     border-radius: 50%;
-    animation: pulse 2s infinite;
+    animation: dotPulse 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(0.95); }
+@keyframes dotPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
 }
 
 .hero-title {
@@ -1643,6 +2034,14 @@ blockquote {
     margin-top: 24px;
     padding: 16px 24px;
     font-size: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.discovery-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+        0 4px 12px rgba(124, 58, 237, 0.3),
+        0 0 20px rgba(124, 58, 237, 0.2);
 }
 
 /* ===== Recommendations Section ===== */
@@ -2027,17 +2426,19 @@ blockquote {
 /* ===== Info-Gathering Section ===== */
 .info-gathering {
     padding: 60px 0 100px;
-    background: var(--color-bg-secondary);
+    background: transparent;
 }
 
 .info-gathering-card {
     max-width: 580px;
     margin: 0 auto;
-    background: var(--color-bg);
+    background: #ffffff;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xl);
     padding: 40px;
     box-shadow: var(--shadow-lg);
+    position: relative;
+    z-index: 1;
 }
 
 .info-gathering-header {
@@ -2422,5 +2823,33 @@ blockquote {
     .roadmap-preview-cta .btn {
         width: 100%;
         max-width: 300px;
+    }
+}
+
+/* ===== Reduced Motion: Disable Hero Animations ===== */
+@media (prefers-reduced-motion: reduce) {
+    .hero-badge,
+    .hero-title #title-line-1,
+    .hero-title > .gradient-text,
+    .hero-subtitle {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    .gradient-text {
+        animation: none;
+    }
+
+    .discovery-card {
+        animation: none;
+    }
+
+    .badge-dot {
+        animation: none;
+    }
+
+    .discovery-btn:hover {
+        transform: none;
     }
 }

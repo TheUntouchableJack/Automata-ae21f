@@ -47,7 +47,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=13">
+    <link rel="stylesheet" href="styles.css?v=15">
     <link rel="stylesheet" href="i18n/i18n.css">
     <!-- Cloudflare Turnstile CAPTCHA -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -95,7 +95,7 @@
                     </div>
                 </div>
             </div>
-            <button class="mobile-menu-btn" aria-label="Toggle menu">
+            <button class="mobile-menu-btn" aria-label="Toggle menu" aria-expanded="false">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -103,10 +103,57 @@
         </div>
     </nav>
 
+    <!-- Mobile Menu Drawer (outside navbar to avoid height clipping) -->
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay" aria-hidden="true"></div>
+    <div class="mobile-menu-drawer" id="mobile-menu-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu" aria-hidden="true">
+        <div class="mobile-menu-header">
+            <a href="#" class="logo">
+                <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                <span class="logo-text">Royalty</span>
+            </a>
+            <button class="mobile-menu-close" aria-label="Close menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="#" class="mobile-menu-link" data-i18n="nav.home">Home</a>
+            <a href="#features" class="mobile-menu-link" data-i18n="nav.features">Features</a>
+            <a href="#how-it-works" class="mobile-menu-link" data-i18n="nav.howItWorks">How It Works</a>
+            <a href="#pricing" class="mobile-menu-link" data-i18n="nav.pricing">Pricing</a>
+        </nav>
+        <div class="mobile-menu-cta">
+            <a href="/app/login.html" class="btn btn-secondary btn-block" data-i18n="nav.login">Log In</a>
+            <a href="#cta" class="btn btn-primary btn-block" data-i18n="nav.joinWaitlist">Join our Beta</a>
+        </div>
+        <div class="mobile-menu-footer">
+            <div class="lang-selector mobile-lang-selector">
+                <button class="lang-selector-btn" type="button" aria-label="Change language">
+                    <span class="lang-selector-current">EN</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="lang-dropdown">
+                    <a href="#" class="lang-option active" data-lang="en">EN</a>
+                    <a href="#" class="lang-option" data-lang="es">ES</a>
+                    <a href="#" class="lang-option" data-lang="fr">FR</a>
+                    <a href="#" class="lang-option" data-lang="de">DE</a>
+                    <a href="#" class="lang-option" data-lang="it">IT</a>
+                    <a href="#" class="lang-option" data-lang="pt">PT</a>
+                    <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                    <a href="#" class="lang-option" data-lang="ar">AR</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Hero Section -->
     <section class="hero">
-        <div class="container">
-            <div class="hero-content">
+        <div class="container hero-split">
+            <!-- Left Side: Intro Content -->
+            <div class="hero-left">
                 <div class="hero-badge">
                     <span class="badge-dot"></span>
                     <span data-i18n="hero.badge">AI-Powered Loyalty for Local Businesses</span>
@@ -119,8 +166,50 @@
                     Royalty is an AI that builds your loyalty program in 60 seconds—then runs it forever. Customers earn points, you see what's working, and AI tells you exactly how to grow.
                 </p>
 
-                <!-- Discovery Card - Conversational Onboarding -->
-                <div class="discovery-card" id="discovery-card">
+                <!-- Discovery Card - Mobile Only (shown via CSS) -->
+                <div class="discovery-card discovery-card-mobile" id="discovery-card-mobile">
+                    <h2 class="discovery-title" data-i18n="hero.discoveryTitle">Describe your business</h2>
+                    <p class="discovery-subtitle" data-i18n="hero.discoverySubtitle">Our AI will build you a custom loyalty program in 60 seconds.</p>
+                    <textarea
+                        class="discovery-input discovery-input-mobile"
+                        data-i18n-placeholder="hero.discoveryPlaceholder"
+                        placeholder="e.g., I run a coffee shop in Austin with 200 regulars. I want to reward loyalty and bring back customers who haven't visited in a while..."
+                        rows="3"
+                    ></textarea>
+                    <button class="btn btn-primary btn-large discovery-btn discovery-btn-mobile">
+                        <span data-i18n="onboarding.getStarted">Get Started</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">60s</span>
+                        <span class="stat-label" data-i18n="hero.stats.setupTime">Setup Time</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <span class="stat-number">40%</span>
+                        <span class="stat-label" data-i18n="hero.stats.moreRepeatVisits">More Repeat Visits</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <span class="stat-number">24/7</span>
+                        <span class="stat-label" data-i18n="hero.stats.aiRunning">AI Running For You</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: 3D Sphere + Floating Prompt (Desktop Only) -->
+            <div class="hero-right">
+                <div class="hero-sphere-container">
+                    <canvas id="hero-crown-canvas"></canvas>
+                </div>
+
+                <!-- Discovery Card - Floating over sphere -->
+                <div class="discovery-card discovery-card-desktop" id="discovery-card">
                     <h2 class="discovery-title" data-i18n="hero.discoveryTitle">Describe your business</h2>
                     <p class="discovery-subtitle" data-i18n="hero.discoverySubtitle">Our AI will build you a custom loyalty program in 60 seconds.</p>
 
@@ -166,23 +255,6 @@
                             <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
-                </div>
-
-                <div class="hero-stats">
-                    <div class="stat">
-                        <span class="stat-number">60s</span>
-                        <span class="stat-label" data-i18n="hero.stats.setupTime">Setup Time</span>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat">
-                        <span class="stat-number">40%</span>
-                        <span class="stat-label" data-i18n="hero.stats.moreRepeatVisits">More Repeat Visits</span>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat">
-                        <span class="stat-number">24/7</span>
-                        <span class="stat-label" data-i18n="hero.stats.aiRunning">AI Running For You</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -753,5 +825,79 @@
     <script src="app/rate-limiter.js?v=1"></script>
     <script src="script.js?v=12"></script>
     <script src="network-bg.js?v=7"></script>
+
+    <!-- 3D Hero Sphere (desktop only) -->
+    <script src="app/crown-materials.js?v=11"></script>
+    <script type="module" src="app/crown-scene.js?v=13"></script>
+    <script type="module">
+        // Wait for CrownScene module to be ready
+        function waitForCrownScene(maxWait = 3000) {
+            return new Promise((resolve, reject) => {
+                if (window.CrownScene) {
+                    resolve(window.CrownScene);
+                    return;
+                }
+                const start = Date.now();
+                const check = setInterval(() => {
+                    if (window.CrownScene) {
+                        clearInterval(check);
+                        resolve(window.CrownScene);
+                    } else if (Date.now() - start > maxWait) {
+                        clearInterval(check);
+                        reject(new Error('CrownScene module not loaded within timeout'));
+                    }
+                }, 50);
+            });
+        }
+
+        // Initialize hero sphere on desktop only
+        async function initHeroSphere() {
+            if (window.innerWidth < 1024) {
+                console.log('[Hero] Mobile viewport - skipping 3D sphere');
+                return;
+            }
+
+            const canvas = document.getElementById('hero-crown-canvas');
+            if (!canvas) {
+                console.warn('[Hero] Canvas element not found');
+                return;
+            }
+
+            try {
+                console.log('[Hero] Waiting for CrownScene module...');
+                await waitForCrownScene();
+                console.log('[Hero] CrownScene ready, initializing sphere...');
+
+                await window.CrownScene.init(canvas);
+                window.CrownScene.setTheme(false); // Light mode
+                window.CrownScene.setState('idle');
+
+                console.log('[Hero] 3D sphere initialized successfully');
+            } catch (err) {
+                console.error('[Hero] Sphere initialization failed:', err);
+            }
+        }
+
+        // Run when DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHeroSphere);
+        } else {
+            initHeroSphere();
+        }
+
+        // Handle resize - destroy/recreate sphere
+        let wasDesktop = window.innerWidth >= 1024;
+        window.addEventListener('resize', async () => {
+            const isDesktop = window.innerWidth >= 1024;
+            if (wasDesktop && !isDesktop && window.CrownScene) {
+                console.log('[Hero] Resized to mobile - destroying sphere');
+                window.CrownScene.destroy();
+            } else if (!wasDesktop && isDesktop) {
+                console.log('[Hero] Resized to desktop - recreating sphere');
+                await initHeroSphere();
+            }
+            wasDesktop = isDesktop;
+        });
+    </script>
 </body>
 </html>
