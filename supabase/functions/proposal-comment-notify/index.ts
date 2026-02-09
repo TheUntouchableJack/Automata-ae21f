@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: '24 Hour Designs <onboarding@resend.dev>',
+        from: '24 Hour Designs <noreply@24hour.design>',
         to: [NOTIFY_EMAIL],
         subject: `New Question on ${proposalName} Proposal`,
         html: `
