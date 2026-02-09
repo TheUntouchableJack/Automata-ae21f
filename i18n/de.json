@@ -1,5 +1,6 @@
 {
     "nav": {
+        "home": "Startseite",
         "automations": "Automatisierungen",
         "apps": "Apps",
         "features": "Funktionen",
@@ -325,7 +326,7 @@
             "q3": "Brauche ich eine Kreditkarte zum Starten?",
             "a3": "Nein. Sie können mit unserem kostenlosen Plan starten oder eine 14-tägige Testversion jedes bezahlten Plans beginnen, ohne eine Kreditkarte einzugeben. Upgraden Sie, wenn Sie bereit sind.",
             "q4": "Was ist der Unterschied zwischen LTD und Abonnements?",
-            "a4": "AppSumo Lifetime Deal (LTD) Käufer zahlen einmal und erhalten lebenslangen Zugang. Die Kernfunktionen (KI-Einrichtung, Automatisierungen, Punkte) funktionieren gleich. Um KI-Intelligenz-Einblicke hinzuzufügen, können LTD-Nutzer Royalty Pro ($39/Monat) abonnieren.",
+            "a4": "AppSumo Lifetime Deal (LTD) Käufer zahlen einmal und erhalten lebenslangen Zugang. LTD beinhaltet KI-gestützte Treueprogramm-Einrichtung, Automatisierungen, Punkte und E-Mail-Kampagnen. Kontinuierliches KI-Lernen & Autonomer Modus erfordern Royalty Pro ($49/Monat).",
             "q5": "Kann ich den Plan jederzeit wechseln?",
             "a5": "Ja! Upgraden oder downgraden Sie jederzeit. Beim Upgrade wird Ihnen die anteilige Differenz berechnet. Beim Downgrade erhalten Sie eine Gutschrift für zukünftige Abrechnungen.",
             "q6": "Was ist White-Label-Branding?",

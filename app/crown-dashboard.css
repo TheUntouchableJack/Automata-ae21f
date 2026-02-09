@@ -38,10 +38,10 @@
     display: block;
 }
 
-/* Crown status indicator (bottom-left) */
+/* Crown status indicator (below mode toggle) */
 .crown-status {
     position: absolute;
-    bottom: 24px;
+    top: 76px;
     left: 24px;
     display: flex;
     align-items: center;
@@ -992,18 +992,19 @@
 
 @media (max-width: 768px) {
     .crown-dashboard {
-        grid-template-rows: 40vh 1fr;
+        grid-template-rows: 50vh 1fr;  /* More space for sphere */
         left: 0; /* No sidebar offset on mobile */
     }
-    .crown-mode-toggle { top: 16px; left: 16px; }
-    .crown-status { bottom: 16px; left: 16px; }
-    .theme-toggle-btn { top: 16px; right: 16px; }
+    .crown-mode-toggle { display: none; }              /* Hidden on mobile */
+    .crown-status { top: 72px; left: 16px; }           /* Top-left, below header */
+    .theme-toggle-btn { top: 72px; right: 16px; }      /* Below 56px mobile header */
     .cards-panel-header { padding: 16px; }
+    .cards-panel-stats { display: none !important; }   /* Override inline style */
     .cards-feed { padding: 12px; }
 
     /* Prompt bar on mobile */
     .crown-prompt-container {
-        bottom: 60px;
+        bottom: 16px;  /* Lower to show full sphere */
         width: calc(100% - 32px);
     }
     .crown-suggestions {

@@ -1,5 +1,6 @@
 {
     "nav": {
+        "home": "Home",
         "automations": "Automations",
         "apps": "Apps",
         "features": "Features",
@@ -340,7 +341,7 @@
             "q3": "Do I need a credit card to start?",
             "a3": "No. You can start with our free plan or begin a 14-day trial of any paid plan without entering a credit card. Upgrade when you're ready.",
             "q4": "What's the difference between LTD and subscriptions?",
-            "a4": "AppSumo Lifetime Deal (LTD) buyers pay once and get access forever. The core features (AI setup, automations, points) work the same. To add AI Intelligence insights, LTD users can subscribe to Royalty Pro ($39/mo).",
+            "a4": "AppSumo Lifetime Deal (LTD) buyers pay once and get access forever. LTD includes AI-built loyalty program setup, automations, points, and email campaigns. Continuous AI learning & Autonomous Mode require Royalty Pro ($49/mo).",
             "q5": "Can I change plans anytime?",
             "a5": "Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing.",
             "q6": "What's white-label branding?",

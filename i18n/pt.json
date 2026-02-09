@@ -1,5 +1,6 @@
 {
     "nav": {
+        "home": "Início",
         "automations": "Automações",
         "apps": "Aplicativos",
         "features": "Recursos",
@@ -325,7 +326,7 @@
             "q3": "Preciso de cartão de crédito para começar?",
             "a3": "Não. Você pode começar com nosso plano gratuito ou iniciar um teste de 14 dias de qualquer plano pago sem precisar de cartão de crédito. Atualize quando estiver pronto.",
             "q4": "Qual é a diferença entre LTD e assinaturas?",
-            "a4": "Compradores da Oferta Vitalícia (LTD) do AppSumo pagam uma vez e têm acesso para sempre. Os recursos principais (configuração por IA, automações, pontos) funcionam da mesma forma. Para adicionar insights de Inteligência IA, usuários LTD podem assinar o Royalty Pro ($39/mês).",
+            "a4": "Compradores da Oferta Vitalícia (LTD) do AppSumo pagam uma vez e têm acesso para sempre. LTD inclui configuração do programa de fidelidade por IA, automações, pontos e campanhas de email. Aprendizado contínuo de IA e Modo Autônomo requerem Royalty Pro ($49/mês).",
             "q5": "Posso mudar de plano a qualquer momento?",
             "a5": "Sim! Atualize ou faça downgrade a qualquer momento. Ao atualizar, você será cobrado pela diferença proporcional. Ao fazer downgrade, você receberá crédito para faturas futuras.",
             "q6": "O que é marca branca?",

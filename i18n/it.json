@@ -1,5 +1,6 @@
 {
     "nav": {
+        "home": "Home",
         "automations": "Automazioni",
         "apps": "App",
         "features": "Funzionalità",
@@ -325,7 +326,7 @@
             "q3": "Serve una carta di credito per iniziare?",
             "a3": "No. Puoi iniziare con il nostro piano gratuito o avviare una prova di 14 giorni di qualsiasi piano a pagamento senza inserire una carta di credito. Aggiorna quando sei pronto.",
             "q4": "Qual è la differenza tra LTD e abbonamenti?",
-            "a4": "Gli acquirenti dell'Offerta a Vita (LTD) su AppSumo pagano una volta e ottengono l'accesso per sempre. Le funzionalità principali (configurazione IA, automazioni, punti) funzionano allo stesso modo. Per aggiungere gli insight di Intelligenza IA, gli utenti LTD possono abbonarsi a Royalty Pro ($39/mese).",
+            "a4": "Gli acquirenti dell'Offerta a Vita (LTD) su AppSumo pagano una volta e ottengono l'accesso per sempre. L'LTD include configurazione del programma fedeltà con IA, automazioni, punti e campagne email. Apprendimento continuo dell'IA e Modalità Autonoma richiedono Royalty Pro ($49/mese).",
             "q5": "Posso cambiare piano in qualsiasi momento?",
             "a5": "Sì! Aggiorna o riduci il piano in qualsiasi momento. In caso di upgrade, ti verrà addebitata la differenza proporzionale. In caso di downgrade, riceverai un credito per le fatturazioni future.",
             "q6": "Cos'è il branding white-label?",

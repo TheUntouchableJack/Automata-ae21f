@@ -1600,6 +1600,32 @@
     .recommendation-actions .btn {
         justify-content: center;
     }
+
+    /* LLM Model Badge - hidden on mobile */
+    .llm-model-badge {
+        display: none;
+    }
+
+    /* Autonomous feed - tighter spacing on mobile */
+    .autonomous-feed {
+        gap: 12px;
+    }
+
+    /* Fix queued/completed list spacing */
+    .queued-list, .completed-list {
+        max-height: none;
+    }
+    .feed-section {
+        flex-shrink: 0;
+    }
+
+    /* Toast notifications - top right on mobile */
+    .activity-toast-container {
+        top: 72px;
+        bottom: auto;
+        right: 16px;
+        flex-direction: column;
+    }
 }
 
 /* ===== Autonomous Mode Confirmation Modal ===== */
@@ -1725,11 +1751,11 @@
 /* ===== Activity Toast Notifications ===== */
 .activity-toast-container {
     position: fixed;
-    bottom: 100px;
+    top: 100px;
     right: 24px;
     z-index: 9999;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     gap: 8px;
     pointer-events: none;
 }
@@ -1757,22 +1783,22 @@
 @keyframes toastSlideIn {
     from {
         opacity: 0;
-        transform: translateX(100%);
+        transform: translateY(-100%);
     }
     to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateY(0);
     }
 }
 
 @keyframes toastSlideOut {
     from {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateY(0);
     }
     to {
         opacity: 0;
-        transform: translateX(100%);
+        transform: translateY(-100%);
     }
 }
 

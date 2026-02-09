@@ -1,5 +1,6 @@
 {
     "nav": {
+        "home": "Accueil",
         "automations": "Automatisations",
         "apps": "Applications",
         "features": "Fonctionnalités",
@@ -325,7 +326,7 @@
             "q3": "Ai-je besoin d'une carte bancaire pour commencer ?",
             "a3": "Non. Vous pouvez commencer avec notre plan gratuit ou démarrer un essai de 14 jours de n'importe quel plan payant sans entrer de carte bancaire. Passez à la version supérieure quand vous êtes prêt.",
             "q4": "Quelle est la différence entre LTD et les abonnements ?",
-            "a4": "Les acheteurs de l'Offre à Vie (LTD) AppSumo paient une fois et obtiennent un accès pour toujours. Les fonctionnalités principales (configuration IA, automatisations, points) fonctionnent de la même manière. Pour ajouter les insights Intelligence IA, les utilisateurs LTD peuvent s'abonner à Royalty Pro ($39/mois).",
+            "a4": "Les acheteurs de l'Offre à Vie (LTD) AppSumo paient une fois et obtiennent un accès pour toujours. LTD inclut la configuration du programme de fidélité par IA, les automatisations, les points et les campagnes email. L'apprentissage continu de l'IA et le Mode Autonome nécessitent Royalty Pro ($49/mois).",
             "q5": "Puis-je changer de forfait à tout moment ?",
             "a5": "Oui ! Passez à un forfait supérieur ou inférieur quand vous le souhaitez. Lors d'une mise à niveau, la différence proratisée vous sera facturée. Lors d'un passage à un forfait inférieur, vous recevrez un crédit pour la facturation future.",
             "q6": "Qu'est-ce que la marque blanche ?",
