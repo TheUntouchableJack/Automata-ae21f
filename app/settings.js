@@ -20,6 +20,9 @@ let activityLoaded = false;
 // AI Settings state
 let aiSettingsLoaded = false;
 
+// Promo code state
+let appliedPromoCode = null;
+
 // ===== Initialization =====
 async function initSettings() {
     currentUser = await requireAuth();
@@ -205,6 +208,8 @@ function updateHeaderUserInfo() {
     const userAvatar = document.getElementById('user-avatar');
     const userName = document.getElementById('user-name');
 
+    if (!userAvatar || !userName) return;
+
     if (currentProfile && (currentProfile.first_name || currentProfile.last_name)) {
         const fullName = [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ');
         userAvatar.textContent = getInitials(currentProfile.first_name, currentProfile.last_name);
@@ -323,6 +328,27 @@ function renderPlan() {
                                   status === 'active' ? '(Active)' :
                                   status === 'past_due' ? '(Past Due)' : '';
         planStatus.className = `plan-status ${status}`;
+
+        // Show payment warning banner if past due
+        const warningBanner = document.getElementById('payment-warning-banner');
+        if (warningBanner) {
+            if (status === 'past_due') {
+                warningBanner.style.display = 'flex';
+                const failureCount = currentOrganization.payment_failure_count || 1;
+                const warningMessage = document.getElementById('payment-warning-message');
+                if (warningMessage) {
+                    if (failureCount >= 3) {
+                        warningMessage.textContent = 'Your subscription will be canceled soon. Please update your payment method immediately to keep your account active.';
+                    } else if (failureCount === 2) {
+                        warningMessage.textContent = 'This is our second attempt to process your payment. Please update your payment method to avoid service interruption.';
+                    } else {
+                        warningMessage.textContent = "We couldn't process your last payment. Please update your payment method to avoid service interruption.";
+                    }
+                }
+            } else {
+                warningBanner.style.display = 'none';
+            }
+        }
     }
 
     // Build features list based on new pricing model
@@ -479,7 +505,8 @@ async function handleCheckout(plan) {
                 body: JSON.stringify({
                     priceKey: priceKey,
                     organizationId: currentOrganization.id,
-                    embedded: true
+                    embedded: true,
+                    promoCode: appliedPromoCode || undefined
                 })
             }
         );
@@ -500,6 +527,58 @@ async function handleCheckout(plan) {
 
     } catch (err) {
         console.error('Checkout error:', err);
+        showToast(err.message || 'Failed to start checkout', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function handleBundlePurchase(bundleKey) {
+    const btn = document.querySelector(`.bundle-buy-btn[data-bundle="${bundleKey}"]`);
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Loading...';
+
+    try {
+        const session = await getValidSession();
+        if (!session) {
+            throw new Error('Session expired. Please refresh the page and log in again.');
+        }
+
+        // Request embedded checkout session for bundle
+        const response = await fetch(
+            'https://vhpmmfhfwnpmavytoomd.supabase.co/functions/v1/create-checkout-session',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    priceKey: bundleKey,
+                    organizationId: currentOrganization.id,
+                    embedded: true,
+                    promoCode: appliedPromoCode || undefined
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // Open modal and mount embedded checkout
+        if (data.clientSecret) {
+            await openCheckoutModal(data.clientSecret);
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+    } catch (err) {
+        console.error('Bundle purchase error:', err);
         showToast(err.message || 'Failed to start checkout', 'error');
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -558,6 +637,85 @@ function closeCheckoutModal() {
             <p>Loading checkout...</p>
         </div>
     `;
+
+    // Reset promo code state
+    appliedPromoCode = null;
+    const promoInput = document.getElementById('checkout-promo-code');
+    const promoStatus = document.getElementById('promo-status');
+    if (promoInput) {
+        promoInput.value = '';
+        promoInput.classList.remove('valid', 'invalid');
+    }
+    if (promoStatus) {
+        promoStatus.textContent = '';
+        promoStatus.className = 'promo-status';
+    }
+}
+
+async function validatePromoCode() {
+    const promoInput = document.getElementById('checkout-promo-code');
+    const promoStatus = document.getElementById('promo-status');
+    const applyBtn = document.getElementById('apply-promo-btn');
+    const code = promoInput?.value?.trim().toUpperCase();
+
+    if (!code) {
+        promoStatus.textContent = 'Please enter a code';
+        promoStatus.className = 'promo-status invalid';
+        return;
+    }
+
+    // Show checking state
+    promoStatus.textContent = 'Checking...';
+    promoStatus.className = 'promo-status checking';
+    applyBtn.disabled = true;
+
+    try {
+        const session = await getValidSession();
+        if (!session) {
+            throw new Error('Not authenticated');
+        }
+
+        // Call the RPC function to validate the code
+        const { data, error } = await supabase.rpc('check_appsumo_code', {
+            code_to_check: code
+        });
+
+        if (error) throw error;
+
+        if (data.valid) {
+            // Handle based on code type
+            if (data.code_type === 'appsumo') {
+                // AppSumo codes should be redeemed on /app/redeem.html, not checkout
+                promoInput.classList.add('invalid');
+                promoInput.classList.remove('valid');
+                promoStatus.textContent = 'AppSumo codes must be redeemed on the Redeem page';
+                promoStatus.className = 'promo-status invalid';
+                appliedPromoCode = null;
+            } else {
+                // Tester/promo code - save for checkout
+                promoInput.classList.add('valid');
+                promoInput.classList.remove('invalid');
+                const discountText = data.discount_percent ? `${data.discount_percent}% off` : 'Discount applied';
+                promoStatus.textContent = `${discountText} will be applied at checkout`;
+                promoStatus.className = 'promo-status valid';
+                appliedPromoCode = code;
+            }
+        } else {
+            promoInput.classList.add('invalid');
+            promoInput.classList.remove('valid');
+            promoStatus.textContent = data.error || 'Invalid code';
+            promoStatus.className = 'promo-status invalid';
+            appliedPromoCode = null;
+        }
+    } catch (err) {
+        console.error('Error validating promo code:', err);
+        promoInput.classList.add('invalid');
+        promoStatus.textContent = 'Error checking code';
+        promoStatus.className = 'promo-status invalid';
+        appliedPromoCode = null;
+    } finally {
+        applyBtn.disabled = false;
+    }
 }
 
 async function handleCheckoutComplete() {
@@ -758,6 +916,7 @@ function updateCancelNotice() {
 }
 
 function formatLimit(value) {
+    if (value === undefined || value === null) return '—';
     if (value === -1 || value === Infinity) return 'Unlimited';
     return value.toLocaleString();
 }
@@ -1185,10 +1344,10 @@ function setupEventListeners() {
     });
 
     // Delete account
-    document.getElementById('delete-account-btn').addEventListener('click', handleDeleteAccount);
+    document.getElementById('delete-account-btn')?.addEventListener('click', handleDeleteAccount);
 
     // Logout
-    document.getElementById('logout-btn').addEventListener('click', signOut);
+    document.getElementById('logout-btn')?.addEventListener('click', signOut);
 
     // Activity log filters
     document.getElementById('activity-entity-filter')?.addEventListener('change', () => loadActivityLogs(true));
@@ -1225,6 +1384,16 @@ function setupEventListeners() {
     // Reactivate subscription button
     document.getElementById('reactivate-btn')?.addEventListener('click', reactivateSubscription);
 
+    // Update payment button (in warning banner)
+    document.getElementById('update-payment-btn')?.addEventListener('click', handleManageBilling);
+
+    // Bundle purchase buttons
+    document.querySelectorAll('.bundle-buy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleBundlePurchase(btn.dataset.bundle);
+        });
+    });
+
     // Checkout modal close button
     document.getElementById('checkout-close-btn')?.addEventListener('click', closeCheckoutModal);
 
@@ -1241,6 +1410,32 @@ function setupEventListeners() {
             closeCheckoutModal();
         }
     });
+
+    // Promo code handling
+    const promoInput = document.getElementById('checkout-promo-code');
+    const applyPromoBtn = document.getElementById('apply-promo-btn');
+    const promoStatus = document.getElementById('promo-status');
+
+    if (promoInput && applyPromoBtn) {
+        // Apply promo code on button click
+        applyPromoBtn.addEventListener('click', () => validatePromoCode());
+
+        // Apply promo code on Enter key
+        promoInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                validatePromoCode();
+            }
+        });
+
+        // Clear status on input change
+        promoInput.addEventListener('input', () => {
+            promoInput.classList.remove('valid', 'invalid');
+            promoStatus.textContent = '';
+            promoStatus.className = 'promo-status';
+            appliedPromoCode = null;
+        });
+    }
 
     // AI Settings
     document.getElementById('save-ai-settings-btn')?.addEventListener('click', handleSaveAISettings);

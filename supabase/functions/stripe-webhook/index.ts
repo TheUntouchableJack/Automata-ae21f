@@ -14,17 +14,20 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Map Stripe price IDs to plan tiers - Created Feb 2026
+// Map Stripe price IDs to plan tiers - Updated Feb 2026
+// Tiers: free, pro ($299/mo), max ($599/mo), enterprise (custom)
 const PRICE_TO_TIER: Record<string, { tier: string; billing: string; isAddOn?: boolean }> = {
-  // Subscription tiers (Feb 2026 pricing)
-  'price_1SyfQDGNy14i1og8tkBn6MF7': { tier: 'starter', billing: 'monthly' },  // $79/mo
-  'price_1SyfQDGNy14i1og8r0NrGfNM': { tier: 'starter', billing: 'annual' },   // $63/mo
-  'price_1SyfQEGNy14i1og80NnddnzC': { tier: 'growth', billing: 'monthly' },   // $199/mo
-  'price_1SyfQEGNy14i1og8Ixg6I1Gz': { tier: 'growth', billing: 'annual' },    // $159/mo
-  'price_1SyfQFGNy14i1og8fTrCAFaS': { tier: 'scale', billing: 'monthly' },    // $499/mo
-  'price_1SyfQFGNy14i1og8DJu8DwfL': { tier: 'scale', billing: 'annual' },     // $399/mo
+  // Pro tier ($299/mo or $239/mo annual)
+  'price_1SyfQDGNy14i1og8tkBn6MF7': { tier: 'pro', billing: 'monthly' },
+  'price_1SyfQDGNy14i1og8r0NrGfNM': { tier: 'pro', billing: 'annual' },
+  // Max tier ($599/mo or $479/mo annual)
+  'price_1SyfQEGNy14i1og80NnddnzC': { tier: 'max', billing: 'monthly' },
+  'price_1SyfQEGNy14i1og8Ixg6I1Gz': { tier: 'max', billing: 'annual' },
+  // Legacy scale tier (maps to max)
+  'price_1SyfQFGNy14i1og8fTrCAFaS': { tier: 'max', billing: 'monthly' },
+  'price_1SyfQFGNy14i1og8DJu8DwfL': { tier: 'max', billing: 'annual' },
   // Royalty Pro add-on for LTD users
-  'price_1SyfQGGNy14i1og8jvmoWMxo': { tier: 'royalty_pro', billing: 'monthly', isAddOn: true }, // $49/mo
+  'price_1SyfQGGNy14i1og8jvmoWMxo': { tier: 'royalty_pro', billing: 'monthly', isAddOn: true },
 }
 
 // Map bundle types to credit amounts
@@ -218,24 +221,143 @@ Deno.serve(async (req) => {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
         const customerId = invoice.customer as string
+        const attemptCount = invoice.attempt_count || 1
 
-        // Find organization and mark payment failed
+        // Find organization and get owner details
         const { data: org } = await supabase
           .from('organizations')
-          .select('id')
+          .select(`
+            id,
+            name,
+            subscription_tier,
+            organization_members!inner(
+              user_id,
+              role,
+              profiles!inner(email, first_name)
+            )
+          `)
           .eq('stripe_customer_id', customerId)
           .single()
 
         if (org) {
+          // Update payment status
           await supabase
             .from('organizations')
             .update({
               subscription_status: 'past_due',
+              payment_failure_count: attemptCount,
+              last_payment_failure_at: new Date().toISOString(),
             })
             .eq('id', org.id)
 
-          console.log(`Organization ${org.id} payment failed`)
-          // TODO: Send email notification about failed payment
+          console.log(`Organization ${org.id} payment failed (attempt ${attemptCount})`)
+
+          // Get owner email
+          const owner = (org.organization_members as Array<{ role: string; profiles: { email: string; first_name: string } }>)
+            ?.find((m) => m.role === 'owner')
+          const ownerEmail = owner?.profiles?.email
+          const ownerName = owner?.profiles?.first_name || 'there'
+
+          if (ownerEmail) {
+            // Send dunning email via Resend
+            const resendApiKey = Deno.env.get('RESEND_API_KEY')
+
+            // Escalating subject lines based on attempt count
+            const subjects: Record<number, string> = {
+              1: `Action needed: Payment failed for ${org.name || 'your Royalty account'}`,
+              2: `Second attempt failed: Update your payment method`,
+              3: `Final notice: Your subscription will be canceled soon`,
+            }
+
+            const subject = subjects[Math.min(attemptCount, 3)]
+            const nextAttemptDays = attemptCount === 1 ? 3 : attemptCount === 2 ? 7 : 0
+            const retryUrl = invoice.hosted_invoice_url || 'https://app.royaltyapp.ai/settings/billing'
+
+            const emailBody = `Hi ${ownerName},
+
+We were unable to process your payment for your Royalty ${org.subscription_tier || 'subscription'} plan.
+
+${attemptCount === 1 ? `Don't worry - we'll automatically retry in ${nextAttemptDays} days.` : ''}
+${attemptCount === 2 ? `This is our second attempt. We'll try one more time in ${nextAttemptDays} days before your subscription is canceled.` : ''}
+${attemptCount >= 3 ? `This was our final attempt. Your subscription will be canceled and your account downgraded to the free plan.` : ''}
+
+To avoid any interruption to your service, please update your payment method:
+
+${retryUrl}
+
+If you have any questions, just reply to this email.
+
+- The Royalty Team`
+
+            const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+    .warning { color: #dc2626; font-weight: 600; }
+    .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Payment Failed</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${ownerName},</p>
+      <p>We were unable to process your payment for your Royalty <strong>${org.subscription_tier || 'subscription'}</strong> plan.</p>
+      ${attemptCount === 1 ? `<p>Don't worry - we'll automatically retry in ${nextAttemptDays} days.</p>` : ''}
+      ${attemptCount === 2 ? `<p class="warning">This is our second attempt. We'll try one more time in ${nextAttemptDays} days before your subscription is canceled.</p>` : ''}
+      ${attemptCount >= 3 ? `<p class="warning">This was our final attempt. Your subscription will be canceled and your account downgraded to the free plan.</p>` : ''}
+      <p>To avoid any interruption to your service, please update your payment method:</p>
+      <p style="text-align: center;">
+        <a href="${retryUrl}" class="button">Update Payment Method</a>
+      </p>
+      <p>If you have any questions, just reply to this email.</p>
+      <p>- The Royalty Team</p>
+    </div>
+    <div class="footer">
+      <p>You're receiving this because you have an active Royalty subscription.</p>
+    </div>
+  </div>
+</body>
+</html>`
+
+            if (resendApiKey) {
+              try {
+                const emailResponse = await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${resendApiKey}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    from: 'Royalty Billing <billing@royaltyapp.ai>',
+                    to: [ownerEmail],
+                    subject,
+                    text: emailBody,
+                    html: htmlBody
+                  })
+                })
+
+                if (emailResponse.ok) {
+                  console.log(`Dunning email sent to ${ownerEmail} (attempt ${attemptCount})`)
+                } else {
+                  const err = await emailResponse.json()
+                  console.error('Failed to send dunning email:', err)
+                }
+              } catch (emailErr) {
+                console.error('Dunning email error:', emailErr)
+              }
+            } else {
+              console.log(`[STUB] Would send dunning email to ${ownerEmail}`)
+            }
+          }
         }
         break
       }

@@ -6,7 +6,27 @@
 import { test, expect } from '@playwright/test';
 
 // Test with a sample app slug - in real tests, this would be a test fixture
-const TEST_APP_SLUG = 'test-app';
+// Uses 'test-app' by default; set TEST_APP_SLUG env var for a real app
+const TEST_APP_SLUG = process.env.TEST_APP_SLUG || 'test-app';
+
+/**
+ * Helper to check if app loaded successfully (not in error state)
+ */
+async function isAppLoaded(page) {
+    // Check if we're in an error state
+    const errorContent = await page.textContent('body');
+    if (errorContent.includes('App not found') || errorContent.includes('Preview Unavailable')) {
+        return false;
+    }
+    // Check if the join button is visible (indicates successful load)
+    const joinBtn = page.locator('#join-btn, .join-btn, button:has-text("Sign Up")');
+    try {
+        await joinBtn.first().waitFor({ state: 'visible', timeout: 2000 });
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 test.describe('Customer App Landing Page', () => {
     test.beforeEach(async ({ page }) => {
@@ -16,7 +36,7 @@ test.describe('Customer App Landing Page', () => {
 
     test('should load customer app landing page', async ({ page }) => {
         // Wait for page to load
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Should have some content
         const content = await page.textContent('body');
@@ -24,7 +44,7 @@ test.describe('Customer App Landing Page', () => {
     });
 
     test('should have PIN input field with proper constraints', async ({ page }) => {
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Look for PIN input
         const pinInput = page.locator('input[name="pin"], input[type="password"], input[placeholder*="PIN"], input[id*="pin"]');
@@ -48,7 +68,7 @@ test.describe('Customer App Landing Page', () => {
     });
 
     test('should mask PIN input', async ({ page }) => {
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         const pinInput = page.locator('input[name="pin"], input[id*="pin"]');
 
@@ -65,10 +85,20 @@ test.describe('Customer App Landing Page', () => {
 test.describe('Customer App Signup Security', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
     });
 
     test('should validate email format on signup', async ({ page }) => {
+        // Skip if app didn't load (no valid app slug)
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found - skipping (set TEST_APP_SLUG for real app)');
+            return;
+        }
+
+        // Open signup modal
+        await page.click('#join-btn');
+        await page.waitForTimeout(300);
+
         const emailInput = page.locator('input[type="email"], input[name="email"]').first();
 
         if (await emailInput.count() > 0) {
@@ -83,6 +113,13 @@ test.describe('Customer App Signup Security', () => {
     });
 
     test('should validate phone number format', async ({ page }) => {
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
+        await page.click('#join-btn');
+        await page.waitForTimeout(300);
+
         const phoneInput = page.locator('input[type="tel"], input[name="phone"]').first();
 
         if (await phoneInput.count() > 0) {
@@ -96,6 +133,13 @@ test.describe('Customer App Signup Security', () => {
     });
 
     test('should require first and last name', async ({ page }) => {
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
+        await page.click('#join-btn');
+        await page.waitForTimeout(300);
+
         const firstNameInput = page.locator('input[name="first_name"], input[name="firstName"], input[id*="first"]').first();
         const lastNameInput = page.locator('input[name="last_name"], input[name="lastName"], input[id*="last"]').first();
 
@@ -107,6 +151,13 @@ test.describe('Customer App Signup Security', () => {
     });
 
     test('should not allow signup with very short PIN', async ({ page }) => {
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
+        await page.click('#join-btn');
+        await page.waitForTimeout(300);
+
         const pinInput = page.locator('input[name="pin"], input[id*="pin"]').first();
 
         if (await pinInput.count() > 0) {
@@ -124,6 +175,12 @@ test.describe('Customer App Signup Security', () => {
     test('should handle duplicate email error gracefully', async ({ page }) => {
         // This test checks error handling
         // In real scenario, we'd need a known duplicate email
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
+        await page.click('#join-btn');
+        await page.waitForTimeout(300);
 
         const emailInput = page.locator('input[type="email"], input[name="email"]').first();
         const submitButton = page.locator('button[type="submit"], button:has-text("Join"), button:has-text("Sign Up")').first();
@@ -171,13 +228,17 @@ test.describe('Customer App Signup Security', () => {
 test.describe('Customer App Login Security', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
     });
 
     test('should not reveal if email exists on failed login', async ({ page }) => {
-        // Look for login form or toggle
-        const loginToggle = page.locator('button:has-text("Log In"), a:has-text("Log In"), [data-tab="login"]');
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
 
+        // Look for login form or toggle - open it
+        const loginToggle = page.locator('#login-btn, button:has-text("Log In"), a:has-text("Log In"), [data-tab="login"]');
         if (await loginToggle.count() > 0) {
             await loginToggle.first().click();
             await page.waitForTimeout(500);
@@ -208,9 +269,12 @@ test.describe('Customer App Login Security', () => {
     test('should not reveal if PIN is wrong vs email not found', async ({ page }) => {
         // Both wrong email and wrong PIN should show same error message
         // This prevents account enumeration
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
 
-        const loginToggle = page.locator('button:has-text("Log In"), a:has-text("Log In"), [data-tab="login"]');
-
+        const loginToggle = page.locator('#login-btn, button:has-text("Log In"), a:has-text("Log In"), [data-tab="login"]');
         if (await loginToggle.count() > 0) {
             await loginToggle.first().click();
             await page.waitForTimeout(500);
@@ -238,6 +302,18 @@ test.describe('Customer App Login Security', () => {
     });
 
     test('should handle PIN input securely', async ({ page }) => {
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
+
+        // Open login modal to access PIN input
+        const loginToggle = page.locator('#login-btn, button:has-text("Log In")');
+        if (await loginToggle.count() > 0) {
+            await loginToggle.first().click();
+            await page.waitForTimeout(300);
+        }
+
         const pinInput = page.locator('input[name="pin"], input[id*="pin"]').first();
 
         if (await pinInput.count() > 0) {
@@ -258,7 +334,7 @@ test.describe('Customer App Login Security', () => {
 test.describe('Customer App Session Security', () => {
     test('should store session token in localStorage', async ({ page }) => {
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Check localStorage structure
         const storageKeys = await page.evaluate(() => Object.keys(localStorage));
@@ -269,7 +345,7 @@ test.describe('Customer App Session Security', () => {
 
     test('should clear session on logout', async ({ page }) => {
         await page.goto(`/customer-app/app.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Find logout button
         const logoutButton = page.locator('button:has-text("Logout"), button:has-text("Log Out"), .logout-btn');
@@ -303,7 +379,7 @@ test.describe('Customer App Session Security', () => {
 
         // Reload
         await page.reload();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Wait for redirect
         await page.waitForTimeout(1500);
@@ -315,7 +391,7 @@ test.describe('Customer App Session Security', () => {
 
     test('should validate token expiration', async ({ page }) => {
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Create an expired token
         await page.evaluate(() => {
@@ -329,7 +405,7 @@ test.describe('Customer App Session Security', () => {
 
         // Navigate to app
         await page.goto(`/customer-app/app.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         await page.waitForTimeout(1500);
 
         // Should recognize expired token and redirect
@@ -341,7 +417,16 @@ test.describe('Customer App Session Security', () => {
 test.describe('Customer App XSS Prevention', () => {
     test('should escape user input in display', async ({ page }) => {
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
+
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
+
+        // Open signup modal
+        await page.click('#join-btn');
+        await page.waitForTimeout(300);
 
         // Find name input
         const firstNameInput = page.locator('input[id*="first"]').first();
@@ -361,7 +446,16 @@ test.describe('Customer App XSS Prevention', () => {
 
     test('should not execute scripts in email field', async ({ page }) => {
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
+
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
+
+        // Open signup modal
+        await page.click('#join-btn');
+        await page.waitForTimeout(300);
 
         const emailInput = page.locator('input[type="email"], input[name="email"]').first();
 
@@ -387,11 +481,16 @@ test.describe('Customer App XSS Prevention', () => {
 test.describe('Customer App Rate Limiting', () => {
     test('[SECURITY CONCERN] Should have rate limiting on login attempts', async ({ page }) => {
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
+
+        if (!(await isAppLoaded(page))) {
+            test.skip(true, 'App not found');
+            return;
+        }
 
         // This test documents the need for rate limiting
 
-        const loginToggle = page.locator('button:has-text("Log In"), [data-tab="login"]');
+        const loginToggle = page.locator('#login-btn, button:has-text("Log In"), [data-tab="login"]');
         if (await loginToggle.count() > 0) {
             await loginToggle.first().click();
             await page.waitForTimeout(500);
@@ -430,7 +529,7 @@ test.describe('Customer App No JS Errors', () => {
         });
 
         await page.goto(`/customer-app/index.html?slug=${TEST_APP_SLUG}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Filter out expected errors for missing app
         const criticalErrors = errors.filter(e =>

@@ -362,6 +362,22 @@ async function processBatch(
 
   const results: DeliveryResult[] = []
 
+  // Batch fatigue check: single query for all members instead of N individual RPCs
+  const fatiguedMemberIds = new Set<string>()
+  if (batch.created_by === 'automation' || batch.created_by === 'ai') {
+    const { data: fatigueResults } = await supabase.rpc('batch_check_fatigue', {
+      p_member_ids: memberIds.slice(0, 1000),
+      p_threshold: 70
+    })
+    if (fatigueResults) {
+      for (const result of fatigueResults) {
+        if (result.should_skip) {
+          fatiguedMemberIds.add(result.member_id)
+        }
+      }
+    }
+  }
+
   for (const member of (members || []) as Member[]) {
     // Check communication preferences
     const prefs = member.communication_preferences || { email: true, push: true, sms: false, in_app: true }
@@ -378,18 +394,11 @@ async function processBatch(
       continue
     }
 
-    // Check fatigue for automation-triggered messages
-    if (batch.created_by === 'automation' || batch.created_by === 'ai') {
-      const { data: fatigueCheck } = await supabase.rpc('should_skip_for_fatigue', {
-        p_member_id: member.id,
-        p_threshold: 70  // Default threshold
-      })
-
-      if (fatigueCheck?.should_skip) {
-        results.push({ member_id: member.id, channel: batch.channel, status: 'skipped', error: 'Member fatigued' })
-        stats.skipped++
-        continue
-      }
+    // Check fatigue using pre-fetched batch results
+    if (fatiguedMemberIds.has(member.id)) {
+      results.push({ member_id: member.id, channel: batch.channel, status: 'skipped', error: 'Member fatigued' })
+      stats.skipped++
+      continue
     }
 
     // Interpolate message with member data
@@ -533,7 +542,7 @@ Deno.serve(async (req) => {
 
       const { data: member } = await supabase
         .from('app_members')
-        .select('*')
+        .select('id, email, phone, first_name, last_name, locale, timezone, communication_preferences, quiet_hours')
         .eq('id', member_id)
         .single()
 
@@ -569,20 +578,28 @@ Deno.serve(async (req) => {
       result.stubbed = !resendApiKey
 
     } else {
-      // Process queue mode
+      // Process queue mode (limit to 3 batches per invocation for backpressure)
       const { data: pendingBatches } = await supabase
         .from('app_message_batches')
-        .select('*')
+        .select('id, organization_id, app_id, channel, subject, body, automation_id, segment, member_ids, scheduled_for, status, created_by')
         .eq('status', 'scheduled')
         .lte('scheduled_for', new Date().toISOString())
-        .limit(10)
+        .limit(3)
 
       let totalDelivered = 0
       let totalFailed = 0
       let totalSkipped = 0
       const batchesProcessed: string[] = []
+      const executionStart = Date.now()
+      const MAX_EXECUTION_MS = 25000  // 25s safety margin (Deno limit is 60s)
 
       for (const batch of (pendingBatches || []) as MessageBatch[]) {
+        // Execution time guard: defer remaining batches if running long
+        if (Date.now() - executionStart > MAX_EXECUTION_MS) {
+          console.warn(`Execution time limit reached (${Date.now() - executionStart}ms), deferring remaining batches`)
+          break
+        }
+
         const stats = await processBatch(supabase, batch)
         totalDelivered += stats.delivered
         totalFailed += stats.failed
@@ -609,7 +626,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Message sender error:', error)
     return new Response(
-      JSON.stringify({ success: false, error: (error as Error).message }),
+      JSON.stringify({ success: false, error: 'Message sending failed' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

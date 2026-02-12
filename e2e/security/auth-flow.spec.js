@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Login Security', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/app/login.html');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
     });
 
     test('should have password field with type="password"', async ({ page }) => {
@@ -102,7 +102,7 @@ test.describe('Login Security', () => {
 test.describe('Signup Security', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/app/signup.html');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
     });
 
     test('should require strong password', async ({ page }) => {
@@ -197,13 +197,13 @@ test.describe('Session Management', () => {
 
         // If there's a logout button on any page, click it
         await page.goto('/app/dashboard.html');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         const logoutButton = page.locator('button:has-text("Logout"), button:has-text("Sign Out"), a:has-text("Logout"), [data-action="logout"]');
 
         if (await logoutButton.count() > 0) {
             await logoutButton.first().click();
-            await page.waitForLoadState('networkidle');
+            await page.waitForLoadState('domcontentloaded');
 
             // Storage should be cleared of auth data
             const afterStorage = await page.evaluate(() => {
@@ -229,7 +229,7 @@ test.describe('Session Management', () => {
     test('should redirect to login after session timeout simulation', async ({ page }) => {
         // Navigate to a protected page
         await page.goto('/app/dashboard.html');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // If we're on the page (authenticated), clear auth and reload
         if (page.url().includes('dashboard')) {
@@ -241,7 +241,7 @@ test.describe('Session Management', () => {
 
             // Reload
             await page.reload();
-            await page.waitForLoadState('networkidle');
+            await page.waitForLoadState('domcontentloaded');
 
             // Should redirect to login
             const url = page.url();
@@ -290,7 +290,7 @@ test.describe('Protected Routes', () => {
 
             // Go to protected route
             await page.goto(route);
-            await page.waitForLoadState('networkidle');
+            await page.waitForLoadState('domcontentloaded');
 
             // Wait for potential redirect
             await page.waitForTimeout(1000);
@@ -366,7 +366,7 @@ test.describe('Auth Page Security Headers', () => {
         });
 
         await page.goto('/app/login.html');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         expect(errors.length).toBe(0);
     });
@@ -382,7 +382,7 @@ test.describe('Auth Page Security Headers', () => {
         });
 
         await page.goto('/app/signup.html');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         expect(errors.length).toBe(0);
     });

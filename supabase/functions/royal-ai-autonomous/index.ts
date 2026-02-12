@@ -1010,7 +1010,7 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
     // Fall back to legacy query if RPC not available (migration not applied yet)
     const { data: fallbackActions } = await supabase
       .from('ai_action_queue')
-      .select('*')
+      .select('id, organization_id, action_type, action_payload, reasoning, confidence, status, scheduled_for, error_message, retry_count, thread_id, prompt_id')
       .eq('status', 'approved')
       .lte('scheduled_for', new Date().toISOString())
       .limit(10)
@@ -1118,7 +1118,7 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
   // 2. Retry failed actions with exponential backoff (max 3 retries)
   const { data: failedActions } = await supabase
     .from('ai_action_queue')
-    .select('*')
+    .select('id, organization_id, action_type, action_payload, retry_count, error_message, scheduled_for')
     .eq('status', 'failed')
     .lt('retry_count', 3)
     .limit(5)
@@ -1163,7 +1163,7 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
 
   const { data: actionsToMeasure } = await supabase
     .from('ai_action_queue')
-    .select('*')
+    .select('id, organization_id, action_type, action_payload, executed_at, execution_result')
     .eq('status', 'executed')
     .is('measured_at', null)
     .lte('executed_at', measureCutoff.toISOString())

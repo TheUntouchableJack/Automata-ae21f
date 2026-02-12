@@ -5,6 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { checkRateLimit, rateLimitHeaders } from '../_shared/rate-limit.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -495,6 +496,28 @@ Deno.serve(async (req) => {
           .single()
 
         isAdmin = membership?.role === 'admin' || membership?.role === 'owner'
+      }
+    }
+
+    // Per-hour rate limit (5 articles/hour/org to prevent abuse)
+    if (organization_id) {
+      const rateCheck = await checkRateLimit(supabase, organization_id, 'generate_article', {
+        windowMinutes: 60,
+        maxAllowed: 5
+      })
+      if (!rateCheck.allowed) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Too many article requests. Please wait before generating more.',
+            rate_limited: true,
+            retry_after: rateCheck.retry_after_seconds
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', ...rateLimitHeaders(rateCheck) }
+          }
+        )
       }
     }
 

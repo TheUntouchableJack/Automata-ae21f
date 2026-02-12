@@ -57,7 +57,7 @@ async function loadCustomFields() {
     try {
         const { data, error } = await supabase
             .from('custom_fields')
-            .select('*')
+            .select('id, name, field_type, options, required, display_order')
             .eq('organization_id', currentOrganization.id)
             .order('display_order');
 
@@ -89,7 +89,7 @@ async function loadCustomers() {
         // Build query (exclude soft-deleted)
         let query = supabase
             .from('customers')
-            .select('*', { count: 'exact' })
+            .select('id, first_name, last_name, email, phone, company, source, tags, custom_data, created_at', { count: 'exact' })
             .eq('organization_id', currentOrganization.id)
             .is('deleted_at', null)
             .order('created_at', { ascending: false })

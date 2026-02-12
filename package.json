@@ -12,6 +12,10 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:alpha": "ALPHA_TEST_ENABLED=true playwright test e2e/flows/alpha-*.spec.js",
+    "test:alpha:ui": "ALPHA_TEST_ENABLED=true playwright test e2e/flows/alpha-*.spec.js --ui",
+    "alpha:check": "bash scripts/alpha-readiness.sh",
+    "alpha:start": "npm run alpha:check && npm run dev",
     "check-i18n": "node scripts/check-i18n.js"
   },
   "devDependencies": {

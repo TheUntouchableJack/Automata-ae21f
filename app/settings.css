@@ -1330,6 +1330,72 @@
     }
 }
 
+/* Promo Code Section in Checkout Modal */
+.checkout-promo-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.promo-input-wrapper {
+    display: flex;
+    gap: 8px;
+}
+
+.promo-input {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.promo-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.promo-input.valid {
+    border-color: var(--color-accent);
+}
+
+.promo-input.invalid {
+    border-color: #ef4444;
+}
+
+.promo-status {
+    margin-top: 8px;
+    font-size: 13px;
+    min-height: 20px;
+}
+
+.promo-status.checking {
+    color: var(--color-text-muted);
+}
+
+.promo-status.valid {
+    color: var(--color-accent);
+}
+
+.promo-status.invalid {
+    color: #ef4444;
+}
+
+.promo-status.valid::before {
+    content: '✓ ';
+}
+
+.promo-status.invalid::before {
+    content: '✗ ';
+}
+
 /* =====================================================
    ADVANCED MODE TOGGLE
    ===================================================== */
@@ -1687,5 +1753,165 @@
 
     .ai-stats-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* =====================================================
+   PAYMENT WARNING BANNER
+   ===================================================== */
+
+.payment-warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.payment-warning-banner .warning-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.15);
+    border-radius: 50%;
+    color: #ef4444;
+}
+
+.payment-warning-banner .warning-content {
+    flex: 1;
+}
+
+.payment-warning-banner .warning-content h4 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #dc2626;
+}
+
+.payment-warning-banner .warning-content p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.btn-warning {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.btn-warning:hover {
+    background: #dc2626;
+}
+
+/* =====================================================
+   CREDIT BUNDLES
+   ===================================================== */
+
+.bundles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.bundle-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.bundle-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.bundle-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.bundle-info {
+    flex: 1;
+}
+
+.bundle-info h4 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.bundle-info p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.bundle-price {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-right: 12px;
+}
+
+.bundle-buy-btn {
+    flex-shrink: 0;
+}
+
+.bundles-note {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--color-text-tertiary);
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .payment-warning-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .bundle-card {
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .bundle-info {
+        flex-basis: 100%;
+        order: 2;
+    }
+
+    .bundle-price {
+        order: 3;
+        margin-right: 0;
+    }
+
+    .bundle-buy-btn {
+        order: 4;
+        width: 100%;
+        margin-top: 12px;
     }
 }

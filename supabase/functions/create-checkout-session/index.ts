@@ -13,29 +13,34 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') as string, {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Price IDs (public, safe to include) - Created Feb 2026
+// Price IDs (public, safe to include) - Updated Feb 11, 2026 (LIVE MODE)
 const PRICES: Record<string, string> = {
-  // Subscription tiers (Feb 2026 pricing)
-  starter_monthly: 'price_1SyfQDGNy14i1og8tkBn6MF7',  // $79/mo
-  starter_annual: 'price_1SyfQDGNy14i1og8r0NrGfNM',   // $63/mo billed annually
-  growth_monthly: 'price_1SyfQEGNy14i1og80NnddnzC',   // $199/mo
-  growth_annual: 'price_1SyfQEGNy14i1og8Ixg6I1Gz',    // $159/mo billed annually
-  scale_monthly: 'price_1SyfQFGNy14i1og8fTrCAFaS',    // $499/mo
-  scale_annual: 'price_1SyfQFGNy14i1og8DJu8DwfL',     // $399/mo billed annually
+  // Subscription tiers (matches plan-limits.js)
+  pro_monthly: 'price_1SziieGNy14i1og8BYi4vv84',      // $299/mo - Royal runs your marketing
+  pro_annual: 'price_1SziifGNy14i1og8tiGIwHdw',       // $2,868/yr ($239/mo) - 20% off
+  max_monthly: 'price_1SzijTGNy14i1og8hsd8qFiJ',      // $749/mo - Royal proves your ROI
+  max_annual: 'price_1SzijUGNy14i1og8bCVXvQdx',       // $7,188/yr ($599/mo) - 20% off
   // Royalty Pro add-on for LTD users
-  royalty_pro_monthly: 'price_1SyfQGGNy14i1og8jvmoWMxo', // $49/mo
-  // Messaging bundles (one-time purchases)
-  // TODO: Create these in Stripe
-  // sms_bundle_100: 'price_XXX',    // $15 for 100 SMS
-  // email_bundle_5000: 'price_XXX', // $10 for 5,000 emails
+  royalty_pro_monthly: 'price_1SyfQGGNy14i1og8jvmoWMxo', // $79/mo (Note: plan-limits says $79, not $49)
+  // Messaging bundles (one-time purchases) - LIVE MODE Feb 11, 2026
+  sms_bundle_100: 'price_1Szjh5GNy14i1og8ayU6WOOU',    // $15 for 100 SMS
+  email_bundle_5000: 'price_1SzjjAGNy14i1og8H1uJPCYD', // $10 for 5,000 emails
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://royaltyapp.ai',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Allow production and local development origins
+const allowedOrigins = ['https://royaltyapp.ai', 'http://localhost:5174', 'http://localhost:5173'];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  return {
+    'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : 'https://royaltyapp.ai',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -80,7 +85,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { priceKey, organizationId, successUrl, cancelUrl, embedded } = await req.json()
+    const { priceKey, organizationId, successUrl, cancelUrl, embedded, promoCode } = await req.json()
 
     // Validate price key
     const priceId = PRICES[priceKey]
@@ -147,6 +152,25 @@ Deno.serve(async (req) => {
     // Determine the origin for redirect URLs
     const origin = req.headers.get('origin') || 'https://royaltyapp.ai'
 
+    // Look up promo code if provided
+    let stripeCouponId: string | undefined
+    if (promoCode && typeof promoCode === 'string' && promoCode.trim()) {
+      const { data: codeRecord } = await supabase
+        .from('redemption_codes')
+        .select('stripe_coupon_id, code_type, is_active, max_uses, current_uses, expires_at')
+        .ilike('code', promoCode.trim())
+        .single()
+
+      if (codeRecord &&
+          codeRecord.is_active &&
+          codeRecord.stripe_coupon_id &&
+          codeRecord.code_type !== 'appsumo' &&
+          (codeRecord.max_uses < 0 || codeRecord.current_uses < codeRecord.max_uses) &&
+          (!codeRecord.expires_at || new Date(codeRecord.expires_at) > new Date())) {
+        stripeCouponId = codeRecord.stripe_coupon_id
+      }
+    }
+
     // Base session config
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
@@ -158,7 +182,10 @@ Deno.serve(async (req) => {
         purchase_type: isBundle ? 'bundle' : 'subscription',
         bundle_type: isBundle ? priceKey : undefined,
       },
-      allow_promotion_codes: true,
+      // Allow manual promo codes at checkout, but if we have a server-side code, use that instead
+      ...(stripeCouponId
+        ? { discounts: [{ coupon: stripeCouponId }] }
+        : { allow_promotion_codes: true }),
     }
 
     // Add subscription-specific config

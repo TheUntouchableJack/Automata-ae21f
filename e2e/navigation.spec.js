@@ -14,7 +14,7 @@ test.describe('Public Navigation', () => {
 
     if (await loginLink.count() > 0) {
       await loginLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Should be on login page
       const url = page.url();
@@ -29,7 +29,7 @@ test.describe('Public Navigation', () => {
 
     if (await pricingLink.count() > 0) {
       await pricingLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       expect(page.url()).toContain('pricing');
     }

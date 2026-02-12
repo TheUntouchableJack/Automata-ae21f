@@ -20,7 +20,7 @@ test.describe('Authentication Redirects', () => {
       await page.goto(route);
 
       // Wait for any redirects
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Should be redirected to login or index
       const url = page.url();
@@ -56,7 +56,7 @@ test.describe('Login Page', () => {
       errors.push(error.message);
     });
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Filter out expected Supabase auth errors when not logged in
     const criticalErrors = errors.filter(e =>

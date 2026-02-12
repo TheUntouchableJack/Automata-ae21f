@@ -17,7 +17,7 @@ test.describe('Landing Page', () => {
 
   test('should have navigation links', async ({ page }) => {
     // Check for key navigation elements
-    const nav = page.locator('nav');
+    const nav = page.locator('nav').first();
     await expect(nav).toBeVisible();
   });
 
@@ -41,7 +41,7 @@ test.describe('Landing Page', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     expect(errors).toHaveLength(0);
   });

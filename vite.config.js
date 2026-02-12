@@ -13,8 +13,8 @@ export default defineConfig({
     // Output directory
     outDir: 'dist',
 
-    // Generate source maps for debugging
-    sourcemap: true,
+    // No source maps in production (prevents exposing source code)
+    sourcemap: false,
 
     // Minify for production
     minify: 'esbuild',

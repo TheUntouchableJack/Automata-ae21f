@@ -174,7 +174,7 @@ async function loadAppMetrics() {
         // Get ALL the organization's customer apps (no limit)
         const { data: apps, error: appsError } = await supabase
             .from('customer_apps')
-            .select('*')
+            .select('id, name, slug, description, is_published, is_active, branding, settings, theme_color, created_at')
             .eq('organization_id', currentOrganization.id)
             .is('deleted_at', null)
             .order('created_at', { ascending: false });

@@ -8,14 +8,36 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { webSearch, saveResearchFindings, extractInsights } from '../_shared/web-search.ts'
+import { checkRateLimit, rateLimitHeaders } from '../_shared/rate-limit.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Model configuration - update when switching models
-const MODEL_ID = 'claude-sonnet-4-20250514'
+// Model configuration - tiered for cost optimization
+const MODEL_SONNET = 'claude-sonnet-4-20250514'
+const MODEL_HAIKU = 'claude-haiku-4-5-20251001'
+const MODEL_ID = MODEL_SONNET // Default for backward compatibility
 const MODEL_DISPLAY_NAME = 'Sonnet 4'
+
+// Simple query patterns that can be handled by Haiku (10x cheaper)
+const SIMPLE_QUERY_PATTERNS = [
+  /^(how many|what is|show me|list|count|total)\b/i,
+  /^(what('s| is) my|check my|view my)\b/i,
+  /^(hello|hi|hey|thanks|thank you|ok|okay|got it|sure)\b/i,
+  /^(yes|no|yep|nope|correct|right)\b/i,
+]
+
+function selectModel(prompt: string, mode: string): string {
+  // Review mode always uses Sonnet (generates intelligence cards with tool use)
+  if (mode === 'review') return MODEL_SONNET
+  // Long prompts likely need deeper reasoning
+  if (prompt.length > 300) return MODEL_SONNET
+  // Short simple queries route to Haiku
+  if (SIMPLE_QUERY_PATTERNS.some(p => p.test(prompt.trim()))) return MODEL_HAIKU
+  // Default to Sonnet for everything else
+  return MODEL_SONNET
+}
 
 // Allowed origins for CORS - production and development
 const ALLOWED_ORIGINS = [
@@ -276,6 +298,7 @@ const TOOL_USE_CONFIG = {
   maxIterations: 5,      // Maximum tool use loops
   maxTokens: 4000,       // Max tokens per Claude call
   toolTimeout: 10000,    // Timeout per tool execution (ms)
+  tokenBudget: 15000,    // Max total tokens per request (prevents runaway cost)
 }
 
 // ============================================================================
@@ -1445,7 +1468,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
     const { data: profile } = await supabase
       .from('business_profiles')
-      .select('*')
+      .select('organization_id, business_type, business_subtype, revenue_model, primary_revenue_streams, avg_ticket, gross_margin_pct, food_cost_pct, labor_cost_pct, rent_pct, break_even_daily, price_positioning, primary_competitors, competitive_advantage, unique_selling_points, current_stage, growth_goals, expansion_interest, biggest_challenge, success_vision, location_type, foot_traffic_level, parking_situation, nearby_anchors, peak_hours, slow_periods, staff_count, owner_hours_weekly, ideal_customer_description, primary_age_range, customer_frequency, profile_completeness')
       .eq('organization_id', organizationId)
       .single()
 
@@ -2248,8 +2271,9 @@ async function callClaudeWithTools(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string | ContentBlock[] }>,
   ctx: ToolContext,
-  maxTokens: number = TOOL_USE_CONFIG.maxTokens
-): Promise<{ text: string; toolsUsed: string[]; tokensUsed: number }> {
+  maxTokens: number = TOOL_USE_CONFIG.maxTokens,
+  modelId: string = MODEL_SONNET
+): Promise<{ text: string; toolsUsed: string[]; tokensUsed: number; modelUsed: string }> {
 
   let currentMessages = [...messages]
   let totalTokensUsed = 0
@@ -2277,7 +2301,7 @@ async function callClaudeWithTools(
           'anthropic-beta': 'prompt-caching-2024-07-31',
         },
         body: JSON.stringify({
-          model: MODEL_ID,
+          model: modelId,
           max_tokens: maxTokens,
           system: [
             {
@@ -2295,13 +2319,27 @@ async function callClaudeWithTools(
 
     if (!response.ok) {
       const error = await response.text()
-      log('error', 'Claude API error in tool loop', { status: response.status, error, iteration: iterations })
+      log('error', 'Claude API error in tool loop', { status: response.status, error, iteration: iterations, model: modelId })
       throw new Error(`Claude API error: ${response.status} - ${error}`)
     }
 
     const data: ClaudeToolResponse = await response.json()
     totalTokensUsed += data.usage.input_tokens + data.usage.output_tokens
-    log('info', 'Claude API response received', { iteration: iterations, tokensUsed: data.usage.input_tokens + data.usage.output_tokens })
+    log('info', 'Claude API response received', { iteration: iterations, tokensUsed: data.usage.input_tokens + data.usage.output_tokens, model: modelId })
+
+    // Token budget check - prevent runaway cost on complex tool loops
+    if (totalTokensUsed > TOOL_USE_CONFIG.tokenBudget) {
+      log('warn', 'Token budget exceeded, returning partial response', { totalTokensUsed, budget: TOOL_USE_CONFIG.tokenBudget })
+      const textBlocks = data.content.filter(
+        (block): block is TextBlock => block.type === 'text'
+      )
+      return {
+        text: textBlocks.map(b => b.text).join('\n') || 'I used up my processing budget for this query. Please try a simpler question or break it into smaller parts.',
+        toolsUsed: [...new Set(toolsUsed)],
+        tokensUsed: totalTokensUsed,
+        modelUsed: modelId
+      }
+    }
 
     // Check if Claude wants to use tools
     if (data.stop_reason === 'tool_use') {
@@ -2375,7 +2413,8 @@ async function callClaudeWithTools(
     return {
       text: finalText,
       toolsUsed: [...new Set(toolsUsed)],
-      tokensUsed: totalTokensUsed
+      tokensUsed: totalTokensUsed,
+      modelUsed: modelId
     }
   }
 
@@ -2420,7 +2459,7 @@ async function loadBusinessProfile(
   try {
     const { data, error } = await supabase
       .from('business_profiles')
-      .select('*')
+      .select('organization_id, business_type, business_subtype, revenue_model, primary_revenue_streams, avg_ticket, gross_margin_pct, food_cost_pct, labor_cost_pct, rent_pct, break_even_daily, price_positioning, primary_competitors, competitive_advantage, unique_selling_points, current_stage, growth_goals, expansion_interest, biggest_challenge, success_vision, location_type, foot_traffic_level, parking_situation, nearby_anchors, peak_hours, slow_periods, staff_count, owner_hours_weekly, ideal_customer_description, primary_age_range, customer_frequency, profile_completeness')
       .eq('organization_id', organizationId)
       .single()
 
@@ -2996,7 +3035,8 @@ async function getNextDiscoveryQuestionV2(
 async function callClaude(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  maxTokens: number = 2000
+  maxTokens: number = 2000,
+  modelId: string = MODEL_SONNET
 ): Promise<string> {
   const response = await fetchWithTimeout(
     'https://api.anthropic.com/v1/messages',
@@ -3009,7 +3049,7 @@ async function callClaude(
         'anthropic-beta': 'prompt-caching-2024-07-31',
       },
       body: JSON.stringify({
-        model: MODEL_ID,
+        model: modelId,
         max_tokens: maxTokens,
         system: [
           {
@@ -3370,6 +3410,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Top-level request timeout: 120 seconds safety net
+    const HANDLER_TIMEOUT_MS = 120_000
+    const result = await Promise.race([
+      (async () => {
     if (!ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY not configured')
     }
@@ -3438,6 +3482,44 @@ Deno.serve(async (req) => {
     }
 
     const organizationId = membership.organization_id
+
+    // Check per-hour rate limit (60 requests/hour/org via shared module)
+    const rateCheck = await checkRateLimit(supabase, organizationId, 'ai_prompt')
+    if (!rateCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Too many requests. Please wait a moment.',
+          rate_limited: true,
+          retry_after: rateCheck.retry_after_seconds
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            ...rateLimitHeaders(rateCheck)
+          }
+        }
+      )
+    }
+
+    // Check AI budget cap (system default: $50/org/month)
+    const { data: budgetCheck } = await supabase.rpc('check_ai_budget', {
+      p_org_id: organizationId,
+      p_default_cap_cents: 5000
+    })
+    if (budgetCheck && !budgetCheck.within_budget) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Monthly AI budget reached. Please contact support or upgrade your plan.',
+          budget_exceeded: true,
+          usage_percent: budgetCheck.usage_percent
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Check plan limits
     const startOfMonth = new Date()
@@ -3628,11 +3710,62 @@ Deno.serve(async (req) => {
       appId: undefined // Will be resolved by tool handlers
     }
 
-    const { text: aiResponseText, toolsUsed, tokensUsed } = await callClaudeWithTools(
-      systemPrompt,
-      messages,
-      toolContext
-    )
+    // Select model based on query complexity (Haiku for simple, Sonnet for complex)
+    const selectedModel = selectModel(prompt, mode)
+
+    // Response cache: check for cached response (chat mode only, not review)
+    const normalizedPrompt = prompt.trim().toLowerCase().replace(/\s+/g, ' ')
+    const cacheKey = `${organizationId}:${mode}:${normalizedPrompt.substring(0, 200)}`
+    let aiResponseText: string
+    let toolsUsed: string[] = []
+    let tokensUsed = 0
+    let modelUsed = selectedModel
+    let cacheHit = false
+
+    if (mode === 'chat') {
+      const { data: cached } = await supabase
+        .from('ai_response_cache')
+        .select('response_text, tools_used, model_used, tokens_saved')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single()
+
+      if (cached) {
+        aiResponseText = cached.response_text
+        toolsUsed = cached.tools_used || []
+        tokensUsed = 0
+        modelUsed = cached.model_used || selectedModel
+        cacheHit = true
+        log('info', 'Cache hit', { cacheKey: cacheKey.substring(0, 50), tokensSaved: cached.tokens_saved })
+      }
+    }
+
+    if (!cacheHit) {
+      const result = await callClaudeWithTools(
+        systemPrompt,
+        messages,
+        toolContext,
+        TOOL_USE_CONFIG.maxTokens,
+        selectedModel
+      )
+      aiResponseText = result.text
+      toolsUsed = result.toolsUsed
+      tokensUsed = result.tokensUsed
+      modelUsed = result.modelUsed
+
+      // Store in cache (chat mode, async)
+      if (mode === 'chat') {
+        supabase.from('ai_response_cache').upsert({
+          cache_key: cacheKey,
+          organization_id: organizationId,
+          response_text: aiResponseText,
+          tools_used: toolsUsed,
+          model_used: modelUsed,
+          tokens_saved: tokensUsed,
+          expires_at: new Date(Date.now() + 3600000).toISOString()  // 1 hour TTL
+        }).catch(e => console.error('Cache store error:', e))
+      }
+    }
 
     const parsed = parseResponse(aiResponseText, mode)
 
@@ -3679,10 +3812,21 @@ Deno.serve(async (req) => {
         session_questions_count: sessionState.questionsAskedThisSession + (discoveryQuestion ? 1 : 0),
         // Phase 3: Tool use tracking
         tools_used: toolsUsed,
-        tokens_used: tokensUsed
+        tokens_used: tokensUsed,
+        model_used: modelUsed
       },
       ideas_generated: parsed.ideas.length
     })
+
+    // Track AI usage for cost monitoring (async, don't block response)
+    supabase.rpc('increment_ai_usage', {
+      p_org_id: organizationId,
+      p_input_tokens: Math.round(tokensUsed * 0.7),  // Approximate input/output split
+      p_output_tokens: Math.round(tokensUsed * 0.3),
+      p_cache_read_tokens: 0,
+      p_model: modelUsed.includes('haiku') ? 'haiku' : 'sonnet',
+      p_function_name: 'royal_ai_prompt'
+    }).catch(e => console.error('AI usage tracking error:', e))
 
     // Build response based on mode
     let response: PromptResponse
@@ -3713,17 +3857,26 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
+      })(),
+      new Promise<Response>((_, reject) =>
+        setTimeout(() => reject(new Error('REQUEST_TIMEOUT')), HANDLER_TIMEOUT_MS)
+      )
+    ])
+    return result
 
   } catch (error) {
     console.error('Royal AI Prompt error:', error)
+    const isTimeout = error instanceof Error && error.message === 'REQUEST_TIMEOUT'
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: isTimeout
+          ? 'Request took too long. Please try a simpler question.'
+          : 'Something went wrong. Please try again.',
         ideas: [],
         follow_up_questions: ['What would you like to know about your business?']
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: isTimeout ? 504 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

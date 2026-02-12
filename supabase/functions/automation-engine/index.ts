@@ -168,7 +168,7 @@ async function findMatchingAutomations(
 
   let query = supabase
     .from('automation_definitions')
-    .select('*')
+    .select('id, organization_id, app_id, name, category, trigger_type, trigger_event, trigger_condition, action_type, action_config, delay_minutes, max_frequency_days, daily_limit, cooldown_hours, is_enabled, confidence_threshold, trigger_count, success_count, failure_count')
     .eq('is_enabled', true)
     .eq('is_archived', false)
 
@@ -641,7 +641,7 @@ async function processScheduledTriggers(
     // Get members matching this schedule type
     let memberQuery = supabase
       .from('app_members')
-      .select('*')
+      .select('id, email, phone, first_name, last_name, tier, points_balance, total_points_earned, visit_count, current_streak, last_visit_at, joined_at, locale, timezone, communication_preferences, quiet_hours, app_id')
       .is('deleted_at', null)
 
     if (automation.organization_id) {
@@ -745,7 +745,7 @@ async function processPendingExecutions(supabase: SupabaseClient): Promise<numbe
     // Get member
     const { data: member } = await supabase
       .from('app_members')
-      .select('*')
+      .select('id, email, phone, first_name, last_name, tier, points_balance, total_points_earned, visit_count, current_streak, last_visit_at, joined_at, locale, timezone, communication_preferences, quiet_hours, app_id')
       .eq('id', exec.member_id)
       .single()
 
@@ -788,7 +788,7 @@ Deno.serve(async (req) => {
       // Get member
       const { data: member } = await supabase
         .from('app_members')
-        .select('*')
+        .select('id, email, phone, first_name, last_name, tier, points_balance, total_points_earned, visit_count, current_streak, last_visit_at, joined_at, locale, timezone, communication_preferences, quiet_hours, app_id')
         .eq('id', trigger.member_id)
         .single()
 
@@ -854,7 +854,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Automation engine error:', error)
     return new Response(
-      JSON.stringify({ success: false, error: (error as Error).message }),
+      JSON.stringify({ success: false, error: 'Automation processing failed' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

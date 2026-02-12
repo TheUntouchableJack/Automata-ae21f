@@ -248,6 +248,22 @@
 
                             <!-- Plan Tab -->
                             <div class="tab-content" id="plan-tab" style="display: none;">
+                                <!-- Payment Failed Warning Banner (hidden by default) -->
+                                <div class="payment-warning-banner" id="payment-warning-banner" style="display: none;">
+                                    <div class="warning-icon">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                            <line x1="12" y1="9" x2="12" y2="13"/>
+                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                        </svg>
+                                    </div>
+                                    <div class="warning-content">
+                                        <h4>Payment Failed</h4>
+                                        <p id="payment-warning-message">We couldn't process your last payment. Please update your payment method to avoid service interruption.</p>
+                                    </div>
+                                    <button class="btn btn-warning" id="update-payment-btn">Update Payment</button>
+                                </div>
+
                                 <div class="settings-card">
                                     <h3 data-i18n="settings.plan.title">Current Plan</h3>
                                     <p class="settings-card-subtitle" data-i18n="settings.plan.subtitle">View your subscription and usage</p>
@@ -416,6 +432,45 @@
                                             Cancel Subscription
                                         </button>
                                     </div>
+                                </div>
+
+                                <!-- Credit Bundles -->
+                                <div class="settings-card" id="bundles-section">
+                                    <h3>Need More Credits?</h3>
+                                    <p class="settings-card-subtitle">Purchase additional SMS or email credits as a one-time purchase</p>
+
+                                    <div class="bundles-grid">
+                                        <div class="bundle-card">
+                                            <div class="bundle-icon">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                                </svg>
+                                            </div>
+                                            <div class="bundle-info">
+                                                <h4>SMS Credits</h4>
+                                                <p>100 SMS messages</p>
+                                            </div>
+                                            <div class="bundle-price">$15</div>
+                                            <button class="btn btn-secondary bundle-buy-btn" data-bundle="sms_bundle_100">Buy Now</button>
+                                        </div>
+
+                                        <div class="bundle-card">
+                                            <div class="bundle-icon">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                                    <polyline points="22,6 12,13 2,6"/>
+                                                </svg>
+                                            </div>
+                                            <div class="bundle-info">
+                                                <h4>Email Credits</h4>
+                                                <p>5,000 emails</p>
+                                            </div>
+                                            <div class="bundle-price">$10</div>
+                                            <button class="btn btn-secondary bundle-buy-btn" data-bundle="email_bundle_5000">Buy Now</button>
+                                        </div>
+                                    </div>
+
+                                    <p class="bundles-note">Credits never expire and are added to your account instantly.</p>
                                 </div>
 
                                 <!-- Redeem AppSumo Code -->
@@ -667,6 +722,19 @@
                         <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                 </button>
+            </div>
+            <!-- Promo Code Input -->
+            <div class="checkout-promo-section" id="checkout-promo-section">
+                <div class="promo-input-wrapper">
+                    <input type="text"
+                           id="checkout-promo-code"
+                           class="promo-input"
+                           placeholder="Promo code (optional)"
+                           autocomplete="off"
+                           spellcheck="false">
+                    <button type="button" id="apply-promo-btn" class="btn btn-secondary btn-sm">Apply</button>
+                </div>
+                <div class="promo-status" id="promo-status"></div>
             </div>
             <div class="checkout-modal-body" id="checkout-container">
                 <!-- Stripe Embedded Checkout mounts here -->

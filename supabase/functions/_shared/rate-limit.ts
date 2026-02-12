@@ -66,13 +66,14 @@ export async function checkRateLimit(
 
     if (error) {
       console.error('Rate limit check error:', error);
-      // Fail open on error - allow the request but log the issue
+      // Fail closed on error - block the request to prevent abuse during outages
       return {
-        allowed: true,
+        allowed: false,
         current_count: 0,
         max_allowed: config.maxAllowed,
         window_start: new Date().toISOString(),
-        resets_at: new Date(Date.now() + config.windowMinutes * 60000).toISOString()
+        resets_at: new Date(Date.now() + config.windowMinutes * 60000).toISOString(),
+        retry_after_seconds: 60
       };
     }
 
@@ -88,13 +89,14 @@ export async function checkRateLimit(
     return result;
   } catch (err) {
     console.error('Rate limit exception:', err);
-    // Fail open
+    // Fail closed on exception - block the request to prevent abuse
     return {
-      allowed: true,
+      allowed: false,
       current_count: 0,
       max_allowed: config.maxAllowed,
       window_start: new Date().toISOString(),
-      resets_at: new Date(Date.now() + config.windowMinutes * 60000).toISOString()
+      resets_at: new Date(Date.now() + config.windowMinutes * 60000).toISOString(),
+      retry_after_seconds: 60
     };
   }
 }
