@@ -112,6 +112,86 @@ async function checkRateLimit(
 }
 
 // ============================================================================
+// PRE-ACTION INTELLIGENCE
+// ============================================================================
+
+interface ActionIntelligence {
+  recentFailures: number
+  recentSuccesses: number
+  relevantLearnings: string[]
+  recommendation: 'proceed' | 'caution' | 'defer'
+}
+
+/**
+ * Check past learnings + recent outcomes before executing an action.
+ * Prevents repeating known failures and surfaces relevant context.
+ */
+async function getActionIntelligence(
+  supabase: SupabaseClient,
+  orgId: string,
+  actionType: string
+): Promise<ActionIntelligence> {
+  const intel: ActionIntelligence = {
+    recentFailures: 0,
+    recentSuccesses: 0,
+    relevantLearnings: [],
+    recommendation: 'proceed'
+  }
+
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    // 1. Check recent outcomes for same action type (last 7 days)
+    const { data: recentActions } = await supabase
+      .from('ai_action_queue')
+      .select('status, success_score')
+      .eq('organization_id', orgId)
+      .eq('action_type', actionType)
+      .in('status', ['executed', 'failed', 'permanently_failed'])
+      .gte('executed_at', sevenDaysAgo)
+      .limit(20)
+
+    for (const action of recentActions || []) {
+      if (action.status === 'failed' || action.status === 'permanently_failed') {
+        intel.recentFailures++
+      } else if (action.success_score !== null && action.success_score >= 0.7) {
+        intel.recentSuccesses++
+      } else if (action.success_score !== null && action.success_score < 0.4) {
+        intel.recentFailures++
+      }
+    }
+
+    // 2. Query relevant knowledge (matching action category)
+    const { layer, category } = getKnowledgeContext(actionType)
+
+    const { data: knowledge } = await supabase
+      .from('business_knowledge')
+      .select('fact, confidence, importance')
+      .eq('organization_id', orgId)
+      .eq('status', 'active')
+      .eq('layer', layer)
+      .eq('category', category)
+      .order('importance', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(5)
+
+    intel.relevantLearnings = (knowledge || []).map(k => k.fact)
+
+    // 3. Determine recommendation
+    if (intel.recentFailures >= 3 && intel.recentSuccesses === 0) {
+      intel.recommendation = 'defer'
+    } else if (intel.recentFailures >= 2) {
+      intel.recommendation = 'caution'
+    }
+  } catch (err) {
+    log('warn', 'Failed to get action intelligence', { error: (err as Error).message, orgId, actionType })
+    // Fail open — don't block execution if intelligence check fails
+  }
+
+  return intel
+}
+
+// ============================================================================
 // AUTOMATION EXECUTION TRACKING
 // ============================================================================
 
@@ -702,6 +782,69 @@ async function executeEnableAutomation(
   }
 }
 
+/**
+ * Execute a create_automation action via the existing create_custom_automation RPC
+ */
+async function executeCreateAutomation(
+  supabase: SupabaseClient,
+  payload: Record<string, unknown>
+): Promise<ExecutionResult> {
+  const { app_id, name, description, category, trigger, action, limits, auto_enable } = payload
+
+  // Get organization_id from app
+  const { data: app } = await supabase
+    .from('customer_apps')
+    .select('organization_id')
+    .eq('id', app_id)
+    .single()
+
+  if (!app) {
+    return { success: false, error: 'App not found' }
+  }
+
+  const triggerObj = trigger as Record<string, unknown> || {}
+  const actionObj = action as Record<string, unknown> || {}
+  const limitsObj = limits as Record<string, unknown> || {}
+
+  // Call the existing RPC with guardrails
+  const { data: result, error } = await supabase.rpc('create_custom_automation', {
+    p_organization_id: app.organization_id,
+    p_app_id: app_id,
+    p_name: name as string,
+    p_description: (description as string) || '',
+    p_category: category as string,
+    p_trigger_type: (triggerObj.type as string) || 'event',
+    p_trigger_event: (triggerObj.event as string) || null,
+    p_trigger_condition: triggerObj.condition || null,
+    p_trigger_schedule: (triggerObj.schedule as string) || null,
+    p_action_type: (actionObj.type as string) || 'send_message',
+    p_action_config: actionObj.config || {},
+    p_delay_minutes: (limitsObj.delay_minutes as number) || 0,
+    p_max_frequency_days: (limitsObj.max_frequency_days as number) || null,
+    p_daily_limit: (limitsObj.daily_limit as number) || null,
+    p_auto_enable: (auto_enable as boolean) || false,
+    p_created_by: 'ai_autonomous'
+  })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  if (result && !result.success) {
+    return { success: false, error: result.error || 'Validation failed' }
+  }
+
+  return {
+    success: true,
+    data: {
+      automation_id: result.automation_id,
+      name: result.name,
+      is_enabled: result.is_enabled,
+      confidence: result.confidence
+    }
+  }
+}
+
 // ============================================================================
 // OUTCOME MEASUREMENT
 // ============================================================================
@@ -849,6 +992,56 @@ async function measureActionOutcome(
         break
       }
 
+      case 'enable_automation':
+        return measureEnableAutomationOutcome(supabase, action)
+
+      case 'create_automation': {
+        // Measure: is automation still enabled? How many executions?
+        const automationId = (action.execution_result as Record<string, unknown>)?.automation_id as string
+        if (!automationId) {
+          successScore = 0.4
+          break
+        }
+
+        const { data: automation } = await supabase
+          .from('automation_definitions')
+          .select('is_enabled')
+          .eq('id', automationId)
+          .single()
+
+        const { count: execCount } = await supabase
+          .from('automation_executions')
+          .select('id', { count: 'exact', head: true })
+          .eq('automation_id', automationId)
+          .gte('created_at', executedAt.toISOString())
+
+        const { count: successExecCount } = await supabase
+          .from('automation_executions')
+          .select('id', { count: 'exact', head: true })
+          .eq('automation_id', automationId)
+          .eq('status', 'success')
+          .gte('created_at', executedAt.toISOString())
+
+        const totalExecs = execCount || 0
+        const successExecs = successExecCount || 0
+        const isEnabled = automation?.is_enabled ?? false
+
+        outcomes.push({ metric: 'is_still_enabled', value: isEnabled ? 1 : 0 })
+        outcomes.push({ metric: 'executions_since_created', value: totalExecs })
+        outcomes.push({ metric: 'success_rate', value: totalExecs > 0 ? successExecs / totalExecs : 0 })
+
+        if (!isEnabled) {
+          successScore = 0.3  // Owner disabled it
+        } else if (totalExecs >= 5 && successExecs / totalExecs > 0.8) {
+          successScore = 0.9  // Highly effective
+        } else if (totalExecs >= 2) {
+          successScore = 0.7  // Getting traction
+        } else {
+          successScore = 0.5  // Too early to tell
+        }
+        break
+      }
+
       default:
         successScore = 0.5  // Neutral for unknown action types
     }
@@ -875,6 +1068,8 @@ function getKnowledgeContext(actionType: string): { layer: string; category: str
       return { layer: 'customer', category: 'retention_mechanics' }
     case 'enable_automation':
       return { layer: 'operational', category: 'automation_performance' }
+    case 'create_automation':
+      return { layer: 'operational', category: 'automation_creation' }
     default:
       return { layer: 'growth', category: 'action_outcome' }
   }
@@ -920,6 +1115,10 @@ async function saveOutcomeLearning(
         fact = `${payload.automation_type} automation effective: ${outcomes[0]?.value || 0} executions, ${Math.round((outcomes[1]?.value || 0) * 100)}% success rate`
         importance = 'high'
         break
+      case 'create_automation':
+        fact = `Custom automation "${payload.name}" (${payload.category}) effective — ${outcomes[1]?.value || 0} executions, ${Math.round((outcomes[2]?.value || 0) * 100)}% success rate`
+        importance = 'high'
+        break
     }
   } else if (successScore < 0.4) {
     // Failed action - record what didn't work
@@ -942,6 +1141,10 @@ async function saveOutcomeLearning(
         break
       case 'enable_automation':
         fact = `${payload.automation_type} automation underperforming: ${outcomes[0]?.value || 0} executions, ${Math.round((outcomes[1]?.value || 0) * 100)}% success rate - needs tuning`
+        importance = 'medium'
+        break
+      case 'create_automation':
+        fact = `Custom automation "${payload.name}" (${payload.category}) underperforming — owner disabled or low adoption. Consider different trigger/timing`
         importance = 'medium'
         break
     }
@@ -967,6 +1170,92 @@ async function saveOutcomeLearning(
         }
       })
   }
+}
+
+// ============================================================================
+// POST-RUN REFLECTION
+// ============================================================================
+
+/**
+ * After processing actions, analyze recent patterns and save strategic insights.
+ * Runs once per cycle, lightweight — only generates insights if patterns detected.
+ */
+async function runPostActionReflection(
+  supabase: SupabaseClient
+): Promise<number> {
+  let insightsGenerated = 0
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: orgActions } = await supabase
+    .from('ai_action_queue')
+    .select('organization_id, action_type, success_score')
+    .not('success_score', 'is', null)
+    .gte('measured_at', sevenDaysAgo)
+    .limit(200)
+
+  if (!orgActions || orgActions.length === 0) return 0
+
+  // Group by org + action_type
+  const patterns: Record<string, { successes: number; failures: number; total: number }> = {}
+
+  for (const a of orgActions) {
+    const key = `${a.organization_id}::${a.action_type}`
+    if (!patterns[key]) patterns[key] = { successes: 0, failures: 0, total: 0 }
+    patterns[key].total++
+    if (a.success_score >= 0.7) patterns[key].successes++
+    if (a.success_score < 0.4) patterns[key].failures++
+  }
+
+  for (const [key, stats] of Object.entries(patterns)) {
+    if (stats.total < 3) continue
+
+    const [orgId, actionType] = key.split('::')
+    const successRate = stats.successes / stats.total
+    const failureRate = stats.failures / stats.total
+    const { layer, category } = getKnowledgeContext(actionType)
+
+    let fact = ''
+    let importance: string = 'medium'
+
+    if (failureRate >= 0.7) {
+      fact = `[Weekly Pattern] ${actionType} actions consistently underperforming (${stats.failures}/${stats.total} failed in 7 days). Consider changing approach, timing, or targeting.`
+      importance = 'high'
+    } else if (successRate >= 0.8 && stats.total >= 5) {
+      fact = `[Weekly Pattern] ${actionType} actions performing well (${stats.successes}/${stats.total} succeeded in 7 days). Current strategy is effective.`
+      importance = 'medium'
+    } else {
+      continue
+    }
+
+    // Check if we already saved a similar insight this week
+    const { count } = await supabase
+      .from('business_knowledge')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('category', category)
+      .eq('source_type', 'inferred')
+      .like('fact', '[Weekly Pattern]%')
+      .gte('created_at', sevenDaysAgo)
+
+    if ((count || 0) > 0) continue
+
+    await supabase
+      .from('business_knowledge')
+      .insert({
+        organization_id: orgId,
+        layer,
+        category,
+        fact,
+        confidence: Math.min(stats.total / 10, 0.9),
+        importance,
+        source_type: 'inferred',
+        status: 'active'
+      })
+
+    insightsGenerated++
+  }
+
+  return insightsGenerated
 }
 
 // ============================================================================
@@ -1047,6 +1336,38 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
       continue
     }
 
+    // Check past learnings before executing
+    const intel = await getActionIntelligence(supabase, orgId, actionType)
+
+    if (intel.recommendation === 'defer') {
+      log('info', 'Deferring action due to repeated failures', {
+        orgId, actionId, actionType,
+        recentFailures: intel.recentFailures,
+        learnings: intel.relevantLearnings
+      })
+      await supabase
+        .from('ai_action_queue')
+        .update({
+          status: 'approved',
+          executing_instance: null,
+          scheduled_for: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          error_message: `Deferred: ${intel.recentFailures} similar actions failed recently. Learnings: ${intel.relevantLearnings[0] || 'none'}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', actionId)
+      continue
+    }
+
+    if (intel.relevantLearnings.length > 0) {
+      log('info', 'Action intelligence available', {
+        actionId, actionType,
+        recommendation: intel.recommendation,
+        learnings: intel.relevantLearnings.length,
+        recentFailures: intel.recentFailures,
+        recentSuccesses: intel.recentSuccesses
+      })
+    }
+
     let result: ExecutionResult = { success: false, error: 'Unknown action type' }
 
     try {
@@ -1065,6 +1386,9 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
           break
         case 'enable_automation':
           result = await executeEnableAutomation(supabase, payload)
+          break
+        case 'create_automation':
+          result = await executeCreateAutomation(supabase, payload)
           break
         case 'send_weekly_digest':
           result = await executeSendWeeklyDigest(supabase, payload, orgId)
@@ -1212,6 +1536,16 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
     .update({ status: 'expired', updated_at: new Date().toISOString() })
     .eq('status', 'pending')
     .lt('expires_at', expireCutoff.toISOString())
+
+  // 6. Post-action reflection — detect patterns and save strategic insights
+  try {
+    const insights = await runPostActionReflection(supabase)
+    if (insights > 0) {
+      log('info', 'Post-action reflection generated insights', { count: insights })
+    }
+  } catch (err) {
+    log('warn', 'Post-action reflection failed', { error: (err as Error).message })
+  }
 
   return stats
 }

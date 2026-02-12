@@ -484,12 +484,17 @@
         },
         "tabs": {
             "chat": "Chat",
-            "actions": "Actions",
-            "intel": "Intel"
+            "actions": "Aktionen",
+            "intel": "Intel",
+            "knowledge": "Wissen"
         },
         "intel": {
-            "emptyTitle": "All caught up!",
-            "emptyDesc": "Royal AI has all the info it needs for now."
+            "emptyTitle": "Alles erledigt!",
+            "emptyDesc": "Royal AI hat alle Informationen, die es braucht."
+        },
+        "knowledge": {
+            "emptyTitle": "Lernt gerade...",
+            "emptyDesc": "Royal AI lernt \u00fcber Ihr Unternehmen. Erkenntnisse erscheinen hier, sobald Muster entstehen."
         },
         "filters": {
             "new": "New",

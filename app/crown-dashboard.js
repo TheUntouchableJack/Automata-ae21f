@@ -1973,6 +1973,93 @@ const CrownDashboard = (function() {
         }
     }
 
+    // ===== Knowledge Tab =====
+
+    let knowledgeLoaded = false;
+
+    async function loadKnowledge() {
+        if (knowledgeLoaded) return;
+
+        const feed = document.getElementById('knowledge-feed');
+        const empty = document.getElementById('knowledge-empty');
+        if (!feed) return;
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const user = await getCurrentUser();
+            if (!user) return;
+
+            const orgResult = await AppUtils.loadOrganization(supabase, user.id);
+            if (!orgResult || !orgResult.organization) return;
+
+            const { data: knowledge, error } = await supabase
+                .from('business_knowledge')
+                .select('id, layer, category, fact, confidence, importance, source_type, created_at')
+                .eq('organization_id', orgResult.organization.id)
+                .eq('status', 'active')
+                .order('importance', { ascending: false })
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) {
+                console.error('Failed to load knowledge:', error);
+                return;
+            }
+
+            if (!knowledge || knowledge.length === 0) {
+                if (empty) empty.style.display = 'flex';
+                feed.innerHTML = '';
+                return;
+            }
+
+            if (empty) empty.style.display = 'none';
+
+            // Group by layer
+            const groups = {};
+            const layerLabels = {
+                operational: 'Operations', customer: 'Customers', financial: 'Financial',
+                market: 'Market', growth: 'Growth', regulatory: 'Compliance'
+            };
+            const layerIcons = {
+                operational: '\u2699\uFE0F', customer: '\uD83D\uDC65', financial: '\uD83D\uDCB0',
+                market: '\uD83D\uDCCA', growth: '\uD83D\uDE80', regulatory: '\uD83D\uDCCB'
+            };
+
+            for (const k of knowledge) {
+                if (!groups[k.layer]) groups[k.layer] = [];
+                groups[k.layer].push(k);
+            }
+
+            feed.innerHTML = Object.entries(groups).map(([layer, facts]) => `
+                <div class="knowledge-group">
+                    <div class="knowledge-group-header">
+                        <span class="knowledge-group-icon">${layerIcons[layer] || '\uD83D\uDCDD'}</span>
+                        <span class="knowledge-group-title">${layerLabels[layer] || layer}</span>
+                        <span class="knowledge-group-count">${facts.length}</span>
+                    </div>
+                    <div class="knowledge-group-facts">
+                        ${facts.map(f => `
+                            <div class="knowledge-fact ${AppUtils.escapeHtml(f.importance)}">
+                                <div class="knowledge-fact-text">${AppUtils.escapeHtml(f.fact)}</div>
+                                <div class="knowledge-fact-meta">
+                                    <span class="knowledge-confidence" title="Confidence">${Math.round(f.confidence * 100)}%</span>
+                                    <span class="knowledge-source">${AppUtils.escapeHtml(f.source_type)}</span>
+                                    <span class="knowledge-date">${new Date(f.created_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            knowledgeLoaded = true;
+        } catch (err) {
+            console.error('Error loading knowledge:', err);
+        }
+    }
+
     function generateSuggestedQuestions() {
         const questions = [];
 
@@ -3201,7 +3288,7 @@ const CrownDashboard = (function() {
         submitPrompt();
     }
 
-    return { init, setMode, applyTheme, initPrompt, addActivityCard, showActivityToast, handleChatSubmit };
+    return { init, setMode, applyTheme, initPrompt, addActivityCard, showActivityToast, handleChatSubmit, loadKnowledge };
 })();
 
 window.CrownDashboard = CrownDashboard;

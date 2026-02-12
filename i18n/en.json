@@ -492,11 +492,16 @@
         "tabs": {
             "chat": "Chat",
             "actions": "Actions",
-            "intel": "Intel"
+            "intel": "Intel",
+            "knowledge": "Knowledge"
         },
         "intel": {
             "emptyTitle": "All caught up!",
             "emptyDesc": "Royal AI has all the info it needs for now."
+        },
+        "knowledge": {
+            "emptyTitle": "Learning in progress",
+            "emptyDesc": "Royal AI is building knowledge about your business. Insights will appear here as patterns emerge."
         },
         "filters": {
             "new": "New",

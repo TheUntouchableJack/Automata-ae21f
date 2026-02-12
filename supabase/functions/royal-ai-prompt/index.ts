@@ -1382,7 +1382,8 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   },
 
   // ---------------------------------------------------------------------------
-  // create_automation - Create custom automation with guardrails
+  // create_automation - Queue custom automation creation with guardrails
+  // Routes through ai_action_queue for approval, execution, and outcome measurement
   // ---------------------------------------------------------------------------
   create_automation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
     const { supabase, organizationId, appId } = ctx
@@ -1395,60 +1396,64 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const limits = input.limits as Record<string, unknown> || {}
     const autoEnable = input.auto_enable as boolean || false
 
-    // Validation
     if (!name || !category || !trigger || !action) {
       return { success: false, error: 'Missing required fields: name, category, trigger, action' }
     }
 
     const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
 
-    // Call the RPC to create with guardrails
-    const { data: result, error } = await supabase.rpc('create_custom_automation', {
-      p_organization_id: organizationId,
-      p_app_id: targetAppId,
-      p_name: name,
-      p_description: description,
-      p_category: category,
-      p_trigger_type: trigger.type as string || 'event',
-      p_trigger_event: trigger.event as string || null,
-      p_trigger_condition: trigger.condition || null,
-      p_trigger_schedule: trigger.schedule as string || null,
-      p_action_type: action.type as string || 'send_message',
-      p_action_config: action.config || {},
-      p_delay_minutes: (limits.delay_minutes as number) || 0,
-      p_max_frequency_days: (limits.max_frequency_days as number) || null,
-      p_daily_limit: (limits.daily_limit as number) || null,
-      p_auto_enable: autoEnable,
-      p_created_by: 'ai'
+    // Calculate confidence based on automation parameters
+    // (mirrors create_custom_automation's calculate_automation_confidence logic)
+    let confidence = 0.65  // Base for custom automations
+    const actionConfig = action.config as Record<string, unknown> || {}
+    const pointsAwarded = (actionConfig.points as number) || 0
+    const multiplier = (actionConfig.multiplier as number) || 1
+    const discountPct = (actionConfig.discount_percent as number) || 0
+    const delayMinutes = (limits.delay_minutes as number) || 0
+    const maxFreqDays = (limits.max_frequency_days as number) || 0
+
+    if (pointsAwarded > 200) confidence -= 0.10
+    if (multiplier > 3) confidence -= 0.10
+    if (discountPct > 30) confidence -= 0.10
+    if (!maxFreqDays) confidence -= 0.10  // No frequency limit = risky
+    if (delayMinutes >= 30) confidence += 0.05
+    if (maxFreqDays >= 14) confidence += 0.05
+    confidence = Math.min(confidence, 0.80)  // Cap for custom automations
+
+    // Queue the action (same pattern as other write tools)
+    const { data: queueResult, error } = await supabase.rpc('queue_ai_action', {
+      p_org_id: organizationId,
+      p_action_type: 'create_automation',
+      p_action_payload: {
+        app_id: targetAppId,
+        name,
+        description,
+        category,
+        trigger,
+        action,
+        limits,
+        auto_enable: autoEnable
+      },
+      p_reasoning: `Create custom automation: "${name}" — ${description || category}`,
+      p_confidence: confidence
     })
 
     if (error) {
       return { success: false, error: error.message }
     }
 
-    // Check if creation failed due to validation or duplicate
-    if (result && !result.success) {
-      return {
-        success: false,
-        error: result.error,
-        data: {
-          validation_errors: result.validation_errors,
-          duplicate_info: result.duplicate_info
-        }
-      }
-    }
-
     return {
       success: true,
       data: {
-        automation_id: result.automation_id,
-        name: result.name,
-        is_enabled: result.is_enabled,
-        confidence: result.confidence,
-        message: result.message,
-        warnings: result.validation_warnings || result.duplicate_warning || null
-      },
-      metadata: { auto_enabled: result.is_enabled }
+        queued: true,
+        action_id: queueResult?.action_id,
+        status: queueResult?.status,
+        confidence,
+        auto_approved: queueResult?.auto_approved,
+        message: queueResult?.auto_approved
+          ? 'Automation queued for automatic creation'
+          : 'Automation queued for approval — owner will review before creation'
+      }
     }
   },
 

@@ -156,6 +156,14 @@
                                 <span data-i18n="intelligence.tabs.intel">Intel</span>
                                 <span class="tab-badge intel-badge" id="intel-badge" style="display: none;">0</span>
                             </button>
+                            <!-- Knowledge tab -->
+                            <button class="panel-tab" data-tab="knowledge" id="tab-knowledge" role="tab" aria-selected="false" aria-controls="tab-content-knowledge">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                                </svg>
+                                <span data-i18n="intelligence.tabs.knowledge">Knowledge</span>
+                            </button>
                             <!-- Chat tab (last) -->
                             <button class="panel-tab" data-tab="chat" id="tab-chat" role="tab" aria-selected="false" aria-controls="tab-content-chat">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -226,6 +234,23 @@
                         </div>
                         <div class="intel-feed" id="intel-feed">
                             <!-- Info request cards rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Knowledge Tab Content (AI learnings about this business) -->
+                    <div class="tab-content" id="tab-content-knowledge" role="tabpanel" aria-labelledby="tab-knowledge">
+                        <div class="knowledge-empty" id="knowledge-empty">
+                            <div class="knowledge-empty-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                                </svg>
+                            </div>
+                            <h3 data-i18n="intelligence.knowledge.emptyTitle">Learning in progress</h3>
+                            <p data-i18n="intelligence.knowledge.emptyDesc">Royal AI is building knowledge about your business. Insights will appear here as patterns emerge.</p>
+                        </div>
+                        <div class="knowledge-feed" id="knowledge-feed">
+                            <!-- Knowledge groups rendered by JS -->
                         </div>
                     </div>
                 </div>

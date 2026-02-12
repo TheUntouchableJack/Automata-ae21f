@@ -96,9 +96,11 @@ const ChatThread = (function() {
         const tabChat = document.getElementById('tab-chat');
         const tabActivity = document.getElementById('tab-activity');
         const tabIntel = document.getElementById('tab-intel');
+        const tabKnowledge = document.getElementById('tab-knowledge');
         const contentChat = document.getElementById('tab-content-chat');
         const contentActivity = document.getElementById('tab-content-activity');
         const contentIntel = document.getElementById('tab-content-intel');
+        const contentKnowledge = document.getElementById('tab-content-knowledge');
         const panelStats = document.getElementById('cards-panel-stats');
         // Chat-specific elements in right sidebar (HISTORY section)
         const threadSectionHeader = document.querySelector('.thread-section-header');
@@ -108,10 +110,10 @@ const ChatThread = (function() {
 
         // Helper to deactivate all tabs
         function deactivateAllTabs() {
-            [tabChat, tabActivity, tabIntel].forEach(tab => {
+            [tabChat, tabActivity, tabIntel, tabKnowledge].forEach(tab => {
                 if (tab) tab.classList.remove('active');
             });
-            [contentChat, contentActivity, contentIntel].forEach(content => {
+            [contentChat, contentActivity, contentIntel, contentKnowledge].forEach(content => {
                 if (content) content.classList.remove('active');
             });
         }
@@ -158,6 +160,22 @@ const ChatThread = (function() {
                 if (badge) {
                     badge.style.display = 'none';
                     badge.textContent = '0';
+                }
+            });
+        }
+
+        if (tabKnowledge) {
+            tabKnowledge.addEventListener('click', () => {
+                deactivateAllTabs();
+                tabKnowledge.classList.add('active');
+                if (contentKnowledge) contentKnowledge.classList.add('active');
+                if (panelStats) panelStats.style.display = 'none';
+                if (threadSectionHeader) threadSectionHeader.style.display = 'none';
+                if (threadSelector) threadSelector.style.display = 'none';
+
+                // Load knowledge on first visit
+                if (typeof CrownDashboard !== 'undefined' && typeof CrownDashboard.loadKnowledge === 'function') {
+                    CrownDashboard.loadKnowledge();
                 }
             });
         }
