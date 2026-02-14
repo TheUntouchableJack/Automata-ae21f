@@ -486,7 +486,7 @@
             "chat": "Chat",
             "actions": "Aktionen",
             "intel": "Intel",
-            "knowledge": "Wissen"
+            "knowledge": "Erkenntnisse"
         },
         "intel": {
             "emptyTitle": "Alles erledigt!",

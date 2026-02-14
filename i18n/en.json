@@ -493,7 +493,7 @@
             "chat": "Chat",
             "actions": "Actions",
             "intel": "Intel",
-            "knowledge": "Knowledge"
+            "knowledge": "Learnings"
         },
         "intel": {
             "emptyTitle": "All caught up!",

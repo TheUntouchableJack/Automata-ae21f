@@ -503,7 +503,7 @@
             "chat": "Chat",
             "actions": "Actions",
             "intel": "Intel",
-            "knowledge": "Savoir"
+            "knowledge": "Apprentissages"
         },
         "intel": {
             "emptyTitle": "Tout est \u00e0 jour !",
