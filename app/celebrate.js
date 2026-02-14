@@ -1,10 +1,6 @@
 // ===== Celebration Utilities =====
 // Confetti and sound effects for success actions
 
-// Success sound (subtle pop/chime)
-const successSound = new Audio('data:audio/wav;base64,UklGRl9vT19teleW1hdmVmbXQgEAAAABAAEARKwAAESsAAABAAgAZGF0YU' +
-    'tvT19XQUlUX0ZPRF9TT1VORA==');
-
 // Preload a simple success sound
 function playSuccessSound() {
     try {
