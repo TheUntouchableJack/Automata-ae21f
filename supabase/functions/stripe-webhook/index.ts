@@ -14,19 +14,15 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Map Stripe price IDs to plan tiers - Updated Feb 2026
-// Tiers: free, pro ($299/mo), max ($599/mo), enterprise (custom)
+// Map Stripe price IDs to plan tiers - LIVE MODE Feb 11, 2026
 const PRICE_TO_TIER: Record<string, { tier: string; billing: string; isAddOn?: boolean }> = {
   // Pro tier ($299/mo or $239/mo annual)
-  'price_1SyfQDGNy14i1og8tkBn6MF7': { tier: 'pro', billing: 'monthly' },
-  'price_1SyfQDGNy14i1og8r0NrGfNM': { tier: 'pro', billing: 'annual' },
-  // Max tier ($599/mo or $479/mo annual)
-  'price_1SyfQEGNy14i1og80NnddnzC': { tier: 'max', billing: 'monthly' },
-  'price_1SyfQEGNy14i1og8Ixg6I1Gz': { tier: 'max', billing: 'annual' },
-  // Legacy scale tier (maps to max)
-  'price_1SyfQFGNy14i1og8fTrCAFaS': { tier: 'max', billing: 'monthly' },
-  'price_1SyfQFGNy14i1og8DJu8DwfL': { tier: 'max', billing: 'annual' },
-  // Royalty Pro add-on for LTD users
+  'price_1SziieGNy14i1og8BYi4vv84': { tier: 'pro', billing: 'monthly' },
+  'price_1SziifGNy14i1og8tiGIwHdw': { tier: 'pro', billing: 'annual' },
+  // Max tier ($749/mo or $599/mo annual)
+  'price_1SzijTGNy14i1og8hsd8qFiJ': { tier: 'max', billing: 'monthly' },
+  'price_1SzijUGNy14i1og8bCVXvQdx': { tier: 'max', billing: 'annual' },
+  // Royalty Pro add-on for LTD users ($79/mo)
   'price_1SyfQGGNy14i1og8jvmoWMxo': { tier: 'royalty_pro', billing: 'monthly', isAddOn: true },
 }
 
