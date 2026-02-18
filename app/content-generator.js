@@ -571,7 +571,7 @@ function showUpgradePrompt(options) {
     const firstOption = options[0];
     if (firstOption && confirm(`${firstOption.description}\n\nWould you like to upgrade?`)) {
         if (firstOption.action === 'upgrade') {
-            window.location.href = '/app/settings.html#billing';
+            window.location.href = '/app/upgrade.html';
         } else if (firstOption.action === 'redeem') {
             window.location.href = '/app/settings.html#redeem';
         }

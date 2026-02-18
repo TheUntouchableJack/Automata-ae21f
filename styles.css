@@ -115,6 +115,7 @@ body {
 .social-proof,
 .pricing,
 .cta-section,
+.info-gathering,
 .footer {
     position: relative;
     z-index: 1;
@@ -2207,7 +2208,7 @@ blockquote {
 /* ===== Info-Gathering Section ===== */
 .info-gathering {
     padding: 60px 0 100px;
-    background: var(--color-bg-secondary);
+    background: transparent;
 }
 
 .info-gathering-card {

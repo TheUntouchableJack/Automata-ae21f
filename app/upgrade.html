@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade Plan - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="upgrade.css?v=1">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title">Choose Your Plan</h1>
+                        <p class="page-subtitle" id="page-subtitle">Start with a 14-day free trial. Cancel anytime.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success State (shown after checkout completion) -->
+            <section class="upgrade-success" id="upgrade-success" style="display: none;">
+                <div class="container">
+                    <div class="success-hero">
+                        <div class="success-crown">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M2 4l3 12h14l3-12-5 4-5-4-5 4-1-4z"/>
+                                <path d="M5 16h14v2H5z"/>
+                            </svg>
+                        </div>
+                        <h1 class="success-title" id="success-title">Welcome to Pro!</h1>
+                        <p class="success-subtitle" id="success-subtitle">Your 14-day free trial has started. Cancel anytime.</p>
+                    </div>
+
+                    <div class="success-metrics" id="success-metrics">
+                        <!-- Populated by JS based on plan -->
+                    </div>
+
+                    <div class="success-actions">
+                        <a href="/app/intelligence.html" class="btn btn-primary btn-lg">Explore AI Intelligence</a>
+                        <a href="/app/settings.html?tab=billing" class="btn btn-secondary btn-lg">Manage Billing</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="upgrade-section" id="upgrade-section">
+                <div class="container">
+                    <!-- Current Plan Banner -->
+                    <div class="current-plan-banner" id="current-plan-banner" style="display: none;">
+                        <div class="current-plan-info">
+                            <span class="current-plan-label">Current Plan</span>
+                            <span class="current-plan-name" id="current-plan-name">Free</span>
+                            <span class="plan-status" id="current-plan-status"></span>
+                        </div>
+                        <a href="/app/settings.html?tab=billing" class="btn btn-secondary btn-sm" id="manage-billing-link" style="display: none;">Manage Billing</a>
+                    </div>
+
+                    <!-- Billing Toggle -->
+                    <div class="billing-toggle-container">
+                        <span class="billing-label" data-billing="monthly">Monthly</span>
+                        <label class="billing-toggle">
+                            <input type="checkbox" id="billing-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="billing-label" data-billing="annual">Annual <span class="save-badge">Save 20%</span></span>
+                    </div>
+
+                    <!-- Plan Cards -->
+                    <div class="upgrade-plans-grid" id="upgrade-plans">
+                        <!-- Free Plan -->
+                        <div class="upgrade-plan-card" data-plan="free">
+                            <div class="plan-card-header">
+                                <h4>Free</h4>
+                                <p class="plan-tagline">Get Started</p>
+                            </div>
+                            <div class="plan-price">
+                                <span class="price-amount">$0</span>
+                                <span class="price-period">/month</span>
+                            </div>
+                            <ul class="plan-features-list">
+                                <li>250 customers</li>
+                                <li>Points & rewards</li>
+                                <li>QR check-ins</li>
+                                <li>20 Royal AI queries/mo</li>
+                            </ul>
+                            <button class="btn btn-secondary btn-block current-plan-btn" data-plan="free" disabled>
+                                Current Plan
+                            </button>
+                        </div>
+
+                        <!-- Pro Plan -->
+                        <div class="upgrade-plan-card featured" data-plan="pro">
+                            <div class="plan-badge">Most Popular</div>
+                            <div class="plan-card-header">
+                                <h4>Pro</h4>
+                                <p class="plan-tagline">Royal Runs Your Marketing</p>
+                            </div>
+                            <div class="plan-price">
+                                <span class="price-amount" data-monthly="299" data-annual="239">$299</span>
+                                <span class="price-period">/month</span>
+                            </div>
+                            <ul class="plan-features-list">
+                                <li>Unlimited customers</li>
+                                <li>10,000 emails + 500 SMS/mo</li>
+                                <li>Unlimited Royal AI + Autonomous</li>
+                                <li>Business learning & analytics</li>
+                            </ul>
+                            <button class="btn btn-primary btn-block checkout-btn" data-plan="pro">
+                                Start Free Trial
+                            </button>
+                        </div>
+
+                        <!-- Max Plan -->
+                        <div class="upgrade-plan-card" data-plan="max">
+                            <div class="plan-card-header">
+                                <h4>Max</h4>
+                                <p class="plan-tagline">Royal Proves Your ROI</p>
+                            </div>
+                            <div class="plan-price">
+                                <span class="price-amount" data-monthly="749" data-annual="599">$749</span>
+                                <span class="price-period">/month</span>
+                            </div>
+                            <ul class="plan-features-list">
+                                <li>Everything in Pro</li>
+                                <li>50,000 emails + 2,000 SMS/mo</li>
+                                <li>Visit Attribution (prove ROI)</li>
+                                <li>White-label + priority support</li>
+                            </ul>
+                            <button class="btn btn-primary btn-block checkout-btn" data-plan="max">
+                                Start Free Trial
+                            </button>
+                        </div>
+
+                        <!-- Enterprise Plan -->
+                        <div class="upgrade-plan-card" data-plan="enterprise">
+                            <div class="plan-card-header">
+                                <h4>Enterprise</h4>
+                                <p class="plan-tagline">Custom Solutions</p>
+                            </div>
+                            <div class="plan-price">
+                                <span class="price-amount">Custom</span>
+                                <span class="price-period">pricing</span>
+                            </div>
+                            <ul class="plan-features-list">
+                                <li>Everything in Max</li>
+                                <li>Dedicated support & SLAs</li>
+                                <li>API access</li>
+                                <li>Custom integrations</li>
+                            </ul>
+                            <a href="mailto:hello@royaltyapp.ai" class="btn btn-secondary btn-block">
+                                Contact Us
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Royalty Pro Add-on (shown for AppSumo LTD users) -->
+                    <div class="royalty-pro-upsell" id="royalty-pro-section" style="display: none;">
+                        <div class="royalty-pro-card">
+                            <div class="royalty-pro-header">
+                                <div>
+                                    <h4>Royalty Pro</h4>
+                                    <p>Let Royal Run Your Marketing</p>
+                                </div>
+                                <div class="royalty-pro-price-tag">
+                                    <span class="price">$79</span>
+                                    <span class="period">/month</span>
+                                </div>
+                            </div>
+                            <ul class="royalty-pro-features">
+                                <li>
+                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    Royal AI + Autonomous Mode
+                                </li>
+                                <li>
+                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    +10,000 emails/mo + 500 SMS/mo
+                                </li>
+                                <li>
+                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    White-label branding
+                                </li>
+                            </ul>
+                            <button class="btn btn-primary btn-block checkout-btn" data-plan="royalty_pro">
+                                Add Royalty Pro
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="billing-note">14-day free trial, then billed monthly or annually. Cancel anytime.</p>
+
+                    <!-- Feature Comparison Table -->
+                    <div class="comparison-section">
+                        <h2 class="comparison-title">Compare plans in detail</h2>
+                        <p class="comparison-subtitle">Everything you need to know about each plan</p>
+
+                        <div class="comparison-table-wrapper">
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>Features</th>
+                                        <th>Free</th>
+                                        <th>Pro</th>
+                                        <th>Max</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Core Limits -->
+                                    <tr class="feature-group">
+                                        <td colspan="4">Core Limits</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Customers</td>
+                                        <td>250</td>
+                                        <td>Unlimited</td>
+                                        <td>Unlimited</td>
+                                    </tr>
+
+                                    <!-- Messaging -->
+                                    <tr class="feature-group">
+                                        <td colspan="4">Messaging</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Emails per month</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td>10,000</td>
+                                        <td>50,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>SMS per month</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td>500</td>
+                                        <td>2,000</td>
+                                    </tr>
+
+                                    <!-- Loyalty Features -->
+                                    <tr class="feature-group">
+                                        <td colspan="4">Loyalty Features</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Points & rewards</td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>QR code check-ins</td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tiers & VIP levels</td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Referral program</td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Leaderboard</td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+
+                                    <!-- Royal AI Features -->
+                                    <tr class="feature-group">
+                                        <td colspan="4">Royal AI</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Royal chat (Q&A)</td>
+                                        <td>20/mo</td>
+                                        <td>Unlimited</td>
+                                        <td>Unlimited</td>
+                                    </tr>
+                                    <tr>
+                                        <td>AI automations</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td>Unlimited</td>
+                                        <td>Unlimited</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Autonomous Mode</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Business learning & discovery</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Fatigue protection</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Performance metrics</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Visit attribution (prove ROI)</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+
+                                    <!-- Branding & Support -->
+                                    <tr class="feature-group">
+                                        <td colspan="4">Branding & Support</td>
+                                    </tr>
+                                    <tr>
+                                        <td>White-label branding</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Email support</td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Priority support</td>
+                                        <td><span class="dash-icon">&mdash;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon">&#10003;</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Checkout Modal (Embedded Stripe Checkout) -->
+    <div class="checkout-modal-overlay" id="checkout-modal" style="display: none;">
+        <div class="checkout-modal">
+            <div class="checkout-modal-header">
+                <h3>Complete Your Subscription</h3>
+                <button class="checkout-close-btn" id="checkout-close-btn" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Promo Code Input -->
+            <div class="checkout-promo-section" id="checkout-promo-section">
+                <div class="promo-input-wrapper">
+                    <input type="text"
+                           id="checkout-promo-code"
+                           class="promo-input"
+                           placeholder="Promo code (optional)"
+                           autocomplete="off"
+                           spellcheck="false">
+                    <button type="button" id="apply-promo-btn" class="btn btn-secondary btn-sm">Apply</button>
+                </div>
+                <div class="promo-status" id="promo-status"></div>
+            </div>
+            <div class="checkout-modal-body" id="checkout-container">
+                <!-- Stripe Embedded Checkout mounts here -->
+                <div class="checkout-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading checkout...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js?v=1"></script>
+    <script src="auth.js?v=5"></script>
+    <script src="utils.js?v=5"></script>
+    <script src="celebrate.js?v=2"></script>
+    <script src="plan-limits.js?v=1"></script>
+    <script src="sidebar.js?v=4"></script>
+    <script src="upgrade.js?v=1"></script>
+</body>
+</html>

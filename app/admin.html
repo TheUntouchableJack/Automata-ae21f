@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <link rel="stylesheet" href="danger-modal.css">
+</head>
+<body>
+    <!-- App Layout with Sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar will be injected here by JS -->
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px; color: var(--color-primary);">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            Super Admin
+                        </h1>
+                        <p class="page-subtitle">Manage organizations, users, and plans</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="admin-tabs">
+                <div class="container">
+                    <button class="admin-tab active" data-tab="orgs">Organizations</button>
+                    <button class="admin-tab" data-tab="users">Users</button>
+                </div>
+            </div>
+
+            <!-- ===== Organizations Tab ===== -->
+            <section id="tab-orgs">
+                <!-- Stats Bar -->
+                <div class="stats-bar">
+                    <div class="container">
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-total-orgs">0</span>
+                            <span class="stat-label">Total Orgs</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-free-orgs">0</span>
+                            <span class="stat-label">Free</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-pro-orgs">0</span>
+                            <span class="stat-label">Pro</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-max-orgs">0</span>
+                            <span class="stat-label">Max</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-appsumo-orgs">0</span>
+                            <span class="stat-label">AppSumo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-content">
+                    <div class="container">
+                        <!-- Filter Bar -->
+                        <div class="filter-bar">
+                            <div class="search-box">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <input type="text" id="org-search-input" placeholder="Search organizations...">
+                            </div>
+                            <div class="filter-actions">
+                                <select id="plan-filter" class="filter-select">
+                                    <option value="">All Plans</option>
+                                    <option value="free">Free</option>
+                                    <option value="subscription">Subscription</option>
+                                    <option value="appsumo_lifetime">AppSumo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div class="loading-container" id="orgs-loading">
+                            <div class="loading-spinner"></div>
+                        </div>
+
+                        <!-- Orgs Table -->
+                        <div class="admin-table-container" id="orgs-container" style="display: none;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Organization</th>
+                                        <th>Owner</th>
+                                        <th>Plan</th>
+                                        <th>Members</th>
+                                        <th>Customers</th>
+                                        <th>Created</th>
+                                        <th>Last Active</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orgs-table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="pagination" id="orgs-pagination" style="display: none;">
+                            <button class="pagination-btn" id="orgs-prev-page" disabled>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Previous
+                            </button>
+                            <span class="pagination-info" id="orgs-pagination-info">Page 1 of 1</span>
+                            <button class="pagination-btn" id="orgs-next-page" disabled>
+                                Next
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div class="empty-state" id="orgs-empty-state" style="display: none;">
+                            <div class="empty-state-icon">
+                                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                                    <rect x="4" y="6" width="32" height="28" rx="3" stroke="currentColor" stroke-width="2"/>
+                                    <line x1="4" y1="14" x2="36" y2="14" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <h3>No organizations found</h3>
+                            <p>Try adjusting your search or filters</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Users Tab ===== -->
+            <section id="tab-users" style="display: none;">
+                <div class="stats-bar">
+                    <div class="container">
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-total-users">0</span>
+                            <span class="stat-label">Total Users</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-admin-users">0</span>
+                            <span class="stat-label">Admins</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-content">
+                    <div class="container">
+                        <!-- Filter Bar -->
+                        <div class="filter-bar">
+                            <div class="search-box">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <input type="text" id="user-search-input" placeholder="Search users...">
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div class="loading-container" id="users-loading">
+                            <div class="loading-spinner"></div>
+                        </div>
+
+                        <!-- Users Table -->
+                        <div class="admin-table-container" id="users-container" style="display: none;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Organizations</th>
+                                        <th>Joined</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="pagination" id="users-pagination" style="display: none;">
+                            <button class="pagination-btn" id="users-prev-page" disabled>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Previous
+                            </button>
+                            <span class="pagination-info" id="users-pagination-info">Page 1 of 1</span>
+                            <button class="pagination-btn" id="users-next-page" disabled>
+                                Next
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Org Detail Modal -->
+    <div class="modal-overlay" id="org-detail-modal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="org-detail-title">Organization Details</h2>
+                <button class="modal-close" id="org-detail-close">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="org-detail-body">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Plan Override Modal -->
+    <div class="modal-overlay" id="plan-override-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Edit Plan</h2>
+                <button class="modal-close" id="plan-override-close">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Quick-Set Buttons -->
+                <div class="form-group">
+                    <label>Quick Set Plan</label>
+                    <div class="plan-quickset">
+                        <button class="plan-quickset-btn" data-plan="free">Free</button>
+                        <button class="plan-quickset-btn" data-plan="pro">Pro</button>
+                        <button class="plan-quickset-btn" data-plan="max">Max</button>
+                    </div>
+                </div>
+
+                <div class="form-divider"><span>Current Plan</span></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="override-plan-type">Plan Type</label>
+                        <select id="override-plan-type">
+                            <option value="free">Free</option>
+                            <option value="subscription">Subscription</option>
+                            <option value="appsumo_lifetime">AppSumo Lifetime</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="override-sub-tier">Subscription Tier</label>
+                        <select id="override-sub-tier">
+                            <option value="">N/A</option>
+                            <option value="pro">Pro</option>
+                            <option value="max">Max</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-divider"><span>Custom Overrides</span></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="override-members">Member Limit</label>
+                        <input type="number" id="override-members" placeholder="e.g. 500 (-1 = unlimited)">
+                    </div>
+                    <div class="form-group">
+                        <label for="override-emails">Emails / Month</label>
+                        <input type="number" id="override-emails" placeholder="e.g. 10000">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="override-sms">SMS / Month</label>
+                        <input type="number" id="override-sms" placeholder="e.g. 500">
+                    </div>
+                    <div class="form-group">
+                        <label for="override-ai-queries">AI Queries / Month</label>
+                        <input type="number" id="override-ai-queries" placeholder="e.g. 100 (-1 = unlimited)">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="override-automations">Max Automations</label>
+                        <input type="number" id="override-automations" placeholder="e.g. 10 (-1 = unlimited)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Feature Toggles</label>
+                    <div class="feature-toggles">
+                        <label class="checkbox-label"><input type="checkbox" id="override-royal-chat"> Royal AI Chat</label>
+                        <label class="checkbox-label"><input type="checkbox" id="override-autonomous"> Autonomous Mode</label>
+                        <label class="checkbox-label"><input type="checkbox" id="override-learning"> Business Learning</label>
+                        <label class="checkbox-label"><input type="checkbox" id="override-fatigue"> Fatigue Protection</label>
+                        <label class="checkbox-label"><input type="checkbox" id="override-metrics"> Performance Metrics</label>
+                        <label class="checkbox-label"><input type="checkbox" id="override-attribution"> Visit Attribution</label>
+                        <label class="checkbox-label"><input type="checkbox" id="override-whitelabel"> White Label</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="plan-clear-override">Clear Overrides</button>
+                <button class="btn btn-primary" id="plan-save-btn">Save Plan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Impersonation Banner (injected by JS when active) -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js?v=1"></script>
+    <script src="auth.js?v=5"></script>
+    <script src="utils.js?v=5"></script>
+    <script src="danger-modal.js?v=1"></script>
+    <script src="audit-log.js?v=1"></script>
+    <script src="plan-limits.js?v=1"></script>
+    <script src="sidebar.js?v=17"></script>
+    <script src="admin.js?v=1"></script>
+</body>
+</html>

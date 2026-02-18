@@ -186,14 +186,20 @@ async function loadAppMetrics() {
 
         if (!apps || apps.length === 0) {
             // Auto-create default loyalty app for first-time users
+            console.log('[Dashboard] No apps found, auto-creating default app...');
             const newApp = await autoCreateDefaultApp();
             if (!newApp) {
-                // Fallback to manual creation if auto-create fails
+                console.warn('[Dashboard] Auto-create failed, showing manual state');
                 showNoAppState();
                 return;
             }
             currentApp = newApp;
             allApps = [newApp];
+
+            // Seed default rewards and starter automations in background
+            seedDefaultRewards(newApp.id).catch(e => console.error('[Dashboard] Reward seeding error:', e));
+            seedStarterAutomations(currentOrganization.id).catch(e => console.error('[Dashboard] Automation seeding error:', e));
+
             // Show success toast
             const toastMsg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appAutoCreated') : 'Your loyalty program is ready! Customize it anytime.';
             if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
@@ -268,8 +274,16 @@ function showNoAppState() {
 
 // ===== Auto-Create Default Loyalty App =====
 async function autoCreateDefaultApp() {
-    if (!currentOrganization || isAutoCreating) return null;
+    if (!currentOrganization) {
+        console.warn('[Dashboard] autoCreateDefaultApp: no currentOrganization');
+        return null;
+    }
+    if (isAutoCreating) {
+        console.warn('[Dashboard] autoCreateDefaultApp: already in progress');
+        return null;
+    }
     isAutoCreating = true;
+    console.log('[Dashboard] Auto-creating app for org:', currentOrganization.id, currentOrganization.name);
 
     try {
         // Generate name and slug from organization name
@@ -353,6 +367,76 @@ async function autoCreateDefaultApp() {
 
 const generateSlug = AppUtils.generateSlug;
 
+// ===== Seed Default Rewards =====
+async function seedDefaultRewards(appId) {
+    const defaults = [
+        { name: 'Free Item', description: 'Redeem for a free item of your choice', points_cost: 100, tier_required: null, display_order: 0 },
+        { name: '10% Off', description: 'Get 10% off your next purchase', points_cost: 50, tier_required: null, display_order: 1 },
+        { name: 'VIP Treatment', description: 'Exclusive VIP experience on your next visit', points_cost: 250, tier_required: 'silver', display_order: 2 },
+        { name: 'Birthday Bonus', description: 'Special birthday reward - redeem during your birthday month', points_cost: 0, tier_required: null, display_order: 3, featured: true }
+    ];
+
+    const rewards = defaults.map(r => ({
+        app_id: appId,
+        ...r,
+        is_active: true
+    }));
+
+    const { error } = await supabase
+        .from('app_rewards')
+        .insert(rewards);
+
+    if (error) console.error('[Dashboard] Failed to seed rewards:', error);
+    else console.log('[Dashboard] Seeded', rewards.length, 'default rewards');
+}
+
+// ===== Seed Starter Automations =====
+async function seedStarterAutomations(orgId) {
+    const starters = [
+        {
+            name: 'Welcome Message',
+            description: 'Send a warm welcome email when a new member signs up',
+            type: 'email',
+            trigger_type: 'event',
+            settings: { created_from: 'auto_setup', event_type: 'member_signup', frequency: 'once' }
+        },
+        {
+            name: 'First Visit Bonus',
+            description: 'Reward members with bonus points after their first check-in',
+            type: 'points',
+            trigger_type: 'event',
+            settings: { created_from: 'auto_setup', event_type: 'first_checkin', bonus_points: 25, frequency: 'once' }
+        },
+        {
+            name: 'At-Risk Check-in',
+            description: 'Reach out to members who haven\'t visited in 30 days',
+            type: 'email',
+            trigger_type: 'schedule',
+            settings: { created_from: 'auto_setup', frequency: 'daily', inactive_days: 30 }
+        },
+        {
+            name: 'Win-Back Offer',
+            description: 'Send a special offer to members inactive for 60+ days',
+            type: 'email',
+            trigger_type: 'schedule',
+            settings: { created_from: 'auto_setup', frequency: 'weekly', inactive_days: 60, discount_pct: 20 }
+        }
+    ];
+
+    const automations = starters.map(s => ({
+        organization_id: orgId,
+        ...s,
+        is_active: false // Start inactive so owner can review and activate
+    }));
+
+    const { error } = await supabase
+        .from('automations')
+        .insert(automations);
+
+    if (error) console.error('[Dashboard] Failed to seed automations:', error);
+    else console.log('[Dashboard] Seeded', automations.length, 'starter automations');
+}
+
 // ===== Preview Panel =====
 function showPreviewPanel() {
     if (!currentApp) return;
@@ -403,6 +487,16 @@ function showPreviewPanel() {
     const printQRBtn = document.getElementById('preview-print-qr-btn');
     if (printQRBtn) {
         printQRBtn.addEventListener('click', printPreviewQR);
+    }
+
+    const regenerateQRBtn = document.getElementById('preview-regenerate-qr-btn');
+    if (regenerateQRBtn) {
+        regenerateQRBtn.addEventListener('click', () => {
+            generatePreviewQR();
+            if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+                AppUtils.showToast('QR code regenerated', 'success');
+            }
+        });
     }
 
     // Hide preview button
@@ -554,7 +648,8 @@ function generatePreviewQR() {
 }
 
 function generatePreviewQRFallback(container, url) {
-    container.innerHTML = '<div style="width:72px;height:72px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:8px;font-size:11px;color:var(--color-text-muted);text-align:center;">QR unavailable</div>';
+    const encoded = encodeURIComponent(url);
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=${encoded}" alt="QR Code" width="72" height="72" style="border-radius:4px;" onerror="this.parentElement.innerHTML='<div style=\\'width:72px;height:72px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:4px;font-size:10px;color:var(--color-text-muted);\\'>QR</div>'">`;
 }
 
 function downloadPreviewQR() {
@@ -1719,7 +1814,7 @@ function showUpgradeModal(limitType, limitCheck) {
         : [];
 
     upgradeOptions.innerHTML = options.map(opt => `
-        <a href="${opt.action === 'redeem' ? '/app/redeem.html' : '/pricing.html'}" class="upgrade-option">
+        <a href="${opt.action === 'redeem' ? '/app/redeem.html' : '/app/upgrade.html'}" class="upgrade-option">
             <div class="upgrade-option-icon">
                 ${opt.type === 'stack_code' || opt.type === 'appsumo'
                     ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>'

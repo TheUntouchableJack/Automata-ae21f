@@ -1,0 +1,526 @@
+/* ===== Super Admin Page Styles ===== */
+
+/* Admin Tabs */
+.admin-tabs {
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.admin-tabs .container {
+    display: flex;
+    gap: 0;
+}
+
+.admin-tab {
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.admin-tab:hover {
+    color: var(--color-text-secondary);
+}
+
+.admin-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+/* Admin Content */
+.admin-content {
+    padding: 24px 0;
+}
+
+/* Stats Bar (reuses customers.css pattern) */
+.stats-bar {
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    padding: 20px 0;
+}
+
+.stats-bar .container {
+    display: flex;
+    gap: 48px;
+}
+
+/* Admin Table (mirrors customers table) */
+.admin-table-container {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.admin-table th {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--color-bg-secondary);
+}
+
+.admin-table tbody tr {
+    transition: background var(--transition-fast);
+    cursor: pointer;
+}
+
+.admin-table tbody tr:hover {
+    background: var(--color-bg-secondary);
+}
+
+.admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Org Name Cell */
+.org-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.org-avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--gradient-primary);
+    color: white;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.org-name-text {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* User Name Cell */
+.user-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--gradient-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* Plan Badge */
+.plan-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.plan-badge.free {
+    background: rgba(100, 116, 139, 0.15);
+    color: #64748b;
+}
+
+.plan-badge.pro {
+    background: rgba(124, 58, 237, 0.15);
+    color: var(--color-primary);
+}
+
+.plan-badge.max {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+}
+
+.plan-badge.appsumo {
+    background: rgba(249, 115, 22, 0.15);
+    color: #ea580c;
+}
+
+.plan-badge.has-override {
+    border: 1px dashed currentColor;
+}
+
+/* Admin Badge */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.role-badge.admin {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.role-badge.owner {
+    background: rgba(124, 58, 237, 0.15);
+    color: var(--color-primary);
+}
+
+.role-badge.member {
+    background: rgba(100, 116, 139, 0.1);
+    color: #64748b;
+}
+
+/* Org List in Users Tab */
+.user-orgs-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.user-org-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+}
+
+.user-org-chip .org-role {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+/* Action Buttons (show on hover) */
+.row-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.admin-table tbody tr:hover .row-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text);
+}
+
+.action-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+.action-btn.view-as:hover {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+/* Muted text helper */
+.text-muted {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* ===== Plan Override Modal ===== */
+.plan-quickset {
+    display: flex;
+    gap: 8px;
+}
+
+.plan-quickset-btn {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.plan-quickset-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.plan-quickset-btn.active {
+    border-color: var(--color-primary);
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--color-primary);
+}
+
+.feature-toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.feature-toggles .checkbox-label {
+    font-size: 13px;
+}
+
+.form-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 20px 0 16px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* ===== Org Detail Modal ===== */
+.org-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.org-detail-item {
+    padding: 12px 16px;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.org-detail-item .detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.org-detail-item .detail-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* Detail Sections */
+.detail-section {
+    margin-top: 24px;
+}
+
+.detail-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.detail-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-member-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.detail-member-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.detail-member-name {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.detail-member-email {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+/* Audit Log in Detail Modal */
+.detail-audit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.detail-audit-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+}
+
+.audit-action {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.audit-entity {
+    color: var(--color-text-secondary);
+}
+
+.audit-time {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* ===== Impersonation Banner ===== */
+.impersonation-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.impersonation-banner .exit-btn {
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.impersonation-banner .exit-btn:hover {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* Push content down when banner is active */
+body.impersonating .app-layout {
+    margin-top: 44px;
+}
+
+body.impersonating .mobile-header {
+    top: 44px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .admin-tabs .container {
+        gap: 0;
+    }
+
+    .admin-tab {
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+
+    .admin-table-container {
+        overflow-x: auto;
+    }
+
+    .admin-table {
+        min-width: 800px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .org-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .feature-toggles {
+        grid-template-columns: 1fr;
+    }
+
+    .plan-quickset {
+        flex-direction: column;
+    }
+}

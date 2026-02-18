@@ -28,7 +28,7 @@ const PRICES: Record<string, string> = {
 }
 
 // Allow production and local development origins
-const allowedOrigins = ['https://royaltyapp.ai', 'http://localhost:5174', 'http://localhost:5173'];
+const allowedOrigins = ['https://royaltyapp.ai', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
@@ -182,6 +182,9 @@ Deno.serve(async (req) => {
         purchase_type: isBundle ? 'bundle' : 'subscription',
         bundle_type: isBundle ? priceKey : undefined,
       },
+      // Automatic tax calculation based on customer location
+      automatic_tax: { enabled: true },
+      tax_id_collection: { enabled: true },
       // Allow manual promo codes at checkout, but if we have a server-side code, use that instead
       ...(stripeCouponId
         ? { discounts: [{ coupon: stripeCouponId }] }
@@ -201,10 +204,10 @@ Deno.serve(async (req) => {
     // Embedded mode uses return_url, redirect mode uses success/cancel URLs
     if (embedded) {
       sessionConfig.ui_mode = 'embedded'
-      sessionConfig.return_url = `${origin}/app/settings.html?session_id={CHECKOUT_SESSION_ID}&success=true`
+      sessionConfig.return_url = `${origin}/app/upgrade.html?session_id={CHECKOUT_SESSION_ID}&success=true`
     } else {
-      sessionConfig.success_url = successUrl || `${origin}/app/settings.html?session_id={CHECKOUT_SESSION_ID}&success=true`
-      sessionConfig.cancel_url = cancelUrl || `${origin}/app/settings.html?canceled=true`
+      sessionConfig.success_url = successUrl || `${origin}/app/upgrade.html?session_id={CHECKOUT_SESSION_ID}&success=true`
+      sessionConfig.cancel_url = cancelUrl || `${origin}/app/upgrade.html?canceled=true`
     }
 
     // Create checkout session with 14-day trial

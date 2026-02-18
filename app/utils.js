@@ -40,6 +40,45 @@ const AppUtils = (function() {
      */
     async function loadOrganization(supabase, userId) {
         try {
+            // Check for admin impersonation (View as Org)
+            const viewAsRaw = sessionStorage.getItem('adminViewAsOrg');
+            if (viewAsRaw) {
+                try {
+                    const viewAs = JSON.parse(viewAsRaw);
+                    if (viewAs && viewAs.orgId) {
+                        // Verify the user is actually an admin
+                        const profile = await getUserProfile(userId);
+                        if (profile && profile.is_admin) {
+                            // Load the impersonated org directly
+                            const { data: org, error: orgError } = await supabase
+                                .from('organizations')
+                                .select('id, name, slug, plan_type, appsumo_tier, subscription_tier, plan_limits_override')
+                                .eq('id', viewAs.orgId)
+                                .single();
+
+                            if (!orgError && org) {
+                                let limits = null;
+                                if (typeof getOrgLimits === 'function') {
+                                    limits = getOrgLimits(org);
+                                }
+                                // Set admin bypass
+                                if (typeof setPlanAdminStatus === 'function') {
+                                    setPlanAdminStatus(true);
+                                }
+                                // Show impersonation banner
+                                _showImpersonationBanner(viewAs.orgName || org.name);
+
+                                return { organization: org, role: 'admin', limits };
+                            }
+                        }
+                        // If we got here, impersonation failed — clear it
+                        sessionStorage.removeItem('adminViewAsOrg');
+                    }
+                } catch (parseErr) {
+                    sessionStorage.removeItem('adminViewAsOrg');
+                }
+            }
+
             // Get the membership
             const { data: memberships, error: memberError } = await supabase
                 .from('organization_members')
@@ -648,12 +687,58 @@ const AppUtils = (function() {
 
 
     // =========================================
+    // IMPERSONATION BANNER
+    // =========================================
+
+    function _showImpersonationBanner(orgName) {
+        // Don't show on admin page itself
+        if (window.location.pathname.includes('admin.html')) return;
+        // Don't double-inject
+        if (document.querySelector('.impersonation-banner')) return;
+
+        document.body.classList.add('impersonating');
+
+        const banner = document.createElement('div');
+        banner.className = 'impersonation-banner';
+        banner.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Viewing as <strong style="margin: 0 4px;">${escapeHtml(orgName)}</strong>
+            <button class="exit-btn" onclick="AppUtils.exitImpersonation()">Exit</button>
+        `;
+        document.body.prepend(banner);
+    }
+
+    async function exitImpersonation() {
+        sessionStorage.removeItem('adminViewAsOrg');
+
+        // Clean up the temporary org membership
+        if (typeof supabase !== 'undefined') {
+            try {
+                await supabase.rpc('admin_stop_impersonation');
+            } catch (e) {
+                console.warn('Error stopping impersonation:', e);
+            }
+        }
+
+        document.body.classList.remove('impersonating');
+        const banner = document.querySelector('.impersonation-banner');
+        if (banner) banner.remove();
+
+        window.location.href = '/app/admin.html';
+    }
+
+
+    // =========================================
     // PUBLIC API
     // =========================================
 
     return {
         // Organization
         loadOrganization,
+        exitImpersonation,
 
         // User info
         loadUserInfo,

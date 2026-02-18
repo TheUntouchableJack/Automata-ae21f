@@ -682,6 +682,10 @@ function setupEventListeners() {
     document.getElementById('copy-url-btn').addEventListener('click', copyAppUrl);
     document.getElementById('download-qr-btn').addEventListener('click', downloadQRCode);
     document.getElementById('print-qr-btn').addEventListener('click', printQRCode);
+    document.getElementById('regenerate-qr-btn')?.addEventListener('click', () => {
+        generateQRCode();
+        showSuccess('QR code regenerated');
+    });
 
     // Share buttons
     document.getElementById('share-native-btn').addEventListener('click', shareNative);
@@ -1041,7 +1045,8 @@ function generateQRCode() {
 
 // Fallback when QRCode library is unavailable
 function generateQRCodeFallback(container, url) {
-    container.innerHTML = '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:8px;font-size:12px;color:var(--color-text-muted);">QR unavailable</div>';
+    const encoded = encodeURIComponent(url);
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encoded}" alt="QR Code" width="220" height="220" style="border-radius:8px;" onerror="this.parentElement.innerHTML='<div style=\\'width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:8px;font-size:12px;color:var(--color-text-muted);\\'>QR unavailable</div>'">`;
 }
 
 function getAppUrl() {

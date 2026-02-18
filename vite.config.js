@@ -46,6 +46,7 @@ export default defineConfig({
         apps: resolve(__dirname, 'app/apps.html'),
         appBuilder: resolve(__dirname, 'app/app-builder.html'),
         intelligence: resolve(__dirname, 'app/intelligence.html'),
+        upgrade: resolve(__dirname, 'app/upgrade.html'),
 
         // Customer-facing app
         customerAppLanding: resolve(__dirname, 'customer-app/index.html'),

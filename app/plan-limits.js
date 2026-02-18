@@ -639,6 +639,7 @@ function canUseIntelligenceSync(org) {
  * @returns {boolean}
  */
 function hasCapability(org, capability) {
+    if (_isPlanAdmin) return true;
     const limits = getOrgLimits(org);
     return limits[capability] === true || limits[capability] === -1;
 }

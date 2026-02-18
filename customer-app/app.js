@@ -295,10 +295,7 @@ async function checkSession() {
 
 async function loadMemberData(memberId) {
     const { data, error } = await supabaseClient
-        .from('app_members')
-        .select('*')
-        .eq('id', memberId)
-        .single();
+        .rpc('get_member_profile', { p_member_id: memberId });
 
     if (error) {
         console.error('Failed to load member data:', error);
@@ -306,7 +303,14 @@ async function loadMemberData(memberId) {
         return;
     }
 
-    currentMember = data;
+    // RPC returns array; take first row
+    const member = Array.isArray(data) ? data[0] : data;
+    if (!member) {
+        console.error('Member not found:', memberId);
+        return;
+    }
+
+    currentMember = member;
     updateMemberUI();
 }
 
@@ -684,11 +688,7 @@ async function loadRecentActivity() {
     if (!currentMember) return;
 
     const { data, error } = await supabaseClient
-        .from('points_transactions')
-        .select('*')
-        .eq('member_id', currentMember.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .rpc('get_member_activity', { p_member_id: currentMember.id, p_limit: 10 });
 
     if (error) {
         console.error('Failed to load activity:', error);
@@ -1066,9 +1066,11 @@ async function updateMemberSetting(key, value) {
     if (!currentMember) return;
 
     const { error } = await supabaseClient
-        .from('app_members')
-        .update({ [key]: value })
-        .eq('id', currentMember.id);
+        .rpc('update_member_setting', {
+            p_member_id: currentMember.id,
+            p_key: key,
+            p_value: String(value)
+        });
 
     if (error) {
         console.error('Failed to update setting:', error);

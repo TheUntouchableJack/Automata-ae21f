@@ -1,0 +1,808 @@
+/* =====================================================
+   UPGRADE PAGE STYLES
+   ===================================================== */
+
+/* Page Header */
+.page-header {
+    padding: 32px 0 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Upgrade Section */
+.upgrade-section {
+    padding: 40px 0 80px;
+}
+
+/* =====================================================
+   CURRENT PLAN BANNER
+   ===================================================== */
+
+.current-plan-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 16px 24px;
+    margin-bottom: 32px;
+}
+
+.current-plan-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.current-plan-label {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.current-plan-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* Plan Status Badge */
+.plan-status {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+.plan-status.trialing {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--color-primary);
+}
+
+.plan-status.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-accent);
+}
+
+.plan-status.past_due {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* =====================================================
+   BILLING TOGGLE
+   ===================================================== */
+
+.billing-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.billing-label {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.billing-label .save-badge {
+    background: var(--color-accent);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    margin-left: 8px;
+}
+
+.billing-toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+}
+
+.billing-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.billing-toggle .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+}
+
+.billing-toggle .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+
+.billing-toggle input:checked + .toggle-slider {
+    background: var(--color-primary);
+}
+
+.billing-toggle input:checked + .toggle-slider:before {
+    transform: translateX(22px);
+}
+
+/* =====================================================
+   PLAN CARDS GRID
+   ===================================================== */
+
+.upgrade-plans-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.upgrade-plan-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    position: relative;
+    transition: all var(--transition-fast);
+}
+
+.upgrade-plan-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1);
+}
+
+.upgrade-plan-card.featured {
+    border-color: var(--color-primary);
+    background: var(--gradient-subtle);
+}
+
+.upgrade-plan-card.current {
+    border-color: var(--color-accent);
+}
+
+.upgrade-plan-card .plan-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.plan-card-header {
+    margin-bottom: 20px;
+}
+
+.plan-card-header h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.plan-tagline {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.plan-price {
+    margin-bottom: 24px;
+}
+
+.price-amount {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.price-period {
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.plan-features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px;
+}
+
+.plan-features-list li {
+    padding: 8px 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.plan-features-list li:last-child {
+    border-bottom: none;
+}
+
+.plan-features-list li::before {
+    content: "\2713";
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+.checkout-btn,
+.current-plan-btn {
+    width: 100%;
+}
+
+.billing-note {
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 64px;
+}
+
+/* =====================================================
+   ROYALTY PRO UPSELL (AppSumo LTD)
+   ===================================================== */
+
+.royalty-pro-upsell {
+    margin-bottom: 32px;
+}
+
+.royalty-pro-card {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+}
+
+.royalty-pro-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.royalty-pro-header h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.royalty-pro-header p {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.royalty-pro-price-tag {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.royalty-pro-price-tag .price {
+    font-size: 28px;
+    font-weight: 700;
+    color: #7c3aed;
+}
+
+.royalty-pro-price-tag .period {
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.royalty-pro-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+}
+
+.royalty-pro-features li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+.royalty-pro-features svg {
+    color: #7c3aed;
+    flex-shrink: 0;
+}
+
+.royalty-pro-card .btn-primary {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    border: none;
+}
+
+.royalty-pro-card .btn-primary:hover {
+    background: linear-gradient(135deg, #6d28d9 0%, #4338ca 100%);
+}
+
+/* =====================================================
+   FEATURE COMPARISON TABLE
+   ===================================================== */
+
+.comparison-section {
+    margin-top: 24px;
+}
+
+.comparison-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.comparison-subtitle {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.comparison-table-wrapper {
+    overflow-x: auto;
+    margin: 0;
+}
+
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 14px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.comparison-table th {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-text);
+    background: var(--color-bg-secondary);
+}
+
+.comparison-table th:first-child {
+    border-radius: var(--radius-md) 0 0 0;
+}
+
+.comparison-table th:last-child {
+    border-radius: 0 var(--radius-md) 0 0;
+}
+
+.comparison-table td {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.comparison-table td:first-child {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.comparison-table tr:last-child td {
+    border-bottom: none;
+}
+
+.comparison-table .feature-group {
+    background: var(--color-bg-tertiary, var(--color-surface));
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.check-icon {
+    color: var(--color-accent);
+}
+
+.dash-icon {
+    color: var(--color-text-muted);
+}
+
+/* =====================================================
+   CHECKOUT MODAL
+   ===================================================== */
+
+.checkout-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.checkout-modal {
+    background: var(--color-bg);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.checkout-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.checkout-modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.checkout-close-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    transition: all var(--transition-fast);
+}
+
+.checkout-close-btn:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.checkout-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 400px;
+}
+
+.checkout-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+}
+
+.checkout-loading p {
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+/* Stripe Embedded Checkout container */
+#checkout-container iframe {
+    border: none !important;
+}
+
+/* Promo Code Section */
+.checkout-promo-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.promo-input-wrapper {
+    display: flex;
+    gap: 8px;
+}
+
+.promo-input {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.promo-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.promo-input.valid {
+    border-color: var(--color-accent);
+}
+
+.promo-input.invalid {
+    border-color: #ef4444;
+}
+
+.promo-status {
+    margin-top: 8px;
+    font-size: 13px;
+    min-height: 20px;
+}
+
+.promo-status.checking {
+    color: var(--color-text-muted);
+}
+
+.promo-status.valid {
+    color: var(--color-accent);
+}
+
+.promo-status.invalid {
+    color: #ef4444;
+}
+
+.promo-status.valid::before {
+    content: '\2713 ';
+}
+
+.promo-status.invalid::before {
+    content: '\2717 ';
+}
+
+/* =====================================================
+   POST-CHECKOUT SUCCESS STATE
+   ===================================================== */
+
+.upgrade-success {
+    padding: 80px 0;
+    text-align: center;
+    animation: fadeIn 0.4s ease;
+}
+
+.success-hero {
+    margin-bottom: 48px;
+}
+
+.success-crown {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(79, 70, 229, 0.15) 100%);
+    color: var(--color-primary);
+    margin-bottom: 24px;
+    animation: crownPulse 2s ease infinite;
+}
+
+@keyframes crownPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.2); }
+    50% { transform: scale(1.05); box-shadow: 0 0 30px 10px rgba(124, 58, 237, 0.1); }
+}
+
+.success-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+}
+
+.success-subtitle {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Metrics Grid */
+.success-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto 48px;
+}
+
+.success-metric {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px 16px;
+    transition: all var(--transition-fast);
+}
+
+.success-metric:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+}
+
+.success-metric-icon {
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.success-metric-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.success-metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.success-metric-label {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+/* CTA Buttons */
+.success-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.btn-lg {
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 1024px) {
+    .upgrade-plans-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .upgrade-plan-card.featured {
+        order: -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .upgrade-section {
+        padding: 24px 0 60px;
+    }
+
+    .upgrade-plans-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .current-plan-banner {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .current-plan-info {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .billing-toggle-container {
+        margin-bottom: 24px;
+    }
+
+    .royalty-pro-header {
+        flex-direction: column;
+    }
+
+    .comparison-table {
+        min-width: 500px;
+    }
+
+    .upgrade-success {
+        padding: 48px 0;
+    }
+
+    .success-metrics {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .success-title {
+        font-size: 1.5rem;
+    }
+
+    .success-actions {
+        flex-direction: column;
+    }
+
+    .success-actions .btn-lg {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .checkout-modal {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .checkout-modal-overlay {
+        padding: 0;
+    }
+}

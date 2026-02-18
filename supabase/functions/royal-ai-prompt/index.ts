@@ -45,8 +45,12 @@ const ALLOWED_ORIGINS = [
   'https://www.royaltyapp.ai',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+  'http://127.0.0.1:5176',
 ]
 
 function getCorsHeaders(req: Request): Record<string, string> {
@@ -2324,7 +2328,11 @@ async function callClaudeWithTools(
 
     if (!response.ok) {
       const error = await response.text()
-      log('error', 'Claude API error in tool loop', { status: response.status, error, iteration: iterations, model: modelId })
+      log('error', 'Claude API error in tool loop', { status: response.status, error, iteration: iterations, model: modelId, systemPromptLength: systemPrompt.length })
+      // Classify oversized request errors so they get a helpful user message
+      if (response.status === 413 || (response.status === 400 && (error.includes('too many tokens') || error.includes('maximum context length') || error.includes('prompt is too long')))) {
+        throw new Error('REQUEST_TOO_LARGE')
+      }
       throw new Error(`Claude API error: ${response.status} - ${error}`)
     }
 
@@ -2443,7 +2451,7 @@ async function loadBusinessKnowledge(
       .eq('organization_id', organizationId)
       .eq('status', 'active')
       .order('importance', { ascending: false })
-      .limit(50)
+      .limit(30)
 
     if (error) {
       console.error('Failed to load business knowledge:', error)
@@ -2632,7 +2640,7 @@ function buildKnowledgeContextSection(
   const addedFacts = new Set<string>()
   for (const [layer, facts] of Object.entries(byLayer)) {
     const layerLabel = layer.charAt(0).toUpperCase() + layer.slice(1)
-    for (const fact of facts.slice(0, 5)) {
+    for (const fact of facts.slice(0, 3)) {
       const factKey = `${fact.category}:${fact.fact.slice(0, 50)}`
       if (!addedFacts.has(factKey)) {
         lines.push(`- [${layerLabel}] ${fact.fact}`)
@@ -3118,6 +3126,26 @@ function buildExternalContextSection(external: ExternalContext | null | undefine
   if (lines.length === 0) return ''
 
   return `\n\n## Real-Time Context\n${lines.join('\n')}`
+}
+
+// Guard against oversized system prompts (knowledge accumulation can exceed context limits)
+function truncateSystemPrompt(prompt: string, maxChars: number = 12000): string {
+  if (prompt.length <= maxChars) return prompt
+
+  // Try to truncate the knowledge section specifically (preserves core instructions)
+  const knowledgeMarker = '## What I Know About This Business'
+  const markerIdx = prompt.indexOf(knowledgeMarker)
+  if (markerIdx !== -1) {
+    const beforeKnowledge = prompt.substring(0, markerIdx)
+    const remaining = maxChars - beforeKnowledge.length - 100
+    if (remaining > 200) {
+      const knowledgeSection = prompt.substring(markerIdx, markerIdx + remaining)
+      return beforeKnowledge + knowledgeSection + '\n\n[Some business context omitted for brevity]'
+    }
+  }
+
+  // Fallback: hard truncate
+  return prompt.substring(0, maxChars) + '\n\n[Context truncated]'
 }
 
 // Build system prompt based on mode
@@ -3706,7 +3734,9 @@ Deno.serve(async (req) => {
     const discoveryPrompt = buildDiscoveryPromptAddition(discoveryQuestion)
 
     // Generate AI response with enhanced context
-    const systemPrompt = buildSystemPrompt(context, mode, knowledgeContext, discoveryPrompt)
+    const rawSystemPrompt = buildSystemPrompt(context, mode, knowledgeContext, discoveryPrompt)
+    // Guard against oversized system prompts from accumulated knowledge
+    const systemPrompt = truncateSystemPrompt(rawSystemPrompt)
 
     // Phase 3: Use tool-enabled Claude call
     const toolContext: ToolContext = {
@@ -3872,16 +3902,19 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Royal AI Prompt error:', error)
     const isTimeout = error instanceof Error && error.message === 'REQUEST_TIMEOUT'
+    const isTooLarge = error instanceof Error && error.message === 'REQUEST_TOO_LARGE'
     return new Response(
       JSON.stringify({
         success: false,
-        error: isTimeout
-          ? 'Request took too long. Please try a simpler question.'
-          : 'Something went wrong. Please try again.',
+        error: isTooLarge
+          ? 'Too much context accumulated. Try starting a new conversation.'
+          : isTimeout
+            ? 'Request took too long. Please try a simpler question.'
+            : 'Something went wrong. Please try again.',
         ideas: [],
         follow_up_questions: ['What would you like to know about your business?']
       }),
-      { status: isTimeout ? 504 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: isTooLarge ? 413 : (isTimeout ? 504 : 500), headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

@@ -346,9 +346,9 @@ const CrownScene = (function() {
 
             const bloomPass = new UnrealBloomPass(
                 new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
-                0.4,    // strength — much softer (was 1.8)
-                0.6,    // radius — tighter (was 1.2)
-                0.92    // threshold — only bloom brightest parts (was 0.5)
+                0.4,    // strength — soft glow
+                0.25,   // radius — tight to sphere (was 0.6, bled page-wide)
+                0.95    // threshold — only very brightest bloom (was 0.92)
             );
             composer.addPass(bloomPass);
         } catch (e) {

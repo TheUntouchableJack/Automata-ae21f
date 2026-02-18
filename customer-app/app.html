@@ -116,6 +116,11 @@
             height: 20px;
         }
 
+        .header-scan-btn.on-cooldown {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
         /* Header Avatar with Tier Flair */
         .header-avatar {
             width: 44px;
@@ -443,53 +448,6 @@
             opacity: 0.8;
         }
 
-        /* Quick Actions */
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        .quick-action {
-            background: var(--color-surface);
-            border-radius: 16px;
-            padding: 20px 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 1px solid var(--color-border);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .quick-action::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(var(--app-primary-rgb), 0.05), transparent);
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .quick-action:hover::before {
-            opacity: 1;
-        }
-
-        .quick-action:active {
-            transform: scale(0.97);
-        }
-
-        .quick-action {
-            animation: cardFadeIn 0.4s ease-out backwards;
-        }
-
-        .quick-action:nth-child(1) { animation-delay: 0.1s; }
-        .quick-action:nth-child(2) { animation-delay: 0.2s; }
-        .quick-action:nth-child(3) { animation-delay: 0.3s; }
-
         @keyframes cardFadeIn {
             from {
                 opacity: 0;
@@ -499,40 +457,6 @@
                 opacity: 1;
                 transform: translateY(0);
             }
-        }
-
-        .quick-action-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin: 0 auto 10px;
-            transition: transform 0.2s ease;
-        }
-
-        .quick-action:hover .quick-action-icon {
-            transform: scale(1.1);
-        }
-
-        .quick-action-icon.rewards {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
-        }
-
-        .quick-action-icon.leaderboard {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
-        }
-
-        .quick-action-icon.profile {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
-        }
-
-        .quick-action-text {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--color-text);
         }
 
         /* Rewards Grid */
@@ -616,6 +540,71 @@
             color: var(--color-text-muted);
         }
 
+        .suggest-reward-section { text-align: center; padding: 32px 20px; grid-column: 1 / -1; }
+        .suggest-reward-section h3 { font-size: 18px; margin: 12px 0 4px; color: var(--color-text); }
+        .suggest-reward-section > p { font-size: 14px; color: var(--color-text-muted); margin: 0 0 4px; }
+        .suggest-form { max-width: 320px; margin: 20px auto 0; display: flex; flex-direction: column; gap: 16px; }
+        .suggest-form input,
+        .suggest-form textarea {
+            padding: 12px 16px; border-radius: 12px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text); font-size: 14px;
+            resize: none; font-family: inherit;
+        }
+        .suggest-form button {
+            padding: 14px; border-radius: 12px; border: none;
+            background: var(--app-primary, #7c3aed); color: #fff;
+            font-weight: 600; font-size: 15px; cursor: pointer;
+            margin-top: 8px; margin-bottom: 21px; transition: background 0.2s, opacity 0.2s;
+        }
+        .suggest-form button:disabled { opacity: 0.6; cursor: default; background: #9ca3af; }
+        .reward-row-placeholder {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            border-bottom: 1px solid var(--color-border);
+            opacity: 0.38;
+            pointer-events: none;
+        }
+        .reward-row-placeholder:last-child { border-bottom: none; }
+        .reward-row-placeholder .reward-row-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(156, 163, 175, 0.15), rgba(107, 114, 128, 0.05));
+        }
+        .reward-row-placeholder .reward-row-name {
+            flex: 1;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--color-text);
+        }
+        .reward-row-placeholder .reward-row-cost {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+        .suggest-hint { font-size: 12px; color: var(--color-text-muted); margin-top: 12px; }
+        .suggest-points-row {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 14px; color: var(--color-text-muted);
+        }
+        .suggest-points-row input {
+            width: 80px; text-align: center;
+            padding: 10px 8px; border-radius: 12px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text); font-size: 14px;
+        }
+
         /* Activity List */
         .activity-list {
             background: var(--color-surface);
@@ -673,8 +662,15 @@
         }
 
         .activity-date {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--color-text-muted);
+            line-height: 1.3;
+        }
+
+        .activity-relative {
+            opacity: 0.6;
+            font-size: 10px;
+            margin-left: 2px;
         }
 
         .activity-points {
@@ -694,10 +690,88 @@
         .leaderboard-podium {
             display: flex;
             justify-content: center;
-            align-items: flex-end;
+            align-items: center;
             gap: 8px;
-            padding: 20px 16px 0;
-            margin-bottom: 20px;
+            padding: 24px 16px 20px;
+            margin: 28px 16px 32px;
+            background: linear-gradient(180deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.1) 0%, rgba(var(--app-primary-rgb, 99, 102, 241), 0.02) 100%);
+            border-radius: 24px;
+            border: 1px solid rgba(var(--app-primary-rgb, 99, 102, 241), 0.12);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .leaderboard-podium::before {
+            content: '\2726\00a0\00a0\25CF\00a0\00a0\2605\00a0\00a0\25B2\00a0\00a0\2734\00a0\00a0\25CF\00a0\00a0\2726\00a0\00a0\2605\00a0\00a0\25B2\00a0\00a0\2734\00a0\00a0\25CF\00a0\00a0\2726\00a0\00a0\2605';
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: space-around;
+            font-size: 14px;
+            color: var(--app-primary, #6366f1);
+            opacity: 0.08;
+            pointer-events: none;
+            letter-spacing: 0.3em;
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            .leaderboard-podium::before {
+                display: flex;
+            }
+        }
+
+        .leaderboard-podium::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            transform: translate(-50%, -50%);
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)5deg,
+                transparent 10deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)15deg,
+                transparent 20deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)25deg,
+                transparent 30deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)35deg,
+                transparent 40deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)45deg,
+                transparent 50deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)55deg,
+                transparent 60deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)65deg,
+                transparent 70deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)75deg,
+                transparent 80deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)85deg,
+                transparent 90deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)95deg,
+                transparent 100deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)105deg,
+                transparent 110deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)115deg,
+                transparent 120deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)125deg,
+                transparent 130deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)135deg,
+                transparent 140deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)145deg,
+                transparent 150deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)155deg,
+                transparent 160deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)165deg,
+                transparent 170deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)175deg,
+                transparent 180deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)185deg,
+                transparent 190deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)195deg,
+                transparent 200deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)205deg,
+                transparent 210deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)215deg,
+                transparent 220deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)225deg,
+                transparent 230deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)235deg,
+                transparent 240deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)245deg,
+                transparent 250deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)255deg,
+                transparent 260deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)265deg,
+                transparent 270deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)275deg,
+                transparent 280deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)285deg,
+                transparent 290deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)295deg,
+                transparent 300deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)305deg,
+                transparent 310deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)315deg,
+                transparent 320deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)325deg,
+                transparent 330deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)335deg,
+                transparent 340deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)345deg,
+                transparent 350deg, rgba(var(--app-primary-rgb, 99, 102, 241), 0.14)355deg,
+                transparent 360deg
+            );
+            border-radius: 50%;
+            pointer-events: none;
         }
 
         .podium-place {
@@ -706,6 +780,11 @@
             align-items: center;
             flex: 1;
             max-width: 110px;
+            z-index: 1;
+        }
+
+        .podium-place.first {
+            margin-bottom: 16px;
         }
 
         .podium-avatar-wrapper {
@@ -728,9 +807,9 @@
         }
 
         .podium-place.first .podium-avatar {
-            width: 72px;
-            height: 72px;
-            font-size: 28px;
+            width: 80px;
+            height: 80px;
+            font-size: 30px;
             border: 3px solid #ffd700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
@@ -757,6 +836,26 @@
             font-size: 20px;
         }
 
+        .podium-rank-badge {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            border: 2px solid var(--color-surface);
+            z-index: 1;
+        }
+        .podium-place.first .podium-rank-badge { background: #ffd700; color: #92400e; }
+        .podium-place.second .podium-rank-badge { background: #c0c0c0; color: #374151; }
+        .podium-place.third .podium-rank-badge { background: #cd7f32; color: #fff; }
+
         .podium-name {
             font-weight: 600;
             font-size: 13px;
@@ -775,47 +874,10 @@
             display: block;
         }
 
-        .podium-block {
-            width: 100%;
-            border-radius: 8px 8px 0 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding-top: 12px;
-            color: white;
-            font-weight: 700;
-        }
-
-        .podium-block .rank-number {
-            font-size: 20px;
-            line-height: 1;
-        }
-
-        .podium-block .rank-suffix {
-            font-size: 10px;
-            opacity: 0.8;
-        }
-
-        .podium-block .points {
+        .podium-points {
             font-size: 12px;
-            opacity: 0.9;
-            margin-top: 4px;
-        }
-
-        .podium-place.first .podium-block {
-            height: 100px;
-            background: linear-gradient(135deg, #ffd700, #f0b800);
-        }
-
-        .podium-place.second .podium-block {
-            height: 75px;
-            background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
-        }
-
-        .podium-place.third .podium-block {
-            height: 55px;
-            background: linear-gradient(135deg, #cd7f32, #a0522d);
+            color: var(--color-text-muted);
+            font-weight: 600;
         }
 
         /* Leaderboard List (4th place and beyond) */
@@ -894,6 +956,37 @@
             font-weight: 700;
             color: var(--app-primary);
             font-size: 14px;
+        }
+
+        /* Leaderboard Placeholders */
+        .podium-place.placeholder,
+        .leaderboard-item.placeholder {
+            opacity: 0.38;
+            cursor: default !important;
+            pointer-events: none;
+        }
+
+        .podium-place.placeholder .podium-avatar,
+        .leaderboard-item.placeholder .leaderboard-avatar {
+            background: linear-gradient(135deg, #9ca3af, #6b7280);
+        }
+
+        .podium-place.placeholder .podium-block {
+            filter: grayscale(0.6) brightness(0.85);
+        }
+
+        .leaderboard-item.placeholder .leaderboard-points {
+            color: var(--color-text-muted);
+        }
+
+        /* Activity Placeholders */
+        .activity-item.placeholder {
+            opacity: 0.38;
+            cursor: default !important;
+            pointer-events: none;
+        }
+        .activity-item.placeholder .activity-icon {
+            background: linear-gradient(135deg, rgba(156, 163, 175, 0.15), rgba(107, 114, 128, 0.05));
         }
 
         /* Profile Section */
@@ -1721,6 +1814,174 @@
             text-align: center;
             margin-top: 16px;
         }
+
+        /* Tier Detail Modal */
+        .tier-modal-header {
+            padding: 28px 24px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tier-modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.08;
+            z-index: 0;
+        }
+
+        .tier-modal-header.bronze { background: linear-gradient(135deg, #cd7f32 0%, #a0522d 100%); }
+        .tier-modal-header.silver { background: linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 100%); }
+        .tier-modal-header.gold { background: linear-gradient(135deg, #ffd700 0%, #f0b800 100%); }
+        .tier-modal-header.platinum { background: linear-gradient(135deg, #e5e4e2 0%, #bdbdbd 100%); }
+
+        .tier-modal-icon {
+            width: 64px; height: 64px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; margin: 0 auto 12px;
+            background: rgba(255,255,255,0.25); backdrop-filter: blur(8px);
+        }
+
+        .tier-modal-header.bronze,
+        .tier-modal-header.gold { color: #1e293b; }
+        .tier-modal-header.silver { color: #1e293b; }
+        .tier-modal-header.platinum { color: #1e293b; }
+
+        .tier-modal-title {
+            font-size: 22px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+
+        .tier-modal-subtitle {
+            font-size: 13px; opacity: 0.7; margin-top: 4px;
+        }
+
+        .tier-modal-body {
+            padding: 20px 24px 28px;
+        }
+
+        .tier-modal-progress {
+            margin-bottom: 20px;
+        }
+
+        .tier-modal-progress-label {
+            display: flex; justify-content: space-between;
+            font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;
+        }
+
+        .tier-modal-progress-bar {
+            height: 8px; border-radius: 4px; background: var(--color-border);
+            overflow: hidden;
+        }
+
+        .tier-modal-progress-fill {
+            height: 100%; border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .tier-modal-progress-fill.bronze { background: linear-gradient(90deg, #cd7f32, #daa520); }
+        .tier-modal-progress-fill.silver { background: linear-gradient(90deg, #c0c0c0, #e0e0e0); }
+        .tier-modal-progress-fill.gold { background: linear-gradient(90deg, #ffd700, #ffb800); }
+        .tier-modal-progress-fill.platinum { background: linear-gradient(90deg, #e5e4e2, #a8d8ea); }
+
+        .tier-modal-perks-title {
+            font-size: 14px; font-weight: 700; margin-bottom: 12px;
+            color: var(--color-text);
+        }
+
+        .tier-modal-perk {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 8px 0; font-size: 13px; color: var(--color-text-secondary);
+        }
+
+        .tier-modal-perk-icon {
+            font-size: 16px; flex-shrink: 0; margin-top: 1px;
+        }
+
+        .tier-modal-next {
+            margin-top: 20px; padding: 14px 16px;
+            background: rgba(var(--app-primary-rgb, 99, 102, 241), 0.08);
+            border-radius: 12px; border: 1px solid rgba(var(--app-primary-rgb, 99, 102, 241), 0.12);
+            font-size: 13px; color: var(--color-text);
+            text-align: center; line-height: 1.5;
+        }
+
+        .tier-modal-next strong {
+            color: var(--app-primary, #6366f1);
+        }
+
+        /* Notifications View */
+        .notifications-view {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--color-bg);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .notifications-view.active {
+            display: flex;
+        }
+
+        .notifications-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px;
+            padding-top: calc(16px + var(--safe-area-top));
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .notifications-header h2 {
+            font-size: 18px; font-weight: 700; margin: 0;
+        }
+
+        .notifications-list {
+            flex: 1; overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .notification-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 16px;
+            background: var(--color-surface);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--color-border);
+        }
+
+        .notification-item.placeholder {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .notification-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0;
+            background: rgba(var(--app-primary-rgb, 99, 102, 241), 0.1);
+        }
+
+        .notification-content {
+            flex: 1; min-width: 0;
+        }
+
+        .notification-title {
+            font-size: 14px; font-weight: 600;
+            color: var(--color-text); margin-bottom: 2px;
+        }
+
+        .notification-body {
+            font-size: 12px; color: var(--color-text-muted);
+            line-height: 1.4;
+        }
+
+        .notification-time {
+            font-size: 11px; color: var(--color-text-muted);
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1740,18 +2001,26 @@
                         <div class="header-greeting" id="greeting">Welcome back!</div>
                     </div>
                 </div>
+                <div class="header-actions">
+                    <button class="header-btn header-scan-btn" onclick="openScanner()" title="Scan QR Code">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                            <line x1="7" y1="12" x2="17" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
         <div class="points-card">
-            <div class="card-avatar tier-bronze" id="card-avatar" onclick="showTab('profile')">
+            <div class="card-avatar tier-bronze" id="card-avatar" onclick="showTierModal()">
                 <span id="card-avatar-initial">M</span>
                 <img id="card-avatar-img" src="" alt="" style="display: none;">
             </div>
             <div class="points-label-top">Your Balance</div>
             <div class="points-value" id="points-value">0</div>
             <div class="points-label">points</div>
-            <div class="tier-badge bronze" id="tier-badge">
+            <div class="tier-badge bronze" id="tier-badge" onclick="showTierModal()" style="cursor: pointer;">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
                     <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                 </svg>
@@ -1764,26 +2033,6 @@
                 <div class="tier-progress-text">
                     <span><strong id="tier-current">0</strong> pts</span>
                     <span id="tier-next">500 pts to Silver</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-header">
-                <h2 class="section-title">Quick Actions</h2>
-            </div>
-            <div class="quick-actions">
-                <div class="quick-action" onclick="showTab('rewards')">
-                    <div class="quick-action-icon rewards">&#127873;</div>
-                    <div class="quick-action-text">Rewards</div>
-                </div>
-                <div class="quick-action" onclick="showTab('leaderboard')" id="qa-leaderboard">
-                    <div class="quick-action-icon leaderboard">&#127942;</div>
-                    <div class="quick-action-text">Leaderboard</div>
-                </div>
-                <div class="quick-action" onclick="showTab('profile')">
-                    <div class="quick-action-icon profile">&#128100;</div>
-                    <div class="quick-action-text">Profile</div>
                 </div>
             </div>
         </div>
@@ -1813,6 +2062,14 @@
                         <div class="header-greeting">Top members this month</div>
                     </div>
                 </div>
+                <div class="header-actions">
+                    <button class="header-btn header-scan-btn" onclick="openScanner()" title="Scan QR Code">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                            <line x1="7" y1="12" x2="17" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1840,6 +2097,14 @@
                         <div class="header-title">Rewards</div>
                         <div class="header-greeting">Redeem your points</div>
                     </div>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn header-scan-btn" onclick="openScanner()" title="Scan QR Code">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                            <line x1="7" y1="12" x2="17" y2="12"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1907,6 +2172,54 @@
         </div>
     </div>
 
+    <!-- Scan Tab -->
+    <div class="tab-content" id="tab-scan">
+        <div class="app-header">
+            <div class="header-content">
+                <div class="header-brand">
+                    <div>
+                        <div class="header-title">Scan QR Code</div>
+                        <div class="header-greeting">Earn points at check-in</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="scan-tab-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center;">
+            <div style="width: 120px; height: 120px; border-radius: 50%; background: rgba(124, 58, 237, 0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--app-primary, #7c3aed)" stroke-width="1.5" style="width: 56px; height: 56px;">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                    <line x1="7" y1="12" x2="17" y2="12"/>
+                </svg>
+            </div>
+            <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--app-text, #fff);">Ready to Scan</h3>
+            <p style="color: var(--app-text-secondary, rgba(255,255,255,0.6)); margin-bottom: 16px; max-width: 280px; line-height: 1.5;">
+                Point your camera at the QR code displayed at the business to earn points.
+            </p>
+            <button onclick="openScanner()" id="scan-start-btn" style="
+                background: var(--app-primary, #7c3aed);
+                color: #fff;
+                border: none;
+                padding: 16px 48px;
+                border-radius: 16px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: transform 0.2s, opacity 0.2s;
+            ">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
+                Start Scanning
+            </button>
+            <p id="scan-cooldown-msg" style="color: var(--app-text-secondary, rgba(255,255,255,0.6)); margin-top: 16px; font-size: 13px; display: none;"></p>
+        </div>
+    </div>
+
     <!-- Help Tab -->
     <div class="tab-content" id="tab-help">
         <div class="app-header">
@@ -1916,6 +2229,13 @@
                         <div class="header-title">Help Center</div>
                         <div class="header-greeting">How can we help?</div>
                     </div>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="openAiChat()" title="Chat with support">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1928,26 +2248,6 @@
                     <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
                 <input type="text" id="help-search-input" placeholder="Search for help..." oninput="searchHelp(this.value)">
-            </div>
-
-            <!-- AI Chat Banner -->
-            <div class="ai-chat-banner" id="ai-chat-banner" onclick="openAiChat()">
-                <div class="ai-chat-banner-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
-                        <circle cx="8" cy="14" r="2"/>
-                        <circle cx="16" cy="14" r="2"/>
-                    </svg>
-                </div>
-                <div class="ai-chat-banner-content">
-                    <div class="ai-chat-banner-title">Chat with AI Assistant</div>
-                    <div class="ai-chat-banner-subtitle">Get instant answers 24/7</div>
-                </div>
-                <div class="ai-chat-banner-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                </div>
             </div>
 
             <!-- Quick Actions -->
@@ -1973,13 +2273,8 @@
                     </svg>
                     <span>Contact</span>
                 </button>
-                <button class="help-quick-btn" onclick="showHelpSection('messages')" id="messages-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                    </svg>
-                    <span>My Messages</span>
-                    <span class="messages-badge" id="messages-unread-badge" style="display: none;">0</span>
-                </button>
+                <!-- My Messages moved to chat button in header -->
+                <span class="messages-badge" id="messages-unread-badge" style="display: none;">0</span>
             </div>
         </div>
 
@@ -2198,12 +2493,12 @@
                 <div class="menu-item-text">Edit Profile</div>
                 <div class="menu-item-arrow">&#8250;</div>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" style="display: none;">
                 <div class="menu-item-icon">&#127912;</div>
                 <div class="menu-item-text">Transaction History</div>
                 <div class="menu-item-arrow">&#8250;</div>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" onclick="openNotifications()">
                 <div class="menu-item-icon">&#128276;</div>
                 <div class="menu-item-text">Notifications</div>
                 <div class="menu-item-arrow">&#8250;</div>
@@ -2212,6 +2507,11 @@
                 <div class="menu-item-icon">🌐</div>
                 <div class="menu-item-text">Language</div>
                 <div class="menu-item-value" id="current-language-display">English</div>
+                <div class="menu-item-arrow">&#8250;</div>
+            </div>
+            <div class="menu-item" onclick="showTab('help')">
+                <div class="menu-item-icon">&#10067;</div>
+                <div class="menu-item-text">Help Center</div>
                 <div class="menu-item-arrow">&#8250;</div>
             </div>
             <div class="menu-item danger" onclick="logout()">
@@ -2247,28 +2547,12 @@
             </svg>
             <span>Blog</span>
         </a>
-        <a href="#" class="nav-item scan-item" id="nav-scan" onclick="openScanner(); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                <line x1="7" y1="12" x2="17" y2="12"/>
-            </svg>
-            <span id="scan-label">Scan</span>
-            <span class="scan-cooldown" id="scan-cooldown" style="display: none;"></span>
-        </a>
         <a href="#" class="nav-item" data-tab="leaderboard" id="nav-leaderboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M8 21h8M12 17v4M17 4H7c-1.1 0-2 .9-2 2v4c0 3.3 2.7 6 6 6h2c3.3 0 6-2.7 6-6V6c0-1.1-.9-2-2-2z"/>
                 <path d="M5 10H3c0 2.8 2.2 5 5 5M19 10h2c0 2.8-2.2 5-5 5"/>
             </svg>
             <span>Rank</span>
-        </a>
-        <a href="#" class="nav-item" data-tab="help" id="nav-help">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <span>Help</span>
         </a>
         <a href="#" class="nav-item" data-tab="profile">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2293,6 +2577,62 @@
                 <span id="modal-reward-cost">500</span> points
             </div>
             <button class="redeem-btn" id="modal-redeem-btn">Redeem Reward</button>
+        </div>
+    </div>
+
+    <!-- Member Profile Modal (leaderboard click) -->
+    <div class="modal-overlay" id="member-profile-modal">
+        <div class="modal-content" style="text-align: center; padding: 32px 24px;">
+            <div class="modal-handle"></div>
+            <div id="profile-modal-avatar" style="
+                width: 80px; height: 80px; border-radius: 50%;
+                background: linear-gradient(135deg, var(--app-primary, #7c3aed), #a78bfa);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 32px; font-weight: 700; color: #fff;
+                margin: 0 auto 16px; overflow: hidden;
+            "></div>
+            <h2 id="profile-modal-name" style="font-size: 22px; font-weight: 700; margin-bottom: 4px;"></h2>
+            <div id="profile-modal-tier" style="
+                display: inline-block; padding: 4px 14px; border-radius: 20px;
+                font-size: 12px; font-weight: 600; text-transform: uppercase;
+                margin-bottom: 20px;
+            "></div>
+            <div style="display: flex; justify-content: center; gap: 32px; margin: 20px 0;">
+                <div style="text-align: center;">
+                    <div id="profile-modal-points" style="font-size: 24px; font-weight: 700; color: var(--app-primary, #7c3aed);"></div>
+                    <div style="font-size: 12px; color: var(--app-text-secondary, rgba(255,255,255,0.6));">Total Points</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="profile-modal-rank" style="font-size: 24px; font-weight: 700; color: var(--app-primary, #7c3aed);"></div>
+                    <div style="font-size: 12px; color: var(--app-text-secondary, rgba(255,255,255,0.6));">Rank</div>
+                </div>
+            </div>
+            <div id="profile-modal-joined" style="font-size: 13px; color: var(--app-text-secondary, rgba(255,255,255,0.6)); margin-top: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- Tier Detail Modal -->
+    <div class="modal-overlay" id="tier-detail-modal">
+        <div class="modal-content" style="padding: 0; overflow: hidden;">
+            <div class="modal-handle"></div>
+            <div id="tier-modal-body">
+                <!-- Populated by showTierModal() -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications View -->
+    <div class="notifications-view" id="notifications-view">
+        <div class="notifications-header">
+            <button class="article-back-btn" onclick="closeNotifications()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h2>Notifications</h2>
+        </div>
+        <div class="notifications-list" id="notifications-list">
+            <!-- Populated by openNotifications() -->
         </div>
     </div>
 
@@ -2452,6 +2792,33 @@
         let appSlug = null;
         let rewards = [];
 
+        // Placeholder leaderboard entries (shown grayed out when < 10 real members)
+        const PLACEHOLDER_MEMBERS = [
+            { display_name: 'Alex M.',    tier: 'gold',     points_balance: 850 },
+            { display_name: 'Jordan K.',  tier: 'gold',     points_balance: 720 },
+            { display_name: 'Taylor R.',  tier: 'silver',   points_balance: 610 },
+            { display_name: 'Morgan S.',  tier: 'silver',   points_balance: 530 },
+            { display_name: 'Casey L.',   tier: 'silver',   points_balance: 475 },
+            { display_name: 'Riley P.',   tier: 'bronze',   points_balance: 390 },
+            { display_name: 'Quinn D.',   tier: 'bronze',   points_balance: 310 },
+            { display_name: 'Avery W.',   tier: 'bronze',   points_balance: 245 },
+            { display_name: 'Drew H.',    tier: 'bronze',   points_balance: 180 },
+            { display_name: 'Jamie T.',   tier: 'bronze',   points_balance: 120 },
+        ];
+
+        const PLACEHOLDER_ACTIVITY = [
+            { description: 'Earned welcome bonus',     type: 'welcome',  points_change: 100,  created_at: null },
+            { description: 'Visited store',            type: 'scan',     points_change: 25,   created_at: null },
+            { description: 'Redeemed Free Coffee',     type: 'redeem',   points_change: -150, created_at: null },
+            { description: 'Referral bonus',           type: 'referral', points_change: 200,  created_at: null },
+            { description: 'Visited store',            type: 'scan',     points_change: 25,   created_at: null },
+            { description: 'Birthday reward',          type: 'birthday', points_change: 50,   created_at: null },
+            { description: 'Visited store',            type: 'scan',     points_change: 25,   created_at: null },
+            { description: 'Earned loyalty bonus',     type: 'bonus',    points_change: 75,   created_at: null },
+            { description: 'Redeemed 10% Off',         type: 'redeem',   points_change: -200, created_at: null },
+            { description: 'Visited store',            type: 'scan',     points_change: 25,   created_at: null },
+        ];
+
         // Initialize
         async function init() {
             const params = new URLSearchParams(window.location.search);
@@ -2506,12 +2873,9 @@
         async function loadMember(memberId) {
             try {
                 const { data } = await supabaseClient
-                    .from('app_members')
-                    .select('*')
-                    .eq('id', memberId)
-                    .single();
+                    .rpc('get_member_profile', { p_member_id: memberId });
 
-                currentMember = data;
+                currentMember = Array.isArray(data) ? data[0] : data;
 
                 // Check for unread messages
                 checkUnreadMessages();
@@ -2602,7 +2966,6 @@
             const features = currentApp.features || {};
             if (!features.leaderboard_enabled) {
                 document.getElementById('nav-leaderboard').style.display = 'none';
-                document.getElementById('qa-leaderboard').style.display = 'none';
             }
             if (!features.rewards_enabled) {
                 document.getElementById('nav-rewards').style.display = 'none';
@@ -2646,37 +3009,46 @@
         async function loadActivity() {
             try {
                 const { data } = await supabaseClient
-                    .from('points_transactions')
-                    .select('*')
-                    .eq('member_id', currentMember.id)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
+                    .rpc('get_member_activity', { p_member_id: currentMember.id, p_limit: 10 });
 
-                if (data && data.length > 0) {
-                    const listEl = document.getElementById('activity-list');
-                    listEl.innerHTML = data.map(tx => {
-                        const isPositive = tx.points_change > 0;
-                        const icon = isPositive ? '&#11088;' : '&#127873;';
-                        const iconClass = isPositive ? 'earn' : 'spend';
+                const realActivity = data || [];
+                const totalSlots = 10;
+                const merged = [];
 
-                        return `
-                            <div class="activity-item">
-                                <div class="activity-icon ${iconClass}">${icon}</div>
-                                <div class="activity-details">
-                                    <div class="activity-title">${escapeHtml(tx.description || tx.type)}</div>
-                                    <div class="activity-date">${formatTimeAgo(tx.created_at)}</div>
-                                </div>
-                                <div class="activity-points ${isPositive ? 'positive' : 'negative'}">
-                                    ${isPositive ? '+' : ''}${formatNumber(tx.points_change)}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    // Update visits count
-                    const visits = data.filter(tx => tx.type === 'scan' || tx.type === 'visit').length;
-                    document.getElementById('stat-visits').textContent = visits;
+                for (let i = 0; i < totalSlots; i++) {
+                    if (i < realActivity.length) {
+                        merged.push({ ...realActivity[i], _isPlaceholder: false });
+                    } else {
+                        merged.push({ ...PLACEHOLDER_ACTIVITY[i], _isPlaceholder: true });
+                    }
                 }
+
+                const listEl = document.getElementById('activity-list');
+                listEl.innerHTML = merged.map(tx => {
+                    const isPlaceholder = tx._isPlaceholder;
+                    const isPositive = tx.points_change > 0;
+                    const icon = isPositive ? '&#11088;' : '&#127873;';
+                    const iconClass = isPositive ? 'earn' : 'spend';
+                    const fullDate = isPlaceholder ? '' : formatFullDate(tx.created_at);
+                    const relativeTime = isPlaceholder ? '' : formatTimeAgo(tx.created_at);
+
+                    return `
+                        <div class="activity-item${isPlaceholder ? ' placeholder' : ''}">
+                            <div class="activity-icon ${iconClass}">${icon}</div>
+                            <div class="activity-details">
+                                <div class="activity-title">${escapeHtml(tx.description || tx.type)}</div>
+                                <div class="activity-date">${fullDate}${relativeTime ? ` <span class="activity-relative">${relativeTime}</span>` : ''}</div>
+                            </div>
+                            <div class="activity-points ${isPositive ? 'positive' : 'negative'}">
+                                ${isPositive ? '+' : ''}${formatNumber(tx.points_change)}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Update visits count from real data only
+                const visits = realActivity.filter(tx => tx.type === 'scan' || tx.type === 'visit').length;
+                document.getElementById('stat-visits').textContent = visits;
             } catch (e) {
                 console.error('Failed to load activity:', e);
             }
@@ -2687,81 +3059,85 @@
                 const { data } = await supabaseClient
                     .rpc('get_app_leaderboard', { p_app_id: currentApp.id, p_limit: 10 });
 
-                if (data && data.length > 0) {
-                    const podiumEl = document.getElementById('leaderboard-podium');
-                    const listEl = document.getElementById('leaderboard-list');
+                const realMembers = data || [];
+                const totalSlots = 10;
 
-                    // Split into top 3 and rest
-                    const top3 = data.slice(0, 3);
-                    const rest = data.slice(3);
-
-                    // Render podium (order: 2nd, 1st, 3rd)
-                    const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-                    podiumEl.innerHTML = podiumOrder.map((member, displayIndex) => {
-                        if (!member) return '';
-                        const actualRank = member === top3[0] ? 1 : member === top3[1] ? 2 : 3;
-                        const placeClass = actualRank === 1 ? 'first' : actualRank === 2 ? 'second' : 'third';
-                        const isMe = member.id === currentMember.id;
-                        const initial = (member.display_name || 'A').charAt(0).toUpperCase();
-                        const avatarContent = member.avatar_url
-                            ? `<img src="${escapeHtml(member.avatar_url)}" alt="">`
-                            : initial;
-                        const suffix = actualRank === 1 ? 'st' : actualRank === 2 ? 'nd' : 'rd';
-
-                        return `
-                            <div class="podium-place ${placeClass}">
-                                <div class="podium-avatar-wrapper">
-                                    ${actualRank === 1 ? '<div class="podium-crown">👑</div>' : ''}
-                                    <div class="podium-avatar">${avatarContent}</div>
-                                </div>
-                                <div class="podium-name">
-                                    ${escapeHtml(member.display_name || 'Member')}
-                                    ${isMe ? '<span class="you-badge">(You)</span>' : ''}
-                                </div>
-                                <div class="podium-block">
-                                    <span class="rank-number">${actualRank}</span>
-                                    <span class="rank-suffix">${suffix}</span>
-                                    <span class="points">${formatNumber(member.points_balance)} pts</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    // Render list (4th place and beyond)
-                    if (rest.length > 0) {
-                        listEl.innerHTML = rest.map((member, i) => {
-                            const rank = i + 4;
-                            const isMe = member.id === currentMember.id;
-                            const initial = (member.display_name || 'A').charAt(0).toUpperCase();
-                            const avatarContent = member.avatar_url
-                                ? `<img src="${escapeHtml(member.avatar_url)}" alt="">`
-                                : initial;
-
-                            return `
-                                <div class="leaderboard-item ${isMe ? 'is-me' : ''}">
-                                    <div class="leaderboard-rank">${rank}</div>
-                                    <div class="leaderboard-avatar">${avatarContent}</div>
-                                    <div class="leaderboard-info">
-                                        <div class="leaderboard-name">${escapeHtml(member.display_name)}${isMe ? ' (You)' : ''}</div>
-                                        <div class="leaderboard-tier">${capitalize(member.tier)}</div>
-                                    </div>
-                                    <div class="leaderboard-points">${formatNumber(member.points_balance)} pts</div>
-                                </div>
-                            `;
-                        }).join('');
+                // Merge real members with placeholders to always show 10 entries
+                const merged = [];
+                for (let i = 0; i < totalSlots; i++) {
+                    if (i < realMembers.length) {
+                        merged.push({ ...realMembers[i], _isPlaceholder: false });
                     } else {
-                        listEl.style.display = 'none';
+                        merged.push({ ...PLACEHOLDER_MEMBERS[i], _isPlaceholder: true });
                     }
-                } else {
-                    document.getElementById('leaderboard-podium').innerHTML = '';
-                    document.getElementById('leaderboard-list').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">&#127942;</div>
-                            <div class="empty-state-title">No rankings yet</div>
-                            <p>Be the first to earn points!</p>
+                }
+
+                const podiumEl = document.getElementById('leaderboard-podium');
+                const listEl = document.getElementById('leaderboard-list');
+
+                // --- Podium (top 3, display order: 2nd, 1st, 3rd) ---
+                const top3 = merged.slice(0, 3);
+                const podiumOrder = [top3[1], top3[0], top3[2]];
+                podiumEl.innerHTML = podiumOrder.map(member => {
+                    const actualRank = member === top3[0] ? 1 : member === top3[1] ? 2 : 3;
+                    const placeClass = actualRank === 1 ? 'first' : actualRank === 2 ? 'second' : 'third';
+                    const isPlaceholder = member._isPlaceholder;
+                    const isMe = !isPlaceholder && member.id === currentMember.id;
+                    const initial = (member.display_name || 'A').charAt(0).toUpperCase();
+                    const avatarContent = (!isPlaceholder && member.avatar_url)
+                        ? `<img src="${escapeHtml(member.avatar_url)}" alt="">`
+                        : initial;
+                    const suffix = actualRank === 1 ? 'st' : actualRank === 2 ? 'nd' : 'rd';
+
+                    const clickAttr = isPlaceholder
+                        ? ''
+                        : `onclick="showMemberProfile(${actualRank}, '${escapeHtml(member.display_name || 'Member')}', '${escapeHtml(member.tier || 'bronze')}', ${member.points_balance || 0}, '${member.avatar_url ? escapeHtml(member.avatar_url) : ''}', '${member.joined_at || ''}')" style="cursor: pointer;"`;
+
+                    return `
+                        <div class="podium-place ${placeClass}${isPlaceholder ? ' placeholder' : ''}" ${clickAttr}>
+                            <div class="podium-avatar-wrapper">
+                                ${actualRank === 1 ? '<div class="podium-crown">👑</div>' : ''}
+                                <div class="podium-avatar">${avatarContent}</div>
+                                <div class="podium-rank-badge">${actualRank}</div>
+                            </div>
+                            <div class="podium-name">
+                                ${escapeHtml(member.display_name || 'Member')}
+                                ${isMe ? '<span class="you-badge">(You)</span>' : ''}
+                            </div>
+                            <div class="podium-points">${formatNumber(member.points_balance)} pts</div>
                         </div>
                     `;
-                }
+                }).join('');
+
+                // --- List (positions 4-10) ---
+                const rest = merged.slice(3);
+                listEl.style.display = '';
+                listEl.innerHTML = rest.map((member, i) => {
+                    const rank = i + 4;
+                    const isPlaceholder = member._isPlaceholder;
+                    const isMe = !isPlaceholder && member.id === currentMember.id;
+                    const initial = (member.display_name || 'A').charAt(0).toUpperCase();
+                    const avatarContent = (!isPlaceholder && member.avatar_url)
+                        ? `<img src="${escapeHtml(member.avatar_url)}" alt="">`
+                        : initial;
+
+                    const clickAttr = isPlaceholder
+                        ? ''
+                        : `onclick="showMemberProfile(${rank}, '${escapeHtml(member.display_name || 'Member')}', '${escapeHtml(member.tier || 'bronze')}', ${member.points_balance || 0}, '${member.avatar_url ? escapeHtml(member.avatar_url) : ''}', '${member.joined_at || ''}')" style="cursor: pointer;"`;
+
+                    return `
+                        <div class="leaderboard-item${isMe ? ' is-me' : ''}${isPlaceholder ? ' placeholder' : ''}" ${clickAttr}>
+                            <div class="leaderboard-rank">${rank}</div>
+                            <div class="leaderboard-avatar">${avatarContent}</div>
+                            <div class="leaderboard-info">
+                                <div class="leaderboard-name">${escapeHtml(member.display_name || 'Member')}${isMe ? ' (You)' : ''}</div>
+                                <div class="leaderboard-tier">${capitalize(member.tier)}</div>
+                            </div>
+                            <div class="leaderboard-points">${formatNumber(member.points_balance)} pts</div>
+                        </div>
+                    `;
+                }).join('');
+
             } catch (e) {
                 console.error('Failed to load leaderboard:', e);
             }
@@ -2777,9 +3153,10 @@
                     .is('deleted_at', null)
                     .order('points_cost');
 
+                const gridEl = document.getElementById('rewards-grid');
+
                 if (data && data.length > 0) {
                     rewards = data;
-                    const gridEl = document.getElementById('rewards-grid');
                     const memberPoints = currentMember?.points_balance || 0;
 
                     gridEl.innerHTML = data.map(reward => {
@@ -2803,6 +3180,59 @@
                     }).join('');
 
                     document.getElementById('stat-rewards').textContent = data.length;
+                } else {
+                    // No rewards — show suggestion form
+                    gridEl.innerHTML = `
+                        <div class="suggest-reward-section">
+                            <div class="empty-state-icon">&#127873;</div>
+                            <h3>No rewards yet</h3>
+                            <p>Tell us what reward you'd love to see!</p>
+                            <div class="suggest-form">
+                                <input type="text" id="suggest-name" placeholder="e.g. Free Coffee, 10% Off" maxlength="100">
+                                <textarea id="suggest-description" placeholder="Describe your ideal reward (optional)" rows="2" maxlength="300"></textarea>
+                                <div class="suggest-points-row">
+                                    <span>I'd redeem this for</span>
+                                    <input type="number" id="suggest-points" placeholder="250" min="1" max="99999">
+                                    <span>pts</span>
+                                </div>
+                                <button onclick="submitRewardSuggestion()" id="suggest-btn" disabled>Submit Suggestion</button>
+                            </div>
+                            <p class="suggest-hint">Your suggestion helps the business create rewards you'll love</p>
+                        </div>
+                        <div style="grid-column: 1 / -1; margin-top: 32px; background: var(--color-surface); border-radius: 16px; border: 1px solid var(--color-border); overflow: hidden;">
+                            <div class="reward-row-placeholder">
+                                <div class="reward-row-icon">&#9749;</div>
+                                <div class="reward-row-name">Free Coffee</div>
+                                <div class="reward-row-cost">&#11088; 200 pts</div>
+                            </div>
+                            <div class="reward-row-placeholder">
+                                <div class="reward-row-icon">&#127881;</div>
+                                <div class="reward-row-name">10% Off Next Visit</div>
+                                <div class="reward-row-cost">&#11088; 500 pts</div>
+                            </div>
+                            <div class="reward-row-placeholder">
+                                <div class="reward-row-icon">&#127874;</div>
+                                <div class="reward-row-name">Birthday Surprise</div>
+                                <div class="reward-row-cost">&#11088; 1,000 pts</div>
+                            </div>
+                            <div class="reward-row-placeholder">
+                                <div class="reward-row-icon">&#11088;</div>
+                                <div class="reward-row-name">VIP Treatment</div>
+                                <div class="reward-row-cost">&#11088; 2,500 pts</div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Wire suggest form: enable button only when name has content
+                    setTimeout(() => {
+                        const nameInput = document.getElementById('suggest-name');
+                        const suggestBtn = document.getElementById('suggest-btn');
+                        if (nameInput && suggestBtn) {
+                            nameInput.addEventListener('input', () => {
+                                suggestBtn.disabled = !nameInput.value.trim();
+                            });
+                        }
+                    }, 0);
                 }
             } catch (e) {
                 console.error('Failed to load rewards:', e);
@@ -3671,6 +4101,166 @@
             return date.toLocaleDateString();
         }
 
+        function formatFullDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const month = months[date.getMonth()];
+            const day = date.getDate();
+            const year = date.getFullYear();
+            let hours = date.getHours();
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            return `${month} ${day}, ${year} at ${hours}:${minutes} ${ampm}`;
+        }
+
+        // ===== Tier Detail Modal =====
+        const TIER_PERKS = {
+            bronze: {
+                icon: '\u2B50',
+                perks: [
+                    { icon: '\uD83C\uDF1F', text: 'Earn points on every visit' },
+                    { icon: '\uD83C\uDF81', text: 'Access to basic rewards catalog' },
+                    { icon: '\uD83D\uDCE3', text: 'Receive special promotions' },
+                    { icon: '\uD83D\uDCC8', text: 'Track your progress on the leaderboard' }
+                ]
+            },
+            silver: {
+                icon: '\uD83E\uDD48',
+                perks: [
+                    { icon: '\u2728', text: '1.5x points multiplier on visits' },
+                    { icon: '\uD83C\uDF81', text: 'Unlock exclusive Silver-tier rewards' },
+                    { icon: '\uD83D\uDE80', text: 'Early access to new rewards' },
+                    { icon: '\uD83C\uDF89', text: 'Birthday bonus points' }
+                ]
+            },
+            gold: {
+                icon: '\uD83E\uDD47',
+                perks: [
+                    { icon: '\uD83D\uDD25', text: '2x points multiplier on visits' },
+                    { icon: '\uD83C\uDFC6', text: 'Access to premium Gold-tier rewards' },
+                    { icon: '\uD83C\uDF1F', text: 'Priority support' },
+                    { icon: '\uD83C\uDF89', text: 'Double birthday bonus' }
+                ]
+            },
+            platinum: {
+                icon: '\uD83D\uDC8E',
+                perks: [
+                    { icon: '\uD83D\uDCA0', text: '3x points multiplier on visits' },
+                    { icon: '\uD83D\uDC51', text: 'Exclusive Platinum-only rewards' },
+                    { icon: '\u2B50', text: 'VIP treatment & priority everything' },
+                    { icon: '\uD83C\uDF89', text: 'Triple birthday bonus + surprise perks' }
+                ]
+            }
+        };
+
+        function showTierModal() {
+            if (!currentMember || !currentApp) return;
+
+            const tier = currentMember.tier || 'bronze';
+            const points = currentMember.points_balance || 0;
+            const tiers = currentApp.settings?.tier_thresholds || { silver: 500, gold: 1500, platinum: 5000 };
+            const tierData = TIER_PERKS[tier] || TIER_PERKS.bronze;
+
+            // Calculate progress to next tier
+            let nextTier = '';
+            let nextThreshold = 0;
+            let currentThreshold = 0;
+            let progress = 100;
+            let progressText = '';
+
+            if (tier === 'bronze') {
+                nextTier = 'Silver'; nextThreshold = tiers.silver; currentThreshold = 0;
+            } else if (tier === 'silver') {
+                nextTier = 'Gold'; nextThreshold = tiers.gold; currentThreshold = tiers.silver;
+            } else if (tier === 'gold') {
+                nextTier = 'Platinum'; nextThreshold = tiers.platinum; currentThreshold = tiers.gold;
+            }
+
+            if (nextTier) {
+                progress = Math.min(100, ((points - currentThreshold) / (nextThreshold - currentThreshold)) * 100);
+                progressText = `${formatNumber(nextThreshold - points)} more pts to ${nextTier}`;
+            }
+
+            const body = document.getElementById('tier-modal-body');
+            body.innerHTML = `
+                <div class="tier-modal-header ${tier}">
+                    <div class="tier-modal-icon">${tierData.icon}</div>
+                    <div class="tier-modal-title">${capitalize(tier)} Tier</div>
+                    <div class="tier-modal-subtitle">${formatNumber(points)} points earned</div>
+                </div>
+                <div class="tier-modal-body">
+                    ${nextTier ? `
+                        <div class="tier-modal-progress">
+                            <div class="tier-modal-progress-label">
+                                <span>${capitalize(tier)}</span>
+                                <span>${nextTier}</span>
+                            </div>
+                            <div class="tier-modal-progress-bar">
+                                <div class="tier-modal-progress-fill ${tier}" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="tier-modal-perks-title">Your ${capitalize(tier)} Perks</div>
+                    ${tierData.perks.map(p => `
+                        <div class="tier-modal-perk">
+                            <span class="tier-modal-perk-icon">${p.icon}</span>
+                            <span>${p.text}</span>
+                        </div>
+                    `).join('')}
+                    ${nextTier ? `
+                        <div class="tier-modal-next">
+                            <strong>${progressText}</strong><br>
+                            Keep visiting and earning to unlock ${nextTier} perks!
+                        </div>
+                    ` : `
+                        <div class="tier-modal-next" style="background: rgba(255,215,0,0.1); border-color: rgba(255,215,0,0.2);">
+                            <strong>You've reached the highest tier!</strong><br>
+                            Enjoy all the exclusive perks of Platinum membership.
+                        </div>
+                    `}
+                </div>
+            `;
+
+            document.getElementById('tier-detail-modal').classList.add('active');
+        }
+
+        // ===== Notifications View =====
+        const PLACEHOLDER_NOTIFICATIONS = [
+            { icon: '\u2B50', title: 'Points Earned', body: 'You earned points for your visit!' },
+            { icon: '\uD83C\uDF81', title: 'New Reward Available', body: 'A new reward has been added to the catalog.' },
+            { icon: '\uD83C\uDF89', title: 'Welcome Bonus', body: 'Welcome bonus points have been credited to your account.' },
+            { icon: '\uD83D\uDD25', title: 'Streak Bonus', body: 'Great job keeping your visit streak alive!' },
+            { icon: '\uD83C\uDFC6', title: 'Leaderboard Update', body: 'You moved up on the leaderboard this week.' },
+            { icon: '\uD83D\uDCE7', title: 'Special Offer', body: 'An exclusive offer is waiting for you.' },
+            { icon: '\uD83D\uDE80', title: 'Tier Progress', body: "You're getting closer to the next tier!" },
+            { icon: '\uD83C\uDF1F', title: 'Double Points Day', body: 'Earn double points on your next visit.' },
+            { icon: '\uD83D\uDCAC', title: 'New Message', body: 'You have a new message from support.' },
+            { icon: '\uD83C\uDFC5', title: 'Achievement Unlocked', body: 'Congratulations on reaching a new milestone!' }
+        ];
+
+        function openNotifications() {
+            const list = document.getElementById('notifications-list');
+
+            // For now, show all placeholders since no real notification system yet
+            list.innerHTML = PLACEHOLDER_NOTIFICATIONS.map(n => `
+                <div class="notification-item placeholder">
+                    <div class="notification-icon">${n.icon}</div>
+                    <div class="notification-content">
+                        <div class="notification-title">${escapeHtml(n.title)}</div>
+                        <div class="notification-body">${escapeHtml(n.body)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('notifications-view').classList.add('active');
+        }
+
+        function closeNotifications() {
+            document.getElementById('notifications-view').classList.remove('active');
+        }
+
         // Simple markdown renderer
         function renderMarkdown(text) {
             if (!text) return '';
@@ -3911,6 +4501,38 @@
             }
         });
 
+        function showMemberProfile(rank, name, tier, points, avatarUrl, joinedAt) {
+            const modal = document.getElementById('member-profile-modal');
+            const avatarEl = document.getElementById('profile-modal-avatar');
+            const initial = (name || 'A').charAt(0).toUpperCase();
+
+            if (avatarUrl) {
+                avatarEl.innerHTML = `<img src="${escapeHtml(avatarUrl)}" alt="" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else {
+                avatarEl.textContent = initial;
+            }
+
+            document.getElementById('profile-modal-name').textContent = name;
+
+            const tierEl = document.getElementById('profile-modal-tier');
+            const tierColors = { bronze: '#cd7f32', silver: '#c0c0c0', gold: '#ffd700', platinum: '#e5e4e2' };
+            tierEl.textContent = capitalize(tier);
+            tierEl.style.background = `${tierColors[tier] || '#7c3aed'}22`;
+            tierEl.style.color = tierColors[tier] || '#7c3aed';
+
+            document.getElementById('profile-modal-points').textContent = formatNumber(points);
+            document.getElementById('profile-modal-rank').textContent = `#${rank}`;
+
+            if (joinedAt) {
+                const date = new Date(joinedAt);
+                document.getElementById('profile-modal-joined').textContent = `Member since ${date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+            } else {
+                document.getElementById('profile-modal-joined').textContent = '';
+            }
+
+            modal.classList.add('active');
+        }
+
         function showRewardModal(rewardId) {
             const reward = rewards.find(r => r.id === rewardId);
             if (!reward) return;
@@ -3937,6 +4559,52 @@
             redeemBtn.onclick = () => redeemReward(reward);
 
             modal.classList.add('active');
+        }
+
+        async function submitRewardSuggestion() {
+            const name = document.getElementById('suggest-name').value.trim();
+            if (!name) { showToast('Please enter a reward name', 'error'); return; }
+
+            const btn = document.getElementById('suggest-btn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const suggestedPts = parseInt(document.getElementById('suggest-points').value) || null;
+                const { data, error } = await supabaseClient
+                    .rpc('submit_reward_suggestion', {
+                        p_app_id: currentApp.id,
+                        p_member_id: currentMember?.id || null,
+                        p_reward_name: name,
+                        p_description: document.getElementById('suggest-description').value.trim() || null,
+                        p_suggested_points: suggestedPts
+                    });
+
+                const result = Array.isArray(data) ? data[0] : data;
+                if (error || !result?.success) {
+                    showToast(result?.error_message || 'Failed to submit', 'error');
+                    return;
+                }
+
+                showToast('Suggestion submitted! Thanks for your feedback', 'success');
+                document.getElementById('suggest-name').value = '';
+                document.getElementById('suggest-description').value = '';
+                document.getElementById('suggest-points').value = '';
+
+                // Fire-and-forget: Royal AI analyzes the suggestion in background
+                if (result.suggestion_id) {
+                    fetch(`${supabaseClient.supabaseUrl}/functions/v1/analyze-suggestion`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'apikey': supabaseClient.supabaseKey },
+                        body: JSON.stringify({ suggestion_id: result.suggestion_id })
+                    }).catch(() => {});
+                }
+            } catch (e) {
+                showToast('Something went wrong', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Suggestion';
+            }
         }
 
         async function redeemReward(reward) {
@@ -4006,6 +4674,18 @@
             }
         });
 
+        document.getElementById('member-profile-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                e.currentTarget.classList.remove('active');
+            }
+        });
+
+        document.getElementById('tier-detail-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                e.currentTarget.classList.remove('active');
+            }
+        });
+
         // ===== Daily Scan Limiter =====
         let scanCooldownInterval = null;
 
@@ -4045,14 +4725,18 @@
             const scanBtn = document.getElementById('nav-scan');
             const scanLabel = document.getElementById('scan-label');
             const scanCooldown = document.getElementById('scan-cooldown');
+            const headerScanBtns = document.querySelectorAll('.header-scan-btn');
             const cooldownMs = getTimeUntilNextScan();
 
             if (cooldownMs > 0) {
                 // On cooldown
-                scanBtn.classList.add('disabled');
-                scanLabel.textContent = 'Scanned';
-                scanCooldown.textContent = formatCooldown(cooldownMs);
-                scanCooldown.style.display = 'block';
+                if (scanBtn) scanBtn.classList.add('disabled');
+                if (scanLabel) scanLabel.textContent = 'Scanned';
+                if (scanCooldown) {
+                    scanCooldown.textContent = formatCooldown(cooldownMs);
+                    scanCooldown.style.display = 'block';
+                }
+                headerScanBtns.forEach(btn => btn.classList.add('on-cooldown'));
 
                 // Start interval if not running
                 if (!scanCooldownInterval) {
@@ -4062,16 +4746,17 @@
                             clearInterval(scanCooldownInterval);
                             scanCooldownInterval = null;
                             updateScanButton();
-                        } else {
+                        } else if (scanCooldown) {
                             scanCooldown.textContent = formatCooldown(remaining);
                         }
                     }, 60000); // Update every minute
                 }
             } else {
                 // Ready to scan
-                scanBtn.classList.remove('disabled');
-                scanLabel.textContent = 'Scan';
-                scanCooldown.style.display = 'none';
+                if (scanBtn) scanBtn.classList.remove('disabled');
+                if (scanLabel) scanLabel.textContent = 'Scan';
+                if (scanCooldown) scanCooldown.style.display = 'none';
+                headerScanBtns.forEach(btn => btn.classList.remove('on-cooldown'));
 
                 if (scanCooldownInterval) {
                     clearInterval(scanCooldownInterval);

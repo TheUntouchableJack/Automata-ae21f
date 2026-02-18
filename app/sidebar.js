@@ -29,6 +29,8 @@ const AppSidebar = (function() {
                 { id: 'automations', icon: 'zap', href: '/app/automations.html', labelKey: 'nav.automations', label: 'Automations' },
                 // Customers - visible to all
                 { id: 'customers', icon: 'users', href: '/app/customers.html', labelKey: 'nav.customers', label: 'Customers' },
+                // Rewards - manage loyalty rewards
+                { id: 'rewards', icon: 'gift', href: '/app/rewards.html', labelKey: 'nav.rewards', label: 'Rewards' },
             ]
         },
         {
@@ -58,6 +60,7 @@ const AppSidebar = (function() {
             adminOnly: true,
             items: [
                 { id: 'launch-plan', icon: 'rocket', href: '/app/launch-plan.html', labelKey: 'nav.launchPlan', label: 'Launch Plan', adminOnly: true },
+                { id: 'admin-panel', icon: 'shield', href: '/app/admin.html', labelKey: 'nav.superAdmin', label: 'Super Admin', adminOnly: true },
             ]
         }
     ];
@@ -153,6 +156,16 @@ const AppSidebar = (function() {
         edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>`,
+        shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>`,
+        gift: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 12 20 22 4 22 4 12"></polyline>
+            <rect x="2" y="7" width="20" height="5"></rect>
+            <line x1="12" y1="22" x2="12" y2="7"></line>
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
         </svg>`
     };
 
@@ -181,6 +194,7 @@ const AppSidebar = (function() {
         if (path.includes('settings')) return 'settings';
         if (path.includes('launch-plan')) return 'launch-plan';
         if (path.includes('content-generator')) return 'content-generator';
+        if (path.includes('admin.html')) return 'admin-panel';
         return 'dashboard';
     }
 

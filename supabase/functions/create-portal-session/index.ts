@@ -14,7 +14,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // Allow production and local development origins
-const allowedOrigins = ['https://royaltyapp.ai', 'http://localhost:5174', 'http://localhost:5173'];
+const allowedOrigins = ['https://royaltyapp.ai', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';

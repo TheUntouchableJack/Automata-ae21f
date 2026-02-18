@@ -17,6 +17,9 @@ const CrownDashboard = (function() {
         completed: 0
     };
 
+    // Organization reference (set via init)
+    let currentOrg = null;
+
     // Event listener references for cleanup
     const eventListenerRefs = {};
 
@@ -139,7 +142,11 @@ const CrownDashboard = (function() {
         }
     ];
 
-    async function init() {
+    async function init(options) {
+        if (options && options.organization) {
+            currentOrg = options.organization;
+        }
+
         // Clean up any existing event listeners to prevent memory leaks on re-init
         cleanupEventListeners();
 
@@ -310,14 +317,14 @@ const CrownDashboard = (function() {
                 // Check if switching to autonomous and user has capability
                 if (mode === 'autonomous' && modeState.current !== 'autonomous') {
                     // Check plan capability using the new hasCapability function
-                    if (typeof hasCapability === 'function' && appState.organization) {
-                        const canUseAutonomous = hasCapability(appState.organization, 'autonomous_mode');
+                    if (typeof hasCapability === 'function' && currentOrg) {
+                        const canUseAutonomous = hasCapability(currentOrg, 'autonomous_mode');
                         if (!canUseAutonomous) {
                             // Show upgrade message
                             const message = typeof getFeatureUpgradeMessage === 'function'
-                                ? getFeatureUpgradeMessage('autonomous_mode', appState.organization)
+                                ? getFeatureUpgradeMessage('autonomous_mode', currentOrg)
                                 : 'Autonomous Mode is available on Pro ($299/mo). Upgrade to let Royal send campaigns without asking.';
-                            showStatusMessage(message, 'info', 5000);
+                            showToast(message, 'info', 5000);
                             return;
                         }
                     }
@@ -1819,7 +1826,7 @@ const CrownDashboard = (function() {
         const upgradeBtn = document.getElementById('prompt-upgrade-btn');
         if (upgradeBtn) {
             upgradeBtn.addEventListener('click', () => {
-                window.location.href = '/app/settings.html?tab=billing';
+                window.location.href = '/app/upgrade.html';
             });
         }
     }

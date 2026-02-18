@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rewards - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <link rel="stylesheet" href="danger-modal.css">
+    <style>
+        .page-header .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stats-bar {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-border-light);
+        }
+
+        .stats-bar .container {
+            display: flex;
+            gap: 32px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: none;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .filter-tab:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .filter-tab.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        .filter-tab .count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+
+        .filter-tab:not(.active) .count {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-muted);
+        }
+
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .reward-card {
+            padding: 24px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-xl);
+            transition: all var(--transition-base);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .reward-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--color-border);
+        }
+
+        .reward-card.inactive {
+            opacity: 0.6;
+        }
+
+        .reward-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .reward-card-image {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-lg);
+            background: var(--color-bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            overflow: hidden;
+        }
+
+        .reward-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .reward-card-badge {
+            display: flex;
+            gap: 6px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .badge-inactive {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .badge-featured {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .reward-card-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .reward-card-description {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .reward-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border-light);
+        }
+
+        .reward-card-points {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .reward-card-points span {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+        }
+
+        .reward-card-stock {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .reward-card-stock.low {
+            color: #f59e0b;
+        }
+
+        .reward-card-stock.out {
+            color: #ef4444;
+        }
+
+        .reward-card-actions {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: none;
+            gap: 4px;
+        }
+
+        .reward-card:hover .reward-card-actions {
+            display: flex;
+        }
+
+        .card-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            background: var(--color-bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+
+        .card-action-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .card-action-btn.delete:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .card-action-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Suggestion Cards */
+        .suggestion-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 20px; height: 20px; padding: 0 6px;
+            font-size: 11px; font-weight: 700;
+            background: #ef4444; color: white;
+            border-radius: 10px; margin-left: 6px;
+        }
+        .filter-tab.active .suggestion-badge {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .suggestion-card { border-left: 3px solid var(--color-primary); cursor: default; }
+        .suggestion-card:hover { transform: none; cursor: default; }
+        .suggestion-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .suggestion-date { font-size: 12px; color: var(--color-text-muted); }
+        .suggestion-member { font-size: 12px; color: var(--color-text-muted); margin: 8px 0 16px; }
+        .suggestion-actions { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--color-border-light); }
+        .btn-sm { padding: 8px 16px; font-size: 13px; border-radius: var(--radius-md); }
+        .badge-new { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+        .badge-reviewed { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .badge-approved { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .badge-dismissed { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+
+        /* AI Proposal */
+        .ai-proposal {
+            margin: 12px 0; padding: 12px;
+            background: rgba(124, 58, 237, 0.05);
+            border-radius: var(--radius-md);
+            border-left: 2px solid var(--color-primary);
+        }
+        .ai-proposal-header {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--color-primary); margin-bottom: 6px;
+        }
+        .ai-proposal-detail { font-size: 14px; font-weight: 500; color: var(--color-text); }
+        .ai-proposal-reasoning { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+        .ai-proposal.analyzing { font-size: 12px; color: var(--color-text-muted); font-style: italic; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--color-bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .empty-state-icon svg {
+            width: 36px;
+            height: 36px;
+            color: var(--color-text-muted);
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--color-text-muted);
+            margin-bottom: 24px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--color-bg);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 560px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--color-border);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--color-border-light);
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+            transition: all var(--transition-fast);
+        }
+
+        .modal-close:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg-secondary);
+            color: var(--color-text);
+            transition: border-color var(--transition-fast);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group .hint {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid var(--color-border-light);
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+        }
+
+        .toggle-group label {
+            margin-bottom: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--color-bg-tertiary);
+            border-radius: 12px;
+            transition: background var(--transition-fast);
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: transform var(--transition-fast);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--color-primary);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        @media (max-width: 768px) {
+            .stats-bar .container {
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+
+            .filter-tabs {
+                overflow-x: auto;
+                padding-bottom: 4px;
+            }
+
+            .rewards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <main class="app-main">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title" data-i18n="rewards.title">Rewards</h1>
+                        <p class="page-subtitle" data-i18n="rewards.subtitle">Manage rewards for your loyalty program</p>
+                    </div>
+                    <button class="btn btn-primary" id="create-reward-btn" onclick="openRewardModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        New Reward
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <div class="container">
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-total">0</span>
+                        <span class="stat-label">Total</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-active">0</span>
+                        <span class="stat-label">Active</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-redeemed">0</span>
+                        <span class="stat-label">Redeemed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-featured">0</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container" style="padding-top: 24px;">
+                <!-- Filter Tabs -->
+                <div class="filter-tabs" id="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="active">Active</button>
+                    <button class="filter-tab" data-filter="inactive">Inactive</button>
+                    <button class="filter-tab" data-filter="featured">Featured</button>
+                    <button class="filter-tab" data-filter="suggestions">
+                        Suggestions <span class="suggestion-badge" id="suggestion-count" style="display:none;">0</span>
+                    </button>
+                </div>
+
+                <!-- Rewards Grid -->
+                <div class="rewards-grid" id="rewards-grid"></div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <div class="empty-state-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/>
+                            <path d="M12 2l4 4h4v4l-8 8-8-8V6h4l4-4z"/>
+                        </svg>
+                    </div>
+                    <h3>No rewards yet</h3>
+                    <p>Create your first reward to give your loyalty members something to work toward.</p>
+                    <button class="btn btn-primary" onclick="openRewardModal()">Create First Reward</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Reward Modal -->
+    <div class="modal-overlay" id="reward-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-title">New Reward</h2>
+                <button class="modal-close" onclick="closeRewardModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="reward-form" onsubmit="saveReward(event)">
+                    <input type="hidden" id="reward-id">
+
+                    <div class="form-group">
+                        <label for="reward-name">Reward Name *</label>
+                        <input type="text" id="reward-name" required placeholder="e.g. Free Coffee, 10% Off">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reward-description">Description</label>
+                        <textarea id="reward-description" placeholder="Describe what the member gets..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reward-points">Points Cost *</label>
+                            <input type="number" id="reward-points" required min="0" placeholder="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="reward-value">Retail Value ($)</label>
+                            <input type="number" id="reward-value" step="0.01" min="0" placeholder="5.00">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reward-quantity">Quantity Available</label>
+                            <input type="number" id="reward-quantity" min="0" placeholder="Unlimited">
+                            <div class="hint">Leave blank for unlimited</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reward-max-per-member">Max Per Member</label>
+                            <input type="number" id="reward-max-per-member" min="0" placeholder="Unlimited">
+                            <div class="hint">Leave blank for unlimited</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reward-tier">Minimum Tier</label>
+                            <select id="reward-tier">
+                                <option value="">Any tier</option>
+                                <option value="bronze">Bronze</option>
+                                <option value="silver">Silver</option>
+                                <option value="gold">Gold</option>
+                                <option value="platinum">Platinum</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="reward-category">Category</label>
+                            <input type="text" id="reward-category" placeholder="e.g. Food, Merch">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reward-image">Image URL</label>
+                        <input type="url" id="reward-image" placeholder="https://...">
+                    </div>
+
+                    <div class="toggle-group">
+                        <label>Featured Reward</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="reward-featured">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <label>Active</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="reward-active" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeRewardModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="save-reward-btn" form="reward-form">Create Reward</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js?v=1"></script>
+    <script src="auth.js?v=5"></script>
+    <script src="utils.js?v=5"></script>
+    <script src="celebrate.js?v=2"></script>
+    <script src="danger-modal.js?v=1"></script>
+    <script src="soft-delete.js?v=1"></script>
+    <script src="undo-toast.js?v=1"></script>
+    <script src="sidebar.js?v=16"></script>
+    <script src="rewards.js?v=1"></script>
+</body>
+</html>

@@ -186,13 +186,14 @@ const IntelligencePage = (function() {
         }
 
         // Initialize Crown 3D Dashboard (after auth + data loaded)
+        const crownOptions = { organization: orgData?.organizations };
         if (typeof CrownDashboard !== 'undefined') {
-            CrownDashboard.init();
+            CrownDashboard.init(crownOptions);
         } else {
             // Module script may not have loaded yet — wait for it
             window.addEventListener('crown-ready', () => {
                 if (typeof CrownDashboard !== 'undefined') {
-                    CrownDashboard.init();
+                    CrownDashboard.init(crownOptions);
                 }
             });
         }
