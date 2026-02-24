@@ -472,6 +472,30 @@ async function handleJoin(formData) {
         return;
     }
 
+    // Rate limiting check
+    const signupIdentifier = formData.email || formData.phone;
+    if (signupIdentifier) {
+        try {
+            const { data: allowed, error: rlError } = await supabaseClient.rpc('check_and_record_rate_limit', {
+                p_identifier: `customer_signup_${currentApp.id}_${signupIdentifier}`,
+                p_action_type: 'customer_signup',
+                p_max_attempts: 10,
+                p_window_minutes: 60
+            });
+
+            if (!rlError && allowed === false) {
+                showToast('Too many signup attempts. Please wait and try again later.', 'error');
+                if (joinBtn) {
+                    joinBtn.disabled = false;
+                    joinBtn.textContent = 'Join Now';
+                }
+                return;
+            }
+        } catch (e) {
+            console.warn('Rate limit check failed, continuing:', e);
+        }
+    }
+
     try {
         let token, welcomePoints;
 
@@ -1013,13 +1037,7 @@ function setupEventListeners() {
         });
     });
 
-    // Scan FAB
-    const scanFab = document.querySelector('.scan-fab');
-    if (scanFab) {
-        scanFab.addEventListener('click', () => {
-            showToast('Scan feature coming soon!', 'info');
-        });
-    }
+    // Scan FAB (legacy - scanner is now in app.html via openScanner())
 
     // Profile settings
     const publicProfileToggle = document.querySelector('#public-profile');

@@ -976,6 +976,13 @@ async function handleLogoUpload(e) {
         return;
     }
 
+    // Validate type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+        showError('Logo must be PNG, JPEG, GIF, WebP, or SVG');
+        return;
+    }
+
     // Show preview immediately
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -984,8 +991,48 @@ async function handleLogoUpload(e) {
     };
     reader.readAsDataURL(file);
 
-    // TODO: Upload to Supabase Storage
-    // For now, just show the preview
+    // Upload to Supabase Storage
+    if (!currentOrganization?.id) {
+        showError('Organization not loaded. Please refresh and try again.');
+        return;
+    }
+
+    const appId = currentApp?.id || 'new';
+    const ext = file.name.split('.').pop();
+    const filePath = `${currentOrganization.id}/${appId}/${Date.now()}-logo.${ext}`;
+
+    try {
+        // Delete old logo if exists
+        if (currentApp?.branding?.logo_url) {
+            const urlParts = currentApp.branding.logo_url.split('/app-logos/');
+            if (urlParts.length > 1) {
+                await supabase.storage.from('app-logos').remove([urlParts[1]]);
+            }
+        }
+
+        const { error: uploadError } = await supabase.storage
+            .from('app-logos')
+            .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('app-logos')
+            .getPublicUrl(filePath);
+
+        // Store URL on currentApp so getAppData() picks it up on save
+        if (!currentApp) currentApp = {};
+        if (!currentApp.branding) currentApp.branding = {};
+        currentApp.branding.logo_url = urlData.publicUrl;
+
+        hasUnsavedChanges = true;
+        showToast(window.t ? window.t('toasts.logoUploaded') : 'Logo uploaded!', 'success');
+    } catch (err) {
+        console.error('Error uploading logo:', err);
+        showError('Failed to upload logo. Please try again.');
+    }
+
+    e.target.value = '';
 }
 
 // ===== QR Code & Sharing =====

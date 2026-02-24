@@ -613,8 +613,8 @@ Deno.serve(async (req) => {
       result.skipped = totalSkipped
       result.api_configured = {
         resend: !!resendApiKey,
-        fcm: false,  // Would check for FCM config
-        twilio: false  // Would check for Twilio config
+        fcm: false,  // Deferred to post-launch
+        twilio: !!twilioAccountSid && !!twilioAuthToken && !!twilioPhoneNumber
       }
     }
 

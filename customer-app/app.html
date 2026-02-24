@@ -2780,6 +2780,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script>
         // Supabase client
         const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
@@ -4861,17 +4862,34 @@
         }
 
         function startCanvasDetection(video) {
-            // Fallback for browsers without BarcodeDetector
-            // We'll just accept any QR code for now (native API not available)
-            // In production, you'd use a library like jsQR here
-            showToast('QR scanning requires a modern browser', 'info');
+            // Fallback using jsQR library for browsers without native BarcodeDetector
+            if (typeof jsQR === 'undefined') {
+                showToast('QR scanning not available in this browser', 'info');
+                setTimeout(() => {
+                    if (scannerActive) showManualCheckinOption();
+                }, 3000);
+                return;
+            }
 
-            // For now, show manual check-in option after 3 seconds
-            setTimeout(() => {
-                if (scannerActive) {
-                    showManualCheckinOption();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            function tick() {
+                if (!scannerActive) return;
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+                    if (code) {
+                        handleQRCode(code.data);
+                        return;
+                    }
                 }
-            }, 3000);
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
         }
 
         function showManualCheckinOption() {

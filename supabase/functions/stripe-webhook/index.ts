@@ -43,7 +43,17 @@ Deno.serve(async (req) => {
     const body = await req.text()
 
     // Verify webhook signature
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    let event
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    } catch (err) {
+      console.error('Signature verification failed:', err.message)
+      // Return 200 to prevent retries - invalid signatures shouldn't retry
+      return new Response(
+        JSON.stringify({ received: false, error: 'Invalid signature' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -53,7 +63,7 @@ Deno.serve(async (req) => {
       .from('processed_webhook_events')
       .select('event_id')
       .eq('event_id', event.id)
-      .single()
+      .maybeSingle()
 
     if (existingEvent) {
       console.log(`Skipping duplicate event: ${event.id}`)
@@ -105,7 +115,13 @@ Deno.serve(async (req) => {
         // Handle subscription purchases
         if (session.subscription) {
           // Get subscription details
-          const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+          let subscription
+          try {
+            subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+          } catch (err) {
+            console.error('Failed to retrieve subscription:', err.message)
+            break
+          }
           const priceId = subscription.items.data[0]?.price.id
           const planInfo = PRICE_TO_TIER[priceId]
 
@@ -152,36 +168,39 @@ Deno.serve(async (req) => {
           .from('organizations')
           .select('id')
           .eq('stripe_customer_id', customerId)
-          .single()
+          .maybeSingle()
 
-        if (org) {
-          const priceId = subscription.items.data[0]?.price.id
-          const planInfo = PRICE_TO_TIER[priceId]
-
-          // Build update object
-          const updateData: Record<string, unknown> = {
-            subscription_tier: planInfo?.tier || null,
-            subscription_status: subscription.status,
-            plan_changed_at: new Date().toISOString(),
-          }
-
-          // Track cancellation scheduling (cancel at period end)
-          if (subscription.cancel_at_period_end && subscription.cancel_at) {
-            // Subscription scheduled to cancel - store when it will end
-            updateData.subscription_cancel_at = new Date(subscription.cancel_at * 1000).toISOString()
-            console.log(`Organization ${org.id} scheduled cancellation for ${updateData.subscription_cancel_at}`)
-          } else {
-            // Not canceling or user reactivated - clear cancellation date
-            updateData.subscription_cancel_at = null
-          }
-
-          await supabase
-            .from('organizations')
-            .update(updateData)
-            .eq('id', org.id)
-
-          console.log(`Organization ${org.id} subscription updated: ${subscription.status}`)
+        if (!org) {
+          console.error(`Organization not found for customer: ${customerId}`)
+          break
         }
+
+        const priceId = subscription.items.data[0]?.price.id
+        const planInfo = PRICE_TO_TIER[priceId]
+
+        // Build update object
+        const updateData: Record<string, unknown> = {
+          subscription_tier: planInfo?.tier || null,
+          subscription_status: subscription.status,
+          plan_changed_at: new Date().toISOString(),
+        }
+
+        // Track cancellation scheduling (cancel at period end)
+        if (subscription.cancel_at_period_end && subscription.cancel_at) {
+          // Subscription scheduled to cancel - store when it will end
+          updateData.subscription_cancel_at = new Date(subscription.cancel_at * 1000).toISOString()
+          console.log(`Organization ${org.id} scheduled cancellation for ${updateData.subscription_cancel_at}`)
+        } else {
+          // Not canceling or user reactivated - clear cancellation date
+          updateData.subscription_cancel_at = null
+        }
+
+        await supabase
+          .from('organizations')
+          .update(updateData)
+          .eq('id', org.id)
+
+        console.log(`Organization ${org.id} subscription updated: ${subscription.status}`)
         break
       }
 
@@ -194,23 +213,26 @@ Deno.serve(async (req) => {
           .from('organizations')
           .select('id')
           .eq('stripe_customer_id', customerId)
-          .single()
+          .maybeSingle()
 
-        if (org) {
-          await supabase
-            .from('organizations')
-            .update({
-              plan_type: 'free',
-              subscription_tier: null,
-              stripe_subscription_id: null,
-              subscription_status: 'canceled',
-              subscription_cancel_at: null, // Clear cancellation date
-              plan_changed_at: new Date().toISOString(),
-            })
-            .eq('id', org.id)
-
-          console.log(`Organization ${org.id} downgraded to free (subscription ended)`)
+        if (!org) {
+          console.error(`Organization not found for customer: ${customerId}`)
+          break
         }
+
+        await supabase
+          .from('organizations')
+          .update({
+            plan_type: 'free',
+            subscription_tier: null,
+            stripe_subscription_id: null,
+            subscription_status: 'canceled',
+            subscription_cancel_at: null, // Clear cancellation date
+            plan_changed_at: new Date().toISOString(),
+          })
+          .eq('id', org.id)
+
+        console.log(`Organization ${org.id} downgraded to free (subscription ended)`)
         break
       }
 
@@ -233,11 +255,15 @@ Deno.serve(async (req) => {
             )
           `)
           .eq('stripe_customer_id', customerId)
-          .single()
+          .maybeSingle()
 
-        if (org) {
-          // Update payment status
-          await supabase
+        if (!org) {
+          console.error(`Organization not found for customer: ${customerId}`)
+          break
+        }
+
+        // Update payment status
+        await supabase
             .from('organizations')
             .update({
               subscription_status: 'past_due',
@@ -354,7 +380,6 @@ If you have any questions, just reply to this email.
               console.log(`[STUB] Would send dunning email to ${ownerEmail}`)
             }
           }
-        }
         break
       }
 
@@ -367,18 +392,21 @@ If you have any questions, just reply to this email.
           .from('organizations')
           .select('id')
           .eq('stripe_customer_id', customerId)
-          .single()
+          .maybeSingle()
 
-        if (org) {
-          await supabase
-            .from('organizations')
-            .update({
-              subscription_status: 'active',
-            })
-            .eq('id', org.id)
-
-          console.log(`Organization ${org.id} payment succeeded`)
+        if (!org) {
+          console.error(`Organization not found for customer: ${customerId}`)
+          break
         }
+
+        await supabase
+          .from('organizations')
+          .update({
+            subscription_status: 'active',
+          })
+          .eq('id', org.id)
+
+        console.log(`Organization ${org.id} payment succeeded`)
         break
       }
 
@@ -393,9 +421,10 @@ If you have any questions, just reply to this email.
 
   } catch (error) {
     console.error('Webhook error:', error)
+    // Return 200 to prevent Stripe retries - idempotency will prevent duplicates
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ received: true, error: error.message }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
   }
 })
