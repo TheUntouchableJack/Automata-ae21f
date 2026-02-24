@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Discover - Royalty</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
+    <link rel="stylesheet" href="social.css">
+</head>
+<body>
+
+    <!-- ===== App Header ===== -->
+    <header class="social-header">
+        <button class="header-btn menu-btn" aria-label="Open menu" data-i18n-aria="social.menuBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
+
+        <div class="header-brand">
+            <div class="header-logo" id="header-logo">
+                <img src="" alt="" id="header-logo-img" style="display:none;">
+                <span id="header-logo-fallback">R</span>
+            </div>
+            <span class="header-app-name" id="header-app-name" data-i18n="social.appName">Discover</span>
+        </div>
+
+        <button class="header-btn post-btn" aria-label="Create post" data-i18n-aria="social.postBtn" style="display:none;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- ===== Category Pills ===== -->
+    <div class="category-pills" role="tablist" aria-label="Venue categories">
+        <button class="pill active" data-category="all" role="tab" aria-selected="true" data-i18n="social.catAll">All</button>
+        <button class="pill" data-category="nightlife" role="tab" aria-selected="false" data-i18n="social.catNightlife">Nightlife</button>
+        <button class="pill" data-category="bars" role="tab" aria-selected="false" data-i18n="social.catBars">Bars</button>
+        <button class="pill" data-category="clubs" role="tab" aria-selected="false" data-i18n="social.catClubs">Clubs</button>
+        <button class="pill" data-category="restaurants" role="tab" aria-selected="false" data-i18n="social.catRestaurants">Restaurants</button>
+        <button class="pill" data-category="lounges" role="tab" aria-selected="false" data-i18n="social.catLounges">Lounges</button>
+        <button class="pill" data-category="rooftop" role="tab" aria-selected="false" data-i18n="social.catRooftop">Rooftop</button>
+    </div>
+
+    <!-- ===== Tab Content: Feed ===== -->
+    <section id="tab-feed" class="tab-view active" role="tabpanel" aria-label="Feed">
+        <div class="feed-container" id="feed-container">
+            <!-- Dynamic feed cards injected here -->
+        </div>
+
+        <!-- Loading shimmer -->
+        <div class="feed-shimmer" id="feed-shimmer">
+            <div class="shimmer-card">
+                <div class="shimmer-header">
+                    <div class="shimmer-avatar"></div>
+                    <div class="shimmer-lines">
+                        <div class="shimmer-line w60"></div>
+                        <div class="shimmer-line w40"></div>
+                    </div>
+                </div>
+                <div class="shimmer-image"></div>
+                <div class="shimmer-body">
+                    <div class="shimmer-line w80"></div>
+                    <div class="shimmer-line w50"></div>
+                </div>
+            </div>
+            <div class="shimmer-card">
+                <div class="shimmer-header">
+                    <div class="shimmer-avatar"></div>
+                    <div class="shimmer-lines">
+                        <div class="shimmer-line w60"></div>
+                        <div class="shimmer-line w40"></div>
+                    </div>
+                </div>
+                <div class="shimmer-image"></div>
+                <div class="shimmer-body">
+                    <div class="shimmer-line w80"></div>
+                    <div class="shimmer-line w50"></div>
+                </div>
+            </div>
+            <div class="shimmer-card">
+                <div class="shimmer-header">
+                    <div class="shimmer-avatar"></div>
+                    <div class="shimmer-lines">
+                        <div class="shimmer-line w60"></div>
+                        <div class="shimmer-line w40"></div>
+                    </div>
+                </div>
+                <div class="shimmer-image"></div>
+                <div class="shimmer-body">
+                    <div class="shimmer-line w80"></div>
+                    <div class="shimmer-line w50"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="feed-empty" id="feed-empty" style="display:none;">
+            <div class="empty-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21,15 16,10 5,21"/>
+                </svg>
+            </div>
+            <h3 data-i18n="social.emptyFeedTitle">No posts yet</h3>
+            <p data-i18n="social.emptyFeedBody">Check back later for venue content</p>
+        </div>
+
+        <!-- Load more trigger -->
+        <div class="load-more-trigger" id="load-more-trigger"></div>
+    </section>
+
+    <!-- ===== Tab Content: Map ===== -->
+    <section id="tab-map" class="tab-view" role="tabpanel" aria-label="Map">
+        <!-- Floating search bar -->
+        <div class="map-search-bar">
+            <div class="map-search-input-wrap">
+                <svg class="map-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                    type="search"
+                    class="map-search-input"
+                    id="map-search-input"
+                    placeholder="Search venues..."
+                    data-i18n-placeholder="social.mapSearchPlaceholder"
+                    autocomplete="off"
+                    aria-label="Search venues on map"
+                >
+                <button class="map-search-clear" id="map-search-clear" aria-label="Clear search" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Search results dropdown -->
+            <div class="map-search-results" id="map-search-results" style="display:none;" role="listbox">
+                <!-- Dynamic search results injected here -->
+            </div>
+        </div>
+
+        <!-- Map container -->
+        <div id="map-container"></div>
+
+        <!-- Bottom venue card (shown when marker tapped) -->
+        <div class="venue-card-bottom" id="venue-card-bottom" style="display:none;">
+            <div class="venue-card-thumb" id="venue-card-thumb">
+                <img src="" alt="" id="venue-card-thumb-img">
+            </div>
+            <div class="venue-card-info">
+                <h4 class="venue-card-name" id="venue-card-name"></h4>
+                <p class="venue-card-address" id="venue-card-address"></p>
+                <div class="venue-card-rating">
+                    <div class="stars" id="venue-card-stars">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                    <span class="venue-card-reviews" id="venue-card-reviews"></span>
+                </div>
+            </div>
+            <button class="venue-card-chevron" aria-label="View venue details">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9,18 15,12 9,6"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Center on me button -->
+        <button class="center-on-me-btn" id="center-on-me-btn" aria-label="Center map on my location" data-i18n-aria="social.centerOnMe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+            </svg>
+        </button>
+    </section>
+
+    <!-- ===== Tab Content: Search ===== -->
+    <section id="tab-search" class="tab-view" role="tabpanel" aria-label="Search">
+        <div class="search-container">
+            <div class="search-input-wrap">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                    type="search"
+                    class="search-input"
+                    id="search-input"
+                    placeholder="Search venues, bars, clubs..."
+                    data-i18n-placeholder="social.searchPlaceholder"
+                    autocomplete="off"
+                    aria-label="Search venues"
+                >
+            </div>
+
+            <!-- Recent searches -->
+            <div class="recent-searches" id="recent-searches">
+                <h4 class="recent-searches-title" data-i18n="social.recentSearches">Recent Searches</h4>
+                <div class="recent-searches-list" id="recent-searches-list">
+                    <!-- Dynamically populated from localStorage -->
+                </div>
+            </div>
+
+            <!-- Search results -->
+            <div class="search-results" id="search-results">
+                <!-- Dynamic venue cards injected here -->
+            </div>
+
+            <!-- Empty state -->
+            <div class="search-empty" id="search-empty">
+                <div class="empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </div>
+                <p data-i18n="social.searchEmptyHint">Search for venues nearby</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Tab Content: Profile ===== -->
+    <section id="tab-profile" class="tab-view" role="tabpanel" aria-label="Profile">
+        <div class="profile-container">
+            <!-- Member info card -->
+            <div class="profile-card">
+                <div class="profile-avatar" id="profile-avatar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="profile-info">
+                    <h3 class="profile-name" id="profile-name" data-i18n="social.profileNamePlaceholder">--</h3>
+                    <p class="profile-email" id="profile-email"></p>
+                </div>
+            </div>
+
+            <!-- Placeholder section -->
+            <div class="profile-placeholder">
+                <div class="empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                </div>
+                <p data-i18n="social.profileComingSoon">Profile coming soon</p>
+            </div>
+
+            <!-- Logout -->
+            <button class="logout-btn" id="logout-btn" data-i18n="social.logout">Log Out</button>
+        </div>
+    </section>
+
+    <!-- ===== Venue Detail Bottom Sheet ===== -->
+    <div class="venue-sheet-backdrop" id="venue-sheet-backdrop"></div>
+    <aside class="venue-sheet" id="venue-sheet" role="dialog" aria-modal="true" aria-label="Venue details">
+        <div class="venue-sheet-handle"></div>
+
+        <!-- Close button -->
+        <button class="venue-sheet-close" id="venue-sheet-close" aria-label="Close venue details">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <div class="venue-sheet-content" id="venue-sheet-content">
+            <!-- Profile row -->
+            <div class="venue-sheet-profile">
+                <div class="venue-sheet-profile-img" id="venue-sheet-profile-img">
+                    <img src="" alt="" id="venue-sheet-avatar">
+                </div>
+                <div class="venue-sheet-profile-info">
+                    <h2 class="venue-sheet-name" id="venue-sheet-name"></h2>
+                    <span class="venue-sheet-handle" id="venue-sheet-handle"></span>
+                </div>
+            </div>
+
+            <!-- Rating -->
+            <div class="venue-sheet-rating">
+                <div class="stars" id="venue-sheet-stars">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <span class="venue-sheet-review-count" id="venue-sheet-review-count"></span>
+            </div>
+
+            <!-- Cover image -->
+            <div class="venue-sheet-cover" id="venue-sheet-cover">
+                <img src="" alt="" id="venue-sheet-cover-img">
+            </div>
+
+            <!-- Address + directions -->
+            <div class="venue-sheet-section">
+                <div class="venue-sheet-address-row">
+                    <div class="venue-sheet-address-info">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span id="venue-sheet-address"></span>
+                    </div>
+                    <a class="venue-sheet-directions-btn" id="venue-sheet-directions" href="#" target="_blank" rel="noopener noreferrer" data-i18n="social.getDirections">
+                        Get Directions
+                    </a>
+                </div>
+            </div>
+
+            <!-- Contact info -->
+            <div class="venue-sheet-section venue-sheet-contact" id="venue-sheet-contact">
+                <div class="venue-sheet-contact-item" id="venue-sheet-phone-row" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    <a href="#" id="venue-sheet-phone"></a>
+                </div>
+                <div class="venue-sheet-contact-item" id="venue-sheet-website-row" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="2" y1="12" x2="22" y2="12"/>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <a href="#" id="venue-sheet-website" target="_blank" rel="noopener noreferrer"></a>
+                </div>
+                <div class="venue-sheet-contact-item" id="venue-sheet-instagram-row" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                    </svg>
+                    <a href="#" id="venue-sheet-instagram" target="_blank" rel="noopener noreferrer"></a>
+                </div>
+            </div>
+
+            <!-- Hours -->
+            <div class="venue-sheet-section" id="venue-sheet-hours-section" style="display:none;">
+                <h4 class="venue-sheet-section-title" data-i18n="social.hours">Hours</h4>
+                <div class="venue-sheet-hours" id="venue-sheet-hours">
+                    <!-- Dynamic hours rows -->
+                </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="venue-sheet-section" id="venue-sheet-tags-section" style="display:none;">
+                <div class="venue-sheet-tags" id="venue-sheet-tags">
+                    <!-- Dynamic tag pills -->
+                </div>
+            </div>
+
+            <!-- Media gallery -->
+            <div class="venue-sheet-section" id="venue-sheet-gallery-section" style="display:none;">
+                <h4 class="venue-sheet-section-title" data-i18n="social.gallery">Gallery</h4>
+                <div class="venue-sheet-gallery" id="venue-sheet-gallery">
+                    <!-- Dynamic media grid -->
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== Bottom Navigation ===== -->
+    <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+        <button class="nav-item active" data-tab="feed" aria-label="Feed" data-i18n-aria="social.navFeed">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            <span data-i18n="social.navFeedLabel">Feed</span>
+        </button>
+
+        <button class="nav-item" data-tab="map" aria-label="Map" data-i18n-aria="social.navMap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2 1,6"/>
+                <line x1="8" y1="2" x2="8" y2="18"/>
+                <line x1="16" y1="6" x2="16" y2="22"/>
+            </svg>
+            <span data-i18n="social.navMapLabel">Map</span>
+        </button>
+
+        <button class="nav-item" data-tab="search" aria-label="Search" data-i18n-aria="social.navSearch">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span data-i18n="social.navSearchLabel">Search</span>
+        </button>
+
+        <button class="nav-item" data-tab="profile" aria-label="Profile" data-i18n-aria="social.navProfile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span data-i18n="social.navProfileLabel">Profile</span>
+        </button>
+    </nav>
+
+    <!-- ===== Scripts ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+    <script src="social.js"></script>
+
+</body>
+</html>

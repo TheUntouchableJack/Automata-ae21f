@@ -48,9 +48,13 @@ export default defineConfig({
         intelligence: resolve(__dirname, 'app/intelligence.html'),
         upgrade: resolve(__dirname, 'app/upgrade.html'),
 
+        // Admin venues page
+        venues: resolve(__dirname, 'app/venues.html'),
+
         // Customer-facing app
         customerAppLanding: resolve(__dirname, 'customer-app/index.html'),
         customerApp: resolve(__dirname, 'customer-app/app.html'),
+        customerAppSocial: resolve(__dirname, 'customer-app/social.html'),
       },
 
       output: {
@@ -92,14 +96,16 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
           // Extract slug from /a/{slug} pattern
-          const match = req.url && req.url.match(/^\/a\/([^\/\?]+)(\/app)?\/?(\?.*)?$/);
+          const match = req.url && req.url.match(/^\/a\/([^\/\?]+)(\/app|\/social)?\/?(\?.*)?$/);
           if (match) {
             const slug = match[1];
-            const isAppPage = match[2] === '/app';
+            const subPath = match[2];
             const queryString = match[3] || '';
 
             // Rewrite to customer app with slug as query param
-            const targetPage = isAppPage ? 'app.html' : 'index.html';
+            let targetPage = 'index.html';
+            if (subPath === '/app') targetPage = 'app.html';
+            else if (subPath === '/social') targetPage = 'social.html';
             const separator = queryString ? '&' : '?';
             req.url = `/customer-app/${targetPage}${queryString}${separator}slug=${slug}`;
           }

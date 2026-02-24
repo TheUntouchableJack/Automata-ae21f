@@ -63,6 +63,7 @@
         .app-card-icon.rewards { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
         .app-card-icon.membership { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
         .app-card-icon.newsletter { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .app-card-icon.social { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); }
         .app-card-icon.custom { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); }
 
         .app-card-info {
@@ -583,6 +584,13 @@
                                 <div class="template-card-name" data-i18n="customerApp.templates.newsletter">Newsletter</div>
                                 <div class="template-card-desc" data-i18n="customerApp.templates.newsletterDesc">AI-powered blog</div>
                             </div>
+                            <div class="template-card" data-template="venue-social">
+                                <div class="template-card-icon app-card-icon social">
+                                    <span>&#127758;</span>
+                                </div>
+                                <div class="template-card-name">Venue Social</div>
+                                <div class="template-card-desc">Discover venues nearby</div>
+                            </div>
                         </div>
 
                         <button class="btn btn-primary" id="empty-new-app-btn" style="margin-top: 24px;">
@@ -622,6 +630,7 @@
                             <option value="rewards">Rewards Club</option>
                             <option value="membership">VIP Membership</option>
                             <option value="newsletter">Newsletter / Blog</option>
+                            <option value="social">Social</option>
                             <option value="custom">Custom</option>
                         </select>
                     </div>
