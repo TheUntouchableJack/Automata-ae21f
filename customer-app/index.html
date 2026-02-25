@@ -2021,6 +2021,13 @@
 
             // Check app type and render appropriate UI
             const appType = currentApp.app_type || 'loyalty';
+
+            // Social apps redirect to their own page
+            if (appType === 'social') {
+                window.location.href = `/customer-app/social.html?slug=${appSlug}`;
+                return;
+            }
+
             const isNewsletter = appType === 'newsletter';
 
             if (isNewsletter) {
@@ -2436,8 +2443,9 @@
             if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
             // Auto-redirect to app after 2.5 seconds
+            const appTarget = currentApp?.app_type === 'social' ? 'social.html' : 'app.html';
             setTimeout(() => {
-                window.location.href = `/customer-app/app.html?slug=${appSlug}`;
+                window.location.href = `/customer-app/${appTarget}?slug=${appSlug}`;
             }, 2500);
         }
 
@@ -2559,7 +2567,8 @@
                 localStorage.setItem('app_auth_token', generateToken(result.member_id, currentApp.id));
                 localStorage.setItem('app_member_id', result.member_id);
                 localStorage.setItem('app_slug', appSlug);
-                window.location.href = `/customer-app/app.html?slug=${appSlug}`;
+                const loginTarget = currentApp?.app_type === 'social' ? 'social.html' : 'app.html';
+                window.location.href = `/customer-app/${loginTarget}?slug=${appSlug}`;
             } catch (error) {
                 document.getElementById('login-error').textContent = error.message || 'Invalid email or PIN';
                 document.getElementById('login-error').classList.add('visible');
@@ -2569,7 +2578,8 @@
         });
 
         document.getElementById('open-app-btn').addEventListener('click', () => {
-            window.location.href = `/customer-app/app.html?slug=${appSlug}`;
+            const openTarget = currentApp?.app_type === 'social' ? 'social.html' : 'app.html';
+            window.location.href = `/customer-app/${openTarget}?slug=${appSlug}`;
         });
 
         // hashPin function removed - PIN hashing now done server-side with bcrypt

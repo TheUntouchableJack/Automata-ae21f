@@ -44,6 +44,13 @@ const APP_TYPE_FEATURES = {
         { name: 'leaderboard_enabled', label: 'Leaderboard', checked: false },
         { name: 'announcements_enabled', label: 'Announcements', checked: false },
         { name: 'menu_enabled', label: 'Menu Browser', checked: false }
+    ],
+    social: [
+        { name: 'map_enabled', label: 'Map View', checked: true },
+        { name: 'feed_enabled', label: 'Video Feed', checked: true },
+        { name: 'search_enabled', label: 'Venue Search', checked: true },
+        { name: 'categories_enabled', label: 'Venue Categories', checked: true },
+        { name: 'ugc_enabled', label: 'User Uploads', checked: false }
     ]
 };
 
@@ -196,6 +203,10 @@ function renderApps() {
         if (features.rewards_enabled) enabledFeatures.push('Rewards');
         if (features.menu_enabled) enabledFeatures.push('Menu');
         if (features.announcements_enabled) enabledFeatures.push('News');
+        if (features.map_enabled) enabledFeatures.push('Map');
+        if (features.feed_enabled) enabledFeatures.push('Feed');
+        if (features.search_enabled) enabledFeatures.push('Search');
+        if (features.ugc_enabled) enabledFeatures.push('UGC');
 
         const statusClass = app.is_published ? 'published' : (app.is_active ? 'active' : 'draft');
         const statusText = app.is_published ? 'Published' : (app.is_active ? 'Active' : 'Draft');
@@ -205,8 +216,21 @@ function renderApps() {
             rewards: '&#127873;',
             membership: '&#128081;',
             newsletter: '&#128240;',
+            social: '&#127758;',
             custom: '&#128241;'
         };
+
+        // Social-specific actions
+        const socialActions = app.app_type === 'social' ? `
+            <button onclick="event.stopPropagation(); window.location.href='/app/venues.html?app_id=${app.id}'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+                Manage Venues
+            </button>
+            <div class="dropdown-divider"></div>
+        ` : '';
 
         // Newsletter-specific actions
         const newsletterActions = app.app_type === 'newsletter' ? `
@@ -259,6 +283,7 @@ function renderApps() {
                             </svg>
                         </button>
                         <div class="app-dropdown" id="dropdown-${app.id}">
+                            ${socialActions}
                             ${newsletterActions}
                             <button onclick="event.stopPropagation(); navigateToApp('${app.id}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

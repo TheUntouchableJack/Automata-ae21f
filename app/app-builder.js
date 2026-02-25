@@ -54,6 +54,13 @@ const APP_TYPE_FEATURES = {
         { id: 'leaderboard_enabled', icon: '&#127942;', name: 'Leaderboard', desc: 'Show rankings', checked: false },
         { id: 'announcements_enabled', icon: '&#128227;', name: 'Announcements', desc: 'Share updates', checked: false },
         { id: 'menu_enabled', icon: '&#127860;', name: 'Menu Browser', desc: 'Show products', checked: false }
+    ],
+    social: [
+        { id: 'map_enabled', icon: '&#128205;', name: 'Map View', desc: 'Interactive map with venue pins', checked: true },
+        { id: 'feed_enabled', icon: '&#127909;', name: 'Video Feed', desc: 'Instagram-style video scroll', checked: true },
+        { id: 'search_enabled', icon: '&#128269;', name: 'Venue Search', desc: 'Search and filter venues', checked: true },
+        { id: 'categories_enabled', icon: '&#127991;', name: 'Categories', desc: 'Filter by venue type', checked: true },
+        { id: 'ugc_enabled', icon: '&#128247;', name: 'User Uploads', desc: 'Patrons can upload videos', checked: false }
     ]
 };
 
@@ -112,12 +119,14 @@ function updateSettingsVisibility(appType) {
     const settingsStep = document.querySelector('[data-step="3"]');
 
     const isContentApp = appType === 'newsletter' || appType === 'blog';
+    const isSocialApp = appType === 'social';
+    const hidePointsTiers = isContentApp || isSocialApp;
 
     if (pointsSection) {
-        pointsSection.style.display = isContentApp ? 'none' : '';
+        pointsSection.style.display = hidePointsTiers ? 'none' : '';
     }
     if (tiersSection) {
-        tiersSection.style.display = isContentApp ? 'none' : '';
+        tiersSection.style.display = hidePointsTiers ? 'none' : '';
     }
 
     // Update step 3 label for content apps
@@ -772,6 +781,29 @@ function getAppData() {
     const requireEmailEl = document.getElementById('require-email');
     const requirePhoneEl = document.getElementById('require-phone');
 
+    // Social apps have different settings
+    const isSocialApp = appType === 'social';
+    const settings = isSocialApp ? {
+        default_view: 'feed',
+        map_zoom_default: 13,
+        video_max_duration: 60,
+        moderation_required: true,
+        require_email: requireEmailEl ? requireEmailEl.checked : true,
+        require_phone: requirePhoneEl ? requirePhoneEl.checked : false
+    } : {
+        points_per_scan: parseInt(document.getElementById('points-per-scan').value) || 10,
+        points_per_dollar: parseInt(document.getElementById('points-per-dollar').value) || 1,
+        welcome_points: parseInt(document.getElementById('welcome-points').value) || 50,
+        daily_scan_limit: parseInt(document.getElementById('daily-scan-limit').value) || 5,
+        require_email: requireEmailEl ? requireEmailEl.checked : true,
+        require_phone: requirePhoneEl ? requirePhoneEl.checked : false,
+        tier_thresholds: {
+            silver: parseInt(document.getElementById('tier-silver').value) || 500,
+            gold: parseInt(document.getElementById('tier-gold').value) || 1500,
+            platinum: parseInt(document.getElementById('tier-platinum').value) || 5000
+        }
+    };
+
     return {
         organization_id: currentOrganization.id,
         project_id: projectId,
@@ -780,19 +812,7 @@ function getAppData() {
         description: document.getElementById('app-description').value.trim(),
         app_type: appType,
         features: gatherFeaturesFromBuilder(),
-        settings: {
-            points_per_scan: parseInt(document.getElementById('points-per-scan').value) || 10,
-            points_per_dollar: parseInt(document.getElementById('points-per-dollar').value) || 1,
-            welcome_points: parseInt(document.getElementById('welcome-points').value) || 50,
-            daily_scan_limit: parseInt(document.getElementById('daily-scan-limit').value) || 5,
-            require_email: requireEmailEl ? requireEmailEl.checked : true,
-            require_phone: requirePhoneEl ? requirePhoneEl.checked : false,
-            tier_thresholds: {
-                silver: parseInt(document.getElementById('tier-silver').value) || 500,
-                gold: parseInt(document.getElementById('tier-gold').value) || 1500,
-                platinum: parseInt(document.getElementById('tier-platinum').value) || 5000
-            }
-        },
+        settings,
         // Store business_info inside branding since customer_apps table doesn't have business_info column
         branding: {
             primary_color: document.getElementById('primary-color').value,
