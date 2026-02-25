@@ -292,30 +292,6 @@ const APP_TEMPLATES_LIBRARY = [
             ai_topic_enabled: true,
             max_subscribers: 10000
         }
-    },
-    // Social / Venue Discovery Templates
-    {
-        id: 'venue-social',
-        name: 'Venue Social',
-        description: 'Help people discover venues near them with an interactive map and video feed of nightlife experiences.',
-        app_type: 'social',
-        icon: 'globe',
-        industries: ['food', 'nightlife', 'entertainment'],
-        features: {
-            map_enabled: true,
-            feed_enabled: true,
-            search_enabled: true,
-            categories_enabled: true,
-            ugc_enabled: false
-        },
-        settings: {
-            default_view: 'feed',
-            map_zoom_default: 13,
-            video_max_duration: 60,
-            moderation_required: true,
-            require_email: true,
-            require_phone: false
-        }
     }
 ];
 
@@ -374,14 +350,8 @@ function getSuggestedAppTemplates(businessDescription, industry) {
         'store': ['rewards-club', 'loyalty-points'],
         'salon': ['vip-membership', 'loyalty-points'],
         'spa': ['vip-membership', 'loyalty-points'],
-        'bar': ['venue-social', 'loyalty-points', 'rewards-club'],
-        'pub': ['venue-social', 'loyalty-points', 'rewards-club'],
-        'nightlife': ['venue-social'],
-        'club': ['venue-social', 'loyalty-points'],
-        'venue': ['venue-social'],
-        'discover': ['venue-social'],
-        'social': ['venue-social'],
-        'lounge': ['venue-social', 'loyalty-points'],
+        'bar': ['loyalty-points', 'rewards-club'],
+        'pub': ['loyalty-points', 'rewards-club'],
         // Newsletter keywords
         'blog': ['company-blog', 'creator-newsletter'],
         'newsletter': ['newsletter-standard', 'creator-newsletter'],

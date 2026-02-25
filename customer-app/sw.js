@@ -12,9 +12,6 @@ const STATIC_ASSETS = [
     '/customer-app/app.html',
     '/customer-app/app.css',
     '/customer-app/app.js',
-    '/customer-app/social.html',
-    '/customer-app/social.css',
-    '/customer-app/social.js',
     '/customer-app/manifest.json',
     '/customer-app/index.html'
 ];
