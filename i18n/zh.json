@@ -1210,6 +1210,14 @@
         "saved": "Settings saved",
         "error": "Error saving settings"
     },
+    "analysis": {
+        "badge": "AI 商业分析",
+        "heading": "以下是我们为 {businessName} 看到的",
+        "platformHighlights": "平台亮点",
+        "expandHint": "点击查看计划",
+        "loading": "正在分析您的业务...",
+        "fallbackTitle": "您的计划已准备就绪"
+    },
     "errors": {
         "generic": "Something went wrong. Please try again.",
         "promptLimit": "You've reached your monthly prompt limit. Upgrade your plan for more.",

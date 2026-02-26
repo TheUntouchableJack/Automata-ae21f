@@ -33,6 +33,8 @@ export default defineConfig({
         // App pages
         login: resolve(__dirname, 'app/login.html'),
         signup: resolve(__dirname, 'app/signup.html'),
+        forgotPassword: resolve(__dirname, 'app/forgot-password.html'),
+        resetPassword: resolve(__dirname, 'app/reset-password.html'),
         dashboard: resolve(__dirname, 'app/dashboard.html'),
         project: resolve(__dirname, 'app/project.html'),
         customers: resolve(__dirname, 'app/customers.html'),
@@ -96,7 +98,7 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
           // Extract slug from /a/{slug} pattern
-          const match = req.url && req.url.match(/^\/a\/([^\/\?]+)(\/app|\/social)?\/?(\?.*)?$/);
+          const match = req.url && req.url.match(/^\/a\/([^\/\?]+)(\/app|\/social|\/checkin)?\/?(\?.*)?$/);
           if (match) {
             const slug = match[1];
             const subPath = match[2];
@@ -104,10 +106,12 @@ export default defineConfig({
 
             // Rewrite to customer app with slug as query param
             let targetPage = 'index.html';
+            let extraParams = '';
             if (subPath === '/app') targetPage = 'app.html';
             else if (subPath === '/social') targetPage = 'social.html';
+            else if (subPath === '/checkin') { targetPage = 'app.html'; extraParams = '&action=checkin'; }
             const separator = queryString ? '&' : '?';
-            req.url = `/customer-app/${targetPage}${queryString}${separator}slug=${slug}`;
+            req.url = `/customer-app/${targetPage}${queryString}${separator}slug=${slug}${extraParams}`;
           }
           next();
         });

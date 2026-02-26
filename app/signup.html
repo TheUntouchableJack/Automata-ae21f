@@ -12,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../i18n/i18n.css">
-    <!-- Cloudflare Turnstile CAPTCHA -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         html, body {
@@ -22,8 +21,576 @@
             background: var(--color-bg-secondary) !important;
         }
 
-        .auth-container {
-            min-height: 100vh;
+        /* ===== Split Layout ===== */
+        .signup-layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Left panel — AI Analysis (dark) */
+        .signup-analysis-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #0f0a1e 0%, #1a1033 50%, #0f0a1e 100%);
+            color: white;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 48px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Animated background gradient blobs */
+        .signup-analysis-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.10) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(124, 58, 237, 0.12) 0%, transparent 50%);
+            animation: bgShift 12s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Subtle dot grid pattern */
+        .signup-analysis-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+            background-size: 24px 24px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes bgShift {
+            0% { opacity: 0.6; transform: scale(1) translate(0, 0); }
+            33% { opacity: 0.8; transform: scale(1.05) translate(-10px, 5px); }
+            66% { opacity: 0.7; transform: scale(1.02) translate(5px, -10px); }
+            100% { opacity: 0.9; transform: scale(1.08) translate(-5px, 8px); }
+        }
+
+        .analysis-content {
+            max-width: 560px;
+            width: 100%;
+            padding-top: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .analysis-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 48px;
+            text-decoration: none;
+        }
+
+        .analysis-logo .logo-icon { width: 36px; height: 36px; }
+        .analysis-logo .logo-text { color: white; font-size: 20px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+
+        .analysis-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #c4b5fd;
+            margin-bottom: 20px;
+        }
+
+        .analysis-badge svg { width: 14px; height: 14px; }
+
+        .analysis-heading {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin: 0 0 16px;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .analysis-heading span { color: #a78bfa; }
+
+        .analysis-summary {
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0 0 24px;
+        }
+
+        /* ===== Impact Metrics ===== */
+        .analysis-metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .impact-metric {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 12px;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .impact-metric.animate-in {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .impact-metric-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .impact-metric-icon.green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .impact-metric-icon.purple { background: rgba(124, 58, 237, 0.15); color: #a78bfa; }
+        .impact-metric-icon.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+
+        .impact-metric-body { flex: 1; min-width: 0; }
+
+        .impact-metric-value {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .metric-number {
+            font-size: 28px;
+            font-weight: 800;
+            font-family: 'Space Grotesk', sans-serif;
+            color: white;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        .metric-number.count-complete {
+            animation: countFlash 0.5s ease;
+        }
+
+        @keyframes countFlash {
+            0% { transform: scale(1.1); color: #10b981; }
+            100% { transform: scale(1); color: white; }
+        }
+
+        .metric-arrow {
+            color: #10b981;
+            flex-shrink: 0;
+            animation: arrowBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes arrowBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        .impact-metric-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.3;
+        }
+
+        .impact-metric-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .impact-metric-bar-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 2px;
+            transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .impact-metric-bar-fill.green { background: #10b981; }
+        .impact-metric-bar-fill.purple { background: #a78bfa; }
+        .impact-metric-bar-fill.blue { background: #60a5fa; }
+
+        /* Sparkline (flex child, right side of metric) */
+        .impact-metric-sparkline {
+            flex-shrink: 0;
+            width: 80px;
+            opacity: 0;
+            transition: opacity 0.6s ease 0.5s;
+            display: flex;
+            align-items: center;
+        }
+
+        .impact-metric.animate-in .impact-metric-sparkline {
+            opacity: 1;
+        }
+
+        .sparkline-svg {
+            display: block;
+        }
+
+        /* Growth arrow on opportunity impact text */
+        .impact-arrow {
+            color: #10b981;
+            vertical-align: middle;
+            margin-right: 4px;
+            flex-shrink: 0;
+        }
+
+        /* ===== Opportunity Cards ===== */
+        .analysis-opportunities {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .opportunity-card {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        /* Gradient border on hover (mask trick) */
+        .opportunity-card::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 12px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(16, 185, 129, 0.5));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .opportunity-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15);
+        }
+
+        .opportunity-card:hover::before { opacity: 1; }
+
+        /* Expanded state */
+        .opportunity-card.expanded {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .opportunity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+
+        /* Cycle icon colors: green, purple, blue, green */
+        .opportunity-card:nth-child(1) .opportunity-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; animation-delay: 0s; }
+        .opportunity-card:nth-child(2) .opportunity-icon { background: rgba(124, 58, 237, 0.2); color: #a78bfa; animation-delay: 0.5s; }
+        .opportunity-card:nth-child(3) .opportunity-icon { background: rgba(59, 130, 246, 0.2); color: #60a5fa; animation-delay: 1s; }
+        .opportunity-card:nth-child(4) .opportunity-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; animation-delay: 1.5s; }
+
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .opportunity-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .opportunity-desc {
+            font-size: 13px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .opportunity-impact {
+            font-size: 12px;
+            font-weight: 500;
+            color: #10b981;
+        }
+
+        .opportunity-expand-hint {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 8px;
+            transition: color 0.2s ease;
+        }
+
+        .opportunity-card:hover .opportunity-expand-hint { color: rgba(255, 255, 255, 0.5); }
+        .opportunity-card.expanded .opportunity-expand-hint { display: none; }
+
+        /* Action steps (revealed on expand) */
+        .opportunity-action-steps {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+                        opacity 0.3s ease,
+                        margin 0.3s ease;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .opportunity-card.expanded .opportunity-action-steps {
+            max-height: 300px;
+            opacity: 1;
+            margin-top: 16px;
+        }
+
+        .action-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .action-step:first-child { border-top: none; }
+
+        .action-step-number {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* ===== Disclaimer ===== */
+        .analysis-disclaimer {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            font-style: italic;
+            margin: -20px 0 24px;
+        }
+
+        /* ===== Section Labels ===== */
+        .analysis-section-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 12px;
+        }
+
+        /* ===== Platform Highlights ===== */
+        .analysis-highlights { margin-bottom: 24px; }
+
+        .analysis-highlights h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 12px;
+        }
+
+        .analysis-highlights ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .highlight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .highlight-item strong { color: rgba(255, 255, 255, 0.9); }
+        .highlight-check { color: #10b981; flex-shrink: 0; margin-top: 1px; }
+        .highlight-reason { opacity: 0.6; margin-top: 2px; }
+
+        /* ===== Staggered Entrance Animations ===== */
+        .analysis-results .analysis-badge,
+        .analysis-results .analysis-heading,
+        .analysis-results .analysis-summary,
+        .analysis-results .analysis-section-label,
+        .analysis-results .analysis-metrics,
+        .analysis-results .analysis-disclaimer,
+        .analysis-results .analysis-opportunities,
+        .analysis-results .analysis-highlights {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        .analysis-results.animate-in .analysis-badge { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 0ms; }
+        .analysis-results.animate-in .analysis-heading { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 80ms; }
+        .analysis-results.animate-in .analysis-summary { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 160ms; }
+        .analysis-results.animate-in .analysis-section-label:first-of-type { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 220ms; }
+        .analysis-results.animate-in .analysis-metrics { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 240ms; }
+        .analysis-results.animate-in .analysis-disclaimer { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 340ms; }
+        .analysis-results.animate-in .analysis-section-label:nth-of-type(2) { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 380ms; }
+        .analysis-results.animate-in .analysis-opportunities { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 400ms; }
+        .analysis-results.animate-in .analysis-highlights { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 700ms; }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Badge pulse glow */
+        .analysis-results.animate-in .analysis-badge {
+            animation: fadeSlideUp 0.5s ease forwards, badgePulse 3s ease-in-out 1s infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+            50% { box-shadow: 0 0 12px 2px rgba(124, 58, 237, 0.15); }
+        }
+
+        /* Progress bar group — under logo */
+        .analysis-progress {
+            margin-bottom: 32px;
+        }
+
+        .progress-bar-track {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #7c3aed, #10b981);
+            transition: width 0.3s ease;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .progress-percent {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(196, 181, 253, 0.8);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Skeleton loading */
+        .analysis-skeleton .sk {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analysis-skeleton .sk::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.08) 40%, rgba(255, 255, 255, 0.08) 50%, rgba(124, 58, 237, 0.08) 60%, transparent 100%);
+            animation: skeletonSweep 2s ease-in-out infinite;
+        }
+
+        .sk-badge { width: 160px; height: 32px; margin-bottom: 20px; }
+        .sk-heading { width: 80%; height: 32px; margin-bottom: 16px; }
+        .sk-text { width: 100%; height: 16px; margin-bottom: 8px; }
+        .sk-text-short { width: 60%; height: 16px; margin-bottom: 32px; }
+        .sk-metric { width: 100%; height: 72px; margin-bottom: 32px; border-radius: 12px; }
+        .sk-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+        .sk-card { height: 160px; border-radius: 12px; }
+        .sk-auto { width: 100%; height: 48px; margin-bottom: 8px; }
+
+        .skeleton-progress {
+            color: rgba(196, 181, 253, 0.7);
+            font-size: 13px;
+            min-height: 20px;
+            transition: opacity 0.3s ease;
+        }
+
+        .skeleton-progress .progress-dot {
+            display: inline-block;
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+        .skeleton-progress .progress-dot:nth-child(2) { animation-delay: 0.2s; }
+        .skeleton-progress .progress-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes skeletonSweep {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.3; }
+            40% { opacity: 1; }
+        }
+
+        /* Right panel — Signup Form */
+        .signup-form-panel {
+            flex: 0 0 480px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg-secondary);
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .signup-form-panel .auth-container {
+            min-height: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -32,9 +599,26 @@
             max-width: 420px;
             padding: 24px;
             margin: 0 auto;
-            position: relative;
         }
 
+        /* No-analysis fallback: hide left panel, center form */
+        .signup-layout.no-analysis .signup-analysis-panel { display: none; }
+        .signup-layout.no-analysis .signup-form-panel {
+            flex: 1;
+            min-height: 100vh;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 1024px) {
+            .signup-layout { flex-direction: column; height: auto; min-height: 100vh; }
+            .signup-analysis-panel { padding: 32px 24px; min-height: auto; overflow-y: visible; }
+            .analysis-content { padding-top: 0; }
+            .analysis-opportunities { grid-template-columns: 1fr; }
+            .signup-form-panel { flex: none; min-height: auto; padding: 24px 0; }
+            .lang-selector.analysis-lang { margin-top: 24px; }
+        }
+
+        /* ===== Auth Card Styles ===== */
         .auth-card {
             background: var(--color-bg);
             border-radius: var(--radius-xl);
@@ -43,44 +627,15 @@
             box-shadow: var(--shadow-lg);
         }
 
-        .auth-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
+        .auth-header { text-align: center; margin-bottom: 32px; }
+        .auth-header .logo { display: inline-flex; margin-bottom: 24px; }
+        .auth-header h1 { font-size: 1.5rem; margin-bottom: 8px; }
+        .auth-header p { color: var(--color-text-muted); font-size: 15px; }
 
-        .auth-header .logo {
-            display: inline-flex;
-            margin-bottom: 24px;
-        }
+        .auth-form { display: flex; flex-direction: column; gap: 20px; }
 
-        .auth-header h1 {
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-        }
-
-        .auth-header p {
-            color: var(--color-text-muted);
-            font-size: 15px;
-        }
-
-        .auth-form {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .form-field {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .form-field label {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--color-text);
-        }
-
+        .form-field { display: flex; flex-direction: column; gap: 8px; }
+        .form-field label { font-size: 14px; font-weight: 500; color: var(--color-text); }
         .form-field input {
             width: 100%;
             box-sizing: border-box;
@@ -94,15 +649,8 @@
             outline: none;
             transition: all var(--transition-base);
         }
-
-        .form-field input:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
-        }
-
-        .form-field input::placeholder {
-            color: var(--color-text-muted);
-        }
+        .form-field input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+        .form-field input::placeholder { color: var(--color-text-muted); }
 
         .error-message {
             background: rgba(239, 68, 68, 0.1);
@@ -112,10 +660,7 @@
             font-size: 14px;
             display: none;
         }
-
-        .error-message.visible {
-            display: block;
-        }
+        .error-message.visible { display: block; }
 
         .success-message {
             background: rgba(16, 185, 129, 0.1);
@@ -125,63 +670,27 @@
             font-size: 14px;
             display: none;
         }
+        .success-message.visible { display: block; }
 
-        .success-message.visible {
-            display: block;
-        }
+        .auth-footer { text-align: center; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--color-border); }
+        .auth-footer p { font-size: 14px; color: var(--color-text-muted); }
+        .auth-footer a { color: var(--color-primary); font-weight: 500; }
+        .auth-footer a:hover { text-decoration: underline; }
 
-        .auth-footer {
-            text-align: center;
-            margin-top: 24px;
-            padding-top: 24px;
-            border-top: 1px solid var(--color-border);
-        }
+        .back-link { display: block; text-align: center; margin-top: 24px; font-size: 14px; color: var(--color-text-muted); }
+        .back-link:hover { color: var(--color-text); }
 
-        .auth-footer p {
-            font-size: 14px;
-            color: var(--color-text-muted);
-        }
-
-        .auth-footer a {
-            color: var(--color-primary);
-            font-weight: 500;
-        }
-
-        .auth-footer a:hover {
-            text-decoration: underline;
-        }
-
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 24px;
-            font-size: 14px;
-            color: var(--color-text-muted);
-        }
-
-        .back-link:hover {
-            color: var(--color-text);
-        }
-
-        .btn-loading {
-            position: relative;
-            color: transparent !important;
-        }
-
+        .btn-loading { position: relative; color: transparent !important; }
         .btn-loading::after {
             content: '';
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: white;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .invite-notice {
             background: rgba(124, 58, 237, 0.1);
@@ -193,342 +702,328 @@
             text-align: center;
         }
 
-        .name-fields {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .name-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        /* Password Strength Styles */
-        .password-strength {
-            margin-top: 8px;
-        }
-
-        .strength-meter {
-            height: 4px;
-            background: var(--color-border);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .strength-meter-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 2px;
-            transition: all 0.3s ease;
-        }
-
-        .strength-meter-fill.weak {
-            width: 25%;
-            background: #ef4444;
-        }
-
-        .strength-meter-fill.fair {
-            width: 50%;
-            background: #f59e0b;
-        }
-
-        .strength-meter-fill.good {
-            width: 75%;
-            background: #84cc16;
-        }
-
-        .strength-meter-fill.strong {
-            width: 100%;
-            background: #10b981;
-        }
-
-        .strength-text {
-            font-size: 12px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            transition: color 0.3s ease;
-        }
-
+        /* Password Strength */
+        .password-strength { margin-top: 8px; }
+        .strength-meter { height: 4px; background: var(--color-border); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+        .strength-meter-fill { height: 100%; width: 0%; border-radius: 2px; transition: all 0.3s ease; }
+        .strength-meter-fill.weak { width: 25%; background: #ef4444; }
+        .strength-meter-fill.fair { width: 50%; background: #f59e0b; }
+        .strength-meter-fill.good { width: 75%; background: #84cc16; }
+        .strength-meter-fill.strong { width: 100%; background: #10b981; }
+        .strength-text { font-size: 12px; font-weight: 500; margin-bottom: 8px; transition: color 0.3s ease; }
         .strength-text.weak { color: #ef4444; }
         .strength-text.fair { color: #f59e0b; }
         .strength-text.good { color: #84cc16; }
         .strength-text.strong { color: #10b981; }
-
-        .password-checklist {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 16px;
-        }
-
-        .checklist-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: var(--color-text-muted);
-            transition: color 0.2s ease;
-        }
-
-        .checklist-item.valid {
-            color: #10b981;
-        }
-
+        .password-checklist { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+        .checklist-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-muted); transition: color 0.2s ease; }
+        .checklist-item.valid { color: #10b981; }
         .checklist-item .check-icon {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
+            width: 14px; height: 14px; border-radius: 50%;
             border: 1.5px solid currentColor;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             transition: all 0.2s ease;
         }
+        .checklist-item.valid .check-icon { background: #10b981; border-color: #10b981; }
+        .checklist-item .check-icon svg { width: 8px; height: 8px; opacity: 0; transition: opacity 0.2s ease; }
+        .checklist-item.valid .check-icon svg { opacity: 1; }
 
-        .checklist-item.valid .check-icon {
-            background: #10b981;
-            border-color: #10b981;
+        .btn-success { background: #10b981 !important; transform: scale(1.02); }
+        .auth-card.success { animation: card-glow 0.5s ease; }
+        @keyframes card-glow { 0%, 100% { box-shadow: var(--shadow-lg); } 50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); } }
+
+        /* Language selector — bottom of left panel (dark theme) */
+        .lang-selector.analysis-lang {
+            margin-top: 32px;
         }
 
-        .checklist-item .check-icon svg {
-            width: 8px;
-            height: 8px;
-            opacity: 0;
-            transition: opacity 0.2s ease;
+        .lang-selector.analysis-lang .lang-selector-btn {
+            color: rgba(255, 255, 255, 0.6);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: transparent;
         }
 
-        .checklist-item.valid .check-icon svg {
-            opacity: 1;
-        }
-
-        /* Success Animation */
-        .btn-success {
-            background: #10b981 !important;
-            transform: scale(1.02);
-        }
-
-        @keyframes pulse-success {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-
-        .auth-card.success {
-            animation: card-glow 0.5s ease;
-        }
-
-        @keyframes card-glow {
-            0%, 100% { box-shadow: var(--shadow-lg); }
-            50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); }
-        }
-
-        /* Onboarding Summary Styles */
-        .onboarding-summary {
-            background: var(--gradient-subtle);
-            border: 1px solid rgba(124, 58, 237, 0.15);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-
-        .onboarding-summary-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            background: var(--color-primary);
+        .lang-selector.analysis-lang .lang-selector-btn:hover {
             color: white;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-radius: var(--radius-full);
-            margin-bottom: 12px;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
         }
 
-        .onboarding-summary h3 {
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--color-text);
+        .lang-selector.analysis-lang .lang-dropdown {
+            bottom: calc(100% + 6px);
+            top: auto;
+            background: #1e1538;
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
-        .selected-templates-preview {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .lang-selector.analysis-lang .lang-option {
+            color: rgba(255, 255, 255, 0.6);
+            border-bottom-color: rgba(255, 255, 255, 0.06);
         }
 
-        .template-preview-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            background: var(--color-bg);
-            border-radius: var(--radius-md);
-            font-size: 13px;
-            color: var(--color-text);
+        .lang-selector.analysis-lang .lang-option:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
         }
 
-        .template-preview-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            background: var(--color-primary-subtle);
-            color: var(--color-primary);
-            border-radius: var(--radius-sm);
-            flex-shrink: 0;
+        .lang-selector.analysis-lang .lang-option.active {
+            background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
         }
 
-        .template-preview-icon svg {
-            width: 16px;
-            height: 16px;
-        }
+        /* Hide right-panel lang selector by default (left panel has its own) */
+        .lang-selector.form-fallback { display: none; }
 
-        .onboarding-summary-note {
-            margin-top: 12px;
-            font-size: 12px;
-            color: var(--color-text-muted);
-        }
-
-        .lang-selector.compact {
+        /* Fallback: when no left panel, show lang selector fixed bottom-left */
+        .signup-layout.no-analysis .lang-selector.form-fallback {
+            display: block;
             position: fixed;
-            top: 16px;
-            right: 16px;
+            bottom: 16px;
+            left: 16px;
             z-index: 100;
         }
+
+        .signup-layout.no-analysis .lang-selector.analysis-lang { display: none; }
+
+        /* Fallback styles */
+        .analysis-fallback { display: none; }
     </style>
 </head>
 <body>
-    <div class="auth-container">
-        <!-- Language Selector -->
-        <div class="lang-selector compact">
-            <button class="lang-selector-btn" type="button" aria-label="Change language">
-                <span class="lang-selector-current">EN</span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            <div class="lang-dropdown">
-                <a href="#" class="lang-option active" data-lang="en">EN</a>
-                <a href="#" class="lang-option" data-lang="es">ES</a>
-                <a href="#" class="lang-option" data-lang="fr">FR</a>
-                <a href="#" class="lang-option" data-lang="de">DE</a>
-                <a href="#" class="lang-option" data-lang="it">IT</a>
-                <a href="#" class="lang-option" data-lang="pt">PT</a>
-                <a href="#" class="lang-option" data-lang="zh">ZH</a>
-                <a href="#" class="lang-option" data-lang="ar">AR</a>
-            </div>
-        </div>
+    <div class="signup-layout" id="signup-layout">
 
-        <div class="auth-card" id="auth-card">
-            <div class="auth-header">
-                <a href="/" class="logo">
+        <!-- LEFT PANEL: AI Business Analysis -->
+        <div class="signup-analysis-panel" id="analysis-panel">
+            <div class="analysis-content">
+                <a href="/" class="analysis-logo">
                     <img src="/logo.svg" alt="Royalty" class="logo-icon">
                     <span class="logo-text">Royalty</span>
                 </a>
-                <h1 data-i18n="auth.createAccount">Create an account</h1>
-                <p data-i18n="auth.signUpSubtitle">Start automating your customer relationships</p>
-            </div>
 
-            <!-- Onboarding Summary (shown if coming from onboarding flow) -->
-            <div class="onboarding-summary" id="onboarding-summary" style="display: none;">
-                <span class="onboarding-summary-badge" data-i18n="onboarding.signupSummary">Almost there!</span>
-                <h3 id="onboarding-summary-title">Your plans are ready to launch</h3>
-                <div class="selected-templates-preview" id="selected-templates-preview">
-                    <!-- Template items will be inserted here -->
-                </div>
-                <p class="onboarding-summary-note">Create your account to activate your loyalty program</p>
-            </div>
-
-            <form class="auth-form" id="signup-form">
-                <div class="invite-notice" id="invite-notice">
-                    Currently in private beta. Contact us for access.
-                </div>
-
-                <div class="error-message" id="error-message"></div>
-                <div class="success-message" id="success-message"></div>
-
-                <div class="name-fields">
-                    <div class="form-field">
-                        <label for="first-name" data-i18n="auth.firstName">First Name</label>
-                        <input type="text" id="first-name" name="first_name" placeholder="John" data-i18n-placeholder="auth.firstNamePlaceholder" required>
+                <!-- Progress bar (visible during loading, hidden when results show) -->
+                <div class="analysis-progress" id="analysis-progress">
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="progress-bar-fill"></div>
                     </div>
-                    <div class="form-field">
-                        <label for="last-name" data-i18n="auth.lastName">Last Name</label>
-                        <input type="text" id="last-name" name="last_name" placeholder="Doe" data-i18n-placeholder="auth.lastNamePlaceholder" required>
+                    <div class="progress-info">
+                        <span class="skeleton-progress" id="skeleton-progress">
+                            Analyzing your business<span class="progress-dot">.</span><span class="progress-dot">.</span><span class="progress-dot">.</span>
+                        </span>
+                        <span class="progress-percent" id="progress-percent">0%</span>
                     </div>
                 </div>
 
-                <div class="form-field">
-                    <label for="email" data-i18n="auth.email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="you@example.com" data-i18n-placeholder="auth.emailPlaceholder" required>
+                <!-- Skeleton loading -->
+                <div class="analysis-skeleton" id="analysis-skeleton">
+                    <div class="sk sk-badge"></div>
+                    <div class="sk sk-heading"></div>
+                    <div class="sk sk-text"></div>
+                    <div class="sk sk-text"></div>
+                    <div class="sk sk-text-short"></div>
+                    <div class="sk sk-metric"></div>
+                    <div class="sk-cards">
+                        <div class="sk sk-card"></div>
+                        <div class="sk sk-card"></div>
+                        <div class="sk sk-card"></div>
+                        <div class="sk sk-card"></div>
+                    </div>
+                    <div class="sk sk-auto"></div>
+                    <div class="sk sk-auto"></div>
+                    <div class="sk sk-auto"></div>
                 </div>
 
-                <div class="form-field">
-                    <label for="password" data-i18n="auth.password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Create a password" data-i18n-placeholder="auth.createPasswordPlaceholder" required>
+                <!-- Analysis results (hidden until loaded) -->
+                <div class="analysis-results" id="analysis-results" style="display: none;">
+                    <div class="analysis-badge">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 9L20 9L15 13L17 19L12 15L7 19L9 13L4 9L10 9L12 3Z" fill="currentColor"/></svg>
+                        <span data-i18n="analysis.badge">AI Business Analysis</span>
+                    </div>
 
-                    <div class="password-strength" id="password-strength" style="display: none;">
-                        <div class="strength-meter">
-                            <div class="strength-meter-fill" id="strength-fill"></div>
+                    <h2 class="analysis-heading">
+                        Here's what we see for <span id="analysis-biz-name">your business</span>
+                    </h2>
+
+                    <p class="analysis-summary" id="analysis-summary"></p>
+
+                    <h3 class="analysis-section-label">Your Growth Potential</h3>
+                    <div class="analysis-metrics" id="analysis-metrics"></div>
+                    <p class="analysis-disclaimer">Projections based on industry averages for similar businesses</p>
+
+                    <h3 class="analysis-section-label">Opportunities</h3>
+                    <div class="analysis-opportunities" id="analysis-opportunities"></div>
+
+                    <div class="analysis-highlights" id="analysis-highlights">
+                        <h3 data-i18n="analysis.platformHighlights">Platform Highlights</h3>
+                        <ul id="highlights-list"></ul>
+                    </div>
+                </div>
+
+                <!-- Fallback: static platform showcase (shown when AI analysis fails) -->
+                <div class="analysis-fallback" id="analysis-fallback">
+                    <div class="analysis-badge">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 9L20 9L15 13L17 19L12 15L7 19L9 13L4 9L10 9L12 3Z" fill="currentColor"/></svg>
+                        <span data-i18n="analysis.badge">AI Business Analysis</span>
+                    </div>
+                    <h2 class="analysis-heading" id="fallback-title">Your Royalty Platform</h2>
+                    <p style="color: rgba(255,255,255,0.65); font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+                        Everything you need to build loyalty, automate engagement, and grow revenue — powered by AI.
+                    </p>
+                    <div class="analysis-opportunities" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
+                        <div class="opportunity-card">
+                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+                            <div class="opportunity-title">Your Branded App</div>
+                            <div class="opportunity-desc">Custom loyalty app with digital rewards, stamp cards, and push notifications</div>
                         </div>
-                        <div class="strength-text" id="strength-text">Weak password</div>
-                        <div class="password-checklist">
-                            <div class="checklist-item" id="check-length">
-                                <span class="check-icon">
-                                    <svg viewBox="0 0 10 10" fill="none">
-                                        <path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </span>
-                                <span>8+ characters</span>
-                            </div>
-                            <div class="checklist-item" id="check-upper">
-                                <span class="check-icon">
-                                    <svg viewBox="0 0 10 10" fill="none">
-                                        <path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </span>
-                                <span>Uppercase</span>
-                            </div>
-                            <div class="checklist-item" id="check-lower">
-                                <span class="check-icon">
-                                    <svg viewBox="0 0 10 10" fill="none">
-                                        <path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </span>
-                                <span>Lowercase</span>
-                            </div>
-                            <div class="checklist-item" id="check-number">
-                                <span class="check-icon">
-                                    <svg viewBox="0 0 10 10" fill="none">
-                                        <path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </span>
-                                <span>Number</span>
-                            </div>
-                            <div class="checklist-item" id="check-special">
-                                <span class="check-icon">
-                                    <svg viewBox="0 0 10 10" fill="none">
-                                        <path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </span>
-                                <span>Special (!@#$)</span>
-                            </div>
+                        <div class="opportunity-card">
+                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                            <div class="opportunity-title">Smart Automations</div>
+                            <div class="opportunity-desc">Automated campaigns — win-back, birthday rewards, post-visit follow-ups</div>
+                        </div>
+                        <div class="opportunity-card">
+                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18 3V9H12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8L18 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+                            <div class="opportunity-title">Customer Insights</div>
+                            <div class="opportunity-desc">Real-time analytics, spending patterns, and customer segmentation</div>
+                        </div>
+                        <div class="opportunity-card">
+                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                            <div class="opportunity-title">Revenue Growth</div>
+                            <div class="opportunity-desc">Referral programs, targeted promotions, and upsell opportunities</div>
                         </div>
                     </div>
+                    <p style="font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 8px;">Create your account to see a personalized analysis</p>
                 </div>
 
-                <!-- CAPTCHA Widget - Replace YOUR_SITE_KEY with your Cloudflare Turnstile site key -->
-                <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-theme="light"></div>
-                <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px;" data-i18n="auth.captchaError">Please complete the CAPTCHA verification.</div>
-
-                <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="auth.createAccountBtn">
-                    Create Account
-                </button>
-            </form>
-
-            <div class="auth-footer" id="auth-footer">
-                <p><span data-i18n="auth.hasAccount">Already have an account?</span> <a href="/app/login.html" data-i18n="auth.signIn">Sign in</a></p>
+                <!-- Language selector (dark themed, bottom of left panel) -->
+                <div class="lang-selector compact analysis-lang" id="analysis-lang-selector">
+                    <button class="lang-selector-btn" type="button" aria-label="Change language">
+                        <span class="lang-selector-current">EN</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-option active" data-lang="en">EN</a>
+                        <a href="#" class="lang-option" data-lang="es">ES</a>
+                        <a href="#" class="lang-option" data-lang="fr">FR</a>
+                        <a href="#" class="lang-option" data-lang="de">DE</a>
+                        <a href="#" class="lang-option" data-lang="it">IT</a>
+                        <a href="#" class="lang-option" data-lang="pt">PT</a>
+                        <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                        <a href="#" class="lang-option" data-lang="ar">AR</a>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <a href="/" class="back-link" data-i18n="auth.backToHome">Back to home</a>
+        <!-- RIGHT PANEL: Signup Form -->
+        <div class="signup-form-panel" id="form-panel">
+            <div class="auth-container">
+                <!-- Fallback language selector (shown when no left panel) -->
+                <div class="lang-selector compact form-fallback" id="form-lang-selector">
+                    <button class="lang-selector-btn" type="button" aria-label="Change language">
+                        <span class="lang-selector-current">EN</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-option active" data-lang="en">EN</a>
+                        <a href="#" class="lang-option" data-lang="es">ES</a>
+                        <a href="#" class="lang-option" data-lang="fr">FR</a>
+                        <a href="#" class="lang-option" data-lang="de">DE</a>
+                        <a href="#" class="lang-option" data-lang="it">IT</a>
+                        <a href="#" class="lang-option" data-lang="pt">PT</a>
+                        <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                        <a href="#" class="lang-option" data-lang="ar">AR</a>
+                    </div>
+                </div>
+
+                <div class="auth-card" id="auth-card">
+                    <div class="auth-header">
+                        <a href="/" class="logo">
+                            <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                            <span class="logo-text">Royalty</span>
+                        </a>
+                        <h1 data-i18n="auth.createAccount">Create an account</h1>
+                        <p data-i18n="auth.signUpSubtitle">Start automating your customer relationships</p>
+                    </div>
+
+                    <form class="auth-form" id="signup-form">
+                        <div class="invite-notice" id="invite-notice">
+                            Currently in private beta. Contact us for access.
+                        </div>
+
+                        <div class="error-message" id="error-message"></div>
+                        <div class="success-message" id="success-message"></div>
+
+                        <div class="name-fields">
+                            <div class="form-field">
+                                <label for="first-name" data-i18n="auth.firstName">First Name</label>
+                                <input type="text" id="first-name" name="first_name" placeholder="John" data-i18n-placeholder="auth.firstNamePlaceholder" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="last-name" data-i18n="auth.lastName">Last Name</label>
+                                <input type="text" id="last-name" name="last_name" placeholder="Doe" data-i18n-placeholder="auth.lastNamePlaceholder" required>
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="email" data-i18n="auth.email">Email</label>
+                            <input type="email" id="email" name="email" placeholder="you@example.com" data-i18n-placeholder="auth.emailPlaceholder" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="password" data-i18n="auth.password">Password</label>
+                            <input type="password" id="password" name="password" placeholder="Create a password" data-i18n-placeholder="auth.createPasswordPlaceholder" required>
+
+                            <div class="password-strength" id="password-strength" style="display: none;">
+                                <div class="strength-meter">
+                                    <div class="strength-meter-fill" id="strength-fill"></div>
+                                </div>
+                                <div class="strength-text" id="strength-text">Weak password</div>
+                                <div class="password-checklist">
+                                    <div class="checklist-item" id="check-length">
+                                        <span class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                                        <span>8+ characters</span>
+                                    </div>
+                                    <div class="checklist-item" id="check-upper">
+                                        <span class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                                        <span>Uppercase</span>
+                                    </div>
+                                    <div class="checklist-item" id="check-lower">
+                                        <span class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                                        <span>Lowercase</span>
+                                    </div>
+                                    <div class="checklist-item" id="check-number">
+                                        <span class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                                        <span>Number</span>
+                                    </div>
+                                    <div class="checklist-item" id="check-special">
+                                        <span class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                                        <span>Special (!@#$)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-theme="light"></div>
+                        <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px;" data-i18n="auth.captchaError">Please complete the CAPTCHA verification.</div>
+
+                        <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="auth.createAccountBtn">
+                            Create Account
+                        </button>
+                    </form>
+
+                    <div class="auth-footer" id="auth-footer">
+                        <p><span data-i18n="auth.hasAccount">Already have an account?</span> <a href="/app/login.html" data-i18n="auth.signIn">Sign in</a></p>
+                    </div>
+                </div>
+
+                <a href="/" class="back-link" data-i18n="auth.backToHome">Back to home</a>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -538,6 +1033,7 @@
     <script src="auth.js?v=5"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="onboarding-transition.js?v=1"></script>
+    <script src="business-analysis.js?v=2"></script>
     <script>
         // CAPTCHA state
         let turnstileToken = null;
@@ -549,106 +1045,115 @@
         // Redirect if already logged in
         redirectIfAuthenticated();
 
-        // Template icon SVGs for preview
-        const templateIconSVGs = {
-            'birthday-rewards': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 8V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>',
-            'loyalty-program': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
-            'happy-hour': '<svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5C21 16.75 12 22 12 22C12 22 3 16.75 3 11.5C3 6.25 7.03 2 12 2C16.97 2 21 6.25 21 11.5Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="11" r="3" stroke="currentColor" stroke-width="2"/></svg>',
-            'appointment-reminders': '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 2V6M16 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-            'post-visit': '<svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-            'win-back': '<svg viewBox="0 0 24 24" fill="none"><path d="M3 12C3 7.03 7.03 3 12 3C16.97 3 21 7.03 21 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 8L21 3M21 3V8M21 3H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-            'referral-program': '<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="11" r="3" stroke="currentColor" stroke-width="2"/><path d="M3 19C3 16 5.5 14 9 14C10 14 10.8 14.2 11.5 14.5M17 17V21M15 19H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-            'review-request': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
-            'new-product': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2V6M12 18V22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-            'welcome-series': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/><path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2"/></svg>',
-            'seasonal-promo': '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-            'vip-program': '<svg viewBox="0 0 24 24" fill="none"><path d="M2 7L7 2L12 7L17 2L22 7V17L17 22L12 17L7 22L2 17V7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
-            'happy-hour-alerts': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 8V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>',
-            'post-visit-follow-up': '<svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-            'win-back-campaign': '<svg viewBox="0 0 24 24" fill="none"><path d="M3 12C3 7.03 7.03 3 12 3C16.97 3 21 7.03 21 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 8L21 3M21 3V8M21 3H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-            'monthly-newsletter': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/><path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2"/></svg>',
-            'renewal-reminder': '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 2V6M16 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-            'abandoned-cart': '<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="21" r="1" stroke="currentColor" stroke-width="2"/><circle cx="20" cy="21" r="1" stroke="currentColor" stroke-width="2"/><path d="M1 1H5L7.68 14.39C7.77 14.87 8.19 15.21 8.68 15.21H19.4C19.86 15.21 20.27 14.9 20.38 14.45L22 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-            'thank-you-note': '<svg viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61C19.82 3.58 18.43 3 17 3C15.56 3 14.17 3.58 13.06 4.61L12 5.67L10.94 4.61C8.73 2.4 5.1 2.4 2.89 4.61C0.68 6.82 0.68 10.45 2.89 12.66L12 21.77L21.11 12.66C23.32 10.45 23.32 6.82 21.11 4.61H20.84Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-        };
+        // Initialize the signup page
+        async function initSignupPage() {
+            const layout = document.getElementById('signup-layout');
+            const hasOnboarding = typeof OnboardingStorage !== 'undefined' &&
+                                  OnboardingStorage.get()?.businessPrompt;
 
-        const templateNames = {
-            'birthday-rewards': 'Birthday Rewards',
-            'loyalty-program': 'Loyalty Points Program',
-            'happy-hour': 'Happy Hour Alerts',
-            'happy-hour-alerts': 'Happy Hour Alerts',
-            'appointment-reminders': 'Appointment Reminders',
-            'post-visit': 'Post-Visit Follow-up',
-            'post-visit-follow-up': 'Post-Visit Follow-up',
-            'win-back': 'Win-Back Campaign',
-            'win-back-campaign': 'Win-Back Campaign',
-            'referral-program': 'Referral Program',
-            'review-request': 'Review Request',
-            'new-product': 'New Product Announcements',
-            'welcome-series': 'Welcome Series',
-            'seasonal-promo': 'Seasonal Promotions',
-            'vip-program': 'VIP Program',
-            'monthly-newsletter': 'Monthly Newsletter',
-            'renewal-reminder': 'Renewal Reminder',
-            'abandoned-cart': 'Abandoned Cart',
-            'thank-you-note': 'Thank You Note'
-        };
+            if (hasOnboarding) {
+                // Hide invite notice when coming from onboarding
+                const inviteNotice = document.getElementById('invite-notice');
+                if (inviteNotice) inviteNotice.style.display = 'none';
 
-        // Check for onboarding data and show summary
-        function showOnboardingSummary() {
-            if (typeof OnboardingStorage === 'undefined') return;
-
-            const data = OnboardingStorage.get();
-            if (!data || !data.businessPrompt) return;
-
-            const summaryEl = document.getElementById('onboarding-summary');
-            const previewEl = document.getElementById('selected-templates-preview');
-            const inviteNotice = document.getElementById('invite-notice');
-            const titleEl = document.getElementById('onboarding-summary-title');
-
-            if (!summaryEl || !previewEl) return;
-
-            // Hide invite notice when coming from onboarding
-            if (inviteNotice) {
-                inviteNotice.style.display = 'none';
-            }
-
-            // Update title
-            if (titleEl) {
-                const bizName = data.businessDetails?.businessName || '';
-                const count = data.selectedTemplates?.length || 0;
-                if (bizName && count > 0) {
-                    titleEl.textContent = `${count} AI-selected strategies for ${bizName}`;
-                } else if (count > 0) {
-                    titleEl.textContent = `${count} AI-selected strategies ready to launch`;
-                } else {
-                    titleEl.textContent = 'Your loyalty program is ready to build';
+                // Clear analysis cache if business data changed since last fetch
+                const data = OnboardingStorage.get();
+                const currentPrompt = data.businessPrompt || '';
+                const lastPrompt = localStorage.getItem('royalty_last_biz_prompt');
+                if (lastPrompt !== null && lastPrompt !== currentPrompt) {
+                    BusinessAnalysis.clearCache();
                 }
-            }
+                localStorage.setItem('royalty_last_biz_prompt', currentPrompt);
 
-            // Build template preview items (if any were auto-selected)
-            if (data.selectedTemplates?.length > 0) {
-                previewEl.innerHTML = data.selectedTemplates.map(templateId => {
-                    const icon = templateIconSVGs[templateId] || templateIconSVGs['birthday-rewards'];
-                    const name = templateNames[templateId] || templateId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                    return `
-                        <div class="template-preview-item">
-                            <span class="template-preview-icon">${icon}</span>
-                            <span>${name}</span>
-                        </div>
-                    `;
-                }).join('');
+                // Build fallback content (shown if AI analysis fails)
+                buildFallbackContent();
+
+                // Progress bar simulation
+                const progressFill = document.getElementById('progress-bar-fill');
+                const progressPercent = document.getElementById('progress-percent');
+                const progressEl = document.getElementById('skeleton-progress');
+                const progressGroup = document.getElementById('analysis-progress');
+                const progressMessages = [
+                    'Analyzing your business',
+                    'Building your platform',
+                    'Calculating impact',
+                    'Preparing recommendations'
+                ];
+                let progressValue = 0;
+                let msgIdx = 0;
+                let tickCount = 0;
+
+                // Hide progress bar immediately if cache will hit
+                const currentLang = document.documentElement.lang || 'en';
+                const cachedAnalysis = typeof BusinessAnalysis !== 'undefined' && BusinessAnalysis.getCached(currentLang);
+                if (cachedAnalysis && progressGroup) {
+                    progressGroup.style.display = 'none';
+                }
+
+                const progressInterval = setInterval(() => {
+                    tickCount++;
+                    // Ease-out fill: fast start, slows near 90%, caps at 92%
+                    if (progressValue < 60) {
+                        progressValue += 3 + Math.random() * 2;
+                    } else if (progressValue < 85) {
+                        progressValue += 1 + Math.random();
+                    } else if (progressValue < 92) {
+                        progressValue += 0.3 + Math.random() * 0.3;
+                    }
+                    progressValue = Math.min(progressValue, 92);
+
+                    if (progressFill) progressFill.style.width = progressValue + '%';
+                    if (progressPercent) progressPercent.textContent = Math.round(progressValue) + '%';
+
+                    // Cycle message every ~3s (every 6 ticks at 500ms)
+                    if (tickCount % 6 === 0) {
+                        msgIdx = (msgIdx + 1) % progressMessages.length;
+                        if (progressEl) {
+                            progressEl.innerHTML = progressMessages[msgIdx] +
+                                '<span class="progress-dot">.</span><span class="progress-dot">.</span><span class="progress-dot">.</span>';
+                        }
+                    }
+                }, 500);
+
+                // Initialize AI analysis (shows skeleton, then results or fallback)
+                if (typeof BusinessAnalysis !== 'undefined') {
+                    await BusinessAnalysis.init(currentLang);
+                    clearInterval(progressInterval);
+                    // Snap to 100%
+                    if (progressFill) progressFill.style.width = '100%';
+                    if (progressPercent) progressPercent.textContent = '100%';
+                    // Hide progress bar after brief flash
+                    setTimeout(() => {
+                        if (progressGroup) progressGroup.style.display = 'none';
+                    }, 400);
+                } else {
+                    // No analysis module — show fallback directly
+                    clearInterval(progressInterval);
+                    if (progressGroup) progressGroup.style.display = 'none';
+                    document.getElementById('analysis-skeleton').style.display = 'none';
+                    document.getElementById('analysis-fallback').style.display = 'block';
+                }
             } else {
-                previewEl.innerHTML = '<p style="font-size: 13px; color: var(--color-text-muted);">AI will build your personalized program after signup.</p>';
+                // No onboarding data: hide analysis panel, show form-only
+                if (layout) layout.classList.add('no-analysis');
             }
-
-            // Show the summary
-            summaryEl.style.display = 'block';
         }
 
-        // Initialize on page load
-        showOnboardingSummary();
+        function buildFallbackContent() {
+            const data = OnboardingStorage.get();
+            if (!data) return;
 
+            const titleEl = document.getElementById('fallback-title');
+            const bizName = data.businessDetails?.businessName || '';
+
+            if (titleEl && bizName) {
+                titleEl.textContent = `Your ${bizName} Platform`;
+            }
+        }
+
+        initSignupPage();
+
+        // Form elements
         const signupForm = document.getElementById('signup-form');
         const errorMessage = document.getElementById('error-message');
         const successMessage = document.getElementById('success-message');
@@ -670,7 +1175,6 @@
 
             passwordStrength.style.display = 'block';
 
-            // Check each requirement
             const checks = {
                 length: password.length >= 8,
                 upper: /[A-Z]/.test(password),
@@ -679,17 +1183,14 @@
                 special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
             };
 
-            // Update checklist UI
             document.getElementById('check-length').classList.toggle('valid', checks.length);
             document.getElementById('check-upper').classList.toggle('valid', checks.upper);
             document.getElementById('check-lower').classList.toggle('valid', checks.lower);
             document.getElementById('check-number').classList.toggle('valid', checks.number);
             document.getElementById('check-special').classList.toggle('valid', checks.special);
 
-            // Calculate strength score
             const score = Object.values(checks).filter(Boolean).length;
 
-            // Update meter and text
             strengthFill.className = 'strength-meter-fill';
             strengthText.className = 'strength-text';
 
@@ -720,20 +1221,17 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
 
-            // Clear previous messages
             errorMessage.classList.remove('visible');
             errorMessage.textContent = '';
             successMessage.classList.remove('visible');
             successMessage.textContent = '';
 
-            // Validate password (minimum 6 chars for Supabase)
             if (password.length < 6) {
                 errorMessage.textContent = 'Password must be at least 6 characters.';
                 errorMessage.classList.add('visible');
                 return;
             }
 
-            // Validate CAPTCHA (skip if site key not configured)
             const captchaWidget = document.querySelector('.cf-turnstile');
             const siteKey = captchaWidget?.getAttribute('data-sitekey');
             if (siteKey && siteKey !== 'YOUR_SITE_KEY' && !turnstileToken) {
@@ -741,12 +1239,10 @@
                 return;
             }
 
-            // Show loading state
             submitBtn.classList.add('btn-loading');
             submitBtn.disabled = true;
 
             try {
-                // Sign up the user directly with db client to get session info
                 const { data: signUpData, error: signUpError } = await db.auth.signUp({
                     email,
                     password,
@@ -759,11 +1255,13 @@
                     }
                 });
 
-                if (signUpError) {
-                    throw signUpError;
+                if (signUpError) throw signUpError;
+
+                // Clear analysis cache on successful signup
+                if (typeof BusinessAnalysis !== 'undefined') {
+                    BusinessAnalysis.clearCache();
                 }
 
-                // Check if email confirmation is required (no session means confirmation needed)
                 if (!signUpData.session) {
                     // Email confirmation required
                     submitBtn.classList.remove('btn-loading');
@@ -771,18 +1269,18 @@
                     submitBtn.textContent = 'Check your email!';
                     authCard.classList.add('success');
 
-                    // Hide invite notice, form fields, footer, and onboarding summary
                     const inviteNotice = document.getElementById('invite-notice');
                     const authFooter = document.getElementById('auth-footer');
-                    const onboardingSummary = document.getElementById('onboarding-summary');
                     if (inviteNotice) inviteNotice.style.display = 'none';
                     if (authFooter) authFooter.style.display = 'none';
-                    if (onboardingSummary) onboardingSummary.style.display = 'none';
                     signupForm.querySelector('.name-fields').style.display = 'none';
                     signupForm.querySelectorAll('.form-field').forEach(f => f.style.display = 'none');
                     submitBtn.style.display = 'none';
 
-                    // Show confirmation message with CTA
+                    // Hide CAPTCHA
+                    const captcha = document.querySelector('.cf-turnstile');
+                    if (captcha) captcha.style.display = 'none';
+
                     successMessage.innerHTML = `
                         <div style="text-align: center;">
                             <div style="font-size: 48px; margin-bottom: 16px;">📧</div>
@@ -801,15 +1299,13 @@
                         </div>
                     `;
                     successMessage.classList.add('visible');
-
                     return;
                 }
 
-                // User is logged in (email confirmation disabled)
+                // User logged in (email confirmation disabled)
                 const hasOnboarding = typeof OnboardingStorage !== 'undefined' && OnboardingStorage.isComplete();
 
                 if (hasOnboarding && typeof OnboardingTransition !== 'undefined') {
-                    // Show animated transition while processing onboarding
                     submitBtn.classList.remove('btn-loading');
                     submitBtn.classList.add('btn-success');
                     submitBtn.textContent = 'Welcome to Royalty!';
@@ -822,7 +1318,6 @@
                         redirectUrl: '/app/dashboard.html'
                     });
                 } else {
-                    // No onboarding data — standard signup flow
                     const newProjectId = await saveOnboardingDataToDatabase(signUpData.user.id);
 
                     submitBtn.classList.remove('btn-loading');
@@ -850,7 +1345,6 @@
             } catch (error) {
                 console.error('Signup error:', error);
 
-                // Show error message
                 let message = 'An error occurred. Please try again.';
                 if (error.message) {
                     if (error.message.includes('already registered')) {
@@ -870,7 +1364,6 @@
             }
         });
 
-        // Save onboarding data to database after signup
         async function saveOnboardingDataToDatabase(userId) {
             if (typeof OnboardingStorage === 'undefined') return null;
 
@@ -880,7 +1373,6 @@
             }
 
             try {
-                // Get user's organization (created automatically on signup via trigger)
                 const { data: membership, error: membershipError } = await db
                     .from('organization_members')
                     .select('organization_id')
@@ -894,7 +1386,6 @@
 
                 const organizationId = membership.organization_id;
 
-                // Create a default project with onboarding data
                 const projectName = onboardingData.businessContext?.industry
                     ? `My ${onboardingData.businessContext.industry} Project`
                     : 'My First Project';
@@ -920,7 +1411,6 @@
                     return null;
                 }
 
-                // Create automations from selected templates
                 if (onboardingData.selectedTemplates?.length > 0) {
                     const automations = onboardingData.selectedTemplates.map(templateId => ({
                         project_id: project.id,
@@ -941,7 +1431,6 @@
                     }
                 }
 
-                // Create custom automation if provided
                 if (onboardingData.customAutomation?.trim()) {
                     const { error: customError } = await db
                         .from('automations')
@@ -959,7 +1448,6 @@
                     }
                 }
 
-                // Clear onboarding data after successful save
                 OnboardingStorage.clear();
 
                 console.log('Onboarding data saved to project:', project.id);

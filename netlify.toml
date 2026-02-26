@@ -33,6 +33,11 @@
 
 # Customer app slug routing (/a/{slug} → customer-app)
 [[redirects]]
+  from = "/a/:slug/checkin"
+  to = "/customer-app/app.html?slug=:slug&action=checkin"
+  status = 200
+
+[[redirects]]
   from = "/a/:slug/app"
   to = "/customer-app/app.html?slug=:slug"
   status = 200

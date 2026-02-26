@@ -622,7 +622,7 @@ function generatePreviewQR() {
     const container = document.getElementById('preview-qr-code');
     if (!container) return;
 
-    const url = `${window.location.origin}/a/${currentApp.slug}`;
+    const url = `${window.location.origin}/a/${currentApp.slug}/checkin`;
 
     if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
         try {

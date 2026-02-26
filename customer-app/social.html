@@ -160,30 +160,9 @@
         <!-- Map container -->
         <div id="map-container"></div>
 
-        <!-- Bottom venue card (shown when marker tapped) -->
-        <div class="venue-card-bottom" id="venue-card-bottom" style="display:none;">
-            <div class="venue-card-thumb" id="venue-card-thumb">
-                <img src="" alt="" id="venue-card-thumb-img">
-            </div>
-            <div class="venue-card-info">
-                <h4 class="venue-card-name" id="venue-card-name"></h4>
-                <p class="venue-card-address" id="venue-card-address"></p>
-                <div class="venue-card-rating">
-                    <div class="stars" id="venue-card-stars">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    </div>
-                    <span class="venue-card-reviews" id="venue-card-reviews"></span>
-                </div>
-            </div>
-            <button class="venue-card-chevron" aria-label="View venue details">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9,18 15,12 9,6"/>
-                </svg>
-            </button>
+        <!-- Horizontal venue card swim lane -->
+        <div class="venue-swim-lane" id="venue-swim-lane">
+            <!-- Dynamically populated venue cards -->
         </div>
 
         <!-- Center on me button -->
@@ -418,6 +397,122 @@
             <span data-i18n="social.navProfileLabel">Profile</span>
         </button>
     </nav>
+
+    <!-- ===== Create Post Modal ===== -->
+    <div class="create-post-backdrop" id="create-post-backdrop"></div>
+    <div class="create-post-modal" id="create-post-modal">
+        <div class="create-post-header">
+            <button class="create-post-cancel" id="create-post-cancel">Cancel</button>
+            <h3>New Post</h3>
+            <button class="create-post-submit" id="create-post-submit" disabled>Post</button>
+        </div>
+
+        <div class="create-post-body">
+            <!-- Camera / recording area -->
+            <div class="create-post-upload" id="create-post-upload">
+                <!-- Placeholder shown before camera starts -->
+                <div class="upload-placeholder" id="upload-placeholder">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="23,7 16,12 23,17 23,7"/>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                    </svg>
+                    <span>Tap to open camera</span>
+                </div>
+
+                <!-- Live camera viewfinder -->
+                <video id="camera-viewfinder" class="camera-viewfinder" autoplay playsinline muted style="display:none;"></video>
+
+                <!-- Recording controls overlay -->
+                <div class="recording-controls" id="recording-controls" style="display:none;">
+                    <span class="recording-timer" id="recording-timer">0:00</span>
+                    <button class="record-btn" id="record-btn" type="button" aria-label="Record">
+                        <span class="record-btn-inner"></span>
+                    </button>
+                </div>
+
+                <!-- Preview of recorded clip -->
+                <div class="upload-preview" id="upload-preview" style="display:none;"></div>
+
+                <!-- Re-record button shown after recording -->
+                <button class="retake-btn" id="retake-btn" type="button" style="display:none;">Retake</button>
+            </div>
+
+            <!-- Caption -->
+            <div class="create-post-field">
+                <textarea id="post-caption" placeholder="Write a caption..." rows="3" maxlength="500"></textarea>
+                <div class="caption-count"><span id="caption-count">0</span>/500</div>
+            </div>
+
+            <!-- Upload progress -->
+            <div class="create-post-progress" id="create-post-progress" style="display:none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="post-progress-fill"></div>
+                </div>
+                <div class="progress-text" id="post-progress-text">Uploading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Venue Location Page ===== -->
+    <div class="venue-page-backdrop" id="venue-page-backdrop"></div>
+    <section class="venue-page" id="venue-page">
+        <!-- Sticky header -->
+        <div class="venue-page-header">
+            <button class="venue-page-back" id="venue-page-back" aria-label="Go back">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15,18 9,12 15,6"/>
+                </svg>
+                Back
+            </button>
+            <h3 class="venue-page-title" id="venue-page-title"></h3>
+            <div style="width:60px;"></div>
+        </div>
+
+        <div class="venue-page-scroll" id="venue-page-scroll">
+            <!-- Hero: cover image -->
+            <div class="venue-page-hero" id="venue-page-hero"></div>
+
+            <!-- Venue identity -->
+            <div class="venue-page-identity" id="venue-page-identity"></div>
+
+            <!-- Quick actions -->
+            <div class="venue-page-actions" id="venue-page-actions"></div>
+
+            <!-- Address -->
+            <div class="venue-page-address" id="venue-page-address" style="display:none;"></div>
+
+            <!-- Hours -->
+            <div class="venue-page-hours" id="venue-page-hours" style="display:none;"></div>
+
+            <!-- Description + tags -->
+            <div class="venue-page-about" id="venue-page-about"></div>
+
+            <!-- Section divider -->
+            <div class="venue-page-divider"></div>
+
+            <!-- Feed header -->
+            <div class="venue-page-feed-header">
+                <h4>Recent Posts</h4>
+            </div>
+
+            <!-- Venue-specific feed -->
+            <div class="venue-page-feed" id="venue-page-feed"></div>
+
+            <!-- Loading shimmer -->
+            <div class="venue-page-loading" id="venue-page-loading" style="display:none;">
+                <div class="shimmer-card"><div class="shimmer-image"></div></div>
+            </div>
+
+            <!-- Empty state -->
+            <div class="venue-page-empty" id="venue-page-empty" style="display:none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="23,7 16,12 23,17 23,7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+                <p>No posts yet</p>
+            </div>
+        </div>
+    </section>
 
     <!-- ===== Scripts ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

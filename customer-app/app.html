@@ -2832,7 +2832,8 @@
 
             const memberId = localStorage.getItem('app_member_id');
             if (!memberId) {
-                window.location.href = `index.html?slug=${appSlug}`;
+                const checkinAction = params.get('action') === 'checkin' ? '&action=checkin' : '';
+                window.location.href = `index.html?slug=${appSlug}${checkinAction}`;
                 return;
             }
 
@@ -2856,6 +2857,18 @@
             ]);
 
             document.getElementById('loading-screen').classList.add('hidden');
+
+            // Auto-checkin if arrived via QR scan (?action=checkin)
+            const action = params.get('action') || sessionStorage.getItem('pending_checkin_action');
+            if (action === 'checkin') {
+                sessionStorage.removeItem('pending_checkin_action');
+                // Clean the URL so refresh doesn't re-trigger
+                const cleanUrl = new URL(window.location);
+                cleanUrl.searchParams.delete('action');
+                history.replaceState(null, '', cleanUrl.toString());
+                // Perform the checkin
+                await performCheckin();
+            }
         }
 
         async function loadApp() {
@@ -4907,7 +4920,9 @@
             // or simpler: just the app slug for this business
             const expectedFormats = [
                 `royalty://checkin/${currentApp.slug}`,
+                `https://royaltyapp.ai/a/${currentApp.slug}/checkin`,
                 `https://royaltyapp.ai/checkin/${currentApp.slug}`,
+                `/a/${currentApp.slug}/checkin`,
                 currentApp.slug,
                 currentApp.id
             ];

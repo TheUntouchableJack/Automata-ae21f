@@ -1227,6 +1227,14 @@
         "saved": "Settings saved",
         "error": "Error saving settings"
     },
+    "analysis": {
+        "badge": "Analyse d'Entreprise par IA",
+        "heading": "Voici ce que nous voyons pour {businessName}",
+        "platformHighlights": "Points Forts de la Plateforme",
+        "expandHint": "Cliquez pour voir le plan",
+        "loading": "Analyse de votre entreprise...",
+        "fallbackTitle": "Vos plans sont prêts à être lancés"
+    },
     "errors": {
         "generic": "Something went wrong. Please try again.",
         "promptLimit": "You've reached your monthly prompt limit. Upgrade your plan for more.",

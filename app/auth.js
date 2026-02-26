@@ -161,6 +161,17 @@ async function signUp(email, password, firstName, lastName) {
 }
 
 /**
+ * Send password reset email
+ * @param {string} email
+ * @returns {Promise<{error: object|null}>}
+ */
+async function resetPassword(email) {
+    return await db.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/app/reset-password.html'
+    });
+}
+
+/**
  * Sign out the current user
  * @returns {Promise<{error: object|null}>}
  */

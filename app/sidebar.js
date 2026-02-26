@@ -21,8 +21,6 @@ const AppSidebar = (function() {
                 { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Dashboard' },
                 // Intelligence - AI brain, visible to all
                 { id: 'intelligence', icon: 'brain', href: '/app/intelligence.html', labelKey: 'nav.intelligence', label: 'Intelligence' },
-                // Projects - admin only (SMB users see Dashboard instead)
-                { id: 'projects', icon: 'folder', href: '/app/dashboard.html', labelKey: 'nav.projects', label: 'Projects', adminOnly: true },
                 // Apps - admin only (SMB users manage their single program)
                 { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', adminOnly: true },
                 // Automations - visible to all
@@ -182,7 +180,7 @@ const AppSidebar = (function() {
         const path = window.location.pathname;
         // Dashboard page - always highlight 'dashboard' nav item
         if (path.includes('dashboard')) return 'dashboard';
-        if (path.includes('project.html')) return 'projects'; // Individual project pages
+        if (path.includes('project.html')) return 'dashboard'; // Individual project pages
         if (path.includes('intelligence')) return 'intelligence';
         if (path.includes('automations.html')) return 'automations';
         if (path.includes('automation.html')) return 'automations';

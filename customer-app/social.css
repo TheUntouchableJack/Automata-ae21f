@@ -468,6 +468,13 @@ body {
     text-transform: capitalize;
 }
 
+.map-search-empty {
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
 /* Leaflet map pin: L.divIcon with class "map-pin-wrapper" containing <div class="map-pin"> */
 .map-pin-wrapper {
     background: transparent !important;
@@ -475,17 +482,10 @@ body {
 }
 
 .map-pin {
-    width: 32px;
-    height: 32px;
+    width: 14px;
+    height: 14px;
     border-radius: var(--radius-full);
     background: var(--color-error);
-    color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     border: 2px solid #ffffff;
     cursor: pointer;
@@ -507,52 +507,70 @@ body {
     z-index: 11;
 }
 
-/* HTML: <div class="venue-card-bottom"> — toggled via classList 'visible' in JS */
-.venue-card-bottom {
+/* HTML: <div class="venue-swim-lane"> — horizontal scrollable venue cards */
+.venue-swim-lane {
     position: absolute;
     bottom: var(--spacing-md);
-    left: var(--spacing-md);
-    right: var(--spacing-md);
+    left: 0;
+    right: 0;
     z-index: 1000;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    padding: 0 var(--spacing-md);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.venue-swim-lane::-webkit-scrollbar {
     display: none;
 }
 
-.venue-card-bottom.visible {
-    display: block;
+.venue-swim-lane:empty {
+    display: none;
 }
 
-/* JS-generated: <div class="venue-bottom-card"> (inside venue-card-bottom) */
-.venue-bottom-card {
+/* JS-generated: <div class="swim-card"> */
+.swim-card {
+    scroll-snap-align: start;
+    min-width: 260px;
+    max-width: 280px;
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     display: flex;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
+    gap: 12px;
+    padding: 12px;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0;
 }
 
-.venue-bottom-card:active {
+.swim-card:active {
     transform: scale(0.98);
 }
 
-.venue-bottom-thumb {
-    width: 80px;
-    height: 80px;
+.swim-card.active {
+    box-shadow: 0 0 0 2px var(--app-primary), var(--shadow-lg);
+}
+
+.swim-card-thumb {
+    width: 64px;
+    height: 64px;
     border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--color-border);
     flex-shrink: 0;
 }
 
-.venue-bottom-thumb img {
+.swim-card-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.venue-bottom-thumb-placeholder {
+.swim-card-thumb-placeholder {
     width: 100%;
     height: 100%;
     display: flex;
@@ -561,10 +579,10 @@ body {
     background: var(--app-primary);
     color: #fff;
     font-weight: 700;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
 }
 
-.venue-bottom-info {
+.swim-card-info {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -573,8 +591,8 @@ body {
     gap: 2px;
 }
 
-.venue-bottom-name {
-    font-size: 0.9375rem;
+.swim-card-name {
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-text);
     white-space: nowrap;
@@ -582,30 +600,30 @@ body {
     text-overflow: ellipsis;
 }
 
-.venue-bottom-address {
-    font-size: 0.75rem;
+.swim-card-address {
+    font-size: 0.6875rem;
     color: var(--color-text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.venue-bottom-rating {
+.swim-card-rating {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 0.8125rem;
+    gap: 3px;
+    font-size: 0.75rem;
     margin-top: 2px;
 }
 
-.venue-rating-text {
+.swim-card-rating-text {
     font-weight: 600;
     color: var(--color-text);
 }
 
-.venue-review-count {
+.swim-card-reviews {
     color: var(--color-text-muted);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
 }
 
 /* Star rating (from renderStars) */
@@ -630,7 +648,7 @@ body {
 /* HTML: <button class="center-on-me-btn"> */
 .center-on-me-btn {
     position: absolute;
-    bottom: calc(var(--spacing-md) + 100px);
+    bottom: calc(var(--spacing-md) + 96px);
     right: var(--spacing-md);
     z-index: 1000;
     width: 44px;
@@ -1384,10 +1402,679 @@ a.sheet-detail-row:hover {
     }
 }
 
+/* ===== Create Post Modal ===== */
+.create-post-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 3000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.create-post-backdrop.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.create-post-modal {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 3001;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.create-post-modal.visible {
+    transform: translateY(0);
+}
+
+.create-post-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    min-height: 48px;
+}
+
+.create-post-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.create-post-cancel {
+    background: none;
+    border: none;
+    font-size: 15px;
+    color: #64748b;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.create-post-submit {
+    background: none;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--app-primary, #6366f1);
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.create-post-submit:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.create-post-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.create-post-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.create-post-field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #1e293b;
+    background: #f8fafc;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+.create-post-upload {
+    border: 2px dashed #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    position: relative;
+}
+
+.create-post-upload.camera-active {
+    border-style: solid;
+    border-color: transparent;
+    cursor: default;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #94a3b8;
+    font-size: 14px;
+    padding: 24px;
+    background: #f8fafc;
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    justify-content: center;
+}
+
+/* Camera viewfinder */
+.camera-viewfinder {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+}
+
+/* Recording controls overlay */
+.recording-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+}
+
+.recording-timer {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(0,0,0,0.5);
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+}
+
+.recording-timer.active {
+    color: #ef4444;
+}
+
+.record-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.record-btn-inner {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #ef4444;
+    transition: all 0.2s ease;
+}
+
+.record-btn.recording .record-btn-inner {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: #ef4444;
+}
+
+@keyframes recording-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.record-btn.recording {
+    animation: recording-pulse 1.2s ease-in-out infinite;
+}
+
+/* Retake button */
+.retake-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.upload-preview {
+    width: 100%;
+}
+
+.upload-preview img,
+.upload-preview video {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    display: block;
+    background: #000;
+}
+
+.create-post-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #1e293b;
+    background: #f8fafc;
+    resize: none;
+    font-family: inherit;
+}
+
+.caption-count {
+    text-align: right;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.create-post-progress {
+    padding: 8px 0;
+}
+
+.progress-bar {
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--app-primary, #6366f1);
+    border-radius: 2px;
+    width: 0;
+    transition: width 0.3s;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* ===== Venue Location Page ===== */
+.venue-page-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 2499;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.venue-page-backdrop.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.venue-page {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 2500;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.venue-page.visible {
+    transform: translateY(0);
+}
+
+.venue-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    min-height: 48px;
+    border-bottom: 1px solid #e2e8f0;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.venue-page-back {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    color: var(--app-primary, #6366f1);
+    cursor: pointer;
+    padding: 4px 8px;
+    min-width: 60px;
+}
+
+.venue-page-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    text-align: center;
+}
+
+.venue-page-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Hero */
+.venue-page-hero {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    position: relative;
+    overflow: hidden;
+}
+
+.venue-page-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.venue-page-hero-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Identity */
+.venue-page-identity {
+    padding: 16px;
+}
+
+.venue-page-identity-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.venue-page-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -28px;
+    border: 3px solid #fff;
+    position: relative;
+    z-index: 1;
+}
+
+.venue-page-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.venue-page-avatar-placeholder {
+    font-size: 22px;
+    font-weight: 700;
+    color: #94a3b8;
+}
+
+.venue-page-name-block {
+    flex: 1;
+    min-width: 0;
+    padding-top: 4px;
+}
+
+.venue-page-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.venue-page-handle {
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.venue-page-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.venue-page-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.venue-page-rating .star {
+    color: #f59e0b;
+}
+
+.venue-page-category {
+    display: inline-block;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.venue-page-location {
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Action buttons */
+.venue-page-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.venue-page-actions::-webkit-scrollbar {
+    display: none;
+}
+
+.venue-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    color: #1e293b;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 72px;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.venue-action-btn:active {
+    background: #e2e8f0;
+}
+
+.venue-action-btn svg {
+    color: var(--app-primary, #6366f1);
+}
+
+/* About */
+.venue-page-about {
+    padding: 0 16px 16px;
+}
+
+.venue-page-description {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #475569;
+    margin: 0 0 12px;
+}
+
+.venue-page-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.venue-page-tag {
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+}
+
+/* Address */
+.venue-page-address {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0 16px 12px;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.venue-page-address svg {
+    flex-shrink: 0;
+    color: var(--app-primary, #6366f1);
+    margin-top: 2px;
+}
+
+.venue-page-address-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.venue-page-address-line2 {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* Hours */
+.venue-page-hours {
+    padding: 0 16px 16px;
+}
+
+.venue-page-hours-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 8px;
+}
+
+.venue-page-hours-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.venue-page-hours-table tr {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.venue-page-hours-table tr:last-child {
+    border-bottom: none;
+}
+
+.venue-page-hours-table td {
+    padding: 6px 0;
+    color: #475569;
+}
+
+.venue-page-hours-table td:first-child {
+    font-weight: 500;
+    color: #1e293b;
+    width: 100px;
+    text-transform: capitalize;
+}
+
+.venue-page-hours-table tr.today td {
+    color: var(--app-primary, #6366f1);
+    font-weight: 600;
+}
+
+.venue-page-hours-table tr.today td:first-child {
+    color: var(--app-primary, #6366f1);
+}
+
+/* Divider */
+.venue-page-divider {
+    height: 8px;
+    background: #f1f5f9;
+}
+
+/* Feed header */
+.venue-page-feed-header {
+    padding: 16px 16px 8px;
+}
+
+.venue-page-feed-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* Feed — reuses .feed-card styles from main feed */
+.venue-page-feed {
+    padding: 0 0 16px;
+}
+
+/* Empty state */
+.venue-page-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 48px 16px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.venue-page-empty p {
+    margin: 0;
+}
+
+/* Loading */
+.venue-page-loading {
+    padding: 16px;
+}
+
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
     .venue-sheet,
-    .venue-bottom-card,
+    .swim-card,
     .video-play-btn,
     .map-pin,
     .shimmer-card {

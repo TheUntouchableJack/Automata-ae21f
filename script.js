@@ -740,6 +740,14 @@ function handleContinueToSignup() {
         OnboardingStorage.setBusinessDetails(businessDetails);
     }
 
+    // Signal that analysis should be triggered on signup page
+    try {
+        localStorage.setItem('royalty_signup_analysis', JSON.stringify({
+            status: 'pending',
+            timestamp: Date.now()
+        }));
+    } catch (e) { /* ignore */ }
+
     window.location.href = '/app/signup.html?onboarding=true';
 }
 

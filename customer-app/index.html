@@ -2442,10 +2442,14 @@
             document.getElementById('success-screen').classList.add('active');
             if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
+            // Preserve checkin intent if user arrived via QR scan
+            const urlParams = new URLSearchParams(window.location.search);
+            const checkinAction = urlParams.get('action') === 'checkin' ? '&action=checkin' : '';
+
             // Auto-redirect to app after 2.5 seconds
             const appTarget = currentApp?.app_type === 'social' ? 'social.html' : 'app.html';
             setTimeout(() => {
-                window.location.href = `/customer-app/${appTarget}?slug=${appSlug}`;
+                window.location.href = `/customer-app/${appTarget}?slug=${appSlug}${checkinAction}`;
             }, 2500);
         }
 
@@ -2567,8 +2571,10 @@
                 localStorage.setItem('app_auth_token', generateToken(result.member_id, currentApp.id));
                 localStorage.setItem('app_member_id', result.member_id);
                 localStorage.setItem('app_slug', appSlug);
+                const loginUrlParams = new URLSearchParams(window.location.search);
+                const loginCheckinAction = loginUrlParams.get('action') === 'checkin' ? '&action=checkin' : '';
                 const loginTarget = currentApp?.app_type === 'social' ? 'social.html' : 'app.html';
-                window.location.href = `/customer-app/${loginTarget}?slug=${appSlug}`;
+                window.location.href = `/customer-app/${loginTarget}?slug=${appSlug}${loginCheckinAction}`;
             } catch (error) {
                 document.getElementById('login-error').textContent = error.message || 'Invalid email or PIN';
                 document.getElementById('login-error').classList.add('visible');

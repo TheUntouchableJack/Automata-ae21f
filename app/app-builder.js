@@ -1064,11 +1064,12 @@ function getBaseUrl() {
 function generateQRCode() {
     const slug = document.getElementById('app-slug').value || 'your-app';
     const baseUrl = getBaseUrl();
-    const url = `${baseUrl}/a/${slug}`;
+    const displayUrl = `${baseUrl}/a/${slug}`;
+    const qrUrl = `${baseUrl}/a/${slug}/checkin`;
 
-    // Update URL displays
-    document.getElementById('qr-url-display').textContent = url;
-    document.getElementById('share-url-input').value = url;
+    // Update URL displays (show the app link, not the checkin-specific URL)
+    document.getElementById('qr-url-display').textContent = displayUrl;
+    document.getElementById('share-url-input').value = displayUrl;
 
     // Also update the slug prefix display
     const slugPrefix = document.querySelector('.slug-prefix');
@@ -1081,10 +1082,10 @@ function generateQRCode() {
     // Clear previous
     container.innerHTML = '';
 
-    // Try using the loaded QRCode library first
+    // QR code encodes /checkin URL so scanning triggers auto-checkin
     if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
         try {
-            QRCode.toCanvas(document.createElement('canvas'), url, {
+            QRCode.toCanvas(document.createElement('canvas'), qrUrl, {
                 width: 220,
                 margin: 2,
                 color: {
@@ -1094,7 +1095,7 @@ function generateQRCode() {
             }, (error, canvas) => {
                 if (error) {
                     console.error('QR generation error:', error);
-                    generateQRCodeFallback(container, url);
+                    generateQRCodeFallback(container, qrUrl);
                     return;
                 }
                 container.innerHTML = '';
@@ -1102,11 +1103,11 @@ function generateQRCode() {
             });
         } catch (e) {
             console.warn('QRCode library error:', e);
-            generateQRCodeFallback(container, url);
+            generateQRCodeFallback(container, qrUrl);
         }
     } else {
         console.warn('QRCode library not loaded, using fallback');
-        generateQRCodeFallback(container, url);
+        generateQRCodeFallback(container, qrUrl);
     }
 }
 

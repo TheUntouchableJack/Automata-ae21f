@@ -136,7 +136,7 @@ const IntelligencePage = (function() {
                 .single(),
             supabase
                 .from('profiles')
-                .select('first_name, last_name')
+                .select('first_name, last_name, is_admin')
                 .eq('id', user.id)
                 .single(),
             supabase

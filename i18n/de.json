@@ -1210,6 +1210,14 @@
         "saved": "Settings saved",
         "error": "Error saving settings"
     },
+    "analysis": {
+        "badge": "KI-Geschäftsanalyse",
+        "heading": "Das sehen wir für {businessName}",
+        "platformHighlights": "Plattform-Highlights",
+        "expandHint": "Klicken Sie, um den Plan zu sehen",
+        "loading": "Ihr Unternehmen wird analysiert...",
+        "fallbackTitle": "Ihre Pläne sind startbereit"
+    },
     "errors": {
         "generic": "Something went wrong. Please try again.",
         "promptLimit": "You've reached your monthly prompt limit. Upgrade your plan for more.",
