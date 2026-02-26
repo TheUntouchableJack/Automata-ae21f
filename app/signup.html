@@ -1327,18 +1327,11 @@
 
                     celebrateBig();
 
-                    const redirectMsg = newProjectId
-                        ? 'Account created! Taking you to your new project...'
-                        : 'Account created! Redirecting to your dashboard...';
-                    successMessage.textContent = redirectMsg;
+                    successMessage.textContent = 'Account created! Redirecting to your dashboard...';
                     successMessage.classList.add('visible');
 
                     setTimeout(() => {
-                        if (newProjectId) {
-                            window.location.href = `/app/project.html?id=${newProjectId}&onboarding=complete`;
-                        } else {
-                            window.location.href = '/app/dashboard.html';
-                        }
+                        window.location.href = '/app/dashboard.html';
                     }, 1000);
                 }
 
@@ -1368,7 +1361,7 @@
             if (typeof OnboardingStorage === 'undefined') return null;
 
             const onboardingData = OnboardingStorage.get();
-            if (!onboardingData || (!onboardingData.selectedTemplates?.length && !onboardingData.customAutomation?.trim())) {
+            if (!onboardingData) {
                 return null;
             }
 
@@ -1386,9 +1379,10 @@
 
                 const organizationId = membership.organization_id;
 
-                const projectName = onboardingData.businessContext?.industry
-                    ? `My ${onboardingData.businessContext.industry} Project`
-                    : 'My First Project';
+                const projectName = onboardingData.businessDetails?.businessName
+                    || (onboardingData.businessContext?.industry
+                        ? `${onboardingData.businessContext.industry} Loyalty Program`
+                        : 'My Loyalty Program');
 
                 const { data: project, error: projectError } = await db
                     .from('projects')
@@ -1448,7 +1442,214 @@
                     }
                 }
 
+                // ── Part 11B: Save AI analysis as ai_recommendations ──
+                const aiAnalysis = typeof BusinessAnalysis !== 'undefined'
+                    ? (BusinessAnalysis.getCached('en') || BusinessAnalysis.getCached(currentLang))
+                    : null;
+
+                if (aiAnalysis?.opportunities?.length) {
+                    const iconToType = {
+                        loyalty: 'opportunity',
+                        automation: 'automation',
+                        insights: 'efficiency',
+                        growth: 'growth'
+                    };
+
+                    const recommendations = aiAnalysis.opportunities.map(opp => ({
+                        organization_id: organizationId,
+                        recommendation_type: iconToType[opp.icon] || 'opportunity',
+                        title: opp.title,
+                        description: opp.description,
+                        confidence_score: 0.85,
+                        potential_impact: 'high',
+                        suggested_action: opp.actionSteps?.join('. ') || opp.impact || '',
+                        action_type: 'signup_insight',
+                        action_payload: {
+                            source: 'signup_analysis',
+                            icon: opp.icon,
+                            impact_statement: opp.impact,
+                            action_steps: opp.actionSteps || []
+                        },
+                        status: 'pending'
+                    }));
+
+                    const { error: recError } = await db
+                        .from('ai_recommendations')
+                        .insert(recommendations);
+
+                    if (recError) {
+                        console.error('Error saving AI recommendations:', recError);
+                    }
+                }
+
+                // ── Part 11C: Store full analysis + business details in project settings ──
+                const ctx = onboardingData.businessContext || {};
+                const details = onboardingData.businessDetails || {};
+                const settingsPayload = {};
+
+                if (aiAnalysis) {
+                    settingsPayload.signup_analysis = aiAnalysis;
+                    settingsPayload.signup_analysis_date = new Date().toISOString();
+                }
+                if (details.businessName || details.businessType || details.customerCount || details.websiteUrl) {
+                    settingsPayload.business_details = {
+                        businessName: details.businessName,
+                        businessType: details.businessType,
+                        customerCount: details.customerCount,
+                        websiteUrl: details.websiteUrl
+                    };
+                }
+
+                // Update project with settings + polished AI description
+                const projectUpdate = {};
+                if (Object.keys(settingsPayload).length > 0) {
+                    projectUpdate.settings = settingsPayload;
+                }
+                if (aiAnalysis?.businessSummary) {
+                    projectUpdate.description = aiAnalysis.businessSummary;
+                }
+                if (Object.keys(projectUpdate).length > 0) {
+                    await db.from('projects')
+                        .update(projectUpdate)
+                        .eq('id', project.id);
+                }
+
+                // ── Part 11F: Seed business_knowledge — Royal AI's foundation layer ──
+                const knowledgeFacts = [];
+
+                if (ctx.industry) {
+                    knowledgeFacts.push({
+                        organization_id: organizationId,
+                        layer: 'operational', category: 'business_type',
+                        fact: `Business operates in ${ctx.industry} industry`,
+                        confidence: 1.0, importance: 'critical',
+                        source_type: 'conversation', status: 'active'
+                    });
+                }
+                if (ctx.description) {
+                    knowledgeFacts.push({
+                        organization_id: organizationId,
+                        layer: 'operational', category: 'description',
+                        fact: ctx.description,
+                        confidence: 0.95, importance: 'high',
+                        source_type: 'conversation', status: 'active'
+                    });
+                }
+                if (ctx.targetMarket) {
+                    knowledgeFacts.push({
+                        organization_id: organizationId,
+                        layer: 'customer', category: 'target_market',
+                        fact: `Target market: ${ctx.targetMarket}`,
+                        confidence: 0.95, importance: 'high',
+                        source_type: 'conversation', status: 'active'
+                    });
+                }
+                if (ctx.location) {
+                    knowledgeFacts.push({
+                        organization_id: organizationId,
+                        layer: 'market', category: 'location',
+                        fact: `Business located in ${ctx.location}`,
+                        confidence: 1.0, importance: 'high',
+                        source_type: 'conversation', status: 'active'
+                    });
+                }
+                if (ctx.goals?.length) {
+                    ctx.goals.forEach(goal => {
+                        knowledgeFacts.push({
+                            organization_id: organizationId,
+                            layer: 'growth', category: 'goals',
+                            fact: `Business goal: ${goal}`,
+                            confidence: 1.0, importance: 'high',
+                            source_type: 'conversation', status: 'active'
+                        });
+                    });
+                }
+                if (ctx.painPoints?.length) {
+                    ctx.painPoints.forEach(pain => {
+                        knowledgeFacts.push({
+                            organization_id: organizationId,
+                            layer: 'operational', category: 'pain_points',
+                            fact: `Pain point: ${pain}`,
+                            confidence: 1.0, importance: 'high',
+                            source_type: 'conversation', status: 'active'
+                        });
+                    });
+                }
+                if (aiAnalysis?.businessSummary) {
+                    knowledgeFacts.push({
+                        organization_id: organizationId,
+                        layer: 'market', category: 'overview',
+                        fact: `[AI Analysis] ${aiAnalysis.businessSummary}`,
+                        confidence: 0.85, importance: 'critical',
+                        source_type: 'inferred', status: 'active'
+                    });
+                }
+                if (aiAnalysis?.impactMetrics?.length) {
+                    aiAnalysis.impactMetrics.forEach(m => {
+                        knowledgeFacts.push({
+                            organization_id: organizationId,
+                            layer: 'financial', category: 'projections',
+                            fact: `[AI Projection] ${m.label}: ${m.value}`,
+                            confidence: 0.75, importance: 'medium',
+                            source_type: 'inferred', status: 'active'
+                        });
+                    });
+                }
+
+                if (knowledgeFacts.length > 0) {
+                    const { error: knowledgeError } = await db
+                        .from('business_knowledge')
+                        .insert(knowledgeFacts);
+                    if (knowledgeError) {
+                        console.error('Error seeding business knowledge:', knowledgeError);
+                    }
+                }
+
+                // ── Part 11G: Seed business_profiles — structured data ──
+                const profileData = {
+                    organization_id: organizationId,
+                    profile_completeness: 15
+                };
+
+                if (details.businessType) {
+                    const typeMap = {
+                        'restaurant': 'restaurant', 'cafe': 'restaurant', 'coffee': 'restaurant',
+                        'retail': 'retail', 'shop': 'retail', 'store': 'retail',
+                        'salon': 'service', 'gym': 'service', 'clinic': 'service',
+                    };
+                    const lowerType = (details.businessType || '').toLowerCase();
+                    profileData.business_type = typeMap[lowerType] || 'other';
+                    profileData.business_subtype = details.businessType;
+                    profileData.profile_completeness += 10;
+                }
+                if (ctx.targetMarket) {
+                    profileData.ideal_customer_description = ctx.targetMarket;
+                    profileData.profile_completeness += 10;
+                }
+                if (ctx.location) {
+                    profileData.profile_completeness += 5;
+                }
+                if (ctx.goals?.length) {
+                    profileData.growth_goals = ctx.goals.map(g => ({ goal: g, timeline: null, metrics: null }));
+                    profileData.biggest_challenge = ctx.painPoints?.[0] || null;
+                    profileData.profile_completeness += 10;
+                }
+                if (details.customerCount) {
+                    profileData.profile_completeness += 5;
+                }
+
+                const { error: profileError } = await db
+                    .from('business_profiles')
+                    .upsert(profileData);
+                if (profileError) {
+                    console.error('Error seeding business profile:', profileError);
+                }
+
+                // ── Part 11H: Clear caches ──
                 OnboardingStorage.clear();
+                if (typeof BusinessAnalysis !== 'undefined' && BusinessAnalysis.clearCache) {
+                    BusinessAnalysis.clearCache();
+                }
 
                 console.log('Onboarding data saved to project:', project.id);
                 return project.id;

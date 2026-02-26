@@ -49,10 +49,19 @@ const AIFeed = (function() {
         const feedSection = document.getElementById('ai-feed-section');
         if (!feedSection) return;
 
-        // Only show for admins/owners
+        // Only show for admins/owners (with fallback for fresh signups where role may not be set yet)
         if (userRole !== 'owner' && userRole !== 'admin') {
-            feedSection.style.display = 'none';
-            return;
+            // Check if they have pending recommendations anyway (fresh signup race condition)
+            const { count } = await supabase
+                .from('ai_recommendations')
+                .select('*', { count: 'exact', head: true })
+                .eq('organization_id', orgId)
+                .eq('status', 'pending');
+
+            if (!count || count === 0) {
+                feedSection.style.display = 'none';
+                return;
+            }
         }
 
         feedSection.style.display = 'block';
