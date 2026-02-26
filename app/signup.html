@@ -1084,7 +1084,7 @@
                 let tickCount = 0;
 
                 // Hide progress bar immediately if cache will hit
-                const currentLang = document.documentElement.lang || 'en';
+                const currentLang = localStorage.getItem('royalty_language') || document.documentElement.lang || 'en';
                 const cachedAnalysis = typeof BusinessAnalysis !== 'undefined' && BusinessAnalysis.getCached(currentLang);
                 if (cachedAnalysis && progressGroup) {
                     progressGroup.style.display = 'none';

@@ -185,6 +185,8 @@ async function loadAppMetrics() {
         }
 
         if (!apps || apps.length === 0) {
+            // Fresh signup — always show preview panel
+            localStorage.removeItem('previewHidden');
             // Auto-create default loyalty app for first-time users
             console.log('[Dashboard] No apps found, auto-creating default app...');
             const newApp = await autoCreateDefaultApp();
