@@ -277,8 +277,8 @@ if (db) {
                     // Check if this is a new signup with onboarding data
                     const hasOnboarding = localStorage.getItem('royalty_onboarding');
                     if (hasOnboarding) {
-                        // New user from landing page - go to Intelligence to build their app
-                        window.location.href = '/app/intelligence.html?firstLogin=true';
+                        // New user from landing page - go to dashboard
+                        window.location.href = '/app/dashboard.html';
                     } else if (!window.location.pathname.includes('login.html')) {
                         // Returning user - go to dashboard
                         window.location.href = '/app/dashboard.html';

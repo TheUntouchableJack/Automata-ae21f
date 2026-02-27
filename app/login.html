@@ -363,14 +363,9 @@
                 // Fire confetti!
                 celebrate();
 
-                // Redirect after celebration - to new project if onboarding, else dashboard
+                // Redirect after celebration - always go to dashboard
                 setTimeout(() => {
-                    if (newProjectId) {
-                        // Redirect to the new project with onboarding flag
-                        window.location.href = `/app/project.html?id=${newProjectId}&onboarding=complete`;
-                    } else {
-                        window.location.href = '/app/dashboard.html';
-                    }
+                    window.location.href = '/app/dashboard.html';
                 }, 1000);
 
             } catch (error) {
@@ -470,7 +465,7 @@
                         <div style="text-align: center;">
                             <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
                             <h3 style="color: var(--color-accent); margin-bottom: 8px;">Welcome to Royalty!</h3>
-                            <p>${newProjectId ? 'Taking you to your new project...' : 'Redirecting to your dashboard...'}</p>
+                            <p>Taking you to your dashboard...</p>
                         </div>
                     `;
 
@@ -478,11 +473,7 @@
                     window.history.replaceState({}, '', window.location.pathname);
 
                     setTimeout(() => {
-                        if (newProjectId) {
-                            window.location.href = `/app/project.html?id=${newProjectId}&onboarding=complete`;
-                        } else {
-                            window.location.href = '/app/dashboard.html';
-                        }
+                        window.location.href = '/app/dashboard.html';
                     }, 1000);
                 } else {
                     // Already logged in (not from email confirmation)

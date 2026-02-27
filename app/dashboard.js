@@ -174,7 +174,7 @@ async function loadAppMetrics() {
         // Get ALL the organization's customer apps (no limit)
         const { data: apps, error: appsError } = await supabase
             .from('customer_apps')
-            .select('id, name, slug, description, is_published, is_active, branding, settings, theme_color, created_at')
+            .select('id, name, slug, description, is_published, is_active, branding, settings, created_at')
             .eq('organization_id', currentOrganization.id)
             .is('deleted_at', null)
             .order('created_at', { ascending: false });
@@ -1525,8 +1525,8 @@ function renderUsageDashboard() {
                     </div>
                 ` : ''}
                 <div class="usage-metric-numbers">
-                    <span class="usage-metric-used">${m.used.toLocaleString()}</span>
-                    <span class="usage-metric-limit">/ ${isUnlimited ? 'Unlimited' : m.limit.toLocaleString()}</span>
+                    <span class="usage-metric-used">${(m.used ?? 0).toLocaleString()}</span>
+                    <span class="usage-metric-limit">/ ${isUnlimited ? 'Unlimited' : (m.limit ?? 0).toLocaleString()}</span>
                 </div>
             </div>
         `;
