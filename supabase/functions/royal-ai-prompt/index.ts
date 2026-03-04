@@ -3798,7 +3798,7 @@ Deno.serve(async (req) => {
           model_used: modelUsed,
           tokens_saved: tokensUsed,
           expires_at: new Date(Date.now() + 3600000).toISOString()  // 1 hour TTL
-        }).catch(e => console.error('Cache store error:', e))
+        }).then(({ error: cacheErr }) => { if (cacheErr) console.error('Cache store error:', cacheErr) })
       }
     }
 
@@ -3861,7 +3861,7 @@ Deno.serve(async (req) => {
       p_cache_read_tokens: 0,
       p_model: modelUsed.includes('haiku') ? 'haiku' : 'sonnet',
       p_function_name: 'royal_ai_prompt'
-    }).catch(e => console.error('AI usage tracking error:', e))
+    }).then(({ error: e }) => { if (e) console.error('AI usage tracking error:', e) })
 
     // Build response based on mode
     let response: PromptResponse

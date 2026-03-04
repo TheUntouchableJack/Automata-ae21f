@@ -1941,7 +1941,7 @@ const CrownDashboard = (function() {
                 automations: automationsRes.data || [],
                 industry: project.industry || null,
                 city: project.city || null,
-                businessName: userInfo.organization.name || null,
+                businessName: org.name || null,
                 // Business intel fields from organizations table (may not exist yet)
                 monthlyRevenue: org.monthly_revenue || null,
                 revenueGoal: org.revenue_goal || null,
