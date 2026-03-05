@@ -25,6 +25,7 @@ export default defineConfig({
         // Main pages
         main: resolve(__dirname, 'index.html'),
         pricing: resolve(__dirname, 'pricing.html'),
+        estimate: resolve(__dirname, 'estimate.html'),
 
         // Error pages
         error404: resolve(__dirname, '404.html'),

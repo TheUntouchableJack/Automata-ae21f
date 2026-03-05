@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom App Estimate — Royalty</title>
+    <meta name="description" content="Get a free estimate for your custom AI-powered app. Configure features, see your plan, and book a consultation.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta property="og:title" content="Custom App Estimate — Royalty">
+    <meta property="og:description" content="Get a free estimate for your custom AI-powered app. Configure features, see your plan, and book a consultation.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://royaltyapp.ai/estimate.html">
+    <meta property="og:image" content="https://royaltyapp.ai/og-image.png">
+
+    <link rel="canonical" href="https://royaltyapp.ai/estimate.html">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=6">
+    <link rel="stylesheet" href="i18n/i18n.css">
+    <style>
+        /* Estimate Page Styles */
+        .estimate-hero {
+            padding: 140px 0 40px;
+            text-align: center;
+            background: var(--color-bg);
+        }
+
+        .estimate-hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .estimate-hero p {
+            font-size: 1.25rem;
+            color: var(--color-text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Wizard Container */
+        .estimate-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        /* Progress Bar */
+        .wizard-progress {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 48px;
+            padding: 0 20px;
+        }
+
+        .wizard-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .wizard-step-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-muted);
+            border: 2px solid var(--color-border);
+            transition: all var(--transition-base);
+        }
+
+        .wizard-step.active .wizard-step-dot {
+            background: var(--gradient-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+        }
+
+        .wizard-step.completed .wizard-step-dot {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+
+        .wizard-step-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
+        .wizard-step.active .wizard-step-label,
+        .wizard-step.completed .wizard-step-label {
+            color: var(--color-primary);
+        }
+
+        .wizard-step-line {
+            flex: 1;
+            height: 2px;
+            background: var(--color-border);
+            min-width: 40px;
+            margin: 0 -4px;
+            margin-bottom: 24px;
+            transition: background var(--transition-base);
+        }
+
+        .wizard-step-line.completed {
+            background: var(--color-primary);
+        }
+
+        /* Wizard Body */
+        .wizard-body {
+            min-height: 400px;
+        }
+
+        .wizard-body h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .wizard-body .step-subtitle {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        /* Step 1: App Type Cards */
+        .app-type-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .app-type-card {
+            background: var(--color-bg);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 24px 20px;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-align: center;
+        }
+
+        .app-type-card:hover {
+            border-color: var(--color-primary-light);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .app-type-card.selected {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .app-type-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 12px;
+        }
+
+        .app-type-icon.loyalty { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+        .app-type-icon.rewards { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
+        .app-type-icon.membership { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+        .app-type-icon.blog { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .app-type-icon.social { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); }
+        .app-type-icon.custom { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); }
+
+        .app-type-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .app-type-desc {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Step 2: Feature Toggles */
+        .features-section {
+            margin-bottom: 32px;
+        }
+
+        .features-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .feature-toggle-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+        }
+
+        .feature-toggle-card:hover {
+            border-color: var(--color-primary-light);
+        }
+
+        .feature-toggle-card.checked {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+        }
+
+        .feature-toggle-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .feature-toggle-icon {
+            font-size: 20px;
+            width: 32px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .feature-toggle-details {
+            min-width: 0;
+        }
+
+        .feature-toggle-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .feature-toggle-desc {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        /* Toggle switch */
+        .toggle-switch-sm {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch-sm input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider-sm {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            transition: var(--transition-fast);
+            border-radius: 22px;
+        }
+
+        .toggle-slider-sm:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: var(--transition-fast);
+            border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .toggle-switch-sm input:checked + .toggle-slider-sm {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        .toggle-switch-sm input:checked + .toggle-slider-sm:before {
+            transform: translateX(18px);
+        }
+
+        /* Step 3: Scale & Details */
+        .scale-section {
+            margin-bottom: 32px;
+        }
+
+        .scale-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 12px;
+        }
+
+        .scale-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .scale-pill {
+            padding: 10px 20px;
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            transition: all var(--transition-fast);
+        }
+
+        .scale-pill:hover {
+            border-color: var(--color-primary-light);
+        }
+
+        .scale-pill.selected {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+            color: var(--color-primary);
+        }
+
+        .scale-pill-count {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        .design-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .design-option {
+            padding: 16px;
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            text-align: center;
+            transition: all var(--transition-fast);
+        }
+
+        .design-option:hover {
+            border-color: var(--color-primary-light);
+        }
+
+        .design-option.selected {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+        }
+
+        .design-option-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .design-option-desc {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .notes-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            color: var(--color-text);
+            background: var(--color-bg);
+            resize: vertical;
+            transition: border-color var(--transition-fast);
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .notes-textarea::placeholder {
+            color: var(--color-text-muted);
+        }
+
+        /* Step 4: Estimate Results */
+        .estimate-result {
+            max-width: 560px;
+            margin: 0 auto;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .estimate-result-header {
+            background: var(--gradient-primary);
+            padding: 24px 32px;
+            text-align: center;
+        }
+
+        .estimate-result-header .plan-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 4px;
+        }
+
+        .estimate-result-header .plan-name {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .estimate-result-header .plan-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #fff;
+            margin-top: 8px;
+        }
+
+        .estimate-result-header .plan-price .period {
+            font-size: 1rem;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .estimate-result-header .plan-annual {
+            font-size: 13px;
+            color: rgba(255,255,255,0.7);
+            margin-top: 4px;
+        }
+
+        .estimate-result-body {
+            padding: 32px;
+        }
+
+        .estimate-section {
+            margin-bottom: 24px;
+        }
+
+        .estimate-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .estimate-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .estimate-features-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .estimate-feature-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--color-primary-subtle);
+            color: var(--color-primary);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .estimate-includes li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 14px;
+            color: var(--color-text);
+        }
+
+        .estimate-includes li svg {
+            color: var(--color-accent);
+            flex-shrink: 0;
+        }
+
+        .estimate-includes {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .estimate-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .estimate-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .estimate-detail-label {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .estimate-detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .estimate-cta-area {
+            margin-top: 32px;
+            text-align: center;
+        }
+
+        .estimate-cta-area .btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .estimate-cta-area .self-service-link {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .estimate-cta-area .self-service-link a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .estimate-cta-area .self-service-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Enterprise estimate (no price) */
+        .estimate-result-header.enterprise {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+
+        /* Contact Form */
+        .contact-form {
+            max-width: 560px;
+            margin: 32px auto 0;
+            padding: 32px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            display: none;
+        }
+
+        .contact-form.visible {
+            display: block;
+        }
+
+        .contact-form h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-field {
+            margin-bottom: 16px;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: 6px;
+        }
+
+        .form-field input,
+        .form-field textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            color: var(--color-text);
+            background: var(--color-bg);
+            transition: border-color var(--transition-fast);
+        }
+
+        .form-field input:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .form-field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-success {
+            text-align: center;
+            padding: 32px;
+            display: none;
+        }
+
+        .form-success.visible {
+            display: block;
+        }
+
+        .form-success svg {
+            margin-bottom: 16px;
+        }
+
+        .form-success h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .form-success p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+        /* Wizard Footer */
+        .wizard-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .wizard-footer .btn-back {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+        }
+
+        .wizard-footer .btn-back:hover {
+            background: var(--color-bg-secondary);
+            color: var(--color-text);
+        }
+
+        .wizard-footer .btn-back:disabled {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .wizard-footer .btn-next {
+            margin-left: auto;
+        }
+
+        .wizard-footer .btn-next:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .estimate-hero {
+                padding: 120px 0 24px;
+            }
+
+            .estimate-hero h1 {
+                font-size: 2rem;
+            }
+
+            .app-type-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .design-options {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .wizard-step-label {
+                font-size: 11px;
+            }
+
+            .wizard-step-line {
+                min-width: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-type-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .scale-pills {
+                flex-direction: column;
+            }
+
+            .estimate-result-body {
+                padding: 24px 20px;
+            }
+
+            .wizard-progress {
+                padding: 0;
+            }
+        }
+    </style>
+
+    <script>window.GA_MEASUREMENT_ID = 'G-FQ3SGEP2YG';</script>
+    <script src="/js/cookie-consent.js" defer></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">
+                <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                <span class="logo-text">Royalty</span>
+            </a>
+            <div class="nav-links">
+                <a href="/#features" data-i18n="nav.features">Features</a>
+                <a href="/pricing.html" data-i18n="nav.pricing">Pricing</a>
+                <a href="/estimate.html" class="active" data-i18n="nav.customBuilds">Custom Apps</a>
+                <a href="/blog/" data-i18n="nav.blog">Blog</a>
+            </div>
+            <div class="nav-cta">
+                <a href="/app/login.html" class="btn btn-secondary" data-i18n="nav.login">Log In</a>
+                <a href="/app/signup.html" class="btn btn-primary" data-i18n="nav.joinWaitlist">Start Free Beta</a>
+            </div>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="estimate-hero">
+        <div class="container">
+            <h1 data-i18n="estimate.heroTitle">Let's Build Your App</h1>
+            <p data-i18n="estimate.heroSubtitle">Configure what you need. See your plan. Talk to our team.</p>
+        </div>
+    </section>
+
+    <!-- Wizard -->
+    <div class="estimate-container">
+        <!-- Progress -->
+        <div class="wizard-progress" id="wizard-progress">
+            <div class="wizard-step active" data-step="1">
+                <div class="wizard-step-dot">1</div>
+                <span class="wizard-step-label" data-i18n="estimate.progressStep1">App Type</span>
+            </div>
+            <div class="wizard-step-line"></div>
+            <div class="wizard-step" data-step="2">
+                <div class="wizard-step-dot">2</div>
+                <span class="wizard-step-label" data-i18n="estimate.progressStep2">Features</span>
+            </div>
+            <div class="wizard-step-line"></div>
+            <div class="wizard-step" data-step="3">
+                <div class="wizard-step-dot">3</div>
+                <span class="wizard-step-label" data-i18n="estimate.progressStep3">Scale</span>
+            </div>
+            <div class="wizard-step-line"></div>
+            <div class="wizard-step" data-step="4">
+                <div class="wizard-step-dot">4</div>
+                <span class="wizard-step-label" data-i18n="estimate.progressStep4">Estimate</span>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="wizard-body" id="wizard-body">
+            <!-- Rendered by estimate.js -->
+        </div>
+
+        <!-- Footer Navigation -->
+        <div class="wizard-footer" id="wizard-footer">
+            <button class="btn-back" id="btn-back" disabled>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span data-i18n="estimate.btnBack">Back</span>
+            </button>
+            <button class="btn btn-primary btn-next" id="btn-next" disabled>
+                <span data-i18n="estimate.btnNext">Next</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                        <span class="logo-text">Royalty</span>
+                    </a>
+                    <p data-i18n="footer.tagline">AI-powered loyalty programs for local businesses.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.product">Product</h4>
+                        <a href="/#features" data-i18n="footer.features">Features</a>
+                        <a href="/pricing.html" data-i18n="nav.pricing">Pricing</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.company">Company</h4>
+                        <a href="/blog/" data-i18n="nav.blog">Blog</a>
+                        <a href="mailto:hello@royaltyapp.ai" data-i18n="footer.contact">Contact</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.legal">Legal</h4>
+                        <a href="/privacy.html" data-i18n="footer.privacy">Privacy</a>
+                        <a href="/terms.html" data-i18n="footer.terms">Terms</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p data-i18n="footer.copyright">&copy; 2026 Royalty. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="i18n/i18n.js"></script>
+    <script src="script.js?v=8"></script>
+    <script src="estimate.js?v=1"></script>
+    <script>EstimatePage.init();</script>
+</body>
+</html>

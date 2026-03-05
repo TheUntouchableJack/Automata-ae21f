@@ -1493,6 +1493,13 @@ blockquote {
     text-align: center;
 }
 
+/* ===== Custom Builds Section ===== */
+.custom-builds-section {
+    padding: 80px 0 100px;
+    background: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border);
+}
+
 /* ===== CTA Section ===== */
 .cta {
     padding: 100px 0;

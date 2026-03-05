@@ -28,7 +28,9 @@
         "askRoyal": "Ask Royal AI",
         "chatEmpty": "Start a conversation...",
         "chatPlaceholder": "Quick question?",
-        "fullChat": "Open full chat"
+        "fullChat": "Open full chat",
+        "rewards": "Rewards",
+        "customBuilds": "Custom Apps"
     },
     "launchPlan": {
         "title": "Plano de Lançamento",
@@ -274,7 +276,18 @@
             "whiteLabel": "Marca branca",
             "emailSupport": "Suporte por email",
             "prioritySupport": "Suporte prioritário",
-            "unlimited": "Ilimitado"
+            "unlimited": "Ilimitado",
+            "messaging": "Messaging",
+            "emailsMonth": "Emails per month",
+            "smsMonth": "SMS per month",
+            "royalAi": "Royal AI",
+            "royalChat": "Royal chat (Q&A)",
+            "aiAutomations": "AI automations",
+            "autonomousMode": "Autonomous Mode",
+            "businessLearning": "Business learning & discovery",
+            "fatigueProtection": "Fatigue protection",
+            "performanceMetrics": "Performance metrics",
+            "visitAttribution": "Visit attribution (prove ROI)"
         },
         "appsumo": {
             "limitedTime": "Tempo Limitado",
@@ -317,7 +330,8 @@
             "f3": "Cancele a qualquer momento",
             "priceLabel": "Adicione ao seu LTD",
             "pricePeriod": "/mês",
-            "cta": "Adicionar Royalty Pro"
+            "cta": "Adicionar Royalty Pro",
+            "f4": "Visit attribution"
         },
         "faq": {
             "title": "Perguntas Frequentes",
@@ -485,17 +499,17 @@
         },
         "tabs": {
             "chat": "Chat",
-            "actions": "A\u00e7\u00f5es",
+            "actions": "Ações",
             "intel": "Intel",
             "knowledge": "Aprendizados"
         },
         "intel": {
             "emptyTitle": "Tudo em dia!",
-            "emptyDesc": "Royal AI tem todas as informa\u00e7\u00f5es que precisa por agora."
+            "emptyDesc": "Royal AI tem todas as informações que precisa por agora."
         },
         "knowledge": {
             "emptyTitle": "Aprendendo...",
-            "emptyDesc": "Royal AI est\u00e1 aprendendo sobre o seu neg\u00f3cio. Insights aparecer\u00e3o aqui \u00e0 medida que padr\u00f5es surgirem."
+            "emptyDesc": "Royal AI está aprendendo sobre o seu negócio. Insights aparecerão aqui à medida que padrões surgirem."
         },
         "filters": {
             "new": "New",
@@ -950,7 +964,10 @@
             "royaltyPro": "Royalty Pro",
             "royaltyProActive": "Ativo",
             "addRoyaltyPro": "Adicionar Royalty Pro",
-            "billingNote": "14 dias de teste grátis, depois faturamento mensal ou anual. Cancele a qualquer momento."
+            "billingNote": "14 dias de teste grátis, depois faturamento mensal ou anual. Cancele a qualquer momento.",
+            "royalAi": "Royal AI",
+            "emailsMonth": "Emails/month",
+            "smsMonth": "SMS/month"
         },
         "activity": {
             "title": "Registro de Atividades",
@@ -1158,7 +1175,22 @@
         "lastNamePlaceholder": "Silva",
         "createPasswordPlaceholder": "Crie uma senha",
         "createAccountBtn": "Criar conta",
-        "hasAccount": "Já tem uma conta?"
+        "hasAccount": "Já tem uma conta?",
+        "forgotPassword": "Forgot password?",
+        "forgotPasswordTitle": "Reset your password",
+        "forgotPasswordSubtitle": "Enter your email and we'll send you a reset link",
+        "sendResetLink": "Send Reset Link",
+        "resetLinkSent": "Check your inbox",
+        "resetLinkSentDesc": "We sent a password reset link to your email",
+        "resetPasswordTitle": "Set new password",
+        "resetPasswordSubtitle": "Enter your new password below",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "passwordsDoNotMatch": "Passwords do not match",
+        "resetPasswordBtn": "Reset Password",
+        "passwordResetSuccess": "Password updated successfully",
+        "resetLinkExpired": "This reset link has expired. Please request a new one.",
+        "backToLogin": "Back to login"
     },
     "supportSettings": {
         "title": "Support Settings",
@@ -1321,5 +1353,263 @@
         "blogSettingsSaveFailed": "Error saving blog settings",
         "appsLoadFailed": "Error loading apps",
         "noAppsFound": "No customer apps found. Create one first."
+    },
+    "customBuilds": {
+        "tag": "Custom Apps",
+        "title": "Beyond Loyalty",
+        "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
+        "cta": "Get a Free Estimate →"
+    },
+    "estimate": {
+        "heroTitle": "Let's Build Your App",
+        "heroSubtitle": "Configure what you need. See your plan. Talk to our team.",
+        "step1Title": "What are you building?",
+        "step1Subtitle": "Choose the type of app that best fits your business.",
+        "step2Title": "Pick your features",
+        "step2Subtitle": "Toggle the features you need. We'll configure everything for you.",
+        "step2CoreFeatures": "Core Features",
+        "step2Addons": "Add-ons",
+        "step3Title": "Scale & details",
+        "step3Subtitle": "Help us understand the size and style of your app.",
+        "step3ExpectedCustomers": "Expected customers",
+        "step3DesignLevel": "Design level",
+        "step3AnythingElse": "Anything else?",
+        "step3Optional": "(optional)",
+        "step3NotesPlaceholder": "Tell us about your business, specific requirements, or questions...",
+        "step4Title": "Your estimate",
+        "step4Subtitle": "Here's what we recommend based on your selections.",
+        "recommendedPlan": "Recommended Plan",
+        "letsTalk": "Let's talk",
+        "perMonth": "/month",
+        "billedAnnually": "${price}/mo billed annually",
+        "planIncludes": "Plan includes",
+        "yourAppFeatures": "Your app features",
+        "setupDetails": "Setup details",
+        "appTypeLabel": "App type",
+        "oneTimeSetup": "One-time setup",
+        "buildTimeline": "Build timeline",
+        "bookConsultation": "Book a Free Consultation",
+        "selfServicePrefix": "Or ",
+        "selfServiceLink": "start building it yourself",
+        "contactName": "Name",
+        "contactEmail": "Email",
+        "contactPhone": "Phone",
+        "contactMessage": "Message",
+        "required": "*",
+        "sendRequest": "Send Request",
+        "requestSent": "Request sent!",
+        "requestSentDesc": "We'll be in touch within 24 hours to schedule your consultation.",
+        "fillRequired": "Please fill in your name and email.",
+        "emailSubject": "Custom App Consultation Request",
+        "btnSeeEstimate": "See Estimate",
+        "btnNext": "Next",
+        "progressStep1": "App Type",
+        "progressStep2": "Features",
+        "progressStep3": "Scale",
+        "progressStep4": "Estimate",
+        "appTypes": {
+            "loyalty": {
+                "name": "Loyalty Program",
+                "desc": "Points, rewards, tiers, referrals. Keep customers coming back."
+            },
+            "rewards": {
+                "name": "Rewards App",
+                "desc": "Points + rewards catalog, referral program, announcements."
+            },
+            "membership": {
+                "name": "Membership Club",
+                "desc": "VIP tiers, exclusive perks, member profiles."
+            },
+            "blog": {
+                "name": "Blog / Newsletter",
+                "desc": "Articles, subscriber signup, content series."
+            },
+            "social": {
+                "name": "Social / Nightlife",
+                "desc": "Map view, video feed, venue search, categories."
+            },
+            "custom": {
+                "name": "Something Custom",
+                "desc": "Tell us what you need. We'll figure it out together."
+            }
+        },
+        "features": {
+            "points_enabled": {
+                "name": "Points System",
+                "desc": "Customers earn points on visits or purchases"
+            },
+            "leaderboard_enabled": {
+                "name": "Leaderboard",
+                "desc": "Show top customers and rankings"
+            },
+            "rewards_enabled": {
+                "name": "Rewards Catalog",
+                "desc": "Let customers redeem points for prizes"
+            },
+            "menu_enabled": {
+                "name": "Menu Browser",
+                "desc": "Show your products or services"
+            },
+            "announcements_enabled": {
+                "name": "Announcements",
+                "desc": "Share updates and promotions"
+            },
+            "referrals_enabled": {
+                "name": "Referrals",
+                "desc": "Let customers invite friends for bonus points"
+            },
+            "tiers_enabled": {
+                "name": "Membership Tiers",
+                "desc": "VIP levels with exclusive perks"
+            },
+            "profile_public": {
+                "name": "Public Profiles",
+                "desc": "Members can view each other"
+            },
+            "articles_enabled": {
+                "name": "Blog Articles",
+                "desc": "Publish articles and posts"
+            },
+            "series_enabled": {
+                "name": "Article Series",
+                "desc": "Group related articles together"
+            },
+            "topics_enabled": {
+                "name": "Categories & Topics",
+                "desc": "Organize content by category"
+            },
+            "subscriber_signup": {
+                "name": "Subscriber Signup",
+                "desc": "Collect email subscribers"
+            },
+            "comments_enabled": {
+                "name": "Comments",
+                "desc": "Allow readers to comment"
+            },
+            "map_enabled": {
+                "name": "Map View",
+                "desc": "Interactive map with venue pins"
+            },
+            "feed_enabled": {
+                "name": "Video Feed",
+                "desc": "Instagram-style video scroll"
+            },
+            "search_enabled": {
+                "name": "Venue Search",
+                "desc": "Search and filter venues"
+            },
+            "categories_enabled": {
+                "name": "Categories",
+                "desc": "Filter by venue type"
+            },
+            "ugc_enabled": {
+                "name": "User Uploads",
+                "desc": "Patrons can upload videos"
+            }
+        },
+        "addons": {
+            "ai_dashboard": {
+                "name": "AI Intelligence Dashboard",
+                "desc": "Deep analytics powered by AI"
+            },
+            "email_campaigns": {
+                "name": "Email Campaigns",
+                "desc": "SendGrid-powered email marketing"
+            },
+            "sms_campaigns": {
+                "name": "SMS Campaigns",
+                "desc": "Twilio-powered text messaging"
+            },
+            "ai_automations": {
+                "name": "AI Automations",
+                "desc": "Win-back, birthday, streak campaigns"
+            },
+            "white_label": {
+                "name": "Custom Branding / White-label",
+                "desc": "Remove Royalty branding, use yours"
+            },
+            "api_access": {
+                "name": "API Access",
+                "desc": "Programmatic access to your data"
+            }
+        },
+        "scales": {
+            "starter": {
+                "name": "Starter",
+                "count": "< 250 customers"
+            },
+            "growing": {
+                "name": "Growing",
+                "count": "250 - 5,000"
+            },
+            "scaling": {
+                "name": "Scaling",
+                "count": "5,000 - 50,000"
+            },
+            "enterprise": {
+                "name": "Enterprise",
+                "count": "50,000+"
+            }
+        },
+        "designs": {
+            "standard": {
+                "name": "Standard",
+                "desc": "Our templates, your content"
+            },
+            "custom": {
+                "name": "Custom",
+                "desc": "Your brand colors & logo"
+            },
+            "premium": {
+                "name": "Premium",
+                "desc": "Bespoke design, custom graphics"
+            }
+        },
+        "tierNames": {
+            "free": "Free",
+            "pro": "Pro",
+            "max": "Max",
+            "enterprise": "Enterprise"
+        },
+        "tierIncludes": {
+            "free": [
+                "Up to 250 customers",
+                "Full loyalty program",
+                "20 Royal chat queries/mo",
+                "Points, rewards & referrals"
+            ],
+            "pro": [
+                "Unlimited customers",
+                "10,000 emails + 500 SMS/mo",
+                "Unlimited Royal AI + Autonomous",
+                "Business learning & analytics"
+            ],
+            "max": [
+                "Everything in Pro",
+                "50,000 emails + 2,000 SMS/mo",
+                "Visit attribution (prove ROI)",
+                "White-label + priority support"
+            ],
+            "enterprise": [
+                "Everything in Max",
+                "Dedicated support & SLAs",
+                "API access",
+                "Custom integrations"
+            ]
+        },
+        "timelines": {
+            "standard": "1-2 weeks",
+            "custom": "2-3 weeks",
+            "premium": "3-5 weeks",
+            "customType": "4-6 weeks"
+        },
+        "summaryIntro": "Hi! I'm interested in a custom {appType} built by Royalty.",
+        "summaryPlan": "Recommended plan: {plan}",
+        "summarySetup": "Estimated setup: ${low} - ${high}",
+        "summaryTimeline": "Timeline: {timeline}",
+        "summaryFeatures": "Features: {features}",
+        "summaryCoreFeatures": "Core features",
+        "summaryNotes": "Additional notes: {notes}",
+        "btnBack": "Back"
     }
 }
