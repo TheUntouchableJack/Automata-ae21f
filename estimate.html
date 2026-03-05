@@ -446,36 +446,24 @@
             text-align: center;
         }
 
-        .estimate-result-header .plan-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 4px;
-        }
-
         .estimate-result-header .plan-name {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 4px;
         }
 
         .estimate-result-header .plan-price {
             font-size: 2.5rem;
             font-weight: 800;
             color: #fff;
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         .estimate-result-header .plan-price .period {
             font-size: 1rem;
             font-weight: 500;
             opacity: 0.8;
-        }
-
-        .estimate-result-header .plan-annual {
-            font-size: 13px;
-            color: rgba(255,255,255,0.7);
-            margin-top: 4px;
         }
 
         .estimate-result-body {
@@ -584,9 +572,222 @@
             text-decoration: underline;
         }
 
+        /* Platform badge on add-ons */
+        .platform-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--color-primary);
+            background: var(--color-primary-subtle);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            margin-left: 6px;
+            vertical-align: middle;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Commitment pricing in header */
+        .estimate-result-header .commitment-duration {
+            font-size: 1rem;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .estimate-result-header .plan-after {
+            font-size: 14px;
+            color: rgba(255,255,255,0.75);
+            margin-top: 6px;
+        }
+
         /* Enterprise estimate (no price) */
         .estimate-result-header.enterprise {
             background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+
+        /* DIY vs Royalty Comparison */
+        .value-comparison {
+            max-width: 720px;
+            margin: 48px auto 0;
+        }
+
+        .value-comparison-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .comparison-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .comparison-column {
+            padding: 24px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            background: var(--color-bg);
+        }
+
+        .comparison-column.royalty {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+            box-shadow: 0 0 0 1px var(--color-primary);
+        }
+
+        .comparison-column-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .comparison-column.royalty .comparison-column-title {
+            color: var(--color-primary);
+            border-color: rgba(124, 58, 237, 0.2);
+        }
+
+        .comparison-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        .comparison-item svg {
+            color: var(--color-accent);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .comparison-x {
+            color: var(--color-text-muted);
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1;
+            flex-shrink: 0;
+            width: 16px;
+            text-align: center;
+        }
+
+        .year-cost {
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        .comparison-column.royalty .year-cost {
+            border-color: rgba(124, 58, 237, 0.2);
+        }
+
+        .year-cost-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .year-cost-amount {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .year-cost-amount.diy {
+            color: var(--color-text-muted);
+        }
+
+        .year-cost-amount.royalty {
+            color: var(--color-primary);
+        }
+
+        .year-cost-note {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        /* Platform Details Grid */
+        .platform-details {
+            max-width: 720px;
+            margin: 48px auto 0;
+        }
+
+        .platform-details-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .platform-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .detail-category {
+            padding: 20px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+        }
+
+        .detail-category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .detail-category-icon {
+            font-size: 20px;
+        }
+
+        .detail-category-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .detail-category-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .detail-category-items li {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            padding: 4px 0;
+            padding-left: 16px;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .detail-category-items li::before {
+            content: '\2713';
+            position: absolute;
+            left: 0;
+            color: var(--color-accent);
+            font-weight: 600;
+            font-size: 11px;
         }
 
         /* Contact Form */
@@ -752,6 +953,14 @@
             .wizard-step-line {
                 min-width: 20px;
             }
+
+            .comparison-columns {
+                grid-template-columns: 1fr;
+            }
+
+            .platform-details-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 480px) {
@@ -769,6 +978,14 @@
 
             .wizard-progress {
                 padding: 0;
+            }
+
+            .comparison-column {
+                padding: 16px;
+            }
+
+            .detail-category {
+                padding: 16px;
             }
         }
     </style>

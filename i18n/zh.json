@@ -1381,15 +1381,8 @@
         "step3NotesPlaceholder": "Tell us about your business, specific requirements, or questions...",
         "step4Title": "Your estimate",
         "step4Subtitle": "Here's what we recommend based on your selections.",
-        "recommendedPlan": "Recommended Plan",
         "letsTalk": "Let's talk",
-        "perMonth": "/month",
-        "billedAnnually": "${price}/mo billed annually",
-        "planIncludes": "Plan includes",
-        "yourAppFeatures": "Your app features",
-        "setupDetails": "Setup details",
         "appTypeLabel": "App type",
-        "oneTimeSetup": "One-time setup",
         "buildTimeline": "Build timeline",
         "bookConsultation": "Book a Free Consultation",
         "selfServicePrefix": "Or ",
@@ -1568,38 +1561,6 @@
                 "desc": "Bespoke design, custom graphics"
             }
         },
-        "tierNames": {
-            "free": "Free",
-            "pro": "Pro",
-            "max": "Max",
-            "enterprise": "Enterprise"
-        },
-        "tierIncludes": {
-            "free": [
-                "Up to 250 customers",
-                "Full loyalty program",
-                "20 Royal chat queries/mo",
-                "Points, rewards & referrals"
-            ],
-            "pro": [
-                "Unlimited customers",
-                "10,000 emails + 500 SMS/mo",
-                "Unlimited Royal AI + Autonomous",
-                "Business learning & analytics"
-            ],
-            "max": [
-                "Everything in Pro",
-                "50,000 emails + 2,000 SMS/mo",
-                "Visit attribution (prove ROI)",
-                "White-label + priority support"
-            ],
-            "enterprise": [
-                "Everything in Max",
-                "Dedicated support & SLAs",
-                "API access",
-                "Custom integrations"
-            ]
-        },
         "timelines": {
             "standard": "1-2 weeks",
             "custom": "2-3 weeks",
@@ -1608,11 +1569,99 @@
         },
         "summaryIntro": "Hi! I'm interested in a custom {appType} built by Royalty.",
         "summaryPlan": "Recommended plan: {plan}",
-        "summarySetup": "Estimated setup: ${low} - ${high}",
         "summaryTimeline": "Timeline: {timeline}",
         "summaryFeatures": "Features: {features}",
         "summaryCoreFeatures": "Core features",
         "summaryNotes": "Additional notes: {notes}",
-        "btnBack": "Back"
+        "btnBack": "Back",
+        "mo": "mo",
+        "forMonths": "for {months} months",
+        "afterCommitment": "After {months} months: ${price}/mo ({tier} plan)",
+        "platformTitle": "Built & hosted on Royalty",
+        "platformIncludes": [
+            "AI Intelligence Dashboard",
+            "Automations & campaigns",
+            "Analytics & business learning",
+            "Hosting, updates & security",
+            "Priority support during build phase",
+            "Unlimited revisions (first 3 months)"
+        ],
+        "includedWithPlatform": "Included with platform",
+        "yourApp": "Your app",
+        "complexityNames": {
+            "standard": "Standard Build",
+            "custom": "Custom Build",
+            "complex": "Complex Build",
+            "enterprise": "Enterprise Build"
+        },
+        "whyRoyalty": "Why build on Royalty?",
+        "diyTitle": "Build It Yourself",
+        "royaltyTitle": "Build on Royalty",
+        "diy": {
+            "items": [
+                "3-6 months to MVP",
+                "$15K-$40K upfront development",
+                "You handle security & compliance",
+                "Build every integration from scratch",
+                "You maintain servers & updates",
+                "Build your own analytics"
+            ]
+        },
+        "royalty": {
+            "items": [
+                "2-5 weeks to launch",
+                "All-inclusive monthly pricing",
+                "Enterprise-grade security included",
+                "Twilio, SendGrid, AI pre-integrated",
+                "We handle hosting & updates",
+                "AI Intelligence Dashboard built-in"
+            ]
+        },
+        "yearOneCost": "12-month cost",
+        "diyYearCost": "$40,000 - $80,000+",
+        "diyYearNote": "dev + hosting + APIs + maintenance + security",
+        "royaltyYearNote": "platform + support + updates",
+        "platformDetailsTitle": "What's included in the platform",
+        "platformSecurity": {
+            "title": "Security & Hardening",
+            "items": [
+                "OWASP top-10 vulnerability protection",
+                "Automated dependency scanning",
+                "SSL/TLS encryption everywhere",
+                "Rate limiting & DDoS protection",
+                "Regular security patches & updates"
+            ]
+        },
+        "platformIntegrations": {
+            "title": "Production Integrations",
+            "items": [
+                "Twilio — SMS campaigns & notifications",
+                "SendGrid — Email marketing at scale",
+                "Anthropic AI — Intelligence & automations",
+                "Supabase — Database, auth & real-time",
+                "Stripe-ready — Payments when you need them"
+            ]
+        },
+        "platformIntelligence": {
+            "title": "AI Intelligence",
+            "items": [
+                "Business learning engine",
+                "Customer behavior analysis",
+                "Automated win-back & birthday campaigns",
+                "Predictive analytics & scoring",
+                "Natural language queries (Royal AI)"
+            ]
+        },
+        "platformOperations": {
+            "title": "Operations",
+            "items": [
+                "Global CDN hosting",
+                "Automatic platform updates",
+                "Database backups & recovery",
+                "Uptime monitoring & alerts",
+                "Priority support during build phase"
+            ]
+        },
+        "summaryPricing": "Pricing: {pricing}"
     }
 }

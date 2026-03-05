@@ -152,27 +152,22 @@ const EstimatePage = (function () {
         api_access: { name: 'API Access', desc: 'Programmatic access to your data' }
     };
 
-    // ===== Pricing Config =====
+    // ===== Pricing Config (Commitment-Based) =====
     const PRICING = {
-        tiers: {
-            free: { monthly: 0, annual: 0, maxCustomers: 250 },
-            pro: { monthly: 299, annual: 239, maxCustomers: null },
-            max: { monthly: 749, annual: 599, maxCustomers: null },
-            enterprise: { monthly: null, annual: null, maxCustomers: null }
+        commitment: {
+            standard:   { buildPhase: 499, afterCommitment: 299, months: 12, postTier: 'Pro' },
+            custom:     { buildPhase: 749, afterCommitment: 299, months: 12, postTier: 'Pro' },
+            complex:    { buildPhase: 999, afterCommitment: 749, months: 12, postTier: 'Max' },
+            enterprise: { buildPhase: null, afterCommitment: null, months: null, postTier: 'Enterprise' }
         },
-        tierIncludesDefaults: {
-            free: ['Up to 250 customers', 'Full loyalty program', '20 Royal chat queries/mo', 'Points, rewards & referrals'],
-            pro: ['Unlimited customers', '10,000 emails + 500 SMS/mo', 'Unlimited Royal AI + Autonomous', 'Business learning & analytics'],
-            max: ['Everything in Pro', '50,000 emails + 2,000 SMS/mo', 'Visit attribution (prove ROI)', 'White-label + priority support'],
-            enterprise: ['Everything in Max', 'Dedicated support & SLAs', 'API access', 'Custom integrations']
-        },
-        setup: {
-            base: 1500,
-            customBranding: 500,
-            premiumDesign: 1500,
-            perIntegration: 250,
-            customType: 1000
-        },
+        platformIncludesDefaults: [
+            'AI Intelligence Dashboard',
+            'Automations & campaigns',
+            'Analytics & business learning',
+            'Hosting, updates & security',
+            'Priority support during build phase',
+            'Unlimited revisions (first 3 months)'
+        ],
         timelineDefaults: {
             standard: '1-2 weeks',
             custom: '2-3 weeks',
@@ -181,8 +176,74 @@ const EstimatePage = (function () {
         }
     };
 
-    // Integrations that count toward setup cost
-    const PAID_ADDON_IDS = ['email_campaigns', 'sms_campaigns'];
+    // ===== Platform Value Comparison (DIY vs Royalty) =====
+    const PLATFORM_VALUE = {
+        diy: {
+            yearOneCost: '$40,000 - $80,000+',
+            yearOneCostNote: 'dev + hosting + APIs + maintenance + security',
+            itemDefaults: [
+                '3-6 months to MVP',
+                '$15K-$40K upfront development',
+                'You handle security & compliance',
+                'Build every integration from scratch',
+                'You maintain servers & updates',
+                'Build your own analytics'
+            ]
+        },
+        royalty: {
+            yearOneCostNote: 'platform + support + updates',
+            itemDefaults: [
+                '2-5 weeks to launch',
+                'All-inclusive monthly pricing',
+                'Enterprise-grade security included',
+                'Twilio, SendGrid, AI pre-integrated',
+                'We handle hosting & updates',
+                'AI Intelligence Dashboard built-in'
+            ]
+        },
+        detailDefaults: {
+            security: {
+                title: 'Security & Hardening',
+                items: [
+                    'OWASP top-10 vulnerability protection',
+                    'Automated dependency scanning',
+                    'SSL/TLS encryption everywhere',
+                    'Rate limiting & DDoS protection',
+                    'Regular security patches & updates'
+                ]
+            },
+            integrations: {
+                title: 'Production Integrations',
+                items: [
+                    'Twilio \u2014 SMS campaigns & notifications',
+                    'SendGrid \u2014 Email marketing at scale',
+                    'Anthropic AI \u2014 Intelligence & automations',
+                    'Supabase \u2014 Database, auth & real-time',
+                    'Stripe-ready \u2014 Payments when you need them'
+                ]
+            },
+            intelligence: {
+                title: 'AI Intelligence',
+                items: [
+                    'Business learning engine',
+                    'Customer behavior analysis',
+                    'Automated win-back & birthday campaigns',
+                    'Predictive analytics & scoring',
+                    'Natural language queries (Royal AI)'
+                ]
+            },
+            operations: {
+                title: 'Operations',
+                items: [
+                    'Global CDN hosting',
+                    'Automatic platform updates',
+                    'Database backups & recovery',
+                    'Uptime monitoring & alerts',
+                    'Priority support during build phase'
+                ]
+            }
+        }
+    };
 
     // ===== i18n Resolvers =====
 
@@ -216,19 +277,19 @@ const EstimatePage = (function () {
         return tt(`estimate.appTypes.${typeId}.desc`, defaults.desc);
     }
 
-    function getTierName(tierId) {
-        const defaults = { free: 'Free', pro: 'Pro', max: 'Max', enterprise: 'Enterprise' };
-        return tt(`estimate.tierNames.${tierId}`, defaults[tierId] || tierId);
+    function getComplexityName(complexity) {
+        const defaults = { standard: 'Standard Build', custom: 'Custom Build', complex: 'Complex Build', enterprise: 'Enterprise Build' };
+        return tt(`estimate.complexityNames.${complexity}`, defaults[complexity] || complexity);
     }
 
-    function getTierIncludes(tierId) {
+    function getPlatformIncludes() {
         // Try i18n array first, fall back to defaults
-        const i18nKey = `estimate.tierIncludes.${tierId}`;
+        const i18nKey = 'estimate.platformIncludes';
         if (window.t) {
             const val = window.t(i18nKey);
             if (val !== i18nKey && Array.isArray(val)) return val;
         }
-        return PRICING.tierIncludesDefaults[tierId] || [];
+        return PRICING.platformIncludesDefaults;
     }
 
     function getTimeline(designOrType) {
@@ -261,7 +322,7 @@ const EstimatePage = (function () {
     function renderAppTypes(container) {
         container.innerHTML = `
             <h2>${escapeHtml(tt('estimate.step1Title', 'What are you building?'))}</h2>
-            <p class="step-subtitle">${escapeHtml(tt('estimate.step1Subtitle', 'Choose the type of app that best fits your business.'))}</p>
+            <p class="step-subtitle">${escapeHtml(tt('estimate.step1Subtitle', 'Every app runs on the Royalty platform \u2014 AI intelligence, automations, and analytics included.'))}</p>
             <div class="app-type-grid">
                 ${APP_TYPES.map(t => `
                     <div class="app-type-card ${selections.appType === t.id ? 'selected' : ''}" data-type="${t.id}">
@@ -355,12 +416,14 @@ const EstimatePage = (function () {
         const name = type === 'feature' ? getFeatureName(feature.id) : getAddonName(feature.id);
         const desc = type === 'feature' ? getFeatureDesc(feature.id) : getAddonDesc(feature.id);
 
+        const isPlatformIncluded = type === 'addon' && (feature.id === 'ai_dashboard' || feature.id === 'ai_automations');
+
         return `
             <div class="feature-toggle-card ${isChecked ? 'checked' : ''}">
                 <div class="feature-toggle-info">
                     <div class="feature-toggle-icon">${feature.icon}</div>
                     <div class="feature-toggle-details">
-                        <div class="feature-toggle-name">${escapeHtml(name)}</div>
+                        <div class="feature-toggle-name">${escapeHtml(name)}${isPlatformIncluded ? ' <span class="platform-badge">' + escapeHtml(tt('estimate.includedWithPlatform', 'Included with platform')) + '</span>' : ''}</div>
                         <div class="feature-toggle-desc">${escapeHtml(desc)}</div>
                     </div>
                 </div>
@@ -460,11 +523,11 @@ const EstimatePage = (function () {
     }
 
     function renderEstimate(container) {
-        const tier = recommendTier();
-        const tierData = PRICING.tiers[tier];
-        const setup = calculateSetup();
+        const complexity = determineComplexity();
+        const commitmentData = PRICING.commitment[complexity];
         const timeline = estimateTimeline();
-        const isEnterprise = tier === 'enterprise';
+        const isEnterprise = complexity === 'enterprise';
+        const yearOneCost = calculateYearOneCost(complexity);
 
         // Gather selected feature names (translated)
         const selectedFeatures = [];
@@ -477,39 +540,64 @@ const EstimatePage = (function () {
         });
 
         const appTypeName = getAppTypeName(selections.appType || 'custom');
-        const tierName = getTierName(tier);
-        const tierIncludes = getTierIncludes(tier);
+        const complexityName = getComplexityName(complexity);
+        const platformIncludes = getPlatformIncludes();
+
+        // i18n helpers for comparison items
+        function getDiyItems() {
+            const items = [];
+            for (let i = 0; i < PLATFORM_VALUE.diy.itemDefaults.length; i++) {
+                items.push(tt('estimate.diy.items.' + i, PLATFORM_VALUE.diy.itemDefaults[i]));
+            }
+            return items;
+        }
+        function getRoyaltyItems() {
+            const items = [];
+            for (let i = 0; i < PLATFORM_VALUE.royalty.itemDefaults.length; i++) {
+                items.push(tt('estimate.royalty.items.' + i, PLATFORM_VALUE.royalty.itemDefaults[i]));
+            }
+            return items;
+        }
+        function getDetailCategory(key) {
+            const defaults = PLATFORM_VALUE.detailDefaults[key];
+            const title = tt('estimate.platform' + key.charAt(0).toUpperCase() + key.slice(1) + '.title', defaults.title);
+            const items = [];
+            for (let i = 0; i < defaults.items.length; i++) {
+                items.push(tt('estimate.platform' + key.charAt(0).toUpperCase() + key.slice(1) + '.items.' + i, defaults.items[i]));
+            }
+            return { title, items };
+        }
+
+        const checkSvg = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const detailIcons = { security: '&#128274;', integrations: '&#128268;', intelligence: '&#129504;', operations: '&#128736;' };
 
         container.innerHTML = `
             <h2>${escapeHtml(tt('estimate.step4Title', 'Your estimate'))}</h2>
             <p class="step-subtitle">${escapeHtml(tt('estimate.step4Subtitle', 'Here\'s what we recommend based on your selections.'))}</p>
 
+            <!-- Estimate Card -->
             <div class="estimate-result">
                 <div class="estimate-result-header ${isEnterprise ? 'enterprise' : ''}">
-                    <div class="plan-label">${escapeHtml(tt('estimate.recommendedPlan', 'Recommended Plan'))}</div>
-                    <div class="plan-name">${escapeHtml(tierName)}</div>
+                    <div class="plan-name">${escapeHtml(complexityName)}</div>
                     ${isEnterprise
                         ? `<div class="plan-price">${escapeHtml(tt('estimate.letsTalk', 'Let\'s talk'))}</div>`
-                        : `<div class="plan-price">$${tierData.monthly}<span class="period">${escapeHtml(tt('estimate.perMonth', '/month'))}</span></div>
-                           ${tierData.annual ? `<div class="plan-annual">$${tierData.annual}${escapeHtml(tt('estimate.perMonth', '/mo'))} ${escapeHtml(tt('estimate.billedAnnually', 'billed annually').replace('${price}', ''))}</div>` : ''}`
+                        : `<div class="plan-price">$${commitmentData.buildPhase}<span class="period">/${escapeHtml(tt('estimate.mo', 'mo'))}</span> <span class="commitment-duration">${escapeHtml(tt('estimate.forMonths', 'for {months} months').replace('{months}', commitmentData.months))}</span></div>
+                           <div class="plan-after">${escapeHtml(tt('estimate.afterCommitment', 'After {months} months: ${price}/mo ({tier} plan)').replace('{months}', commitmentData.months).replace('{price}', commitmentData.afterCommitment).replace('{tier}', commitmentData.postTier))}</div>`
                     }
                 </div>
                 <div class="estimate-result-body">
                     <div class="estimate-section">
-                        <div class="estimate-section-title">${escapeHtml(tt('estimate.planIncludes', 'Plan includes'))}</div>
+                        <div class="estimate-section-title">${escapeHtml(tt('estimate.platformTitle', 'Built & hosted on Royalty'))}</div>
                         <ul class="estimate-includes">
-                            ${tierIncludes.map(item => `
-                                <li>
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    ${escapeHtml(item)}
-                                </li>
+                            ${platformIncludes.map(item => `
+                                <li>${checkSvg} ${escapeHtml(item)}</li>
                             `).join('')}
                         </ul>
                     </div>
 
                     ${selectedFeatures.length > 0 ? `
                         <div class="estimate-section">
-                            <div class="estimate-section-title">${escapeHtml(tt('estimate.yourAppFeatures', 'Your app features'))}</div>
+                            <div class="estimate-section-title">${escapeHtml(tt('estimate.yourApp', 'Your app'))}</div>
                             <div class="estimate-features-list">
                                 ${selectedFeatures.map(f => `<span class="estimate-feature-pill">${escapeHtml(f)}</span>`).join('')}
                             </div>
@@ -517,14 +605,9 @@ const EstimatePage = (function () {
                     ` : ''}
 
                     <div class="estimate-section">
-                        <div class="estimate-section-title">${escapeHtml(tt('estimate.setupDetails', 'Setup details'))}</div>
                         <div class="estimate-detail-row">
                             <span class="estimate-detail-label">${escapeHtml(tt('estimate.appTypeLabel', 'App type'))}</span>
                             <span class="estimate-detail-value">${escapeHtml(appTypeName)}</span>
-                        </div>
-                        <div class="estimate-detail-row">
-                            <span class="estimate-detail-label">${escapeHtml(tt('estimate.oneTimeSetup', 'One-time setup'))}</span>
-                            <span class="estimate-detail-value">$${setup.low.toLocaleString()} - $${setup.high.toLocaleString()}</span>
                         </div>
                         <div class="estimate-detail-row">
                             <span class="estimate-detail-label">${escapeHtml(tt('estimate.buildTimeline', 'Build timeline'))}</span>
@@ -536,6 +619,56 @@ const EstimatePage = (function () {
                         <button class="btn btn-primary" id="btn-consultation">${escapeHtml(tt('estimate.bookConsultation', 'Book a Free Consultation'))}</button>
                         <p class="self-service-link">${escapeHtml(tt('estimate.selfServicePrefix', 'Or '))}<a href="/app/signup.html">${escapeHtml(tt('estimate.selfServiceLink', 'start building it yourself'))}</a></p>
                     </div>
+                </div>
+            </div>
+
+            <!-- DIY vs Royalty Comparison -->
+            <div class="value-comparison">
+                <h3 class="value-comparison-title">${escapeHtml(tt('estimate.whyRoyalty', 'Why build on Royalty?'))}</h3>
+                <div class="comparison-columns">
+                    <div class="comparison-column diy">
+                        <div class="comparison-column-title">${escapeHtml(tt('estimate.diyTitle', 'Build It Yourself'))}</div>
+                        <div class="comparison-items">
+                            ${getDiyItems().map(item => `<div class="comparison-item"><span class="comparison-x">&times;</span> ${escapeHtml(item)}</div>`).join('')}
+                        </div>
+                        <div class="year-cost">
+                            <div class="year-cost-label">${escapeHtml(tt('estimate.yearOneCost', '12-month cost'))}</div>
+                            <div class="year-cost-amount diy">${escapeHtml(tt('estimate.diyYearCost', '$40,000 - $80,000+'))}</div>
+                            <div class="year-cost-note">${escapeHtml(tt('estimate.diyYearNote', 'dev + hosting + APIs + maintenance + security'))}</div>
+                        </div>
+                    </div>
+                    <div class="comparison-column royalty">
+                        <div class="comparison-column-title">${escapeHtml(tt('estimate.royaltyTitle', 'Build on Royalty'))}</div>
+                        <div class="comparison-items">
+                            ${getRoyaltyItems().map(item => `<div class="comparison-item">${checkSvg} ${escapeHtml(item)}</div>`).join('')}
+                        </div>
+                        <div class="year-cost">
+                            <div class="year-cost-label">${escapeHtml(tt('estimate.yearOneCost', '12-month cost'))}</div>
+                            <div class="year-cost-amount royalty">${isEnterprise ? escapeHtml(tt('estimate.letsTalk', 'Let\'s talk')) : '$' + yearOneCost.toLocaleString()}</div>
+                            <div class="year-cost-note">${escapeHtml(tt('estimate.royaltyYearNote', 'platform + support + updates'))}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Details Grid -->
+            <div class="platform-details">
+                <h3 class="platform-details-title">${escapeHtml(tt('estimate.platformDetailsTitle', 'What\'s included in the platform'))}</h3>
+                <div class="platform-details-grid">
+                    ${['security', 'integrations', 'intelligence', 'operations'].map(key => {
+                        const cat = getDetailCategory(key);
+                        return `
+                            <div class="detail-category">
+                                <div class="detail-category-header">
+                                    <span class="detail-category-icon">${detailIcons[key]}</span>
+                                    <span class="detail-category-title">${escapeHtml(cat.title)}</span>
+                                </div>
+                                <ul class="detail-category-items">
+                                    ${cat.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>
 
@@ -558,7 +691,7 @@ const EstimatePage = (function () {
                 </div>
                 <div class="form-field">
                     <label for="contact-message">${escapeHtml(tt('estimate.contactMessage', 'Message'))}</label>
-                    <textarea id="contact-message">${escapeHtml(buildEstimateSummary(tier, tierData, setup, timeline, selectedFeatures, appTypeName))}</textarea>
+                    <textarea id="contact-message">${escapeHtml(buildEstimateSummary(complexity, commitmentData, timeline, selectedFeatures, appTypeName))}</textarea>
                 </div>
                 <button class="btn btn-primary btn-block" id="btn-submit-consultation">${escapeHtml(tt('estimate.sendRequest', 'Send Request'))}</button>
             </div>
@@ -590,7 +723,6 @@ const EstimatePage = (function () {
                 return;
             }
 
-            // For now, use mailto fallback (Supabase integration later)
             const phone = document.getElementById('contact-phone').value.trim();
             const message = document.getElementById('contact-message').value.trim();
 
@@ -600,21 +732,25 @@ const EstimatePage = (function () {
             const subject = encodeURIComponent(tt('estimate.emailSubject', 'Custom App Consultation Request'));
             const mailtoUrl = `mailto:hello@royaltyapp.ai?subject=${subject}&body=${mailtoBody}`;
 
-            // Open mailto
             window.location.href = mailtoUrl;
 
-            // Show success
             document.getElementById('contact-form').classList.remove('visible');
             document.getElementById('form-success').classList.add('visible');
         });
     }
 
-    function buildEstimateSummary(tier, tierData, setup, timeline, selectedFeatures, appTypeName) {
+    function buildEstimateSummary(complexity, commitmentData, timeline, selectedFeatures, appTypeName) {
+        const complexityName = getComplexityName(complexity);
+        const isEnterprise = complexity === 'enterprise';
+        const priceInfo = isEnterprise
+            ? 'Custom pricing'
+            : `$${commitmentData.buildPhase}/mo for ${commitmentData.months} months, then $${commitmentData.afterCommitment}/mo`;
+
         const lines = [
             tt('estimate.summaryIntro', 'Hi! I\'m interested in a custom {appType} built by Royalty.').replace('{appType}', appTypeName),
             '',
-            tt('estimate.summaryPlan', 'Recommended plan: {plan}').replace('{plan}', getTierName(tier) + (tierData.monthly ? ` ($${tierData.monthly}/mo)` : '')),
-            tt('estimate.summarySetup', 'Estimated setup: ${low} - ${high}').replace('{low}', setup.low.toLocaleString()).replace('{high}', setup.high.toLocaleString()),
+            tt('estimate.summaryPlan', 'Build plan: {plan}').replace('{plan}', complexityName),
+            tt('estimate.summaryPricing', 'Pricing: {pricing}').replace('{pricing}', priceInfo),
             tt('estimate.summaryTimeline', 'Timeline: {timeline}').replace('{timeline}', timeline),
             '',
             tt('estimate.summaryFeatures', 'Features: {features}').replace('{features}', selectedFeatures.join(', ') || tt('estimate.summaryCoreFeatures', 'Core features')),
@@ -626,54 +762,27 @@ const EstimatePage = (function () {
 
     // ===== Pricing Engine =====
 
-    function recommendTier() {
-        const scale = selections.scale;
+    function determineComplexity() {
         const hasWhiteLabel = selections.addOns.includes('white_label');
         const hasApiAccess = selections.addOns.includes('api_access');
-        const hasAnyAddOns = selections.addOns.length > 0;
 
-        // Enterprise scale always → enterprise
-        if (scale === 'enterprise') return 'enterprise';
+        // Enterprise scale → enterprise
+        if (selections.scale === 'enterprise') return 'enterprise';
 
-        // White-label or API → minimum Max
-        if (hasWhiteLabel || hasApiAccess) return 'max';
+        // Custom app type, premium design, or white-label/API → complex
+        if (selections.appType === 'custom' || selections.design === 'premium' || hasWhiteLabel || hasApiAccess) return 'complex';
 
-        // Scaling → Max
-        if (scale === 'scaling') return 'max';
+        // Custom branding or 2+ add-ons → custom
+        if (selections.design === 'custom' || selections.addOns.length >= 2) return 'custom';
 
-        // Growing → Pro
-        if (scale === 'growing') return 'pro';
-
-        // Starter with add-ons → Pro
-        if (scale === 'starter' && hasAnyAddOns) return 'pro';
-
-        // Starter with core only → Free
-        return 'free';
+        // Everything else → standard
+        return 'standard';
     }
 
-    function calculateSetup() {
-        let base = PRICING.setup.base;
-
-        // Custom type discovery fee
-        if (selections.appType === 'custom') {
-            base += PRICING.setup.customType;
-        }
-
-        // Design level
-        if (selections.design === 'custom') {
-            base += PRICING.setup.customBranding;
-        } else if (selections.design === 'premium') {
-            base += PRICING.setup.premiumDesign;
-        }
-
-        // Integration add-ons
-        const integrationCount = selections.addOns.filter(id => PAID_ADDON_IDS.includes(id)).length;
-        base += integrationCount * PRICING.setup.perIntegration;
-
-        return {
-            low: base,
-            high: Math.round(base * 1.3)
-        };
+    function calculateYearOneCost(complexity) {
+        const tier = PRICING.commitment[complexity];
+        if (!tier || !tier.buildPhase) return null; // enterprise
+        return tier.buildPhase * tier.months;
     }
 
     function estimateTimeline() {
