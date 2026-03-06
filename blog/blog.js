@@ -9,7 +9,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let ROYALTY_APP_ID = null;
 
 // ===== Page Detection =====
-const isPostPage = window.location.pathname.includes('post.html');
+const isPostPage = window.__POST_PAGE || window.location.pathname.includes('post.html');
 
 if (isPostPage) {
     initPostPage();
@@ -153,7 +153,7 @@ function renderPosts(posts) {
         `;
 
         return `
-            <a href="/blog/post.html#${post.slug}" class="post-card">
+            <a href="/blog/${post.slug}" class="post-card">
                 ${imageHtml}
                 <div class="post-card-content">
                     <div class="post-card-meta">
@@ -257,11 +257,17 @@ function setupSubscribeForm() {
 async function initPostPage() {
     await detectBlogSource();
 
-    // Get slug from hash (fallback to query param for compatibility)
-    let slug = window.location.hash.slice(1);
-    if (!slug) {
+    // Get slug from clean URL path, hash, or query param (backward compat)
+    let slug = '';
+    const pathname = window.location.pathname;
+    const pathMatch = pathname.match(/^\/blog\/([^\/]+)$/);
+    if (pathMatch && pathMatch[1] !== 'post.html' && pathMatch[1] !== 'index.html') {
+        slug = pathMatch[1];
+    } else if (window.location.hash) {
+        slug = window.location.hash.slice(1);
+    } else {
         const urlParams = new URLSearchParams(window.location.search);
-        slug = urlParams.get('slug');
+        slug = urlParams.get('slug') || '';
     }
 
     if (!slug) {
@@ -346,10 +352,11 @@ function updateMetaTags(post) {
     if (descMeta) descMeta.content = description;
 
     // Open Graph
+    const cleanUrl = `https://royaltyapp.ai/blog/${post.slug}`;
     updateOrCreateMeta('og:title', post.title);
     updateOrCreateMeta('og:description', description);
     updateOrCreateMeta('og:image', image);
-    updateOrCreateMeta('og:url', url);
+    updateOrCreateMeta('og:url', cleanUrl);
     updateOrCreateMeta('og:type', 'article');
 
     // Twitter
@@ -365,7 +372,7 @@ function updateMetaTags(post) {
         canonical.rel = 'canonical';
         document.head.appendChild(canonical);
     }
-    canonical.href = post.canonical_url || url;
+    canonical.href = post.canonical_url || `https://royaltyapp.ai/blog/${post.slug}`;
 
     // hreflang for translations
     if (post.translations && post.translations.length > 0) {
@@ -373,7 +380,7 @@ function updateMetaTags(post) {
             const link = document.createElement('link');
             link.rel = 'alternate';
             link.hreflang = t.language;
-            link.href = `/blog/post.html#${t.slug}`;
+            link.href = `https://royaltyapp.ai/blog/${t.slug}`;
             document.head.appendChild(link);
         });
 
@@ -428,7 +435,7 @@ function injectSchemaMarkup(post) {
         },
         'datePublished': post.published_at,
         'dateModified': post.updated_at || post.published_at,
-        'mainEntityOfPage': window.location.href,
+        'mainEntityOfPage': `https://royaltyapp.ai/blog/${post.slug}`,
         'inLanguage': post.language || 'en',
         'articleSection': post.primary_topic || post.industry || 'Automation',
         'keywords': (post.tags || post.seo_keywords || []).join(', ')
@@ -461,7 +468,7 @@ function injectSchemaMarkup(post) {
                 '@type': 'ListItem',
                 'position': 3,
                 'name': post.title,
-                'item': window.location.href
+                'item': `https://royaltyapp.ai/blog/${post.slug}`
             }
         ]
     };
@@ -538,8 +545,8 @@ async function renderSeriesNav(post) {
         seriesNav.innerHTML = `
             <div class="series-nav-header">Part ${post.series_order || currentIndex + 1} of ${seriesArticles.length} in this series</div>
             <div class="series-nav-links">
-                ${prev ? `<a href="/blog/post.html#${prev.slug}" class="series-nav-prev">← ${escapeHtml(prev.title)}</a>` : '<span></span>'}
-                ${next ? `<a href="/blog/post.html#${next.slug}" class="series-nav-next">${escapeHtml(next.title)} →</a>` : '<span></span>'}
+                ${prev ? `<a href="/blog/${prev.slug}" class="series-nav-prev">← ${escapeHtml(prev.title)}</a>` : '<span></span>'}
+                ${next ? `<a href="/blog/${next.slug}" class="series-nav-next">${escapeHtml(next.title)} →</a>` : '<span></span>'}
             </div>
         `;
 
@@ -607,7 +614,7 @@ function renderRelatedPosts(posts) {
         const topic = post.primary_topic || post.industry;
 
         return `
-            <a href="/blog/post.html#${post.slug}" class="post-card">
+            <a href="/blog/${post.slug}" class="post-card">
                 <div class="post-card-content" style="padding: 20px;">
                     <div class="post-card-meta">
                         ${topic ? `<span class="post-card-industry">${escapeHtml(topic)}</span>` : ''}

@@ -52,6 +52,12 @@
   to = "/customer-app/index.html?slug=:slug"
   status = 200
 
+# Blog post clean URLs (SEO-friendly paths instead of hash routing)
+[[redirects]]
+  from = "/blog/:slug"
+  to = "/blog/post.html"
+  status = 200
+
 # Custom error pages
 [[redirects]]
   from = "/*"

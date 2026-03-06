@@ -1,0 +1,18 @@
+# Royalty - AI Loyalty Program Platform
+# https://royaltyapp.ai
+
+User-agent: *
+Allow: /
+Allow: /blog/
+Allow: /pricing.html
+Allow: /automations/
+
+# App pages (authenticated, no index value)
+Disallow: /app/
+Disallow: /customer-app/
+
+# Assets
+Disallow: /js/
+Disallow: /css/
+
+Sitemap: https://royaltyapp.ai/sitemap.xml
