@@ -19,6 +19,7 @@ const I18n = (function() {
 
     let currentLanguage = DEFAULT_LANGUAGE;
     let translations = {};
+    let fallbackTranslations = {};
     let isInitialized = false;
 
     // Get the base path for translation files
@@ -60,7 +61,7 @@ const I18n = (function() {
     }
 
     // Translation file version - increment when translations change
-    const TRANSLATION_VERSION = 6;
+    const TRANSLATION_VERSION = 7;
 
     // Load translation file
     async function loadTranslations(lang) {
@@ -80,24 +81,35 @@ const I18n = (function() {
         }
     }
 
-    // Get translation by key (supports nested keys like "nav.home")
-    function t(key, replacements = {}) {
-        const keys = key.split('.');
-        let value = translations;
-
+    // Resolve a dotted key against a translation object
+    function resolve(obj, keys) {
+        let value = obj;
         for (const k of keys) {
             if (value && typeof value === 'object' && k in value) {
                 value = value[k];
             } else {
-                // Return key if translation not found
-                return key;
+                return null;
             }
         }
+        return value;
+    }
+
+    // Get translation by key (supports nested keys like "nav.home")
+    // Falls back to English when key is missing in current language
+    function t(key, replacements = {}) {
+        const keys = key.split('.');
+
+        // Try current language first, then English fallback
+        let value = resolve(translations, keys);
+        if (value === null && fallbackTranslations !== translations) {
+            value = resolve(fallbackTranslations, keys);
+        }
+        if (value === null) return key;
 
         // Handle replacements like {name}
         if (typeof value === 'string') {
-            return value.replace(/\{(\w+)\}/g, (match, key) => {
-                return replacements[key] !== undefined ? replacements[key] : match;
+            return value.replace(/\{(\w+)\}/g, (match, k) => {
+                return replacements[k] !== undefined ? replacements[k] : match;
             });
         }
 
@@ -108,7 +120,14 @@ const I18n = (function() {
     function applyTranslations() {
         // Handle regular text content translations
         document.querySelectorAll('[data-i18n]').forEach(element => {
-            const key = element.getAttribute('data-i18n');
+            let key = element.getAttribute('data-i18n');
+            let useHtml = false;
+
+            if (key.startsWith('[html]')) {
+                useHtml = true;
+                key = key.substring(6);
+            }
+
             const translation = t(key);
 
             if (translation !== key) {
@@ -116,6 +135,8 @@ const I18n = (function() {
                     // For attributes like title, aria-label, etc.
                     const attr = element.getAttribute('data-i18n-attr');
                     element.setAttribute(attr, translation);
+                } else if (useHtml) {
+                    element.innerHTML = translation;
                 } else {
                     element.textContent = translation;
                 }
@@ -175,8 +196,13 @@ const I18n = (function() {
         const browserLang = detectBrowserLanguage();
         currentLanguage = storedLang || browserLang;
 
-        // Load translations
-        translations = await loadTranslations(currentLanguage);
+        // Load English as fallback, then current language
+        fallbackTranslations = await loadTranslations(DEFAULT_LANGUAGE);
+        if (currentLanguage !== DEFAULT_LANGUAGE) {
+            translations = await loadTranslations(currentLanguage);
+        } else {
+            translations = fallbackTranslations;
+        }
 
         // Apply translations
         applyTranslations();
@@ -203,7 +229,11 @@ const I18n = (function() {
 
         currentLanguage = lang;
         storeLanguage(lang);
-        translations = await loadTranslations(lang);
+        if (lang === DEFAULT_LANGUAGE) {
+            translations = fallbackTranslations;
+        } else {
+            translations = await loadTranslations(lang);
+        }
         applyTranslations();
 
         // Close any open dropdowns

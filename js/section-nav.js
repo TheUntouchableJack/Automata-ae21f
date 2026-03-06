@@ -10,7 +10,16 @@ let sectionMap = [];
 function initSectionMap() {
     const path = window.location.pathname;
 
-    if (path.includes('pricing')) {
+    if (path.includes('about')) {
+        sectionMap = [
+            { id: 'about-hero', label: 'Overview' },
+            { id: 'about-problem', label: 'The Problem' },
+            { id: 'about-difference', label: 'The Difference' },
+            { id: 'about-learning', label: 'How It Builds' },
+            { id: 'about-results', label: 'Results' },
+            { id: 'about-cta', label: 'Get Started' }
+        ];
+    } else if (path.includes('pricing')) {
         sectionMap = [
             { id: 'pricing-hero', label: 'Overview' },
             { id: 'pricing-cards', label: 'Plans' },
