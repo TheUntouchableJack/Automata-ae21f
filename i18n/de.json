@@ -367,6 +367,18 @@
         "terms": "AGB",
         "copyright": "© 2026 Royalty. Alle Rechte vorbehalten."
     },
+    "contact": {
+        "badge": "Kontakt aufnehmen",
+        "title": "Kontakt",
+        "subtitle": "Haben Sie eine Frage? Wir würden gerne von Ihnen hören.",
+        "name": "Ihr Name",
+        "email": "E-Mail-Adresse",
+        "subject": "Betreff",
+        "message": "Nachricht",
+        "send": "Nachricht senden",
+        "successTitle": "Nachricht gesendet!",
+        "success": "Danke für Ihre Nachricht. Wir werden uns bald bei Ihnen melden."
+    },
     "dashboard": {
         "title": "Dashboard",
         "subtitle": "Ihr Treueprogramm auf einen Blick",

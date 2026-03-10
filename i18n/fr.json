@@ -380,6 +380,18 @@
         "terms": "Conditions",
         "copyright": "© 2026 Royalty. Tous droits réservés."
     },
+    "contact": {
+        "badge": "Nous contacter",
+        "title": "Contactez-nous",
+        "subtitle": "Une question ? Nous serions ravis de vous entendre.",
+        "name": "Votre Nom",
+        "email": "Adresse Email",
+        "subject": "Sujet",
+        "message": "Message",
+        "send": "Envoyer le Message",
+        "successTitle": "Message envoyé !",
+        "success": "Merci de nous avoir contactés. Nous vous répondrons bientôt."
+    },
     "dashboard": {
         "title": "Tableau de Bord",
         "subtitle": "Votre programme de fidélité en un coup d'œil",

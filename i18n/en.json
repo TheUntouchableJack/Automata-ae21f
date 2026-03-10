@@ -572,6 +572,18 @@
         "terms": "Terms",
         "copyright": "© 2026 Royalty. All rights reserved."
     },
+    "contact": {
+        "badge": "Get in Touch",
+        "title": "Contact Us",
+        "subtitle": "Have a question? We'd love to hear from you.",
+        "name": "Your Name",
+        "email": "Email Address",
+        "subject": "Subject",
+        "message": "Message",
+        "send": "Send Message",
+        "successTitle": "Message sent!",
+        "success": "Thanks for reaching out. We'll get back to you shortly."
+    },
     "dashboard": {
         "title": "Dashboard",
         "subtitle": "Your loyalty program at a glance",

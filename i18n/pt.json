@@ -367,6 +367,18 @@
         "terms": "Termos",
         "copyright": "© 2026 Royalty. Todos os direitos reservados."
     },
+    "contact": {
+        "badge": "Entre em Contato",
+        "title": "Contato",
+        "subtitle": "Tem alguma dúvida? Adoraríamos ouvir de você.",
+        "name": "Seu Nome",
+        "email": "Endereço de Email",
+        "subject": "Assunto",
+        "message": "Mensagem",
+        "send": "Enviar Mensagem",
+        "successTitle": "Mensagem enviada!",
+        "success": "Obrigado por entrar em contato. Responderemos em breve."
+    },
     "dashboard": {
         "title": "Painel",
         "subtitle": "Seu programa de fidelidade em um relance",

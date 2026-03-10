@@ -633,8 +633,8 @@ function restoreOnboardingData() {
     }
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', restoreOnboardingData);
+// Restore saved onboarding data (DOM is already ready since script loads at end of body)
+restoreOnboardingData();
 
 // Main onboarding entry point — AI auto-selects templates, then shows optional info step
 function handleStartOnboarding() {

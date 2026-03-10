@@ -367,6 +367,18 @@
         "terms": "条款",
         "copyright": "© 2026 Royalty。保留所有权利。"
     },
+    "contact": {
+        "badge": "联系我们",
+        "title": "联系我们",
+        "subtitle": "有问题吗？我们很乐意听取您的意见。",
+        "name": "您的姓名",
+        "email": "电子邮件地址",
+        "subject": "主题",
+        "message": "消息",
+        "send": "发送消息",
+        "successTitle": "消息已发送！",
+        "success": "感谢您的联系，我们将尽快回复您。"
+    },
     "dashboard": {
         "title": "仪表板",
         "subtitle": "一目了然您的忠诚度计划",

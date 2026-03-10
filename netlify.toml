@@ -58,6 +58,22 @@
   to = "/blog/post.html"
   status = 200
 
+# Clean URLs for legal/contact pages
+[[redirects]]
+  from = "/contact"
+  to = "/contact.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to = "/terms.html"
+  status = 200
+
 # Custom error pages
 [[redirects]]
   from = "/*"

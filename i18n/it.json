@@ -368,6 +368,18 @@
         "terms": "Termini",
         "copyright": "© 2026 Royalty. Tutti i diritti riservati."
     },
+    "contact": {
+        "badge": "Contattaci",
+        "title": "Contattaci",
+        "subtitle": "Hai una domanda? Ci farebbe piacere sentirti.",
+        "name": "Il Tuo Nome",
+        "email": "Indirizzo Email",
+        "subject": "Oggetto",
+        "message": "Messaggio",
+        "send": "Invia Messaggio",
+        "successTitle": "Messaggio inviato!",
+        "success": "Grazie per averci contattato. Ti risponderemo a breve."
+    },
     "dashboard": {
         "title": "Dashboard",
         "subtitle": "Il tuo programma fedeltà a colpo d'occhio",
