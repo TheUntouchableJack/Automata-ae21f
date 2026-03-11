@@ -68,7 +68,7 @@ async function loadPosts(topic = 'all') {
             });
 
             if (error) throw error;
-            posts = data || [];
+            posts = (Array.isArray(data) ? data : data?.articles) || [];
         } else {
             // Fallback to blog_posts table
             let query = db
