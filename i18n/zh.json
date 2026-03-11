@@ -28,7 +28,8 @@
         "askRoyal": "Ask Royal AI",
         "chatEmpty": "Start a conversation...",
         "chatPlaceholder": "Quick question?",
-        "fullChat": "Open full chat"
+        "fullChat": "Open full chat",
+        "blogReview": "博客审阅"
     },
     "launchPlan": {
         "title": "发布计划",
@@ -484,18 +485,18 @@
             "light": "浅色模式"
         },
         "tabs": {
-            "chat": "\u804a\u5929",
-            "actions": "\u64cd\u4f5c",
-            "intel": "\u60c5\u62a5",
-            "knowledge": "\u5b66\u4e60\u6210\u679c"
+            "chat": "聊天",
+            "actions": "操作",
+            "intel": "情报",
+            "knowledge": "学习成果"
         },
         "intel": {
-            "emptyTitle": "\u5168\u90e8\u5b8c\u6210\uff01",
-            "emptyDesc": "Royal AI \u76ee\u524d\u5df2\u83b7\u53d6\u6240\u9700\u7684\u6240\u6709\u4fe1\u606f\u3002"
+            "emptyTitle": "全部完成！",
+            "emptyDesc": "Royal AI 目前已获取所需的所有信息。"
         },
         "knowledge": {
-            "emptyTitle": "\u5b66\u4e60\u4e2d",
-            "emptyDesc": "Royal AI \u6b63\u5728\u4e86\u89e3\u60a8\u7684\u4e1a\u52a1\u3002\u6d1e\u5bdf\u5c06\u5728\u53d1\u73b0\u6a21\u5f0f\u540e\u663e\u793a\u5728\u6b64\u5904\u3002"
+            "emptyTitle": "学习中",
+            "emptyDesc": "Royal AI 正在了解您的业务。洞察将在发现模式后显示在此处。"
         },
         "filters": {
             "new": "New",
@@ -1321,5 +1322,18 @@
         "blogSettingsSaveFailed": "Error saving blog settings",
         "appsLoadFailed": "Error loading apps",
         "noAppsFound": "No customer apps found. Create one first."
+    },
+    "blogReview": {
+        "title": "博客审阅",
+        "noArticles": "没有待审阅的文章",
+        "editsRemaining": "剩余编辑",
+        "accept": "接受",
+        "regenerate": "重新生成",
+        "skip": "跳过",
+        "saveDraft": "保存草稿",
+        "publish": "发布",
+        "publishDisabled": "发布前请解决所有编辑",
+        "saved": "已保存",
+        "published": "已发布到博客"
     }
 }

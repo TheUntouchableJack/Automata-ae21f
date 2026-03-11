@@ -57,6 +57,7 @@ const AppSidebar = (function() {
             label: 'Admin',
             adminOnly: true,
             items: [
+                { id: 'blog-review', icon: 'edit', href: '/app/blog-review.html', labelKey: 'nav.blogReview', label: 'Blog Review', adminOnly: true, hasBadge: true },
                 { id: 'launch-plan', icon: 'rocket', href: '/app/launch-plan.html', labelKey: 'nav.launchPlan', label: 'Launch Plan', adminOnly: true },
                 { id: 'admin-panel', icon: 'shield', href: '/app/admin.html', labelKey: 'nav.superAdmin', label: 'Super Admin', adminOnly: true },
             ]
@@ -178,6 +179,7 @@ const AppSidebar = (function() {
     // Get current page ID from URL
     function getCurrentPageId(isAdmin) {
         const path = window.location.pathname;
+        if (path.includes('blog-review')) return 'blog-review';
         // Dashboard page - always highlight 'dashboard' nav item
         if (path.includes('dashboard')) return 'dashboard';
         if (path.includes('project.html')) return 'dashboard'; // Individual project pages
@@ -463,6 +465,40 @@ const AppSidebar = (function() {
 
     }
 
+    // Update blog review badge (admin only)
+    async function updateBlogReviewBadge() {
+        if (typeof supabase === 'undefined') return;
+
+        try {
+            const { data, error } = await supabase.rpc('get_blog_review_count');
+            if (error) return;
+
+            const count = data || 0;
+            const badge = document.getElementById('sidebar-badge-blog-review');
+            const badgeDot = document.getElementById('sidebar-badge-dot-blog-review');
+
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            if (badgeDot) {
+                badgeDot.style.display = count > 0 ? 'block' : 'none';
+            }
+        } catch (err) {
+            // Non-admin users will get an error — silently ignore
+        }
+    }
+
+    // Poll blog review badge (admin only, 60s interval)
+    function startBlogReviewPolling(intervalMs = 60000) {
+        updateBlogReviewBadge();
+        setInterval(updateBlogReviewBadge, intervalMs);
+    }
+
     // Update notification badge
     async function updateNotificationBadge(organizationId) {
         if (!organizationId || typeof supabase === 'undefined') return;
@@ -562,7 +598,9 @@ const AppSidebar = (function() {
         render,
         updateLanguageDisplay,
         updateNotificationBadge,
-        startNotificationPolling
+        startNotificationPolling,
+        updateBlogReviewBadge,
+        startBlogReviewPolling
     };
 })();
 

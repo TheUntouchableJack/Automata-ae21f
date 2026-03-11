@@ -28,7 +28,8 @@
         "askRoyal": "Ask Royal AI",
         "chatEmpty": "Start a conversation...",
         "chatPlaceholder": "Quick question?",
-        "fullChat": "Open full chat"
+        "fullChat": "Open full chat",
+        "blogReview": "مراجعة المدونة"
     },
     "launchPlan": {
         "title": "خطة الإطلاق",
@@ -484,18 +485,18 @@
             "light": "الوضع الفاتح"
         },
         "tabs": {
-            "chat": "\u0645\u062d\u0627\u062f\u062b\u0629",
-            "actions": "\u0625\u062c\u0631\u0627\u0621\u0627\u062a",
-            "intel": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a",
-            "knowledge": "\u0627\u0644\u062a\u0639\u0644\u0651\u0645\u0627\u062a"
+            "chat": "محادثة",
+            "actions": "إجراءات",
+            "intel": "معلومات",
+            "knowledge": "التعلّمات"
         },
         "intel": {
-            "emptyTitle": "\u0643\u0644 \u0634\u064a\u0621 \u0645\u062d\u062f\u0651\u062b!",
-            "emptyDesc": "Royal AI \u0644\u062f\u064a\u0647 \u0643\u0644 \u0627\u0644\u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u062a\u064a \u064a\u062d\u062a\u0627\u062c\u0647\u0627 \u062d\u0627\u0644\u064a\u064b\u0627."
+            "emptyTitle": "كل شيء محدّث!",
+            "emptyDesc": "Royal AI لديه كل المعلومات التي يحتاجها حاليًا."
         },
         "knowledge": {
-            "emptyTitle": "\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u0639\u0644\u0645",
-            "emptyDesc": "\u064a\u062a\u0639\u0644\u0645 Royal AI \u0639\u0646 \u0639\u0645\u0644\u0643. \u0633\u062a\u0638\u0647\u0631 \u0627\u0644\u0631\u0624\u0649 \u0647\u0646\u0627 \u0639\u0646\u062f\u0645\u0627 \u062a\u0638\u0647\u0631 \u0627\u0644\u0623\u0646\u0645\u0627\u0637."
+            "emptyTitle": "جاري التعلم",
+            "emptyDesc": "يتعلم Royal AI عن عملك. ستظهر الرؤى هنا عندما تظهر الأنماط."
         },
         "filters": {
             "new": "New",
@@ -1321,5 +1322,18 @@
         "blogSettingsSaveFailed": "Error saving blog settings",
         "appsLoadFailed": "Error loading apps",
         "noAppsFound": "No customer apps found. Create one first."
+    },
+    "blogReview": {
+        "title": "مراجعة المدونة",
+        "noArticles": "لا توجد مقالات معلقة للمراجعة",
+        "editsRemaining": "تعديلات متبقية",
+        "accept": "قبول",
+        "regenerate": "إعادة توليد",
+        "skip": "تخطي",
+        "saveDraft": "حفظ المسودة",
+        "publish": "نشر",
+        "publishDisabled": "حل جميع التعديلات قبل النشر",
+        "saved": "محفوظ",
+        "published": "تم النشر في المدونة"
     }
 }

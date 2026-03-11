@@ -29,7 +29,8 @@
         "askRoyal": "Ask Royal AI",
         "chatEmpty": "Start a conversation...",
         "chatPlaceholder": "Quick question?",
-        "fullChat": "Open full chat"
+        "fullChat": "Open full chat",
+        "blogReview": "Blog Review"
     },
     "launchPlan": {
         "title": "Launch Plan",
@@ -1345,5 +1346,18 @@
         "automationRestoreFailed": "Error restoring automation",
         "copied": "Copied!",
         "copyFailed": "Could not copy — please copy the URL manually"
+    },
+    "blogReview": {
+        "title": "Blog Review",
+        "noArticles": "No articles pending review",
+        "editsRemaining": "edits remaining",
+        "accept": "Accept",
+        "regenerate": "Regenerate",
+        "skip": "Skip",
+        "saveDraft": "Save Draft",
+        "publish": "Publish",
+        "publishDisabled": "Resolve all edits before publishing",
+        "saved": "Saved",
+        "published": "Published to blog"
     }
 }

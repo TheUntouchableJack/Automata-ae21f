@@ -28,7 +28,8 @@
         "askRoyal": "Ask Royal AI",
         "chatEmpty": "Start a conversation...",
         "chatPlaceholder": "Quick question?",
-        "fullChat": "Open full chat"
+        "fullChat": "Open full chat",
+        "blogReview": "Revisión de Blog"
     },
     "launchPlan": {
         "title": "Plan de Lanzamiento",
@@ -501,12 +502,12 @@
             "knowledge": "Aprendizajes"
         },
         "intel": {
-            "emptyTitle": "\u00a1Todo al d\u00eda!",
-            "emptyDesc": "Royal AI tiene toda la informaci\u00f3n que necesita por ahora."
+            "emptyTitle": "¡Todo al día!",
+            "emptyDesc": "Royal AI tiene toda la información que necesita por ahora."
         },
         "knowledge": {
             "emptyTitle": "Aprendiendo...",
-            "emptyDesc": "Royal AI est\u00e1 aprendiendo sobre tu negocio. Los insights aparecer\u00e1n aqu\u00ed a medida que surjan patrones."
+            "emptyDesc": "Royal AI está aprendiendo sobre tu negocio. Los insights aparecerán aquí a medida que surjan patrones."
         },
         "filters": {
             "new": "New",
@@ -1332,5 +1333,18 @@
         "blogSettingsSaveFailed": "Error saving blog settings",
         "appsLoadFailed": "Error loading apps",
         "noAppsFound": "No customer apps found. Create one first."
+    },
+    "blogReview": {
+        "title": "Revisión de Blog",
+        "noArticles": "No hay artículos pendientes de revisión",
+        "editsRemaining": "ediciones restantes",
+        "accept": "Aceptar",
+        "regenerate": "Regenerar",
+        "skip": "Omitir",
+        "saveDraft": "Guardar Borrador",
+        "publish": "Publicar",
+        "publishDisabled": "Resuelve todas las ediciones antes de publicar",
+        "saved": "Guardado",
+        "published": "Publicado en el blog"
     }
 }

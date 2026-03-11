@@ -2,11 +2,12 @@
 const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocG1tZmhmd25wbWF2eXRvb21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTgyMDYsImV4cCI6MjA4NTE3NDIwNn0.6JmfnTTR8onr3ZgFpzdZa4BbVBraUyePVEUHOJgxmuk';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Royalty's app_id for the blog (will be set after first newsletter app is created)
-// For dogfooding, we'll use a fixed app_id or fallback to blog_posts table
+// Royalty's marketing blog — always uses this explicit slug (never the first newsletter app)
+const ROYALTY_MARKETING_BLOG_SLUG = 'royalty-marketing';
 let ROYALTY_APP_ID = null;
+
+// Use a unique name to avoid conflicting with the global `supabase` from the CDN bundle
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== Page Detection =====
 const isPostPage = window.location.pathname.includes('post.html');
@@ -26,35 +27,21 @@ async function initBlogIndex() {
 }
 
 async function detectBlogSource() {
-    // Check URL for specific app slug
-    const urlParams = new URLSearchParams(window.location.search);
-    const appSlug = urlParams.get('app');
-
     try {
-        let query = supabase
+        const { data: app } = await db
             .from('customer_apps')
             .select('id, name, slug')
             .eq('app_type', 'newsletter')
-            .eq('is_published', true)
+            .eq('slug', ROYALTY_MARKETING_BLOG_SLUG)
             .eq('is_active', true)
-            .is('deleted_at', null);
-
-        // If specific app requested via ?app=slug, filter by slug
-        if (appSlug) {
-            query = query.eq('slug', appSlug);
-        }
-
-        const { data: app } = await query.limit(1).single();
+            .is('deleted_at', null)
+            .single();
 
         if (app) {
             ROYALTY_APP_ID = app.id;
-            // Update page title if specific app
-            if (appSlug && app.name) {
-                document.title = `${app.name} - Blog`;
-            }
         }
     } catch (e) {
-        // No newsletter app yet, use blog_posts fallback
+        // Marketing blog app not found, use blog_posts fallback
         console.log('Using blog_posts fallback');
     }
 }
@@ -73,7 +60,7 @@ async function loadPosts(topic = 'all') {
 
         if (ROYALTY_APP_ID) {
             // Use newsletter_articles via RPC
-            const { data, error } = await supabase.rpc('get_published_articles', {
+            const { data, error } = await db.rpc('get_published_articles', {
                 p_app_id: ROYALTY_APP_ID,
                 p_language: getCurrentLanguage(),
                 p_topic: topic === 'all' ? null : topic,
@@ -84,7 +71,7 @@ async function loadPosts(topic = 'all') {
             posts = data || [];
         } else {
             // Fallback to blog_posts table
-            let query = supabase
+            let query = db
                 .from('blog_posts')
                 .select('*')
                 .eq('status', 'published')
@@ -224,7 +211,7 @@ function setupSubscribeForm() {
 
         try {
             if (ROYALTY_APP_ID) {
-                const { error } = await supabase.rpc('subscribe_to_newsletter', {
+                const { error } = await db.rpc('subscribe_to_newsletter', {
                     p_app_id: ROYALTY_APP_ID,
                     p_email: email,
                     p_source: 'blog_footer',
@@ -282,7 +269,7 @@ async function loadPost(slug) {
 
         if (ROYALTY_APP_ID) {
             // Use newsletter_articles via RPC
-            const { data, error } = await supabase.rpc('get_article_by_slug', {
+            const { data, error } = await db.rpc('get_article_by_slug', {
                 p_app_id: ROYALTY_APP_ID,
                 p_slug: slug,
                 p_language: getCurrentLanguage()
@@ -292,7 +279,7 @@ async function loadPost(slug) {
             post = data;
         } else {
             // Fallback to blog_posts table
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from('blog_posts')
                 .select('*')
                 .eq('slug', slug)
@@ -518,7 +505,7 @@ function renderPost(post) {
 
 async function renderSeriesNav(post) {
     try {
-        const { data: seriesArticles, error } = await supabase
+        const { data: seriesArticles, error } = await db
             .from('newsletter_articles')
             .select('id, title, slug, series_order')
             .eq('series_id', post.series_id)
@@ -553,7 +540,7 @@ async function loadRelatedPosts(relatedIds) {
     if (!relatedIds || relatedIds.length === 0) return;
 
     try {
-        const { data: posts, error } = await supabase
+        const { data: posts, error } = await db
             .from(ROYALTY_APP_ID ? 'newsletter_articles' : 'blog_posts')
             .select('*')
             .in('id', relatedIds)
@@ -574,7 +561,7 @@ async function loadRelatedByTopic(topic, excludeId) {
         const table = ROYALTY_APP_ID ? 'newsletter_articles' : 'blog_posts';
         const topicField = ROYALTY_APP_ID ? 'primary_topic' : 'industry';
 
-        const { data: posts, error } = await supabase
+        const { data: posts, error } = await db
             .from(table)
             .select('*')
             .eq(topicField, topic)
