@@ -30,7 +30,8 @@
         "askRoyal": "Ask Royal AI",
         "chatEmpty": "Start a conversation...",
         "chatPlaceholder": "Quick question?",
-        "fullChat": "Open full chat"
+        "fullChat": "Open full chat",
+        "blogReview": "Blog Review"
     },
     "launchPlan": {
         "title": "Launch Plan",
@@ -373,7 +374,7 @@
         "heroTitle": "Let's Build Your App",
         "heroSubtitle": "Configure what you need. See your plan. Talk to our team.",
         "step1Title": "What are you building?",
-        "step1Subtitle": "Every app runs on the Royalty platform \u2014 AI intelligence, automations, and analytics included.",
+        "step1Subtitle": "Every app runs on the Royalty platform — AI intelligence, automations, and analytics included.",
         "step2Title": "Pick your features",
         "step2Subtitle": "Toggle the features you need. We'll configure everything for you.",
         "step2CoreFeatures": "Core Features",
@@ -451,11 +452,11 @@
         "platformIntegrations": {
             "title": "Production Integrations",
             "items": [
-                "Twilio \u2014 SMS campaigns & notifications",
-                "SendGrid \u2014 Email marketing at scale",
-                "Anthropic AI \u2014 Intelligence & automations",
-                "Supabase \u2014 Database, auth & real-time",
-                "Stripe-ready \u2014 Payments when you need them"
+                "Twilio — SMS campaigns & notifications",
+                "SendGrid — Email marketing at scale",
+                "Anthropic AI — Intelligence & automations",
+                "Supabase — Database, auth & real-time",
+                "Stripe-ready — Payments when you need them"
             ]
         },
         "platformIntelligence": {
@@ -499,51 +500,162 @@
         "progressStep3": "Scale",
         "progressStep4": "Estimate",
         "appTypes": {
-            "loyalty": { "name": "Loyalty Program", "desc": "Points, rewards, tiers, referrals. Keep customers coming back." },
-            "rewards": { "name": "Rewards App", "desc": "Points + rewards catalog, referral program, announcements." },
-            "membership": { "name": "Membership Club", "desc": "VIP tiers, exclusive perks, member profiles." },
-            "blog": { "name": "Blog / Newsletter", "desc": "Articles, subscriber signup, content series." },
-            "social": { "name": "Social / Nightlife", "desc": "Map view, video feed, venue search, categories." },
-            "custom": { "name": "Something Custom", "desc": "Tell us what you need. We'll figure it out together." }
+            "loyalty": {
+                "name": "Loyalty Program",
+                "desc": "Points, rewards, tiers, referrals. Keep customers coming back."
+            },
+            "rewards": {
+                "name": "Rewards App",
+                "desc": "Points + rewards catalog, referral program, announcements."
+            },
+            "membership": {
+                "name": "Membership Club",
+                "desc": "VIP tiers, exclusive perks, member profiles."
+            },
+            "blog": {
+                "name": "Blog / Newsletter",
+                "desc": "Articles, subscriber signup, content series."
+            },
+            "social": {
+                "name": "Social / Nightlife",
+                "desc": "Map view, video feed, venue search, categories."
+            },
+            "custom": {
+                "name": "Something Custom",
+                "desc": "Tell us what you need. We'll figure it out together."
+            }
         },
         "features": {
-            "points_enabled": { "name": "Points System", "desc": "Customers earn points on visits or purchases" },
-            "leaderboard_enabled": { "name": "Leaderboard", "desc": "Show top customers and rankings" },
-            "rewards_enabled": { "name": "Rewards Catalog", "desc": "Let customers redeem points for prizes" },
-            "menu_enabled": { "name": "Menu Browser", "desc": "Show your products or services" },
-            "announcements_enabled": { "name": "Announcements", "desc": "Share updates and promotions" },
-            "referrals_enabled": { "name": "Referrals", "desc": "Let customers invite friends for bonus points" },
-            "tiers_enabled": { "name": "Membership Tiers", "desc": "VIP levels with exclusive perks" },
-            "profile_public": { "name": "Public Profiles", "desc": "Members can view each other" },
-            "articles_enabled": { "name": "Blog Articles", "desc": "Publish articles and posts" },
-            "series_enabled": { "name": "Article Series", "desc": "Group related articles together" },
-            "topics_enabled": { "name": "Categories & Topics", "desc": "Organize content by category" },
-            "subscriber_signup": { "name": "Subscriber Signup", "desc": "Collect email subscribers" },
-            "comments_enabled": { "name": "Comments", "desc": "Allow readers to comment" },
-            "map_enabled": { "name": "Map View", "desc": "Interactive map with venue pins" },
-            "feed_enabled": { "name": "Video Feed", "desc": "Instagram-style video scroll" },
-            "search_enabled": { "name": "Venue Search", "desc": "Search and filter venues" },
-            "categories_enabled": { "name": "Categories", "desc": "Filter by venue type" },
-            "ugc_enabled": { "name": "User Uploads", "desc": "Patrons can upload videos" }
+            "points_enabled": {
+                "name": "Points System",
+                "desc": "Customers earn points on visits or purchases"
+            },
+            "leaderboard_enabled": {
+                "name": "Leaderboard",
+                "desc": "Show top customers and rankings"
+            },
+            "rewards_enabled": {
+                "name": "Rewards Catalog",
+                "desc": "Let customers redeem points for prizes"
+            },
+            "menu_enabled": {
+                "name": "Menu Browser",
+                "desc": "Show your products or services"
+            },
+            "announcements_enabled": {
+                "name": "Announcements",
+                "desc": "Share updates and promotions"
+            },
+            "referrals_enabled": {
+                "name": "Referrals",
+                "desc": "Let customers invite friends for bonus points"
+            },
+            "tiers_enabled": {
+                "name": "Membership Tiers",
+                "desc": "VIP levels with exclusive perks"
+            },
+            "profile_public": {
+                "name": "Public Profiles",
+                "desc": "Members can view each other"
+            },
+            "articles_enabled": {
+                "name": "Blog Articles",
+                "desc": "Publish articles and posts"
+            },
+            "series_enabled": {
+                "name": "Article Series",
+                "desc": "Group related articles together"
+            },
+            "topics_enabled": {
+                "name": "Categories & Topics",
+                "desc": "Organize content by category"
+            },
+            "subscriber_signup": {
+                "name": "Subscriber Signup",
+                "desc": "Collect email subscribers"
+            },
+            "comments_enabled": {
+                "name": "Comments",
+                "desc": "Allow readers to comment"
+            },
+            "map_enabled": {
+                "name": "Map View",
+                "desc": "Interactive map with venue pins"
+            },
+            "feed_enabled": {
+                "name": "Video Feed",
+                "desc": "Instagram-style video scroll"
+            },
+            "search_enabled": {
+                "name": "Venue Search",
+                "desc": "Search and filter venues"
+            },
+            "categories_enabled": {
+                "name": "Categories",
+                "desc": "Filter by venue type"
+            },
+            "ugc_enabled": {
+                "name": "User Uploads",
+                "desc": "Patrons can upload videos"
+            }
         },
         "addons": {
-            "ai_dashboard": { "name": "AI Intelligence Dashboard", "desc": "Deep analytics powered by AI" },
-            "email_campaigns": { "name": "Email Campaigns", "desc": "SendGrid-powered email marketing" },
-            "sms_campaigns": { "name": "SMS Campaigns", "desc": "Twilio-powered text messaging" },
-            "ai_automations": { "name": "AI Automations", "desc": "Win-back, birthday, streak campaigns" },
-            "white_label": { "name": "Custom Branding / White-label", "desc": "Remove Royalty branding, use yours" },
-            "api_access": { "name": "API Access", "desc": "Programmatic access to your data" }
+            "ai_dashboard": {
+                "name": "AI Intelligence Dashboard",
+                "desc": "Deep analytics powered by AI"
+            },
+            "email_campaigns": {
+                "name": "Email Campaigns",
+                "desc": "SendGrid-powered email marketing"
+            },
+            "sms_campaigns": {
+                "name": "SMS Campaigns",
+                "desc": "Twilio-powered text messaging"
+            },
+            "ai_automations": {
+                "name": "AI Automations",
+                "desc": "Win-back, birthday, streak campaigns"
+            },
+            "white_label": {
+                "name": "Custom Branding / White-label",
+                "desc": "Remove Royalty branding, use yours"
+            },
+            "api_access": {
+                "name": "API Access",
+                "desc": "Programmatic access to your data"
+            }
         },
         "scales": {
-            "starter": { "name": "Starter", "count": "< 250 customers" },
-            "growing": { "name": "Growing", "count": "250 - 5,000" },
-            "scaling": { "name": "Scaling", "count": "5,000 - 50,000" },
-            "enterprise": { "name": "Enterprise", "count": "50,000+" }
+            "starter": {
+                "name": "Starter",
+                "count": "< 250 customers"
+            },
+            "growing": {
+                "name": "Growing",
+                "count": "250 - 5,000"
+            },
+            "scaling": {
+                "name": "Scaling",
+                "count": "5,000 - 50,000"
+            },
+            "enterprise": {
+                "name": "Enterprise",
+                "count": "50,000+"
+            }
         },
         "designs": {
-            "standard": { "name": "Standard", "desc": "Our templates, your content" },
-            "custom": { "name": "Custom", "desc": "Your brand colors & logo" },
-            "premium": { "name": "Premium", "desc": "Bespoke design, custom graphics" }
+            "standard": {
+                "name": "Standard",
+                "desc": "Our templates, your content"
+            },
+            "custom": {
+                "name": "Custom",
+                "desc": "Your brand colors & logo"
+            },
+            "premium": {
+                "name": "Premium",
+                "desc": "Bespoke design, custom graphics"
+            }
         },
         "timelines": {
             "standard": "1-2 weeks",
@@ -1610,5 +1722,18 @@
         "ctaSubtitle": "Royalty builds your loyalty program in 60 seconds — then runs it forever.",
         "ctaPrimary": "Get Started Free",
         "ctaSecondary": "See pricing"
+    },
+    "blogReview": {
+        "title": "Blog Review",
+        "noArticles": "No articles pending review",
+        "editsRemaining": "edits remaining",
+        "accept": "Accept",
+        "regenerate": "Regenerate",
+        "skip": "Skip",
+        "saveDraft": "Save Draft",
+        "publish": "Publish",
+        "publishDisabled": "Resolve all edits before publishing",
+        "saved": "Saved",
+        "published": "Published to blog"
     }
 }

@@ -30,7 +30,8 @@
         "chatPlaceholder": "Quick question?",
         "fullChat": "Open full chat",
         "rewards": "Rewards",
-        "customBuilds": "Custom Apps"
+        "customBuilds": "Custom Apps",
+        "blogReview": "Revisión de Blog"
     },
     "launchPlan": {
         "title": "Plan de Lanzamiento",
@@ -1728,5 +1729,18 @@
         "ctaSubtitle": "Royalty construye tu programa de fidelización en 60 segundos — y lo ejecuta para siempre.",
         "ctaPrimary": "Comenzar Gratis",
         "ctaSecondary": "Ver precios"
+    },
+    "blogReview": {
+        "title": "Revisión de Blog",
+        "noArticles": "No hay artículos pendientes de revisión",
+        "editsRemaining": "ediciones restantes",
+        "accept": "Aceptar",
+        "regenerate": "Regenerar",
+        "skip": "Omitir",
+        "saveDraft": "Guardar Borrador",
+        "publish": "Publicar",
+        "publishDisabled": "Resuelve todas las ediciones antes de publicar",
+        "saved": "Guardado",
+        "published": "Publicado en el blog"
     }
 }
