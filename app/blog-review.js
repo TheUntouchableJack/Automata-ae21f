@@ -191,10 +191,12 @@
         .single();
 
     const { data: orgMember } = await db.from('organization_members')
-        .select('organizations(name)')
+        .select('organization_id, organizations(name)')
         .eq('user_id', user.id)
         .limit(1)
         .single();
+
+    const currentOrgId = orgMember?.organization_id || null;
 
     AppSidebar.init({
         name: [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user.email,
@@ -205,6 +207,149 @@
 
     // Start badge polling (admin only)
     AppSidebar.startBlogReviewPolling();
+
+    // ── Generate Article Modal ────────────────────────────────────────────────
+    const genModal       = document.getElementById('gen-modal');
+    const genTopicList   = document.getElementById('gen-topic-list');
+    const genCustomInput = document.getElementById('gen-custom-topic');
+    const genCategory    = document.getElementById('gen-category');
+    const genProgress    = document.getElementById('gen-progress');
+    const genStartBtn    = document.getElementById('gen-start-btn');
+
+    let selectedTopic = null; // { keyword, category } from seo_topics
+
+    function openGenerateModal() {
+        selectedTopic = null;
+        genCustomInput.value = '';
+        genProgress.textContent = '';
+        genStartBtn.disabled = false;
+        genStartBtn.textContent = 'Generate Article →';
+        genModal.style.display = 'flex';
+        loadSeoTopics();
+    }
+
+    function closeGenerateModal() {
+        genModal.style.display = 'none';
+    }
+
+    document.getElementById('br-generate-btn').addEventListener('click', openGenerateModal);
+    document.getElementById('gen-modal-close').addEventListener('click', closeGenerateModal);
+    document.getElementById('gen-modal-cancel').addEventListener('click', closeGenerateModal);
+    genModal.addEventListener('click', (e) => { if (e.target === genModal) closeGenerateModal(); });
+
+    // Expose for empty-state button
+    window.openGenerateModal = openGenerateModal;
+
+    async function loadSeoTopics() {
+        genTopicList.innerHTML = '<div class="br-topic-row" style="justify-content:center;color:var(--color-text-muted);cursor:default;">Loading topics...</div>';
+
+        const { data, error } = await db
+            .from('seo_topics')
+            .select('id, keyword, category, score, type')
+            .eq('status', 'queued')
+            .order('score', { ascending: false })
+            .limit(20);
+
+        if (error || !data?.length) {
+            genTopicList.innerHTML = '<div class="br-topic-row" style="justify-content:center;color:var(--color-text-muted);cursor:default;">No queued topics — enter a custom topic below.</div>';
+            return;
+        }
+
+        genTopicList.innerHTML = data.map(t => `
+            <div class="br-topic-row" data-id="${escapeHtml(t.id)}" data-keyword="${escapeHtml(t.keyword)}" data-category="${escapeHtml(t.category || 'Loyalty Programs')}">
+                <span class="br-topic-keyword">${escapeHtml(t.keyword)}</span>
+                <span class="br-topic-meta">
+                    <span class="br-topic-type">${escapeHtml(t.type || '')}</span>
+                    <span class="br-topic-score">${t.score}</span>
+                </span>
+            </div>
+        `).join('');
+
+        genTopicList.addEventListener('click', (e) => {
+            const row = e.target.closest('.br-topic-row');
+            if (!row || !row.dataset.id) return;
+            genTopicList.querySelectorAll('.br-topic-row').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            selectedTopic = { id: row.dataset.id, keyword: row.dataset.keyword, category: row.dataset.category };
+            genCustomInput.value = '';
+        });
+    }
+
+    genStartBtn.addEventListener('click', async () => {
+        const customText = genCustomInput.value.trim();
+        const keyword = customText || selectedTopic?.keyword;
+
+        if (!keyword) {
+            showToast('Select a topic or enter a custom one.');
+            return;
+        }
+
+        const category = customText ? genCategory.value : (selectedTopic?.category || genCategory.value);
+
+        genStartBtn.disabled = true;
+        genStartBtn.textContent = 'Generating…';
+        genProgress.textContent = 'Calling Claude — this takes ~30 seconds…';
+
+        try {
+            const session = await getValidSession();
+            const resp = await fetch(
+                `${SUPABASE_URL}/functions/v1/generate-article`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        topic: { title: keyword, topic: keyword },
+                        context: {
+                            business_name: 'Royalty',
+                            story: {
+                                founding: 'AI-powered loyalty programs for small businesses',
+                                differentiator: 'No app download required, 60-second setup, $59 lifetime deal'
+                            },
+                            audience: {
+                                primary: 'Small business owners — restaurants, salons, retail shops, gyms, food trucks',
+                                pain_points: 'Loyalty tools are too complex, too expensive, or require customers to download an app'
+                            },
+                            voice: {
+                                personality: 'practical, direct, empowering',
+                                tone: 'knowledgeable friend, not corporate speak',
+                                avoid: ['synergy', 'leverage', 'disrupt', 'game-changer', 'seamless', 'revolutionize']
+                            },
+                            primary_topic: category,
+                        },
+                        app_id: 'd0229946-0812-4a96-acc4-0344613ee8b1',
+                        organization_id: currentOrgId,
+                    }),
+                }
+            );
+
+            if (!resp.ok) {
+                const errBody = await resp.text();
+                throw new Error(`${resp.status}: ${errBody}`);
+            }
+
+            // Mark topic as drafted in seo_topics if it came from the queue
+            if (selectedTopic?.id && !customText) {
+                await db.from('seo_topics')
+                    .update({ status: 'drafted', updated_at: new Date().toISOString() })
+                    .eq('id', selectedTopic.id);
+            }
+
+            genProgress.textContent = '';
+            closeGenerateModal();
+            showToast('Article generated — it\'s in your review queue!');
+            await loadArticles();
+
+        } catch (err) {
+            console.error('Generate article error:', err);
+            genProgress.textContent = '';
+            genStartBtn.disabled = false;
+            genStartBtn.textContent = 'Generate Article →';
+            showToast('Generation failed. Check console for details.');
+        }
+    });
 
     // ── Load article list ─────────────────────────────────────────────────────
     async function loadArticles() {
@@ -257,9 +402,9 @@
                     <p style="font-size:0.8125rem; color:var(--color-text-muted); margin-top:4px;">
                         All caught up — generate new articles to keep the content pipeline running.
                     </p>
-                    <a href="/app/content-generator.html" class="btn btn-primary btn-sm" style="margin-top:16px;">
+                    <button onclick="openGenerateModal()" class="btn btn-primary btn-sm" style="margin-top:16px;">
                         Generate Next Batch →
-                    </a>
+                    </button>
                 </div>`;
             return;
         }

@@ -599,6 +599,206 @@
             flex-wrap: wrap;
         }
 
+        /* ── Generate Modal ──────────────────────────────────── */
+        .br-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .br-modal {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 560px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .br-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .br-modal-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 0;
+        }
+
+        .br-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            line-height: 1;
+        }
+
+        .br-modal-close:hover { color: var(--color-text); background: var(--color-bg); }
+
+        .br-modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .br-modal-desc {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            margin: 0 0 16px;
+        }
+
+        .br-topic-list {
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+        }
+
+        .br-topic-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--color-border);
+            transition: background 0.12s;
+        }
+
+        .br-topic-row:last-child { border-bottom: none; }
+        .br-topic-row:hover { background: var(--color-bg); }
+        .br-topic-row.selected {
+            background: rgba(124, 58, 237, 0.06);
+            border-left: 3px solid var(--color-primary);
+            padding-left: 11px;
+        }
+
+        .br-topic-keyword {
+            flex: 1;
+            font-size: 0.875rem;
+            color: var(--color-text);
+            min-width: 0;
+        }
+
+        .br-topic-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .br-topic-score {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--color-text-muted);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 999px;
+            padding: 1px 7px;
+        }
+
+        .br-topic-type {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .br-modal-divider {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            text-align: center;
+            margin: 0 0 12px;
+            position: relative;
+        }
+
+        .br-modal-divider::before,
+        .br-modal-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 35%;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .br-modal-divider::before { left: 0; }
+        .br-modal-divider::after { right: 0; }
+
+        .br-modal-custom {
+            display: flex;
+            gap: 8px;
+        }
+
+        .br-modal-input {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: inherit;
+        }
+
+        .br-modal-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .br-modal-select {
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .br-modal-select:focus { outline: none; border-color: var(--color-primary); }
+
+        .br-modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 24px;
+            border-top: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .br-gen-progress {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-right: auto;
+        }
+
+        .br-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         @media (max-width: 768px) {
             .br-table-row { grid-template-columns: 1fr 80px; }
             .br-table-row > *:nth-child(3),
@@ -622,6 +822,7 @@
                         <p id="br-subtitle">Loading articles...</p>
                     </div>
                     <div class="br-header-right">
+                        <button class="btn btn-primary btn-sm" id="br-generate-btn">Generate Next Batch →</button>
                         <a href="/blog/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View Blog →</a>
                     </div>
                 </div>
@@ -689,11 +890,41 @@
 <!-- Toast notification -->
 <div class="br-toast" id="br-toast"></div>
 
+<!-- Generate Article Modal -->
+<div class="br-modal-overlay" id="gen-modal" style="display:none;">
+    <div class="br-modal">
+        <div class="br-modal-header">
+            <h2>Generate Next Article</h2>
+            <button class="br-modal-close" id="gen-modal-close" aria-label="Close">✕</button>
+        </div>
+        <div class="br-modal-body">
+            <p class="br-modal-desc">Select a topic from your SEO pipeline or enter a custom one below.</p>
+            <div class="br-topic-list" id="gen-topic-list">
+                <div class="br-topic-row" style="justify-content:center;color:var(--color-text-muted);cursor:default;">Loading topics...</div>
+            </div>
+            <div class="br-modal-divider">or enter a custom topic</div>
+            <div class="br-modal-custom">
+                <input type="text" id="gen-custom-topic" class="br-modal-input" placeholder="e.g. How loyalty programs increase repeat visits">
+                <select id="gen-category" class="br-modal-select">
+                    <option value="Loyalty Programs">Loyalty Programs</option>
+                    <option value="AI Insights">AI Insights</option>
+                    <option value="Customer Retention">Customer Retention</option>
+                </select>
+            </div>
+        </div>
+        <div class="br-modal-footer">
+            <span class="br-gen-progress" id="gen-progress"></span>
+            <button class="btn btn-secondary" id="gen-modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="gen-start-btn">Generate Article →</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../i18n/i18n.js?v=1"></script>
 <script src="auth.js?v=5"></script>
 <script src="utils.js?v=5"></script>
 <script src="sidebar.js?v=18"></script>
-<script src="blog-review.js?v=16"></script>
+<script src="blog-review.js?v=17"></script>
 </body>
 </html>
