@@ -258,10 +258,7 @@
         genTopicList.innerHTML = data.map(t => `
             <div class="br-topic-row" data-id="${escapeHtml(t.id)}" data-keyword="${escapeHtml(t.keyword)}" data-category="${escapeHtml(t.category || 'Loyalty Programs')}">
                 <span class="br-topic-keyword">${escapeHtml(t.keyword)}</span>
-                <span class="br-topic-meta">
-                    <span class="br-topic-type">${escapeHtml(t.type || '')}</span>
-                    <span class="br-topic-score">${t.score}</span>
-                </span>
+                <span class="br-topic-score">SEO ${t.score}</span>
             </div>
         `).join('');
 
@@ -394,6 +391,9 @@
         subtitle.textContent = count === 0
             ? 'No articles pending review'
             : `${count} article${count !== 1 ? 's' : ''} pending review`;
+
+        // Show header button only when articles exist; empty state has its own button
+        document.getElementById('br-generate-btn').style.display = count === 0 ? 'none' : '';
 
         if (count === 0) {
             listContent.innerHTML = `
