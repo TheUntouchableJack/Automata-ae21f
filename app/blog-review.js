@@ -251,7 +251,16 @@
             : `${count} article${count !== 1 ? 's' : ''} pending review`;
 
         if (count === 0) {
-            listContent.innerHTML = `<div class="br-empty" data-i18n="blogReview.noArticles">No articles pending review</div>`;
+            listContent.innerHTML = `
+                <div class="br-empty">
+                    <p data-i18n="blogReview.noArticles">No articles pending review</p>
+                    <p style="font-size:0.8125rem; color:var(--color-text-muted); margin-top:4px;">
+                        All caught up — generate new articles to keep the content pipeline running.
+                    </p>
+                    <a href="/app/content-generator.html" class="btn btn-primary btn-sm" style="margin-top:16px;">
+                        Generate Next Batch →
+                    </a>
+                </div>`;
             return;
         }
 
