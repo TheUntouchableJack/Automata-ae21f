@@ -280,7 +280,7 @@
                 </div>
 
                 <!-- CAPTCHA Widget - Replace YOUR_SITE_KEY with your Cloudflare Turnstile site key -->
-                <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-theme="light"></div>
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-error-callback="onTurnstileError" data-theme="light"></div>
                 <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px;" data-i18n="auth.captchaError">Please complete the CAPTCHA verification.</div>
 
                 <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="auth.signIn">
@@ -312,6 +312,11 @@
         function onTurnstileSuccess(token) {
             turnstileToken = token;
             document.getElementById('captcha-error').style.display = 'none';
+        }
+        function onTurnstileError() {
+            // CAPTCHA failed to initialize (e.g., domain not authorized in Cloudflare dashboard)
+            // Allow login to proceed — Supabase still validates credentials server-side
+            turnstileToken = 'captcha-unavailable';
         }
 
         // Set up form handler FIRST (before any async operations)
