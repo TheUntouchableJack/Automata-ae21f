@@ -23,6 +23,11 @@
     let ceoCurrentStatus = 'stopped';
     let ceoIsTyping = false;
 
+    // CEO chat thread persistence
+    let ceoCeoThreadId = null;
+    let ceoCeoOrgId    = null;
+    let ceoCeoUserId   = null;
+
     // ── DOM refs ───────────────────────────────────────────────────────
     const els = {
         statusDot:      () => document.getElementById('ceo-status-dot'),
@@ -50,7 +55,19 @@
         if (typeof requireAuth === 'function') {
             const session = await requireAuth();
             if (!session) return;
+            ceoCeoUserId = session.user?.id || null;
         }
+
+        // Resolve org for chat thread persistence
+        try {
+            const { data: membership } = await window.supabase
+                .from('organization_members')
+                .select('organization_id')
+                .eq('user_id', ceoCeoUserId)
+                .limit(1)
+                .single();
+            if (membership) ceoCeoOrgId = membership.organization_id;
+        } catch (_) { /* non-fatal */ }
 
         // Auto-grow textarea
         const input = els.chatInput();
@@ -69,6 +86,7 @@
 
         await loadAll();
         initChatFab();
+        loadCeoThread(); // fire-and-forget — restores last CEO chat thread
     });
 
     async function loadAll() {
@@ -1157,6 +1175,8 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
             }
 
             ceoChatHistory.push({ role: 'assistant', content: reply });
+            saveCeoMessage(text, reply); // fire-and-forget — persist to DB
+            ceoChatHistory = ceoChatHistory.slice(-20); // trim context window
         } catch (e) {
             console.error('[ceo] chat error:', e);
             if (loadingEl) {
@@ -1256,6 +1276,88 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
         }, 3000);
     }
 
+    // ── CEO Chat Thread Persistence ────────────────────────────────────
+
+    async function loadCeoThread() {
+        if (!ceoCeoOrgId || !ceoCeoUserId) return;
+        try {
+            const { data: threads } = await window.supabase
+                .from('ai_threads')
+                .select('id')
+                .eq('organization_id', ceoCeoOrgId)
+                .eq('user_id', ceoCeoUserId)
+                .eq('mode', 'ceo')
+                .eq('is_active', true)
+                .order('updated_at', { ascending: false })
+                .limit(1);
+            if (threads?.length) {
+                ceoCeoThreadId = threads[0].id;
+                await loadCeoThreadMessages(ceoCeoThreadId);
+            }
+        } catch (e) {
+            console.warn('[ceo] loadCeoThread failed:', e);
+        }
+    }
+
+    async function loadCeoThreadMessages(threadId) {
+        try {
+            const { data: msgs } = await window.supabase
+                .from('ai_prompts')
+                .select('prompt_text, response, created_at')
+                .eq('thread_id', threadId)
+                .order('created_at', { ascending: true });
+            if (!msgs?.length) return;
+            const empty = els.chatEmpty();
+            if (empty) empty.style.display = 'none';
+            msgs.forEach(m => {
+                appendMessage('jay', m.prompt_text);
+                if (m.response?.message) appendMessage('royal', m.response.message);
+                ceoChatHistory.push({ role: 'user', content: m.prompt_text });
+                ceoChatHistory.push({ role: 'assistant', content: m.response?.message || '' });
+            });
+            ceoChatHistory = ceoChatHistory.slice(-20);
+            const thread = els.chatThread();
+            if (thread) thread.scrollTop = thread.scrollHeight;
+        } catch (e) {
+            console.warn('[ceo] loadCeoThreadMessages failed:', e);
+        }
+    }
+
+    async function saveCeoMessage(userText, assistantReply) {
+        if (!ceoCeoOrgId || !ceoCeoUserId) return;
+        try {
+            if (!ceoCeoThreadId) {
+                const title = userText.slice(0, 60) + (userText.length > 60 ? '…' : '');
+                const { data: thread } = await window.supabase
+                    .from('ai_threads')
+                    .insert({ organization_id: ceoCeoOrgId, user_id: ceoCeoUserId, mode: 'ceo', title })
+                    .select('id').single();
+                ceoCeoThreadId = thread?.id;
+            }
+            if (!ceoCeoThreadId) return;
+            await window.supabase.from('ai_prompts').insert({
+                organization_id: ceoCeoOrgId,
+                user_id:         ceoCeoUserId,
+                session_id:      ceoCeoThreadId,
+                thread_id:       ceoCeoThreadId,
+                mode:            'ceo',
+                prompt_text:     userText,
+                response:        { message: assistantReply },
+            });
+        } catch (e) {
+            console.warn('[ceo] saveCeoMessage failed:', e);
+        }
+    }
+
+    function newCeoThread() {
+        ceoCeoThreadId = null;
+        ceoChatHistory = [];
+        const thread = els.chatThread();
+        if (thread) thread.innerHTML = '';
+        const empty = els.chatEmpty();
+        if (empty) empty.style.display = '';
+    }
+
     // ── Public API ─────────────────────────────────────────────────────
     window.ceoDashboard = {
         setStatus,
@@ -1277,6 +1379,7 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
         switchTasksTab,
         showResolveForm,
         resolveBlocker,
+        newCeoThread,
     };
 
 })();

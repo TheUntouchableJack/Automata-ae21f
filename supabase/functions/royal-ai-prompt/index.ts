@@ -985,6 +985,23 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
     }
   },
   {
+    name: 'queue_outreach',
+    description: "Draft an outreach email or message and queue it for Jay's approval in the CEO Dashboard. Use when Jay asks Royal to send outreach, or when Royal identifies a high-value outreach opportunity. Items appear in 'Today's Plan — Pending Approval'. Jay must approve before anything sends.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        target_email: { type: 'string', description: 'Recipient email address' },
+        target_name:  { type: 'string', description: 'Recipient name or org name' },
+        subject:      { type: 'string', description: 'Email subject line' },
+        body_text:    { type: 'string', description: 'Plain text email body' },
+        body_html:    { type: 'string', description: 'HTML email body (optional, falls back to body_text)' },
+        rationale:    { type: 'string', description: "Why this outreach makes sense — shown to Jay in the approval queue" },
+        channel:      { type: 'string', enum: ['email', 'sms'], description: 'Delivery channel (default: email)' },
+      },
+      required: ['target_email', 'subject', 'body_text', 'rationale'],
+    }
+  },
+  {
     name: 'trigger_article_generation',
     description: "Generate a new blog article for Royalty's website. Auto-picks the next SEO-priority topic from the content strategy, or writes a specific topic if provided. Article is saved as a draft in blog-review for Jay to publish.",
     input_schema: {
@@ -2588,6 +2605,38 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
       if (error) throw error
       return { success: true, data: { blocked: true, id: data?.id, message: 'Blocker recorded — Jay will see this in the CEO dashboard Tasks panel.' } }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
+  // ── CEO: queue_outreach ───────────────────────────────────────────────
+  queue_outreach: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const targetEmail = input.target_email as string
+    const subject     = input.subject as string
+    const bodyText    = input.body_text as string
+    const rationale   = input.rationale as string
+
+    if (!targetEmail || !subject || !bodyText || !rationale) {
+      return { success: false, error: 'target_email, subject, body_text, and rationale are required' }
+    }
+
+    const vetoWindowEnds = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+    try {
+      const { error } = await supabase.from('outreach_queue').insert({
+        target_email:     targetEmail,
+        target_name:      (input.target_name as string) || null,
+        channel:          (input.channel as string) || 'email',
+        subject,
+        body_html:        (input.body_html as string) || `<p>${bodyText.replace(/\n/g, '</p><p>')}</p>`,
+        body_text:        bodyText,
+        rationale,
+        status:           'draft',
+        veto_window_ends: vetoWindowEnds,
+      })
+      if (error) throw error
+      return { success: true, data: { queued: true, message: "Queued for approval. Jay will see this in CEO Dashboard → Today's Plan. 2-hour veto window before auto-send." } }
     } catch (e) {
       return { success: false, error: String(e) }
     }
