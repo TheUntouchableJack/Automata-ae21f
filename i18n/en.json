@@ -168,11 +168,26 @@
     "testimonials": {
         "tag": "Results",
         "title": "Local businesses love Royalty",
-        "subtitle": "See what happens when AI runs your loyalty program",
+        "subtitle": "Real results from businesses running loyalty on autopilot",
+        "stats": {
+            "setupTime": "Average setup time",
+            "repeatVisits": "More repeat visits",
+            "aiRunning": "AI running your program"
+        },
         "quote1": {
             "text": "\"I set up Royalty in literally one minute. Now I get a weekly email showing me which regulars haven't been in, and AI automatically sends them offers. Our repeat visits are up 40% and I didn't do anything.\"",
             "author": "Maria Rodriguez",
             "title": "Owner, Casa del Sol Restaurant"
+        },
+        "quote2": {
+            "text": "\"We tried a stamp card for years. Nobody tracked it. With Royalty, AI sends a message when someone hasn't been in 2 weeks — and they come back. It's like having a retention manager I never had to hire.\"",
+            "author": "James Okafor",
+            "title": "Owner, Peak Form Fitness Studio"
+        },
+        "quote3": {
+            "text": "\"My regulars feel like VIPs now. They ask about their points, refer friends, come in just to hit a tier milestone. Royalty turned my checkout line into a conversation.\"",
+            "author": "Sophie Tan",
+            "title": "Owner, The Lemon Boutique"
         }
     },
     "pricing": {

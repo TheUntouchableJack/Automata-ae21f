@@ -20,8 +20,25 @@
     let currentArticle = null;
     let currentContent = '';   // live content with markers replaced as user accepts
     let pendingMarkerCount = 0;
+    let currentOgImageUrl = null; // featured image URL for current article
 
     const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
+    const PEXELS_API_KEY = 'Y9RvXY9CStZJItHnQdYYcK1zlsUvG8qWmQtyIcpEX0RuRbUiuW0Ixoyt';
+    const escapeHtml = AppUtils.escapeHtml.bind(AppUtils);
+
+    async function fetchPexelsImage(query) {
+        try {
+            const resp = await fetch(
+                `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
+                { headers: { Authorization: PEXELS_API_KEY } }
+            );
+            if (!resp.ok) return null;
+            const json = await resp.json();
+            return json.photos?.[0]?.src?.large2x || null;
+        } catch {
+            return null;
+        }
+    }
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
     const listView   = document.getElementById('br-list-view');
@@ -36,6 +53,135 @@
     const publishBtn  = document.getElementById('br-publish-btn');
     const backBtn     = document.getElementById('br-back-btn');
     const toast       = document.getElementById('br-toast');
+
+    // Image upload refs
+    const imageDropZone    = document.getElementById('br-image-drop-zone');
+    const imageInput       = document.getElementById('br-image-input');
+    const imagePreview     = document.getElementById('br-image-preview-thumb');
+    const imagePlaceholder = document.getElementById('br-image-drop-placeholder');
+    const imageUploading   = document.getElementById('br-image-uploading');
+    const imageClearBtn    = document.getElementById('br-image-clear-btn');
+
+    // ── Image upload helpers ──────────────────────────────────────────────────
+    function setImagePreview(url) {
+        currentOgImageUrl = url;
+        imagePreview.onerror = () => {
+            imagePreview.style.display = 'none';
+            imagePreview.removeAttribute('src');
+            imagePlaceholder.style.display = 'flex';
+            imageClearBtn.style.display = 'none';
+            imageDropZone.classList.remove('has-image');
+            currentOgImageUrl = null;
+            showToast('Paste a direct image URL. On Unsplash: right-click photo → Copy Image Address');
+        };
+        imagePreview.src = url;
+        imagePreview.style.display = 'block';
+        imagePlaceholder.style.display = 'none';
+        imageClearBtn.style.display = 'block';
+        imageDropZone.classList.add('has-image');
+    }
+
+    function clearImagePreview() {
+        currentOgImageUrl = null;
+        imagePreview.onerror = null;
+        imagePreview.removeAttribute('src');
+        imagePreview.style.display = 'none';
+        imagePlaceholder.style.display = 'flex';
+        imageClearBtn.style.display = 'none';
+        imageDropZone.classList.remove('has-image');
+    }
+
+    async function uploadImageFile(file) {
+        if (!file) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            showToast('Only JPEG, PNG, or WebP images are supported.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Image must be under 5MB.');
+            return;
+        }
+
+        imagePlaceholder.style.display = 'none';
+        imageUploading.style.display = 'block';
+        imageClearBtn.style.display = 'none';
+        imageDropZone.classList.remove('has-image');
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        const path = `${currentArticle.id}/${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await db.storage
+            .from('blog-images')
+            .upload(path, file, { contentType: file.type, upsert: true });
+
+        imageUploading.style.display = 'none';
+
+        if (uploadError) {
+            imagePlaceholder.style.display = 'flex';
+            console.error('Image upload error:', uploadError);
+            showToast('Upload failed. Please try again.');
+            return;
+        }
+
+        const { data: { publicUrl } } = db.storage
+            .from('blog-images')
+            .getPublicUrl(path);
+
+        setImagePreview(publicUrl);
+        showToast('Image uploaded.');
+    }
+
+    // Click to open file picker
+    imageDropZone.addEventListener('click', () => imageInput.click());
+
+    // File picked via input
+    imageInput.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) uploadImageFile(file);
+        imageInput.value = ''; // reset so same file can be re-selected
+    });
+
+    // Drag-and-drop
+    imageDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        imageDropZone.classList.add('drag-over');
+    });
+    imageDropZone.addEventListener('dragleave', () => {
+        imageDropZone.classList.remove('drag-over');
+    });
+    imageDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        imageDropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files?.[0];
+        if (file) uploadImageFile(file);
+    });
+
+    // Clear button
+    imageClearBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // don't trigger drop zone click
+        clearImagePreview();
+    });
+
+    // URL paste
+    const imageUrlInput = document.getElementById('br-image-url-input');
+    const imageUrlBtn   = document.getElementById('br-image-url-btn');
+
+    function normalizeImageUrl(url) {
+        return url;
+    }
+
+    function applyUrlInput() {
+        const raw = imageUrlInput.value.trim();
+        if (!raw) return;
+        const url = normalizeImageUrl(raw);
+        setImagePreview(url);
+        imageUrlInput.value = '';
+    }
+
+    imageUrlBtn.addEventListener('click', applyUrlInput);
+    imageUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); applyUrlInput(); }
+    });
 
     // ── Init sidebar ─────────────────────────────────────────────────────────
     const { data: { user } } = await db.auth.getUser();
@@ -62,13 +208,40 @@
 
     // ── Load article list ─────────────────────────────────────────────────────
     async function loadArticles() {
+        listContent.innerHTML = '<div class="br-empty">Loading...</div>';
         const { data, error } = await db.rpc('get_draft_articles_for_review');
         if (error) {
             listContent.innerHTML = `<div class="br-empty">Error loading articles: ${escapeHtml(error.message)}</div>`;
             return;
         }
         allArticles = data || [];
-        renderList();
+        try {
+            renderList();
+        } catch (err) {
+            console.error('renderList error:', err);
+            listContent.innerHTML = `<div class="br-empty">Error rendering list: ${escapeHtml(err.message)}</div>`;
+            return;
+        }
+
+        // Auto-open if navigated from a post's Edit button (?slug=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const slugParam = urlParams.get('slug');
+        if (slugParam) {
+            const article = allArticles.find(a => a.slug === slugParam);
+            if (article) {
+                BlogReview_openArticle(article.id);
+            } else {
+                // Not in draft list (e.g. published article) — fetch directly
+                const { data: fetched } = await db.from('newsletter_articles')
+                    .select('*')
+                    .eq('slug', slugParam)
+                    .single();
+                if (fetched) {
+                    allArticles.push(fetched);
+                    BlogReview_openArticle(fetched.id);
+                }
+            }
+        }
     }
 
     function renderList() {
@@ -132,16 +305,100 @@
         saveStatus.textContent = '';
         saveStatus.classList.remove('saved');
 
+        // Populate featured image if already set
+        if (currentArticle.og_image_url) {
+            setImagePreview(currentArticle.og_image_url);
+        } else {
+            clearImagePreview();
+        }
+
         listView.style.display = 'none';
         editorView.style.display = 'block';
+
+        // Push state so browser back button returns to list
+        history.pushState({ brView: 'editor' }, '', `?slug=${currentArticle.slug}`);
 
         renderEditor();
     };
 
+    // Browser back button: intercept when editor is open → return to list
+    window.addEventListener('popstate', () => {
+        if (editorView.style.display !== 'none') {
+            editorView.style.display = 'none';
+            listView.style.display = 'block';
+            loadArticles();
+        }
+    });
+
     backBtn.addEventListener('click', () => {
         editorView.style.display = 'none';
         listView.style.display = 'block';
+        history.replaceState(null, '', '/app/blog-review.html');
         loadArticles(); // refresh counts
+    });
+
+    // ── Bulk action helpers ───────────────────────────────────────────────────
+    function dimCard(card) {
+        card.dataset.pending = 'false';
+        card.style.opacity = '0.5';
+        const header = card.querySelector('.br-edit-card-header');
+        if (header) header.style.background = 'var(--color-text-muted)';
+        const actions = card.querySelector('.br-card-actions');
+        if (actions) actions.style.display = 'none';
+    }
+
+    // Accept All — process in reverse segIdx order so marker positions stay correct
+    document.getElementById('br-accept-all-btn').addEventListener('click', () => {
+        const pendingCards = Array.from(editorBody.querySelectorAll('[data-pending="true"]'));
+        if (!pendingCards.length) return;
+        // Sort descending by segIdx so each acceptance doesn't shift later markers
+        pendingCards.sort((a, b) => parseInt(b.dataset.seg) - parseInt(a.dataset.seg));
+        let accepted = 0;
+        pendingCards.forEach(card => {
+            const segIdx = card.dataset.seg;
+            const suggestionEl = document.getElementById(`suggestion-${segIdx}`);
+            const text = suggestionEl ? suggestionEl.textContent.trim() : '';
+            if (text && !suggestionEl?.classList.contains('loading')) {
+                acceptCard(card, segIdx, text);
+                accepted++;
+            }
+        });
+        if (accepted < pendingCards.length) {
+            showToast(`${accepted} accepted — some cards had no suggestion yet.`);
+        } else {
+            showToast(`All ${accepted} edit${accepted > 1 ? 's' : ''} accepted.`);
+        }
+    });
+
+    // Re-query All — regenerate AI suggestions for all pending cards
+    document.getElementById('br-requery-all-btn').addEventListener('click', async () => {
+        const pendingCards = Array.from(editorBody.querySelectorAll('[data-pending="true"]'));
+        if (!pendingCards.length) return;
+        showToast(`Regenerating ${pendingCards.length} suggestion${pendingCards.length > 1 ? 's' : ''}…`);
+        await Promise.all(pendingCards.map(card => regenerateCard(card, card.dataset.seg, null)));
+        showToast('All suggestions refreshed.');
+    });
+
+    // Reject All — strip markers from content (replace with empty string), resolve cards
+    document.getElementById('br-reject-all-btn').addEventListener('click', () => {
+        const pendingCards = Array.from(editorBody.querySelectorAll('[data-pending="true"]'));
+        if (!pendingCards.length) return;
+        // Remove all HUMAN_EDIT markers from content
+        currentContent = currentContent.replace(/<!--\s*HUMAN_EDIT[\s\S]*?-->/gi, '');
+        pendingCards.forEach(card => dimCard(card));
+        pendingMarkerCount = 0;
+        updateProgress();
+        showToast(`${pendingCards.length} edit${pendingCards.length > 1 ? 's' : ''} rejected — sections removed.`);
+    });
+
+    // Skip All — resolve UI only, keep markers in content
+    document.getElementById('br-skip-all-btn').addEventListener('click', () => {
+        const pendingCards = editorBody.querySelectorAll('[data-pending="true"]');
+        if (!pendingCards.length) return;
+        pendingCards.forEach(card => dimCard(card));
+        pendingMarkerCount = 0;
+        updateProgress();
+        showToast(`${pendingCards.length} edit${pendingCards.length > 1 ? 's' : ''} skipped — article is ready to publish.`);
     });
 
     // ── Editor rendering ──────────────────────────────────────────────────────
@@ -156,6 +413,14 @@
                 return renderEditCard(seg, i);
             }
         }).join('');
+
+        if (!html.trim()) {
+            editorBody.innerHTML = currentContent
+                ? `<div class="br-markdown-segment"><pre style="white-space:pre-wrap;font-family:inherit;font-size:0.875rem;line-height:1.6;">${escapeHtml(currentContent)}</pre></div>`
+                : `<div class="br-empty">No content found for this article.</div>`;
+            updateProgress();
+            return;
+        }
 
         editorBody.innerHTML = html;
         updateProgress();
@@ -499,16 +764,19 @@
         const remaining = editorBody.querySelectorAll('[data-pending="true"]').length;
         pendingMarkerCount = remaining;
 
+        const acceptAllBtn = document.getElementById('br-accept-all-btn');
         if (remaining === 0) {
             progressText.textContent = 'All edits resolved ✓';
             progressText.style.color = 'var(--color-success, #10b981)';
             publishBtn.disabled = false;
             publishBtn.title = '';
+            if (acceptAllBtn) { acceptAllBtn.disabled = true; acceptAllBtn.title = 'All edits accepted'; }
         } else {
             progressText.textContent = `${remaining} edit${remaining !== 1 ? 's' : ''} remaining`;
             progressText.style.color = 'var(--color-text-muted)';
             publishBtn.disabled = true;
             publishBtn.title = 'Resolve all edits before publishing';
+            if (acceptAllBtn) { acceptAllBtn.disabled = false; acceptAllBtn.title = ''; }
         }
     }
 
@@ -525,10 +793,19 @@
         saveStatus.classList.remove('saved');
 
         try {
+            // Auto-fetch hero image if none set
+            let imageUrl = currentOgImageUrl;
+            if (!imageUrl && currentArticle) {
+                const query = currentArticle.title || currentArticle.primary_topic || 'loyalty program rewards';
+                imageUrl = await fetchPexelsImage(query);
+                if (imageUrl) setImagePreview(imageUrl);
+            }
+
             const { data, error } = await db.rpc('update_draft_article', {
                 p_article_id: currentArticle.id,
                 p_content: currentContent,
                 p_status: status,
+                p_og_image_url: imageUrl || null,
             });
 
             if (error) throw error;
@@ -537,11 +814,16 @@
                 showToast('Published! Article is now live on the blog.');
                 saveStatus.textContent = 'Published ✓';
                 saveStatus.classList.add('saved');
-                // After short delay, go back to list
-                setTimeout(() => {
+                // After short delay, go back to list (or to the post if queue is empty)
+                const publishedSlug = currentArticle.slug;
+                setTimeout(async () => {
+                    history.replaceState(null, '', '/app/blog-review.html');
                     editorView.style.display = 'none';
                     listView.style.display = 'block';
-                    loadArticles();
+                    await loadArticles();
+                    if (allArticles.length === 0) {
+                        window.location.href = `/blog/${publishedSlug}`;
+                    }
                 }, 1500);
             } else {
                 saveStatus.textContent = 'Saved ✓';
@@ -558,6 +840,7 @@
             if (idx >= 0) {
                 allArticles[idx].content = currentContent;
                 allArticles[idx].status = status;
+                allArticles[idx].og_image_url = currentOgImageUrl;
             }
         } catch (err) {
             console.error('Save error:', err);

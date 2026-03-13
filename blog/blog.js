@@ -24,6 +24,51 @@ async function initBlogIndex() {
     await loadPosts();
     setupFilterListeners();
     setupSubscribeForm();
+    loadDraftArticles();
+}
+
+async function loadDraftArticles() {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return;
+    const { data: profile } = await db.from('profiles').select('is_admin').eq('id', session.user.id).single();
+    if (!profile?.is_admin) return;
+
+    const { data: drafts, error } = await db.rpc('get_draft_articles_for_review');
+    if (error || !drafts?.length) return;
+
+    const grid = document.getElementById('posts-grid');
+    if (!grid) return;
+
+    if (grid.children.length > 0) {
+        const sep = document.createElement('div');
+        sep.style.cssText = 'grid-column: 1/-1; display:flex; align-items:center; gap:12px; color:var(--color-text-muted); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;';
+        sep.innerHTML = `<span>Drafts (admin only)</span><span style="flex:1;height:1px;background:var(--color-border)"></span>`;
+        grid.appendChild(sep);
+    }
+
+    drafts.forEach(post => {
+        const card = document.createElement('a');
+        card.href = `/blog/${post.slug}`;
+        card.className = 'post-card post-card--draft';
+        card.innerHTML = `
+            <div class="post-card-image">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
+                    <rect x="8" y="6" width="32" height="36" rx="2"/>
+                    <path d="M16 16H32M16 24H32M16 32H24" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="post-card-content">
+                <div class="post-card-meta">
+                    <span class="post-card-industry">${escapeHtml(post.primary_topic || 'Draft')}</span>
+                    <span class="draft-badge">DRAFT</span>
+                </div>
+                <h2 class="post-card-title">${escapeHtml(post.title)}</h2>
+                <p class="post-card-excerpt">${escapeHtml(post.meta_description || '')}</p>
+            </div>`;
+        grid.appendChild(card);
+    });
+
+    grid.style.display = 'grid';
 }
 
 async function detectBlogSource() {
@@ -106,7 +151,7 @@ function renderPosts(posts) {
     const postsGrid = document.getElementById('posts-grid');
 
     postsGrid.innerHTML = posts.map(post => {
-        const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
+        const publishedDate = new Date(post.published_at || post.created_at).toLocaleDateString('en-US', {
             month: 'long',
             day: 'numeric',
             year: 'numeric'
@@ -242,6 +287,7 @@ function setupSubscribeForm() {
 
 // ===== Single Post Page =====
 async function initPostPage() {
+    document.body.classList.add('is-post-page');
     await detectBlogSource();
 
     // Get slug from clean URL path, hash, or query param (backward compat)
@@ -282,7 +328,17 @@ async function loadPost(slug) {
             });
 
             if (error) throw error;
-            post = data;
+            if (data?.article) {
+                post = {
+                    ...data.article,
+                    series: data.series,
+                    prev_in_series: data.prev_in_series,
+                    next_in_series: data.next_in_series,
+                    translations: data.translations
+                };
+            } else {
+                post = data;
+            }
         } else {
             // Fallback to blog_posts table
             const { data, error } = await db
@@ -294,6 +350,20 @@ async function loadPost(slug) {
 
             if (error) throw error;
             post = data;
+        }
+
+        // Admin fallback: try loading draft directly if RPC returned nothing
+        if (!post?.id) {
+            const { data: { session } } = await db.auth.getSession();
+            if (session) {
+                const { data: profile } = await db.from('profiles').select('is_admin').eq('id', session.user.id).single();
+                if (profile?.is_admin) {
+                    let draftQuery = db.from('newsletter_articles').select('*').eq('slug', slug);
+                    if (ROYALTY_APP_ID) draftQuery = draftQuery.eq('app_id', ROYALTY_APP_ID);
+                    const { data: draft } = await draftQuery.single();
+                    if (draft) post = draft;
+                }
+            }
         }
 
         if (!post) {
@@ -467,7 +537,7 @@ function injectSchemaMarkup(post) {
 }
 
 function renderPost(post) {
-    const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
+    const publishedDate = new Date(post.published_at || post.created_at).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric'
@@ -475,6 +545,8 @@ function renderPost(post) {
 
     document.getElementById('post-title').textContent = post.title;
     document.getElementById('post-date').textContent = publishedDate;
+
+    showEditButtonIfAdmin(post.slug);
 
     const topic = post.primary_topic || post.industry;
     if (topic) {
@@ -484,17 +556,40 @@ function renderPost(post) {
         document.getElementById('post-industry').style.display = 'none';
     }
 
+    // Hero image
+    const heroEl = document.getElementById('post-hero');
+    const heroImg = document.getElementById('post-hero-img');
+    if (heroEl && heroImg) {
+        if (post.og_image_url) {
+            heroImg.src = post.og_image_url;
+            heroImg.alt = post.title;
+            heroImg.onerror = () => { heroEl.style.display = 'none'; };
+            heroEl.style.display = 'block';
+        } else {
+            heroEl.style.display = 'none';
+        }
+    }
+
     // Render markdown content
     let contentHtml = typeof marked !== 'undefined'
         ? marked.parse(post.content || '')
         : post.content.replace(/\n/g, '<br>');
+
+    // Replace AI-generated author bio placeholders with Felix attribution
+    const felixCard = `<div class="post-author-felix"><div class="post-author-felix-brand"><img src="/logo.svg" alt="Royalty" class="post-author-felix-logo"><strong>Written by Royalty AI</strong></div><p>This article was researched and written by Royalty's autonomous AI — built to help small businesses understand, build, and run loyalty programs that actually work.</p></div>`;
+    contentHtml = contentHtml.replace(/<p>Written by \[Name\][^<]*<\/p>/gi, felixCard);
 
     // Parse and render embed widgets
     if (typeof parseEmbeds === 'function') {
         contentHtml = parseEmbeds(contentHtml);
     }
 
-    document.getElementById('post-body').innerHTML = contentHtml;
+    const postBody = document.getElementById('post-body');
+    postBody.innerHTML = contentHtml;
+
+    injectTOC(postBody);
+    buildFloatingTOC(postBody);
+    injectMidCTA(postBody);
 
     // Render keywords/tags
     const tags = post.tags || post.seo_keywords || [];
@@ -508,6 +603,84 @@ function renderPost(post) {
     if (post.series_id) {
         renderSeriesNav(post);
     }
+}
+
+async function showEditButtonIfAdmin(slug) {
+    try {
+        const { data: { session } } = await db.auth.getSession();
+        if (!session) return;
+        const { data: profile } = await db
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .single();
+        if (!profile?.is_admin) return;
+        const editBtn = document.getElementById('post-edit-btn');
+        if (editBtn) {
+            editBtn.href = `/app/blog-review.html?slug=${slug}`;
+            editBtn.style.display = 'flex';
+        }
+    } catch (e) { /* fail silently — button stays hidden */ }
+}
+
+function buildFloatingTOC(container) {
+    const tocEl = document.getElementById('post-toc');
+    if (!tocEl) return;
+
+    const headings = Array.from(container.querySelectorAll('h2, h3'));
+    if (headings.length < 3) { tocEl.style.display = 'none'; return; }
+
+    // Ensure headings have IDs (injectTOC already sets section-N on h2s)
+    headings.forEach((h, i) => {
+        if (!h.id) {
+            h.id = 'ftoc-' + i + '-' + h.textContent.trim()
+                .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+    });
+
+    const items = headings.map(h => {
+        const indent = h.tagName === 'H3' ? ' style="padding-left:20px;font-size:0.775rem;"' : '';
+        return `<a href="#${h.id}" class="toc-link" data-target="${h.id}"${indent}>${escapeHtml(h.textContent.trim())}</a>`;
+    }).join('');
+
+    tocEl.innerHTML = `<div class="toc-label">Jump to section</div>${items}`;
+    tocEl.style.display = 'block';
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const link = tocEl.querySelector(`[data-target="${entry.target.id}"]`);
+            if (link) link.classList.toggle('toc-active', entry.isIntersecting);
+        });
+    }, { rootMargin: '-10% 0px -75% 0px' });
+
+    headings.forEach(h => observer.observe(h));
+}
+
+function injectTOC(container) {
+    const headings = container.querySelectorAll('h2');
+    if (headings.length < 3) return;
+    headings.forEach((h, i) => { h.id = `section-${i}`; });
+    const tocItems = Array.from(headings).map((h, i) =>
+        `<li><a href="#section-${i}">${h.textContent}</a></li>`
+    ).join('');
+    const toc = document.createElement('nav');
+    toc.className = 'article-toc';
+    toc.innerHTML = `<p class="toc-label">In this article</p><ol>${tocItems}</ol>`;
+    headings[0].before(toc);
+}
+
+function injectMidCTA(container) {
+    const paras = container.querySelectorAll('p');
+    if (paras.length < 4) return;
+    const midIndex = Math.floor(paras.length * 0.6);
+    const cta = document.createElement('div');
+    cta.className = 'article-cta';
+    cta.innerHTML = `
+        <p class="article-cta-headline">Set up your loyalty program in 60 seconds</p>
+        <p class="article-cta-sub">Join local businesses using Royalty to bring customers back — no technical skills needed.</p>
+        <a href="/app/signup.html" class="btn btn-primary">Start free →</a>
+    `;
+    paras[midIndex].after(cta);
 }
 
 async function renderSeriesNav(post) {
@@ -593,7 +766,7 @@ function renderRelatedPosts(posts) {
     relatedSection.style.display = 'block';
 
     relatedGrid.innerHTML = posts.map(post => {
-        const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
+        const publishedDate = new Date(post.published_at || post.created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric'
         });

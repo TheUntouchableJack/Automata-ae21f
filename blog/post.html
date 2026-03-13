@@ -36,7 +36,38 @@
     <link rel="stylesheet" href="../i18n/i18n.css">
 </head>
 <body>
+    <a href="/blog/" class="post-back-btn" aria-label="Back to blog">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span>Blog</span>
+    </a>
+    <a href="/app/blog-review.html" class="post-edit-btn" id="post-edit-btn" aria-label="Edit article" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span>Edit</span>
+    </a>
     <div class="blog-layout">
+        <!-- Left sidebar: TOC + trust + CTA (desktop only, populated by blog.js) -->
+        <div id="post-sidebar">
+            <nav id="post-toc" aria-label="Table of contents" style="display:none;"></nav>
+            <div id="post-cta">
+                <div class="post-cta-brand">
+                    <img src="/logo.svg" alt="Royalty" class="post-cta-logo">
+                    <span>Royalty AI</span>
+                </div>
+                <p class="post-cta-tagline">Build and run your loyalty program on autopilot.</p>
+                <ul class="post-trust-list">
+                    <li>No app download required</li>
+                    <li>AI runs your program 24/7</li>
+                    <li>Setup in 60 seconds</li>
+                </ul>
+                <a href="/app/signup.html" class="post-cta-btn">Try Free →</a>
+            </div>
+        </div>
+
         <!-- Header -->
         <header class="blog-header">
             <div class="container">
@@ -49,7 +80,12 @@
                     <a href="/#features">Features</a>
                     <a href="/pricing.html">Pricing</a>
                     <a href="/estimate.html" data-i18n="nav.customBuilds">Custom Apps</a>
-                    <a href="/blog/" class="active">Blog</a>
+                    <a href="/blog/">Blog</a>
+                </nav>
+
+                <div class="blog-nav-actions">
+                    <a href="/app/login.html" class="btn btn-secondary btn-sm">Log In</a>
+                    <a href="/app/signup.html" class="btn btn-primary btn-sm">Sign Up</a>
                     <!-- Language Selector -->
                     <div class="lang-selector">
                         <button class="lang-selector-btn" type="button" aria-label="Change language">
@@ -69,7 +105,7 @@
                             <a href="#" class="lang-option" data-lang="ar">AR</a>
                         </div>
                     </div>
-                </nav>
+                </div>
             </div>
         </header>
 
@@ -89,6 +125,11 @@
                     </div>
                     <h1 class="post-title" id="post-title"></h1>
                 </header>
+
+                <!-- Hero Image (shown when og_image_url is set) -->
+                <div class="post-hero" id="post-hero" style="display:none;">
+                    <img id="post-hero-img" alt="" loading="lazy">
+                </div>
 
                 <div class="post-content" id="post-body"></div>
 
@@ -212,7 +253,7 @@
     <script src="../app/embed-widgets.js?v=3"></script>
     <script src="../i18n/i18n.js?v=1"></script>
     <script>window.__POST_PAGE = true;</script>
-    <script src="blog.js?v=5"></script>
+    <script src="blog.js?v=8"></script>
     <script>
         // Share button handlers
         document.addEventListener('DOMContentLoaded', () => {

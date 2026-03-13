@@ -115,7 +115,11 @@ BEGIN
   SET
     content = p_content,
     status = p_status,
-    updated_at = NOW()
+    updated_at = NOW(),
+    published_at = CASE
+      WHEN p_status = 'published' AND published_at IS NULL THEN NOW()
+      ELSE published_at
+    END
   WHERE id = p_article_id
     AND deleted_at IS NULL;
 

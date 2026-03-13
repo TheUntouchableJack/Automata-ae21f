@@ -47,7 +47,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=13">
+    <link rel="stylesheet" href="styles.css?v=14">
     <link rel="stylesheet" href="i18n/i18n.css">
     <!-- Cloudflare Turnstile CAPTCHA -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -554,22 +554,83 @@
             <div class="section-header">
                 <span class="section-tag" data-i18n="testimonials.tag">Results</span>
                 <h2 data-i18n="testimonials.title">Local businesses love Royalty</h2>
-                <p data-i18n="testimonials.subtitle">See what happens when AI runs your loyalty program</p>
+                <p data-i18n="testimonials.subtitle">Real results from businesses running loyalty on autopilot</p>
             </div>
-            <div class="testimonial-card">
-                <div class="quote-icon" aria-hidden="true">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                        <path d="M14 24C14 19 18 16 22 16V20C20 20 18 21 18 24V28H22V36H14V24ZM30 24C30 19 34 16 38 16V20C36 20 34 21 34 24V28H38V36H30V24Z" fill="currentColor"/>
-                    </svg>
+
+            <!-- Stats strip -->
+            <div class="social-proof-stats">
+                <div class="social-proof-stat">
+                    <span class="social-proof-stat-number">60s</span>
+                    <span class="social-proof-stat-label" data-i18n="testimonials.stats.setupTime">Average setup time</span>
                 </div>
-                <blockquote data-i18n="testimonials.quote1.text">
-                    "I set up Royalty in literally one minute. Now I get a weekly email showing me which regulars haven't been in, and AI automatically sends them offers. Our repeat visits are up 40% and I didn't do anything."
-                </blockquote>
-                <div class="testimonial-author">
-                    <div class="author-avatar">MR</div>
-                    <div class="author-info">
-                        <span class="author-name" data-i18n="testimonials.quote1.author">Maria Rodriguez</span>
-                        <span class="author-title" data-i18n="testimonials.quote1.title">Owner, Casa del Sol Restaurant</span>
+                <div class="social-proof-stat-divider"></div>
+                <div class="social-proof-stat">
+                    <span class="social-proof-stat-number">40%</span>
+                    <span class="social-proof-stat-label" data-i18n="testimonials.stats.repeatVisits">More repeat visits</span>
+                </div>
+                <div class="social-proof-stat-divider"></div>
+                <div class="social-proof-stat">
+                    <span class="social-proof-stat-number">24/7</span>
+                    <span class="social-proof-stat-label" data-i18n="testimonials.stats.aiRunning">AI running your program</span>
+                </div>
+            </div>
+
+            <!-- 3-card testimonial grid -->
+            <div class="testimonials-grid">
+                <!-- Card 1: Maria Rodriguez -->
+                <div class="testimonial-card">
+                    <div class="quote-icon" aria-hidden="true">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <path d="M14 24C14 19 18 16 22 16V20C20 20 18 21 18 24V28H22V36H14V24ZM30 24C30 19 34 16 38 16V20C36 20 34 21 34 24V28H38V36H30V24Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <blockquote data-i18n="testimonials.quote1.text">
+                        "I set up Royalty in literally one minute. Now I get a weekly email showing me which regulars haven't been in, and AI automatically sends them offers. Our repeat visits are up 40% and I didn't do anything."
+                    </blockquote>
+                    <div class="testimonial-author">
+                        <img class="author-avatar" src="https://api.dicebear.com/9.x/personas/png?seed=MariaRodriguez&size=96" alt="Maria Rodriguez" loading="lazy">
+                        <div class="author-info">
+                            <span class="author-name" data-i18n="testimonials.quote1.author">Maria Rodriguez</span>
+                            <span class="author-title" data-i18n="testimonials.quote1.title">Owner, Casa del Sol Restaurant</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: James Okafor -->
+                <div class="testimonial-card">
+                    <div class="quote-icon" aria-hidden="true">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <path d="M14 24C14 19 18 16 22 16V20C20 20 18 21 18 24V28H22V36H14V24ZM30 24C30 19 34 16 38 16V20C36 20 34 21 34 24V28H38V36H30V24Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <blockquote data-i18n="testimonials.quote2.text">
+                        "We tried a stamp card for years. Nobody tracked it. With Royalty, AI sends a message when someone hasn't been in 2 weeks — and they come back. It's like having a retention manager I never had to hire."
+                    </blockquote>
+                    <div class="testimonial-author">
+                        <img class="author-avatar" src="https://api.dicebear.com/9.x/personas/png?seed=JamesOkafor&size=96" alt="James Okafor" loading="lazy">
+                        <div class="author-info">
+                            <span class="author-name" data-i18n="testimonials.quote2.author">James Okafor</span>
+                            <span class="author-title" data-i18n="testimonials.quote2.title">Owner, Peak Form Fitness Studio</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Sophie Tan -->
+                <div class="testimonial-card">
+                    <div class="quote-icon" aria-hidden="true">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <path d="M14 24C14 19 18 16 22 16V20C20 20 18 21 18 24V28H22V36H14V24ZM30 24C30 19 34 16 38 16V20C36 20 34 21 34 24V28H38V36H30V24Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <blockquote data-i18n="testimonials.quote3.text">
+                        "My regulars feel like VIPs now. They ask about their points, refer friends, come in just to hit a tier milestone. Royalty turned my checkout line into a conversation."
+                    </blockquote>
+                    <div class="testimonial-author">
+                        <img class="author-avatar" src="https://api.dicebear.com/9.x/personas/png?seed=SophieTan&size=96" alt="Sophie Tan" loading="lazy">
+                        <div class="author-info">
+                            <span class="author-name" data-i18n="testimonials.quote3.author">Sophie Tan</span>
+                            <span class="author-title" data-i18n="testimonials.quote3.title">Owner, The Lemon Boutique</span>
+                        </div>
                     </div>
                 </div>
             </div>

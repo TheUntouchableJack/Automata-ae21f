@@ -168,11 +168,26 @@
     "testimonials": {
         "tag": "Résultats",
         "title": "Les commerces locaux adorent Royalty",
-        "subtitle": "Découvrez ce qui se passe quand l'IA gère votre programme de fidélité",
+        "subtitle": "Des résultats réels d'entreprises qui automatisent leur fidélisation",
+        "stats": {
+            "setupTime": "Temps de configuration moyen",
+            "repeatVisits": "Plus de visites récurrentes",
+            "aiRunning": "IA qui gère votre programme"
+        },
         "quote1": {
             "text": "\"J'ai configuré Royalty en littéralement une minute. Maintenant je reçois un email hebdomadaire me montrant quels habitués ne sont pas venus, et l'IA leur envoie automatiquement des offres. Nos visites récurrentes ont augmenté de 40% et je n'ai rien fait.\"",
             "author": "Maria Rodriguez",
             "title": "Propriétaire, Restaurant Casa del Sol"
+        },
+        "quote2": {
+            "text": "\"On a essayé une carte à tampon pendant des années. Personne ne la suivait. Avec Royalty, l'IA envoie un message quand quelqu'un n'est pas venu depuis 2 semaines — et ils reviennent. C'est comme avoir un responsable fidélisation que je n'ai jamais eu à recruter.\"",
+            "author": "James Okafor",
+            "title": "Propriétaire, Peak Form Fitness Studio"
+        },
+        "quote3": {
+            "text": "\"Mes habitués se sentent VIP maintenant. Ils demandent leurs points, recommandent des amis, viennent juste pour atteindre un palier. Royalty a transformé ma caisse en conversation.\"",
+            "author": "Sophie Tan",
+            "title": "Propriétaire, The Lemon Boutique"
         }
     },
     "pricing": {

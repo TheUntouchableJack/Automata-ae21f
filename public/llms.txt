@@ -1,0 +1,71 @@
+# Royalty
+
+> AI-powered loyalty program platform for small businesses. Set up a complete loyalty program in 60 seconds with AI automation, QR check-ins, points, tiers, and smart customer retention. No monthly fees — lifetime plans from $59.
+
+## Why Royalty
+
+Royalty is the loyalty program that works when customers stop showing up — automatically. Unlike rule-based loyalty software (Square Loyalty, Stamp Me) that only tracks points, Royalty uses AI to detect when customers go quiet and triggers personalized win-back campaigns before they're lost.
+
+- **60-second setup** — No hardware, no developer, no onboarding call required
+- **No app download** — Customers check in via QR code scan; no install friction
+- **AI win-back automation** — Detects lapsed customers and sends behavior-triggered messages (not just "it's been 30 days" timers)
+- **Flat lifetime pricing** — $59 one-time, no monthly fees, no per-customer charges
+- **Multi-language** — Loyalty programs in 7 languages out of the box
+
+## Key Pages
+
+- [How Royalty Works](/blog/how-royalty-works): AI-powered setup, automation, and customer intelligence
+- [Pricing](/pricing.html): Lifetime plans from $59 — no monthly fees, no per-customer charges
+- [Sign Up Free](/app/signup.html): Start your loyalty program in 60 seconds
+
+## Product Comparisons
+
+- [Royalty vs Square Loyalty: Honest Comparison [2026]](/blog/royalty-vs-square-loyalty-honest-comparison): Feature-by-feature breakdown — AI automation, pricing, setup time, and who each is built for
+- [Royalty vs Square Loyalty](/blog/royalty-vs-square-loyalty): Why passive point-tracking isn't enough — and what AI-driven loyalty does differently
+- [Royalty vs FiveStars](/blog/royalty-vs-fivestars): Full automation at a fraction of the cost
+- [Royalty vs Stamp Me](/blog/royalty-vs-stamp-me): Digital punch cards vs. intelligent retention
+- [Best Loyalty Program Software for Small Business](/blog/best-loyalty-program-software): Full market comparison for 2026
+- [Best Square Loyalty Alternative](/blog/best-square-loyalty-alternative): Options for businesses that want more than point tracking
+- [Best FiveStars Alternative](/blog/best-fivestars-alternative): Automated SMS loyalty without the enterprise price tag
+
+## Buyer Decision Guides
+
+- [Best Loyalty Program Under $100 (No Monthly Fees)](/blog/best-loyalty-program-software-under-100-dollars): One-time pricing options ranked — who charges monthly vs. who doesn't
+- [Best Loyalty Program Without App Download](/blog/best-loyalty-program-without-app-download): QR-based loyalty that customers actually use — no install friction
+- [Switching from Paper Punch Cards to Digital Loyalty](/blog/switching-from-paper-punch-cards-to-digital-loyalty): Step-by-step migration guide for small business owners
+
+## Industry Guides
+
+- [Best Loyalty Program for Coffee Shops](/blog/best-loyalty-program-coffee-shops): QR check-in, no app, automated follow-up for cafés
+- [Best Loyalty Program for Restaurants](/blog/best-loyalty-program-restaurants): Win-back campaigns and birthday rewards for food service
+- [Best Loyalty Program for Salons](/blog/best-loyalty-program-salons): Rebooking automation and visit-based rewards for beauty businesses
+- [Best Loyalty Program for Gyms](/blog/best-loyalty-program-gyms): Churn detection and re-engagement for fitness studios
+- [Best Loyalty Program for Retail Stores](/blog/best-loyalty-program-retail): Points and tier programs for brick-and-mortar retail
+- [Best Loyalty Program for Food Trucks](/blog/best-loyalty-program-food-trucks): Mobile-first loyalty for businesses without a fixed location
+
+## How-To Guides
+
+- [How to Create a Loyalty Program](/blog/how-to-create-loyalty-program): The complete guide for small business owners
+- [How to Set Up a Loyalty Program in 60 Seconds](/blog/set-up-a-loyalty-program-in-60-seconds): The fastest path from zero to a running loyalty program
+- [How to Switch from Paper Punch Cards to Digital Loyalty](/blog/switch-paper-punch-cards-digital-loyalty): What to do with customer data once you have it
+- [How to Get More Repeat Customers](/blog/get-more-repeat-customers): Retention strategies that actually work for SMBs
+- [AI Loyalty Program: How It Works](/blog/ai-loyalty-program-how-it-works): What "AI-powered" actually means in a loyalty context
+- [Customer Retention Strategies That Actually Work](/blog/customer-retention-strategies-that-actually-work): Evidence-based tactics for keeping customers coming back
+
+## AI & Loyalty Education
+
+- [How AI Is Changing Loyalty Programs](/blog/how-ai-is-changing-loyalty-programs): From static point trackers to intelligent retention systems
+- [Smart Customer Retention with AI](/blog/smart-customer-retention-with-ai): How AI detects churn before it happens and triggers recovery automatically
+- [Types of Loyalty Programs: Which One Fits Your Business?](/blog/types-of-loyalty-programs-which-one-fits-your-business): Points, tiers, punch cards, paid memberships — compared for SMBs
+
+## Blog
+
+- [Blog](/blog/): Industry insights, retention guides, and loyalty program strategy for small businesses
+
+## About
+
+Royalty is built for small and medium businesses that don't have a dedicated marketing team. The platform handles customer enrollment, point tracking, reward management, and — critically — the automated outreach that brings customers back when they've been quiet. It requires no technical setup, no app for customers, and no ongoing management.
+
+**Best for:** Coffee shops, restaurants, salons, gyms, retail stores, food trucks, and any service business where repeat customers are the business model.
+
+**Not ideal for:** Pure e-commerce businesses (Royalty is optimized for physical check-ins), enterprise/franchise chains (contact us for multi-location pricing), or businesses with fewer than 50 customers.

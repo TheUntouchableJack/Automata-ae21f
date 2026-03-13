@@ -168,11 +168,26 @@
     "testimonials": {
         "tag": "Ergebnisse",
         "title": "Lokale Unternehmen lieben Royalty",
-        "subtitle": "Sehen Sie, was passiert, wenn KI Ihr Treueprogramm betreibt",
+        "subtitle": "Echte Ergebnisse von Unternehmen, die Kundenbindung automatisieren",
+        "stats": {
+            "setupTime": "Durchschnittliche Einrichtungszeit",
+            "repeatVisits": "Mehr Wiederholungsbesuche",
+            "aiRunning": "KI läuft rund um die Uhr"
+        },
         "quote1": {
             "text": "\"Ich habe Royalty buchstäblich in einer Minute eingerichtet. Jetzt bekomme ich wöchentlich eine E-Mail, die mir zeigt, welche Stammkunden nicht da waren, und KI sendet ihnen automatisch Angebote. Unsere Wiederholungsbesuche sind um 40% gestiegen und ich habe nichts gemacht.\"",
             "author": "Maria Rodriguez",
             "title": "Inhaberin, Restaurant Casa del Sol"
+        },
+        "quote2": {
+            "text": "\"Wir haben jahrelang eine Stempelkarte versucht. Niemand hat sie verfolgt. Mit Royalty schickt die KI eine Nachricht, wenn jemand 2 Wochen nicht da war — und sie kommen zurück. Es ist wie ein Kundenbindungsmanager, den ich nie einstellen musste.\"",
+            "author": "James Okafor",
+            "title": "Inhaber, Peak Form Fitness Studio"
+        },
+        "quote3": {
+            "text": "\"Meine Stammkunden fühlen sich jetzt wie VIPs. Sie fragen nach ihren Punkten, empfehlen Freunde, kommen nur um einen Meilenstein zu erreichen. Royalty hat meine Kasse in ein Gespräch verwandelt.\"",
+            "author": "Sophie Tan",
+            "title": "Inhaberin, The Lemon Boutique"
         }
     },
     "pricing": {

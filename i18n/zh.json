@@ -168,11 +168,26 @@
     "testimonials": {
         "tag": "成果",
         "title": "本地商家喜爱Royalty",
-        "subtitle": "看看AI运营会员计划后会发生什么",
+        "subtitle": "自动化会员计划的真实商业成效",
+        "stats": {
+            "setupTime": "平均设置时间",
+            "repeatVisits": "回头客增加",
+            "aiRunning": "AI全天候运营"
+        },
         "quote1": {
             "text": "\"我花了一分钟就设置好了Royalty。现在我每周收到邮件，告诉我哪些常客好久没来了，AI自动给他们发优惠。我们的回头客增加了40%，而我什么都没做。\"",
             "author": "Maria Rodriguez",
             "title": "Casa del Sol餐厅老板"
+        },
+        "quote2": {
+            "text": "\"我们用了多年的盖章卡，但没人追踪。用了Royalty之后，AI会在顾客两周没来时发消息——他们就回来了。就像有个留客经理，但我从没雇用过。\"",
+            "author": "James Okafor",
+            "title": "Peak Form健身工作室老板"
+        },
+        "quote3": {
+            "text": "\"我的老顾客现在感觉像VIP。他们会问积分情况，介绍朋友，特地来达到等级目标。Royalty让我的收银台变成了对话。\"",
+            "author": "Sophie Tan",
+            "title": "The Lemon Boutique老板"
         }
     },
     "pricing": {

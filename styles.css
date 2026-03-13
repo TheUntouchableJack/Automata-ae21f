@@ -1177,15 +1177,11 @@ blockquote {
 }
 
 .author-avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 48px;
     height: 48px;
-    background: var(--gradient-primary);
-    color: white;
-    font-weight: 600;
     border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
 .author-info {
@@ -1201,6 +1197,56 @@ blockquote {
 .author-title {
     font-size: 13px;
     color: var(--color-text-muted);
+}
+
+/* Testimonials 3-column grid */
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 40px;
+}
+@media (max-width: 900px) {
+    .testimonials-grid { grid-template-columns: 1fr; }
+}
+.testimonials-grid .testimonial-card {
+    max-width: none;
+    margin: 0;
+}
+
+/* Stats strip inside social proof */
+.social-proof-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    margin: 32px 0 24px;
+    flex-wrap: wrap;
+}
+.social-proof-stat {
+    text-align: center;
+}
+.social-proof-stat-number {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+}
+.social-proof-stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+}
+.social-proof-stat-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--color-border);
+}
+@media (max-width: 600px) {
+    .social-proof-stat-divider { display: none; }
 }
 
 /* ===== Pricing Section ===== */

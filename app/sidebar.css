@@ -216,6 +216,28 @@
     border-radius: 0 2px 2px 0;
 }
 
+/* Highlighted sidebar item (Blog link for admins) */
+.sidebar-item--highlight {
+    background: var(--color-primary);
+    color: white;
+}
+.sidebar-item--highlight:hover {
+    background: var(--color-primary-dark);
+    color: white;
+}
+.sidebar-item--highlight .sidebar-item-icon,
+.sidebar-item--highlight .sidebar-item-text {
+    color: white;
+}
+.sidebar-item--highlight.active::before {
+    display: none;
+}
+
+/* Subtle hint when a highlight item is not active — just a colored icon */
+.sidebar-item--badge-hint .sidebar-item-icon {
+    color: var(--color-primary);
+}
+
 .sidebar-item-icon {
     width: var(--sidebar-icon-size);
     height: var(--sidebar-icon-size);

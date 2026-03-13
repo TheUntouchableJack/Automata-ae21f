@@ -73,6 +73,10 @@
             color: var(--color-text-muted);
         }
 
+        .br-table-row > *:first-child {
+            min-width: 0;
+        }
+
         .br-article-title {
             font-size: 0.9rem;
             font-weight: 500;
@@ -403,6 +407,135 @@
             background: var(--color-text-muted);
         }
 
+        /* ── Image Upload Panel ──────────────────────────────── */
+        .br-image-panel {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .br-image-panel-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            padding-top: 4px;
+        }
+
+        .br-image-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .br-image-drop-zone {
+            width: 100%;
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            min-height: 72px;
+            background: var(--color-bg);
+        }
+
+        .br-image-drop-zone:hover,
+        .br-image-drop-zone.drag-over {
+            border-color: var(--color-primary);
+            background: rgba(124, 58, 237, 0.04);
+        }
+
+        .br-image-drop-zone.has-image {
+            border-style: solid;
+            border-color: var(--color-success, #10b981);
+        }
+
+        .br-image-preview-thumb {
+            width: 80px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            flex-shrink: 0;
+            display: none;
+        }
+
+        .br-image-drop-placeholder {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .br-image-drop-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .br-image-drop-hint {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+
+        .br-image-clear-btn {
+            margin-left: auto;
+            flex-shrink: 0;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            color: var(--color-text-muted);
+            cursor: pointer;
+            display: none;
+        }
+
+        .br-image-clear-btn:hover { color: var(--color-text); }
+
+        .br-image-uploading {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            font-style: italic;
+        }
+
+        .br-image-url-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .br-image-url-or {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
+        .br-image-url-input {
+            flex: 1;
+            padding: 7px 10px;
+            font-size: 0.8rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: inherit;
+        }
+
+        .br-image-url-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
         /* Bottom save bar */
         .br-save-bar {
             position: sticky;
@@ -448,6 +581,24 @@
             transform: translateY(0);
         }
 
+        .br-back-to-blog {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            text-decoration: none;
+            margin-bottom: 6px;
+        }
+        .br-back-to-blog:hover { color: var(--color-text); }
+
+        .br-bulk-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
         @media (max-width: 768px) {
             .br-table-row { grid-template-columns: 1fr 80px; }
             .br-table-row > *:nth-child(3),
@@ -466,6 +617,7 @@
             <div id="br-list-view">
                 <div class="br-header">
                     <div class="br-header-left">
+                        <a href="/blog/" class="br-back-to-blog">← Blog</a>
                         <h1 data-i18n="blogReview.title">Blog Review</h1>
                         <p id="br-subtitle">Loading articles...</p>
                     </div>
@@ -485,6 +637,34 @@
                     <div class="br-editor-title" id="br-editor-title"></div>
                     <div class="br-editor-actions">
                         <span class="br-progress" id="br-progress-text"></span>
+                        <div class="br-bulk-actions">
+                            <button class="br-btn br-btn-skip" id="br-skip-all-btn">Skip All</button>
+                            <button class="br-btn br-btn-skip" id="br-reject-all-btn">✕ Reject All</button>
+                            <button class="br-btn br-btn-regenerate" id="br-requery-all-btn">↺ Re-query All</button>
+                            <button class="br-btn br-btn-accept" id="br-accept-all-btn">✓ Accept All</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Featured Image Upload -->
+                <div class="br-image-panel">
+                    <span class="br-image-panel-label">Featured<br>Image</span>
+                    <div class="br-image-right">
+                        <div class="br-image-drop-zone" id="br-image-drop-zone">
+                            <img class="br-image-preview-thumb" id="br-image-preview-thumb" alt="Preview">
+                            <div class="br-image-drop-placeholder" id="br-image-drop-placeholder">
+                                <span class="br-image-drop-title">Click or drag to upload</span>
+                                <span class="br-image-drop-hint">JPEG, PNG or WebP — max 5MB</span>
+                            </div>
+                            <span class="br-image-uploading" id="br-image-uploading" style="display:none;">Uploading...</span>
+                            <button class="br-image-clear-btn" id="br-image-clear-btn" type="button">✕ Remove</button>
+                            <input type="file" id="br-image-input" accept="image/jpeg,image/png,image/webp" hidden>
+                        </div>
+                        <div class="br-image-url-row">
+                            <span class="br-image-url-or">or paste a URL</span>
+                            <input type="url" id="br-image-url-input" class="br-image-url-input" placeholder="Right-click Unsplash photo → Copy Image Address">
+                            <button type="button" id="br-image-url-btn" class="br-btn br-btn-accept">Use</button>
+                        </div>
                     </div>
                 </div>
 
@@ -511,6 +691,6 @@
 <script src="auth.js?v=5"></script>
 <script src="utils.js?v=5"></script>
 <script src="sidebar.js?v=17"></script>
-<script src="blog-review.js?v=1"></script>
+<script src="blog-review.js?v=15"></script>
 </body>
 </html>

@@ -57,7 +57,7 @@ const AppSidebar = (function() {
             label: 'Admin',
             adminOnly: true,
             items: [
-                { id: 'blog-review', icon: 'edit', href: '/app/blog-review.html', labelKey: 'nav.blogReview', label: 'Blog Review', adminOnly: true, hasBadge: true },
+                { id: 'blog-review', icon: 'globe', href: '/app/blog-review.html', labelKey: 'nav.blog', label: 'Blog', adminOnly: true, highlight: true, hasBadge: true },
                 { id: 'launch-plan', icon: 'rocket', href: '/app/launch-plan.html', labelKey: 'nav.launchPlan', label: 'Launch Plan', adminOnly: true },
                 { id: 'admin-panel', icon: 'shield', href: '/app/admin.html', labelKey: 'nav.superAdmin', label: 'Super Admin', adminOnly: true },
             ]
@@ -261,7 +261,7 @@ const AppSidebar = (function() {
 
                 navHTML += `
                     <a href="${item.href}"
-                       class="sidebar-item ${isActive ? 'active' : ''}"
+                       class="sidebar-item ${isActive ? 'active sidebar-item--highlight' : ''} ${!isActive && item.highlight ? 'sidebar-item--badge-hint' : ''}"
                        data-nav="${item.id}"
                        data-tooltip="${getText(item.labelKey, item.label)}">
                         <span class="sidebar-item-icon">${icons[item.icon]}</span>

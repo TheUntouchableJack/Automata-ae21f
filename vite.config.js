@@ -114,6 +114,16 @@ export default defineConfig({
             const separator = queryString ? '&' : '?';
             req.url = `/customer-app/${targetPage}${queryString}${separator}slug=${slug}${extraParams}`;
           }
+
+          // Rewrite /blog/{slug} → /blog/post.html?slug={slug}
+          const blogMatch = req.url && req.url.match(/^\/blog\/([^\/\?]+)\/?(\?.*)?$/);
+          if (blogMatch && blogMatch[1] !== 'index.html' && blogMatch[1] !== 'post.html' && !blogMatch[1].includes('.')) {
+            const slug = blogMatch[1];
+            const queryString = blogMatch[2] || '';
+            const separator = queryString ? '&' : '?';
+            req.url = `/blog/post.html${queryString}${separator}slug=${slug}`;
+          }
+
           next();
         });
       },

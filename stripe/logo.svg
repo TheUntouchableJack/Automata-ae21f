@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="crown" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- White background -->
+  <rect width="800" height="200" fill="#ffffff"/>
+
+  <!-- Icon: 160×160 centered vertically, 20px from left -->
+  <!-- Scale: 160/512 = 0.3125, translate to (20, 20) -->
+  <g transform="translate(20, 20) scale(0.3125)">
+    <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+    <g transform="translate(256, 135)">
+      <path d="M-65,18 L-55,-25 L-28,2 L0,-35 L28,2 L55,-25 L65,18 Z" fill="url(#crown)" opacity="0.95"/>
+      <circle cx="0" cy="-28" r="6" fill="white" opacity="0.85"/>
+      <circle cx="-52" cy="-18" r="4.5" fill="white" opacity="0.65"/>
+      <circle cx="52" cy="-18" r="4.5" fill="white" opacity="0.65"/>
+      <rect x="-65" y="14" width="130" height="10" rx="3" fill="url(#crown)" opacity="0.8"/>
+    </g>
+    <text x="256" y="390" text-anchor="middle" font-family="'Space Grotesk', 'Inter', Arial, sans-serif" font-weight="700" font-size="260" fill="white" letter-spacing="-8">R</text>
+  </g>
+
+  <!-- "Royalty" wordmark — x=205 to give 25px gap after 160px icon + 20px padding -->
+  <text
+    x="205"
+    y="130"
+    font-family="'Space Grotesk', 'Inter', Arial, sans-serif"
+    font-weight="700"
+    font-size="88"
+    fill="#7c3aed"
+    letter-spacing="-3"
+  >Royalty</text>
+</svg>
