@@ -314,7 +314,7 @@ const AppSidebar = (function() {
                     <div class="sidebar-org-avatar">${orgInitial}</div>
                     <div class="sidebar-org-info">
                         <div class="sidebar-org-name">${escapeHtml(orgName)}</div>
-                        <div class="sidebar-org-plan">${getText('nav.freePlan', 'Free Plan')}</div>
+                        <div class="sidebar-org-plan">Free Plan</div>
                     </div>
                 </a>
 
