@@ -944,6 +944,47 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
     }
   },
   {
+    name: 'log_task',
+    description: "Record a task Royal is actively working on. Use this to make your work visible in the CEO dashboard Tasks panel. Call when starting a significant action.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'Short task name (max 100 chars)'
+        },
+        description: {
+          type: 'string',
+          description: 'What Royal is doing and why (max 500 chars)'
+        }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'request_help',
+    description: "Signal that Royal is blocked and needs Jay's input. Use when you cannot proceed without a resource, decision, or approval from Jay. This creates a blocker item visible in the CEO dashboard Tasks panel.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'Brief description of what Royal was trying to do (max 100 chars)'
+        },
+        blocker_description: {
+          type: 'string',
+          description: 'Exactly what Jay needs to provide or decide to unblock Royal (max 500 chars)'
+        },
+        blocker_type: {
+          type: 'string',
+          description: 'Category of blocker',
+          enum: ['api_key', 'approval', 'decision', 'data', 'other']
+        }
+      },
+      required: ['title', 'blocker_description', 'blocker_type']
+    }
+  },
+  {
     name: 'trigger_article_generation',
     description: "Generate a new blog article for Royalty's website. Auto-picks the next SEO-priority topic from the content strategy, or writes a specific topic if provided. Article is saved as a draft in blog-review for Jay to publish.",
     input_schema: {
@@ -2505,6 +2546,53 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     }
   },
 
+  // ── CEO: log_task ────────────────────────────────────────────────────
+  log_task: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const title = (input.title as string || '').slice(0, 100)
+    const description = (input.description as string || '').slice(0, 500)
+
+    if (!title) return { success: false, error: 'title is required' }
+
+    try {
+      const { data, error } = await supabase
+        .from('royal_tasks')
+        .insert({ title, description: description || null, status: 'active' })
+        .select('id')
+        .single()
+
+      if (error) throw error
+      return { success: true, data: { logged: true, id: data?.id } }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
+  // ── CEO: request_help ────────────────────────────────────────────────
+  request_help: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const title = (input.title as string || '').slice(0, 100)
+    const blockerDescription = (input.blocker_description as string || '').slice(0, 500)
+    const blockerType = (input.blocker_type as string) || 'other'
+
+    if (!title || !blockerDescription) {
+      return { success: false, error: 'title and blocker_description are required' }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('royal_tasks')
+        .insert({ title, status: 'blocked', blocker_type: blockerType, blocker_description: blockerDescription })
+        .select('id')
+        .single()
+
+      if (error) throw error
+      return { success: true, data: { blocked: true, id: data?.id, message: 'Blocker recorded — Jay will see this in the CEO dashboard Tasks panel.' } }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
   // ── CEO: trigger_article_generation ─────────────────────────────────
   trigger_article_generation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
     const { supabase } = ctx
@@ -3976,7 +4064,38 @@ Deno.serve(async (req) => {
         )
       }
 
-      const ceoSystemPrompt = `You are Royal — the AI CEO, COO, and CTO of Royalty (royaltyapp.ai), an AI-powered loyalty platform for small businesses.
+      const ROYAL_CONSTITUTION = `Royal's core values (non-negotiable, always active):
+- SMBs deserve enterprise-grade AI without enterprise-grade complexity. Simplicity is a feature.
+- Every action must be traceable and reversible. Transparency builds trust.
+- Jay's time is the scarcest resource. Protect it — be direct, use data, skip fluff.
+- Revenue follows value. Build things that make customers' businesses measurably better.
+- Royal grows by learning, not by guessing. Measure outcomes, update beliefs, improve.`
+
+      const ROYALTY_COMPANY_STATE = `Royalty current product state (as of March 2026):
+
+LIVE — do NOT suggest building these:
+- Blog: live at royaltyapp.ai/blog, powered by newsletter_articles table + content-generator.html
+- Loyalty platform: customer apps, points/tiers, rewards, redemption, QR check-ins — all live
+- AI Intelligence: autonomous Royal AI running growth actions (royal-ai-autonomous edge function)
+- Automations: email/SMS campaigns (Resend + Twilio), win-back, birthday, streaks — all live
+- Stripe billing: configured, subscriptions + webhooks working
+- Content pipeline: articles being generated via content-generator, published to blog
+
+IN PROGRESS / NOT YET LIVE:
+- QR scanner for check-ins (planned)
+- Push notifications (planned)
+- LinkedIn / X / Medium / Quora / Blogger content distribution (planned, not active)
+
+KEY FACTS:
+- newsletter_articles table = Royalty's OWN blog content, not a customer feature to be built
+- /app/apps.html = loyalty program app builder for customers, NOT newsletter infrastructure
+- Royal's job is to grow Royalty's business, not build Royalty's platform (Jay does that)`
+
+      const ceoSystemPrompt = `${ROYAL_CONSTITUTION}
+
+${ROYALTY_COMPANY_STATE}
+
+You are Royal — the AI CEO, COO, and CTO of Royalty (royaltyapp.ai), an AI-powered loyalty platform for small businesses.
 
 You are speaking with Jay, your founding partner and investor. Jay is reviewing the company's progress.
 

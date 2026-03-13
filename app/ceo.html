@@ -651,6 +651,239 @@
             gap: 8px;
         }
 
+        /* ── Royal Brief Bar ─────────────────────────────────── */
+        .ceo-brief-bar {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: var(--color-surface-2, #f9fafb);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--color-text);
+        }
+        .ceo-brief-crown { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+        .ceo-brief-text { flex: 1; color: var(--color-text-muted); font-style: italic; }
+        .ceo-brief-text.loaded { color: var(--color-text); font-style: normal; }
+        .ceo-brief-refresh {
+            background: none; border: none; cursor: pointer;
+            font-size: 16px; color: var(--color-text-muted);
+            padding: 0 4px; flex-shrink: 0; border-radius: 4px;
+        }
+        .ceo-brief-refresh:hover { color: var(--color-text); }
+
+        /* ── Header Actions (bell + tasks) ───────────────────── */
+        .ceo-header-actions { display: flex; align-items: center; gap: 8px; }
+
+        /* ── Full-width Page Header ─────────────────────────── */
+        .ceo-page-header {
+            padding: 20px 24px 16px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-surface);
+        }
+
+        /* ── Notification Bell ───────────────────────────────── */
+        .ceo-bell-btn {
+            position: relative;
+            background: none;
+            border: 1px solid var(--color-border, #e5e7eb);
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            color: var(--color-text, #1f2937);
+            flex-shrink: 0;
+        }
+        .ceo-bell-btn:hover { background: var(--color-surface-hover); }
+        .ceo-bell-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: var(--color-primary, #7c3aed);
+            color: #fff; font-size: 10px; font-weight: 700;
+            border-radius: 10px; min-width: 16px; height: 16px;
+            padding: 0 4px; display: none;
+            align-items: center; justify-content: center;
+        }
+        .ceo-bell-badge.visible { display: flex; }
+
+        /* ── Royal Tasks Button ───────────────────────────────── */
+        .ceo-tasks-btn {
+            position: relative;
+            background: none;
+            border: 1px solid var(--color-border, #e5e7eb);
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            color: var(--color-text, #1f2937);
+            flex-shrink: 0;
+        }
+        .ceo-tasks-btn:hover { background: var(--color-surface-hover); }
+        .ceo-tasks-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: #dc2626;
+            color: #fff; font-size: 10px; font-weight: 700;
+            border-radius: 10px; min-width: 16px; height: 16px;
+            padding: 0 4px; display: none;
+            align-items: center; justify-content: center;
+        }
+        .ceo-tasks-badge.visible { display: flex; }
+
+        /* ── Tasks Drawer ─────────────────────────────────────── */
+        .ceo-tasks-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3); z-index: 200;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .ceo-tasks-overlay.open { opacity: 1; pointer-events: all; }
+        .ceo-tasks-drawer {
+            position: fixed; top: 0; right: 0; bottom: 0;
+            width: 420px; max-width: 90vw;
+            background: var(--color-surface, #fff);
+            box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+            transform: translateX(100%); transition: transform 0.25s ease;
+            z-index: 201; display: flex; flex-direction: column;
+        }
+        .ceo-tasks-overlay.open .ceo-tasks-drawer { transform: translateX(0); }
+        .ceo-tasks-drawer-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 20px 12px;
+            border-bottom: 1px solid var(--color-border, #e5e7eb);
+            font-weight: 600; font-size: 15px;
+        }
+        .ceo-tasks-drawer-close {
+            background: none; border: none; cursor: pointer;
+            font-size: 18px; color: var(--color-text-muted);
+            padding: 4px 8px; border-radius: 6px;
+        }
+        .ceo-tasks-tabs {
+            display: flex; gap: 4px;
+            padding: 12px 16px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .ceo-tasks-tab {
+            padding: 6px 14px; border-radius: 6px 6px 0 0;
+            background: none; border: none; cursor: pointer;
+            font-size: 13px; font-weight: 500; color: var(--color-text-muted);
+        }
+        .ceo-tasks-tab.active { background: var(--color-surface-2, #f9fafb); color: var(--color-primary); font-weight: 600; }
+        .ceo-tasks-drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
+        .ceo-task-item {
+            padding: 12px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: var(--color-surface);
+        }
+        .ceo-task-item--blocked { border-color: #fca5a5; background: #fff5f5; }
+        .ceo-task-item--complete { opacity: 0.6; }
+        .ceo-task-item-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .ceo-task-item-desc { font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px; line-height: 1.5; }
+        .ceo-task-item-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .ceo-task-item-time { font-size: 11px; color: var(--color-text-muted); }
+        .ceo-blocker-chip {
+            display: inline-block; font-size: 10px; font-weight: 600;
+            padding: 2px 7px; border-radius: 10px;
+            background: #fef3c7; color: #92400e;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .ceo-task-resolve-btn {
+            font-size: 12px; padding: 4px 10px; border-radius: 6px;
+            background: var(--color-primary); color: #fff; border: none; cursor: pointer;
+            margin-left: auto;
+        }
+        .ceo-task-resolve-btn:hover { opacity: 0.88; }
+        .ceo-task-resolve-form { margin-top: 10px; display: flex; gap: 6px; }
+        .ceo-task-resolve-input {
+            flex: 1; padding: 6px 10px; border: 1px solid var(--color-border);
+            border-radius: 6px; font-size: 12px;
+        }
+        .ceo-task-resolve-submit {
+            padding: 6px 12px; background: var(--color-primary); color: #fff;
+            border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+        }
+
+        /* ── Activity Drawer ─────────────────────────────────── */
+        .ceo-activity-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3); z-index: 200;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .ceo-activity-overlay.open { opacity: 1; pointer-events: all; }
+        .ceo-activity-drawer {
+            position: fixed; top: 0; right: 0; bottom: 0;
+            width: 380px; max-width: 90vw;
+            background: var(--color-surface, #fff);
+            box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+            transform: translateX(100%); transition: transform 0.25s ease;
+            z-index: 201; display: flex; flex-direction: column;
+        }
+        .ceo-activity-overlay.open .ceo-activity-drawer { transform: translateX(0); }
+        .ceo-activity-drawer-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 20px 12px;
+            border-bottom: 1px solid var(--color-border, #e5e7eb);
+            font-weight: 600; font-size: 15px;
+        }
+        .ceo-activity-drawer-close {
+            background: none; border: none; cursor: pointer;
+            font-size: 18px; color: var(--color-text-muted);
+            padding: 4px 8px; border-radius: 6px;
+        }
+        .ceo-activity-drawer-close:hover { background: var(--color-surface-hover); }
+        .ceo-activity-drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+        /* ── Chat FAB ────────────────────────────────────────── */
+        .ceo-chat-fab {
+            position: fixed; bottom: 28px; right: 28px;
+            width: 56px; height: 56px;
+            background: var(--color-primary, #7c3aed);
+            border-radius: 50%;
+            box-shadow: 0 4px 16px rgba(124,58,237,0.4);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; border: none; font-size: 24px;
+            opacity: 0; transform: scale(0.8);
+            transition: opacity 0.2s, transform 0.2s;
+            animation: fab-bounce 2.4s ease-in-out infinite;
+        }
+        .ceo-chat-fab.visible { opacity: 1; transform: scale(1); }
+        .ceo-chat-fab:hover { transform: scale(1.1) !important; animation: none; }
+        @keyframes fab-bounce {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1) translateY(-7px); }
+        }
+
+        /* ── Content Strategy extras ──────────────────────────── */
+        .ceo-platform-badge--pending { background: #fef3c7; color: #92400e; }
+        .ceo-content-queue-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .ceo-content-queue-title {
+            flex: 1;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+        .ceo-content-queue-meta {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
         /* ── Empty states ────────────────────────────────────── */
         .ceo-empty {
             padding: 24px;
@@ -682,15 +915,23 @@
                 </div>
             </div>
 
-            <div class="ceo-container">
-                <!-- Page header -->
-                <div class="page-header" style="padding-top:24px">
-                    <div>
-                        <h1 class="page-title">CEO Dashboard</h1>
-                        <p class="page-subtitle">Royal's view of Royalty — revenue, content, outreach, growth</p>
-                    </div>
+            <!-- Full-width page header -->
+            <div class="ceo-page-header">
+                <div>
+                    <h1 class="page-title">CEO Dashboard</h1>
+                    <p class="page-subtitle">Royal's view of Royalty — revenue, content, outreach, growth</p>
                 </div>
+                <div class="ceo-header-actions">
+                    <button class="ceo-tasks-btn" id="ceo-tasks-btn" onclick="ceoDashboard.toggleTasksDrawer()" title="Royal's Tasks">
+                        ⚙️<span class="ceo-tasks-badge" id="ceo-tasks-badge"></span>
+                    </button>
+                    <button class="ceo-bell-btn" id="ceo-bell-btn" onclick="ceoDashboard.toggleActivityDrawer()" title="Recent Activity">
+                        🔔<span class="ceo-bell-badge" id="ceo-bell-badge"></span>
+                    </button>
+                </div>
+            </div>
 
+            <div class="ceo-container">
                 <div class="ceo-main-grid">
                     <!-- Morning Briefing -->
                         <div class="ceo-section-title">Morning Briefing</div>
@@ -711,6 +952,13 @@
                                 <div class="ceo-briefing-card-label">Outreach Queued</div>
                                 <div class="ceo-briefing-card-value ceo-skeleton" style="height:28px;width:60px"></div>
                             </div>
+                        </div>
+
+                        <!-- Royal's Brief -->
+                        <div class="ceo-brief-bar" id="ceo-brief-bar">
+                            <span class="ceo-brief-crown">👑</span>
+                            <span class="ceo-brief-text" id="ceo-brief-text">Generating briefing…</span>
+                            <button class="ceo-brief-refresh" onclick="ceoDashboard.refreshBrief()" title="Refresh brief">↻</button>
                         </div>
 
                         <!-- Task Approval Queue -->
@@ -746,10 +994,17 @@
                             </div>
                         </div>
 
-                        <!-- Recent Activity Log -->
-                        <div class="ceo-section-title">Recent Activity</div>
-                        <div class="ceo-log-list" id="ceo-log-list">
-                            <div class="ceo-empty">No activity yet — Royal hasn't run yet.</div>
+                        <!-- Content Strategy -->
+                        <div class="ceo-section-title">Content Strategy</div>
+                        <div class="ceo-platform-grid" id="ceo-content-platform-grid">
+                            <div class="ceo-briefing-card"><div class="ceo-briefing-card-value ceo-skeleton" style="height:90px"></div></div>
+                            <div class="ceo-briefing-card"><div class="ceo-briefing-card-value ceo-skeleton" style="height:90px"></div></div>
+                            <div class="ceo-briefing-card"><div class="ceo-briefing-card-value ceo-skeleton" style="height:90px"></div></div>
+                            <div class="ceo-briefing-card"><div class="ceo-briefing-card-value ceo-skeleton" style="height:90px"></div></div>
+                        </div>
+                        <div class="ceo-section-title" style="margin-top:20px">Content Queue</div>
+                        <div id="ceo-content-queue-list">
+                            <div class="ceo-empty">Loading content queue…</div>
                         </div>
 
                     <!-- Ask Royal chips + chat (full width) -->
@@ -792,10 +1047,46 @@
         </main>
     </div>
 
+    <!-- Royal Tasks Drawer -->
+    <div class="ceo-tasks-overlay" id="ceo-tasks-overlay" onclick="ceoDashboard.closeTasksDrawer(event)">
+        <div class="ceo-tasks-drawer">
+            <div class="ceo-tasks-drawer-header">
+                Royal's Tasks
+                <button class="ceo-tasks-drawer-close" onclick="ceoDashboard.closeTasksDrawer()">✕</button>
+            </div>
+            <div class="ceo-tasks-tabs">
+                <button class="ceo-tasks-tab active" id="ceo-tasks-tab-active" onclick="ceoDashboard.switchTasksTab('active')">Active</button>
+                <button class="ceo-tasks-tab" id="ceo-tasks-tab-blocked" onclick="ceoDashboard.switchTasksTab('blocked')">Blocked</button>
+                <button class="ceo-tasks-tab" id="ceo-tasks-tab-done" onclick="ceoDashboard.switchTasksTab('done')">Done</button>
+            </div>
+            <div class="ceo-tasks-drawer-body" id="ceo-tasks-drawer-body">
+                <div class="ceo-empty">Loading tasks…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Drawer -->
+    <div class="ceo-activity-overlay" id="ceo-activity-overlay" onclick="ceoDashboard.closeActivityDrawer(event)">
+        <div class="ceo-activity-drawer">
+            <div class="ceo-activity-drawer-header">
+                Recent Activity
+                <button class="ceo-activity-drawer-close" onclick="ceoDashboard.closeActivityDrawer()">✕</button>
+            </div>
+            <div class="ceo-activity-drawer-body">
+                <div class="ceo-log-list" id="ceo-log-list">
+                    <div class="ceo-empty">No activity yet — Royal hasn't run yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat FAB -->
+    <button class="ceo-chat-fab" id="ceo-chat-fab" title="Chat with Royal" onclick="ceoDashboard.openChat()">👑</button>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=12"></script>
     <script src="sidebar.js?v=18"></script>
     <script src="../i18n/i18n.js?v=4"></script>
-    <script src="ceo.js?v=7"></script>
+    <script src="ceo.js?v=10"></script>
 </body>
 </html>

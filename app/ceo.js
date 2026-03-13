@@ -68,17 +68,30 @@
         }
 
         await loadAll();
+        initChatFab();
     });
 
     async function loadAll() {
         await Promise.allSettled([
             loadConfig(),
-            loadBriefing(),
+            loadBriefingAndBrief(),
             loadPlatformOutreach(),
+            loadContentStrategy(),
             loadPendingTasks(),
+            loadRoyalTasks(),
             loadOutreachQueue(),
             loadRecentLog(),
         ]);
+    }
+
+    async function loadBriefingAndBrief() {
+        await loadBriefing();
+        // After numbers are in, generate the AI brief (non-blocking)
+        const grid = els.briefingGrid();
+        const briefingCards = grid ? grid.querySelectorAll('.ceo-briefing-card') : [];
+        // Extract metrics from already-rendered cards (or re-read from last known values)
+        // Use module-level cache set during loadBriefing
+        generateBrief(_lastBriefingMetrics || {});
     }
 
     // ── Config / Status ────────────────────────────────────────────────
@@ -138,7 +151,7 @@
 
         // Load live data
         try {
-            const [outreachRes, logRes, draftsRes, paidOrgsRes, trialOrgsRes] = await Promise.all([
+            const [outreachRes, logRes, draftsRes, paidOrgsRes, trialOrgsRes, totalOrgsRes] = await Promise.all([
                 window.supabase
                     .from('outreach_queue')
                     .select('id', { count: 'exact', head: true })
@@ -161,17 +174,22 @@
                     .select('id', { count: 'exact', head: true })
                     .gte('created_at', thirtyDaysAgo())
                     .neq('subscription_status', 'active'),
+                window.supabase
+                    .from('organizations')
+                    .select('id', { count: 'exact', head: true }),
             ]);
 
             const outreachCount = outreachRes.count || 0;
             const draftsCount   = draftsRes.count || 0;
             const paidOrgs      = paidOrgsRes.count || 0;
             const trialOrgs     = trialOrgsRes.count || 0;
+            const totalOrgs     = totalOrgsRes.count || 0;
             const mrrDisplay    = paidOrgs === 0 ? '$0' : `${paidOrgs} paid`;
             const mrrSub        = paidOrgs === 0 ? '0 paid subscriptions' : `${paidOrgs} active subscriber${paidOrgs !== 1 ? 's' : ''}`;
 
             grid.innerHTML = `
                 ${briefingCard('MRR', mrrDisplay, mrrSub, paidOrgs > 0 ? 'positive' : '')}
+                ${briefingCard('Total Customers', totalOrgs, totalOrgs === 1 ? '1 business on Royalty' : `${totalOrgs} businesses on Royalty`, totalOrgs > 0 ? 'positive' : '')}
                 ${briefingCard('New Trials', trialOrgs, trialOrgs > 0 ? 'in the last 30 days' : 'no new signups', '')}
                 ${briefingCard('Drafts Ready', draftsCount, draftsCount > 0 ? 'articles need review' : 'queue is clear', draftsCount > 3 ? 'warning' : '')}
                 ${briefingCard('Outreach Queued', outreachCount, outreachCount > 0 ? 'awaiting approval' : 'nothing queued', outreachCount > 0 ? 'warning' : '')}
@@ -184,15 +202,27 @@
                     if (question) ceoDashboard.fireChatQuestion(question);
                 });
             });
+
+            // Cache metrics for the brief generator
+            _lastBriefingMetrics = {
+                mrr: mrrDisplay,
+                trials: trialOrgs,
+                totalOrgs,
+                drafts: draftsCount,
+                outreach: outreachCount,
+            };
         } catch (e) {
             console.error('[ceo] loadBriefing error:', e);
             grid.innerHTML = briefingCard('Status', 'Error', 'Could not load briefing data', '');
         }
     }
 
+    let _lastBriefingMetrics = null;
+
     function briefingCard(label, value, sub, modifier) {
         const question = {
             'MRR':              "What's our MRR this month?",
+            'Total Customers':  "Give me the state of the company.",
             'New Trials':       "Who hasn't activated their trial?",
             'Drafts Ready':     "What should I publish this week?",
             'Outreach Queued':  "Review my outreach drafts",
@@ -206,6 +236,73 @@
             </div>
         `;
     }
+
+    // ── Content Strategy Platforms ─────────────────────────────────────
+    const CONTENT_PLATFORMS = [
+        {
+            channel: 'blog',
+            label: 'Blog',
+            icon: '✍',
+            iconBg: '#ede9fe',
+            iconColor: '#7c3aed',
+            active: true,
+            description: 'Long-form articles for SEO and brand authority',
+        },
+        {
+            channel: 'newsletter',
+            label: 'Newsletter',
+            icon: '📧',
+            iconBg: '#dbeafe',
+            iconColor: '#1d4ed8',
+            active: true,
+            description: 'Email digest sent to newsletter subscribers',
+        },
+        {
+            channel: 'x_post',
+            label: 'X / Twitter',
+            icon: '𝕏',
+            iconBg: '#f3f4f6',
+            iconColor: '#111827',
+            active: false,
+            description: 'Repurpose blog posts as threads for SMB owners',
+        },
+        {
+            channel: 'linkedin',
+            label: 'LinkedIn',
+            icon: 'in',
+            iconBg: '#dbeafe',
+            iconColor: '#1d4ed8',
+            active: false,
+            description: 'Thought leadership posts for local business operators',
+        },
+        {
+            channel: 'blogger',
+            label: 'Blogger',
+            icon: '📝',
+            iconBg: '#fff3e0',
+            iconColor: '#f57c00',
+            active: false,
+            description: 'Repurpose articles on Blogger for SEO reach',
+        },
+        {
+            channel: 'medium',
+            label: 'Medium',
+            icon: 'M',
+            iconBg: '#f3f4f6',
+            iconColor: '#111827',
+            active: false,
+            description: 'Cross-post articles to Medium for wider audience',
+        },
+        {
+            channel: 'quora',
+            label: 'Quora',
+            icon: 'Q',
+            iconBg: '#fce8e8',
+            iconColor: '#b92b27',
+            active: false,
+            description: 'Answer SMB questions with thought leadership content',
+        },
+    ];
 
     // ── Platform Outreach Overview ─────────────────────────────────────
     const OUTREACH_PLATFORMS = [
@@ -321,6 +418,118 @@
             ` : `
             <div class="ceo-platform-desc">${escapeHtml(platform.description)}</div>
             `}
+        </div>`;
+    }
+
+    // ── Content Strategy ───────────────────────────────────────────────
+    async function loadContentStrategy() {
+        const grid  = document.getElementById('ceo-content-platform-grid');
+        const queue = document.getElementById('ceo-content-queue-list');
+        try {
+            const [articlesRes, topicsRes] = await Promise.all([
+                window.supabase
+                    .from('newsletter_articles')
+                    .select('title, status, created_at, published_at, slug')
+                    .order('created_at', { ascending: false }),
+                window.supabase
+                    .from('seo_topics')
+                    .select('keyword, status')
+                    .eq('status', 'queued'),
+            ]);
+
+            const articles = articlesRes.data || [];
+            const topics   = topicsRes.data  || [];
+
+            const published = articles.filter(a => a.status === 'published');
+            const drafts    = articles.filter(a => a.status === 'draft');
+            const pending   = articles.filter(a => a.status === 'pending_review');
+
+            if (grid) {
+                grid.innerHTML = CONTENT_PLATFORMS.map(p =>
+                    renderContentPlatformCard(p, published, drafts, pending, topics)
+                ).join('');
+            }
+
+            if (queue) {
+                const queueItems = [...pending, ...drafts].slice(0, 10);
+                queue.innerHTML = queueItems.length
+                    ? queueItems.map(a => renderContentQueueItem(a)).join('')
+                    : '<div class="ceo-empty">No drafts in queue — content pipeline is clear.</div>';
+            }
+        } catch (e) {
+            console.error('[ceo] loadContentStrategy error:', e);
+        }
+    }
+
+    function renderContentPlatformCard(platform, published, drafts, pending, topics) {
+        const active = platform.active;
+
+        if (!active) {
+            return `
+            <div class="ceo-platform-card ceo-platform-card--inactive">
+                <div class="ceo-platform-card-header">
+                    <div class="ceo-platform-card-name">
+                        <div class="ceo-platform-icon" style="background:${escapeHtml(platform.iconBg)};color:${escapeHtml(platform.iconColor)}">${escapeHtml(platform.icon)}</div>
+                        ${escapeHtml(platform.label)}
+                    </div>
+                    <span class="ceo-platform-badge ceo-platform-badge--soon">Soon</span>
+                </div>
+                <div class="ceo-platform-desc">${escapeHtml(platform.description)}</div>
+            </div>`;
+        }
+
+        // Both blog + newsletter draw from newsletter_articles for now
+        const pub   = published.length;
+        const draft = drafts.length + pending.length;
+        const total = pub + draft;
+        const pct   = total > 0 ? Math.round((pub / total) * 100) : 0;
+
+        const lastPub = published[0]?.published_at || published[0]?.created_at;
+        const lastPubLabel = lastPub ? formatRelativeTime(lastPub) : '—';
+
+        const topicsCount = topics.length;
+
+        return `
+        <div class="ceo-platform-card">
+            <div class="ceo-platform-card-header">
+                <div class="ceo-platform-card-name">
+                    <div class="ceo-platform-icon" style="background:${escapeHtml(platform.iconBg)};color:${escapeHtml(platform.iconColor)}">${escapeHtml(platform.icon)}</div>
+                    ${escapeHtml(platform.label)}
+                </div>
+                <span class="ceo-platform-badge ceo-platform-badge--active">Active</span>
+            </div>
+            <div class="ceo-platform-metrics">
+                <div>
+                    <div class="ceo-platform-metric-label">Published</div>
+                    <div class="ceo-platform-metric-value">${pub}</div>
+                </div>
+                <div>
+                    <div class="ceo-platform-metric-label">In Queue</div>
+                    <div class="ceo-platform-metric-value">${draft}</div>
+                </div>
+                <div>
+                    <div class="ceo-platform-metric-label">Topics Ready</div>
+                    <div class="ceo-platform-metric-value${topicsCount === 0 ? ' ceo-platform-metric-value--muted' : ''}">${topicsCount}</div>
+                </div>
+                <div>
+                    <div class="ceo-platform-metric-label">Last Published</div>
+                    <div class="ceo-platform-metric-value ceo-platform-metric-value--muted" style="font-size:0.8rem">${escapeHtml(lastPubLabel)}</div>
+                </div>
+            </div>
+            <div class="ceo-platform-progress"><div class="ceo-platform-progress-fill" style="width:${pct}%"></div></div>
+            <div class="ceo-platform-desc">${pct}% of pipeline published${total === 0 ? ' — no content yet' : ''}</div>
+        </div>`;
+    }
+
+    function renderContentQueueItem(article) {
+        const statusLabel = article.status === 'pending_review' ? 'Pending Review' : 'Draft';
+        const badgeClass  = article.status === 'pending_review' ? 'ceo-platform-badge--pending' : 'ceo-platform-badge--soon';
+        const age = formatRelativeTime(article.created_at);
+        return `
+        <div class="ceo-content-queue-item">
+            <span class="ceo-content-queue-title">${escapeHtml(article.title || 'Untitled')}</span>
+            <span class="ceo-platform-badge ${badgeClass}">${statusLabel}</span>
+            <span class="ceo-content-queue-meta">${escapeHtml(age)}</span>
         </div>`;
     }
 
@@ -463,6 +672,244 @@
                 <span class="ceo-log-item-time">${formatRelativeTime(item.created_at)}</span>
             </div>
         `).join('');
+
+        // Update bell badge with unread count
+        const lastRead = parseInt(localStorage.getItem('ceo-activity-last-read') || '0');
+        const newCount = items.filter(i => new Date(i.created_at).getTime() > lastRead).length;
+        _updateActivityBadge(newCount);
+    }
+
+    // ── Activity Bell / Drawer ─────────────────────────────────────────
+    function toggleActivityDrawer() {
+        const overlay = document.getElementById('ceo-activity-overlay');
+        if (!overlay) return;
+        if (overlay.classList.contains('open')) {
+            overlay.classList.remove('open');
+        } else {
+            overlay.classList.add('open');
+            _markActivityRead();
+        }
+    }
+
+    function closeActivityDrawer(e) {
+        if (e && e.target !== document.getElementById('ceo-activity-overlay')) return;
+        const overlay = document.getElementById('ceo-activity-overlay');
+        if (overlay) overlay.classList.remove('open');
+    }
+
+    function _markActivityRead() {
+        localStorage.setItem('ceo-activity-last-read', Date.now());
+        _updateActivityBadge(0);
+    }
+
+    function _updateActivityBadge(count) {
+        const badge = document.getElementById('ceo-bell-badge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count > 9 ? '9+' : count;
+            badge.classList.add('visible');
+        } else {
+            badge.classList.remove('visible');
+        }
+    }
+
+    // ── Chat FAB ───────────────────────────────────────────────────────
+    function openChat() {
+        const chatThread = document.getElementById('ceo-chat-thread');
+        const chatInput  = document.getElementById('ceo-chat-input');
+        if (chatThread) chatThread.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { if (chatInput) chatInput.focus(); }, 400);
+    }
+
+    function initChatFab() {
+        const fab         = document.getElementById('ceo-chat-fab');
+        const chatSection = document.getElementById('ceo-chat-thread');
+        if (!fab || !chatSection) return;
+        fab.classList.add('visible');
+        new IntersectionObserver(([e]) => {
+            fab.classList.toggle('visible', !e.isIntersecting);
+        }, { threshold: 0.5 }).observe(chatSection);
+    }
+
+    // ── Royal Brief ────────────────────────────────────────────────────
+    async function generateBrief(metrics) {
+        const el = document.getElementById('ceo-brief-text');
+        if (!el) return;
+        el.textContent = 'Generating briefing…';
+        el.classList.remove('loaded');
+        try {
+            const session = await getValidSession();
+            if (!session) return;
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/royal-ai-prompt`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    mode: 'ceo',
+                    messages: [{
+                        role: 'user',
+                        content: `Morning brief for Royalty (royaltyapp.ai), an AI loyalty platform for SMBs.
+
+Live data:
+- MRR: ${metrics.mrr} (paid Royalty subscriptions)
+- Total customers: ${metrics.totalOrgs} (businesses using Royalty)
+- New trials: ${metrics.trials} (signups in last 30 days, not yet paying)
+- Blog drafts: ${metrics.drafts} (articles in newsletter_articles — blog is ALREADY LIVE at royaltyapp.ai/blog, drafts just need review + publishing)
+- Outreach queued: ${metrics.outreach} (emails/SMS awaiting approval in outreach queue)
+
+Give me a 2-3 sentence brief on the state of the business and one specific, actionable next step. Be direct. Do not suggest building infrastructure that already exists.`,
+                    }],
+                }),
+            });
+            const data = await res.json();
+            if (data.content) {
+                el.textContent = data.content;
+                el.classList.add('loaded');
+            } else {
+                el.textContent = 'Brief unavailable — ask Royal directly in the chat below.';
+            }
+        } catch (e) {
+            console.error('[ceo] generateBrief error:', e);
+            el.textContent = 'Brief unavailable — ask Royal directly in the chat below.';
+        }
+    }
+
+    function refreshBrief() {
+        loadBriefing();
+    }
+
+    // ── Royal Tasks Panel ──────────────────────────────────────────────
+    let _royalTasksData = [];
+    let _royalTasksTab  = 'active';
+
+    async function loadRoyalTasks() {
+        try {
+            const { data, error } = await window.supabase
+                .from('royal_tasks')
+                .select('id, title, description, status, blocker_type, blocker_description, created_at, resolved_at')
+                .in('status', ['active', 'blocked', 'complete'])
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+            _royalTasksData = data || [];
+            _updateTasksBadge(_royalTasksData.filter(t => t.status === 'blocked').length);
+            renderTasksTab(_royalTasksTab);
+        } catch (e) {
+            console.error('[ceo] loadRoyalTasks error:', e);
+        }
+    }
+
+    function _updateTasksBadge(count) {
+        const badge = document.getElementById('ceo-tasks-badge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count > 9 ? '9+' : count;
+            badge.classList.add('visible');
+        } else {
+            badge.classList.remove('visible');
+        }
+    }
+
+    function renderTasksTab(tab) {
+        _royalTasksTab = tab;
+        // Update tab button states
+        ['active', 'blocked', 'done'].forEach(t => {
+            const btn = document.getElementById(`ceo-tasks-tab-${t}`);
+            if (btn) btn.classList.toggle('active', t === tab);
+        });
+
+        const body = document.getElementById('ceo-tasks-drawer-body');
+        if (!body) return;
+
+        const statusFilter = tab === 'done' ? 'complete' : tab;
+        const items = _royalTasksData.filter(t => t.status === statusFilter);
+
+        if (items.length === 0) {
+            const msgs = { active: 'No active tasks.', blocked: 'No blockers — Royal is unblocked.', done: 'No completed tasks yet.' };
+            body.innerHTML = `<div class="ceo-empty">${msgs[tab]}</div>`;
+            return;
+        }
+
+        body.innerHTML = items.map(t => renderRoyalTaskItem(t)).join('');
+    }
+
+    function renderRoyalTaskItem(task) {
+        const timeAgo = formatRelativeTime(task.created_at);
+        const isBlocked = task.status === 'blocked';
+        const isDone = task.status === 'complete';
+        const blockerChip = isBlocked && task.blocker_type
+            ? `<span class="ceo-blocker-chip">${escapeHtml(task.blocker_type.replace('_', ' '))}</span>`
+            : '';
+        const resolveBtn = isBlocked
+            ? `<button class="ceo-task-resolve-btn" onclick="ceoDashboard.showResolveForm('${escapeHtml(task.id)}')">Resolve</button>`
+            : '';
+        const resolveForm = `<div class="ceo-task-resolve-form" id="ceo-resolve-form-${escapeHtml(task.id)}" style="display:none">
+            <input class="ceo-task-resolve-input" id="ceo-resolve-input-${escapeHtml(task.id)}" placeholder="How did you resolve this?" />
+            <button class="ceo-task-resolve-submit" onclick="ceoDashboard.resolveBlocker('${escapeHtml(task.id)}')">Done</button>
+        </div>`;
+
+        return `<div class="ceo-task-item${isBlocked ? ' ceo-task-item--blocked' : ''}${isDone ? ' ceo-task-item--complete' : ''}" id="ceo-task-item-${escapeHtml(task.id)}">
+            <div class="ceo-task-item-title">${escapeHtml(task.title)}</div>
+            ${task.description ? `<div class="ceo-task-item-desc">${escapeHtml(task.description)}</div>` : ''}
+            ${isBlocked && task.blocker_description ? `<div class="ceo-task-item-desc" style="color:#b91c1c">${escapeHtml(task.blocker_description)}</div>` : ''}
+            <div class="ceo-task-item-meta">
+                ${blockerChip}
+                <span class="ceo-task-item-time">${timeAgo}</span>
+                ${resolveBtn}
+            </div>
+            ${isBlocked ? resolveForm : ''}
+        </div>`;
+    }
+
+    function showResolveForm(taskId) {
+        const form = document.getElementById(`ceo-resolve-form-${taskId}`);
+        if (form) {
+            form.style.display = 'flex';
+            const input = document.getElementById(`ceo-resolve-input-${taskId}`);
+            if (input) input.focus();
+        }
+    }
+
+    async function resolveBlocker(taskId) {
+        const input = document.getElementById(`ceo-resolve-input-${taskId}`);
+        const resolution = input ? input.value.trim() : '';
+        try {
+            const { error } = await window.supabase
+                .from('royal_tasks')
+                .update({ status: 'complete', resolution, resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+                .eq('id', taskId);
+            if (error) throw error;
+            // Remove from local data and re-render
+            _royalTasksData = _royalTasksData.map(t => t.id === taskId ? { ...t, status: 'complete', resolution } : t);
+            _updateTasksBadge(_royalTasksData.filter(t => t.status === 'blocked').length);
+            renderTasksTab(_royalTasksTab);
+        } catch (e) {
+            console.error('[ceo] resolveBlocker error:', e);
+            showToast('Failed to resolve task', 'error');
+        }
+    }
+
+    function toggleTasksDrawer() {
+        const overlay = document.getElementById('ceo-tasks-overlay');
+        if (!overlay) return;
+        if (overlay.classList.contains('open')) {
+            overlay.classList.remove('open');
+        } else {
+            overlay.classList.add('open');
+            renderTasksTab(_royalTasksTab);
+        }
+    }
+
+    function closeTasksDrawer(e) {
+        if (e && e.target !== document.getElementById('ceo-tasks-overlay')) return;
+        const overlay = document.getElementById('ceo-tasks-overlay');
+        if (overlay) overlay.classList.remove('open');
+    }
+
+    function switchTasksTab(tab) {
+        renderTasksTab(tab);
     }
 
     // ── Set Autonomy Status ────────────────────────────────────────────
@@ -814,6 +1261,15 @@
         sendMessage,
         sendSuggested,
         fireChatQuestion,
+        toggleActivityDrawer,
+        closeActivityDrawer,
+        openChat,
+        refreshBrief,
+        toggleTasksDrawer,
+        closeTasksDrawer,
+        switchTasksTab,
+        showResolveForm,
+        resolveBlocker,
     };
 
 })();
