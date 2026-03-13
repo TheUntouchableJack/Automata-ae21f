@@ -203,6 +203,11 @@
     color: var(--color-primary);
 }
 
+.sidebar-item.active .sidebar-item-icon,
+.sidebar-item.active .sidebar-item-text {
+    color: var(--color-primary);
+}
+
 /* Active indicator bar */
 .sidebar-item.active::before {
     content: '';

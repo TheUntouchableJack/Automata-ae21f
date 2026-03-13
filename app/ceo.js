@@ -568,7 +568,10 @@
         list.innerHTML = tasks.map(task => `
             <div class="ceo-task-row" data-id="${task.id}">
                 <span class="ceo-task-type">${escapeHtml(task.action_type)}</span>
-                <span class="ceo-task-text">${escapeHtml(task.description)}</span>
+                <div class="ceo-task-content">
+                    <div class="ceo-task-title">${formatActionType(task.action_type)}</div>
+                    <div class="ceo-task-desc">${escapeHtml(task.description)}</div>
+                </div>
                 <div class="ceo-task-actions">
                     <button class="ceo-task-btn ceo-task-btn--approve" onclick="ceoDashboard.approveTask('${task.id}', this)">Approve</button>
                     <button class="ceo-task-btn ceo-task-btn--skip" onclick="ceoDashboard.skipTask('${task.id}', this)">Skip</button>
@@ -1197,6 +1200,10 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
     }
 
     // ── Utilities ──────────────────────────────────────────────────────
+    function formatActionType(type) {
+        return (type || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
     function escapeHtml(str) {
         return String(str)
             .replace(/&/g, '&amp;')

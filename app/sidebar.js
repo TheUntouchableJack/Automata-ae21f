@@ -17,9 +17,7 @@ const AppSidebar = (function() {
         {
             section: 'main',
             items: [
-                // CEO Dashboard - admin only, top of nav
-                { id: 'ceo', icon: 'trendingUp', href: '/app/ceo.html', labelKey: 'nav.ceo', label: 'CEO Dashboard', adminOnly: true },
-                // Dashboard - visible to all, serves as reporting for SMB users
+                        // Dashboard - visible to all, serves as reporting for SMB users
                 { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Dashboard' },
                 // Intelligence - AI brain, visible to all
                 { id: 'intelligence', icon: 'brain', href: '/app/intelligence.html', labelKey: 'nav.intelligence', label: 'Intelligence' },
@@ -59,6 +57,7 @@ const AppSidebar = (function() {
             label: 'Admin',
             adminOnly: true,
             items: [
+                { id: 'ceo', icon: 'userTie', href: '/app/ceo.html', labelKey: 'nav.ceo', label: 'CEO', adminOnly: true },
                 { id: 'blog-review', icon: 'globe', href: '/app/blog-review.html', labelKey: 'nav.blog', label: 'Blog', adminOnly: true, highlight: true, hasBadge: true },
                 { id: 'launch-plan', icon: 'rocket', href: '/app/launch-plan.html', labelKey: 'nav.launchPlan', label: 'Launch Plan', adminOnly: true },
                 { id: 'admin-panel', icon: 'shield', href: '/app/admin.html', labelKey: 'nav.superAdmin', label: 'Super Admin', adminOnly: true },
@@ -171,6 +170,11 @@ const AppSidebar = (function() {
         trendingUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
             <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>`,
+        userTie: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M5.5 21a8.38 8.38 0 0 1 13 0"/>
+            <polyline points="11 12 12 16 13 12"/>
         </svg>`
     };
 

@@ -31,7 +31,8 @@
         "chatEmpty": "Start a conversation...",
         "chatPlaceholder": "Quick question?",
         "fullChat": "Open full chat",
-        "blogReview": "Blog Review"
+        "blogReview": "Blog Review",
+        "ceo": "CEO"
     },
     "launchPlan": {
         "title": "Launch Plan",
