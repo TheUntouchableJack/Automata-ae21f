@@ -2,9 +2,10 @@
 const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocG1tZmhmd25wbWF2eXRvb21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTgyMDYsImV4cCI6MjA4NTE3NDIwNn0.6JmfnTTR8onr3ZgFpzdZa4BbVBraUyePVEUHOJgxmuk';
 
-// Royalty's marketing blog — always uses this explicit slug (never the first newsletter app)
+// Royalty's marketing blog — fixed app ID, no dynamic lookup needed
+// (customer_apps has RLS that blocks anon reads, so we hardcode this)
 const ROYALTY_MARKETING_BLOG_SLUG = 'royalty-marketing';
-let ROYALTY_APP_ID = null;
+let ROYALTY_APP_ID = 'd0229946-0812-4a96-acc4-0344613ee8b1';
 
 // Use a unique name to avoid conflicting with the global `supabase` from the CDN bundle
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
