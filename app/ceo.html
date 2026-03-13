@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO Dashboard - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <style>
+        /* ── Layout ──────────────────────────────────────────── */
+        .ceo-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px 64px;
+        }
+
+        /* ── Autonomy Control Bar ────────────────────────────── */
+        .ceo-control-bar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--color-border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ceo-status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .ceo-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .ceo-status-dot--running  { background: var(--color-success, #22c55e); box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+        .ceo-status-dot--paused   { background: var(--color-warning, #f59e0b); box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+        .ceo-status-dot--stopped  { background: var(--color-text-muted); }
+
+        .ceo-control-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .ceo-ctrl-btn {
+            padding: 6px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .ceo-ctrl-btn:hover { background: var(--color-surface-hover); }
+
+        .ceo-ctrl-btn--active-running {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+
+        .ceo-ctrl-btn--active-paused {
+            background: var(--color-warning, #f59e0b);
+            color: #fff;
+            border-color: var(--color-warning, #f59e0b);
+        }
+
+        .ceo-ctrl-btn--active-stopped {
+            background: var(--color-surface-hover);
+            border-color: var(--color-border);
+            font-weight: 600;
+        }
+
+        .ceo-ctrl-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ── Section Headers ─────────────────────────────────── */
+        .ceo-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin: 28px 0 12px;
+        }
+
+        /* ── Morning Briefing Cards ──────────────────────────── */
+        .ceo-briefing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .ceo-briefing-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 16px 18px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .ceo-briefing-card:hover {
+            border-color: var(--color-primary);
+            background: var(--color-surface-hover);
+        }
+
+        .ceo-briefing-card-label {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .ceo-briefing-card-value {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: var(--color-text);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .ceo-briefing-card-value--positive { color: var(--color-success, #22c55e); }
+        .ceo-briefing-card-value--negative { color: var(--color-danger, #ef4444); }
+        .ceo-briefing-card-value--warning  { color: var(--color-warning, #f59e0b); }
+
+        .ceo-briefing-card-sub {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        /* ── Pending Task Queue (Paused mode) ────────────────── */
+        .ceo-task-queue {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .ceo-task-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .ceo-task-row:last-child { border-bottom: none; }
+
+        .ceo-task-type {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: var(--radius-sm);
+            background: var(--color-surface-hover);
+            color: var(--color-text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .ceo-task-text {
+            flex: 1;
+            font-size: 0.875rem;
+            color: var(--color-text);
+            line-height: 1.5;
+        }
+
+        .ceo-task-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .ceo-task-btn {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            transition: background 0.15s;
+        }
+
+        .ceo-task-btn:hover { background: var(--color-surface-hover); }
+
+        .ceo-task-btn--approve {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+
+        .ceo-task-btn--approve:hover { opacity: 0.9; }
+
+        .ceo-task-btn--skip { color: var(--color-text-muted); }
+
+        .ceo-task-queue-empty {
+            padding: 28px;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .ceo-task-bulk-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-surface-hover);
+        }
+
+        .ceo-task-bulk-label {
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+            margin-right: auto;
+        }
+
+        /* ── Suggested Questions ─────────────────────────────── */
+        .ceo-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ceo-chip {
+            padding: 7px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            font-size: 0.8125rem;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .ceo-chip:hover {
+            border-color: var(--color-primary);
+            background: var(--color-surface-hover);
+        }
+
+        /* ── Chat Thread ─────────────────────────────────────── */
+        .ceo-chat-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: var(--color-surface);
+        }
+
+        .ceo-chat-thread {
+            min-height: 120px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ceo-chat-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .ceo-msg {
+            display: flex;
+            gap: 10px;
+        }
+
+        .ceo-msg--jay {
+            flex-direction: row-reverse;
+        }
+
+        .ceo-msg-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .ceo-msg--jay .ceo-msg-avatar {
+            background: var(--color-surface-hover);
+            color: var(--color-text-muted);
+        }
+
+        .ceo-msg-bubble {
+            max-width: 78%;
+            background: var(--color-surface-hover);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            font-size: 0.875rem;
+            line-height: 1.55;
+            color: var(--color-text);
+        }
+
+        .ceo-msg--jay .ceo-msg-bubble {
+            background: var(--color-primary);
+            color: #fff;
+        }
+
+        /* Action card inside chat bubble */
+        .ceo-action-card {
+            margin-top: 10px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+        }
+
+        .ceo-action-card-title {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 6px;
+        }
+
+        .ceo-action-card-body {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .ceo-action-card-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ── Chat Input ──────────────────────────────────────── */
+        .ceo-chat-input-bar {
+            border-top: 1px solid var(--color-border);
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .ceo-chat-input {
+            flex: 1;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 9px 13px;
+            font-size: 0.875rem;
+            font-family: 'Inter', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            resize: none;
+            min-height: 40px;
+            max-height: 120px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .ceo-chat-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .ceo-chat-send {
+            padding: 9px 16px;
+            border-radius: var(--radius-md);
+            background: var(--color-primary);
+            color: #fff;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.15s;
+        }
+
+        .ceo-chat-send:hover { opacity: 0.9; }
+        .ceo-chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Skeleton / Loading ──────────────────────────────── */
+        .ceo-skeleton {
+            background: var(--color-surface-hover);
+            border-radius: var(--radius-sm);
+            animation: ceo-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes ceo-pulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.5; }
+        }
+
+        /* ── Recent Log ──────────────────────────────────────── */
+        .ceo-log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ceo-log-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            font-size: 0.875rem;
+        }
+
+        .ceo-log-item-type {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: var(--radius-sm);
+            background: var(--color-surface-hover);
+            color: var(--color-text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .ceo-log-item-desc {
+            flex: 1;
+            color: var(--color-text);
+            line-height: 1.5;
+        }
+
+        .ceo-log-item-time {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .ceo-log-item--completed { border-left: 3px solid var(--color-success, #22c55e); }
+        .ceo-log-item--failed    { border-left: 3px solid var(--color-danger, #ef4444); }
+        .ceo-log-item--skipped   { border-left: 3px solid var(--color-text-muted); opacity: 0.6; }
+
+        /* ── Toast ───────────────────────────────────────────── */
+        .ceo-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            padding: 12px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            background: var(--color-text);
+            color: var(--color-bg);
+            box-shadow: var(--shadow-lg);
+            animation: ceo-toast-in 0.2s ease;
+        }
+
+        .ceo-toast--success { background: var(--color-success, #22c55e); color: #fff; }
+        .ceo-toast--error   { background: var(--color-danger, #ef4444); color: #fff; }
+
+        @keyframes ceo-toast-in {
+            from { transform: translateY(12px); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ── Outreach Queue Section ──────────────────────────── */
+        .ceo-outreach-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 16px 18px;
+            margin-bottom: 10px;
+        }
+
+        .ceo-outreach-item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .ceo-outreach-item-to {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-text);
+            flex: 1;
+        }
+
+        .ceo-outreach-item-channel {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: var(--radius-sm);
+            background: var(--color-surface-hover);
+            color: var(--color-text-muted);
+        }
+
+        .ceo-outreach-item-veto {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+
+        .ceo-outreach-item-subject {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: 6px;
+        }
+
+        .ceo-outreach-item-preview {
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+            max-height: 72px;
+            overflow: hidden;
+        }
+
+        .ceo-outreach-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ── Empty states ────────────────────────────────────── */
+        .ceo-empty {
+            padding: 24px;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar injected by sidebar.js -->
+
+        <main class="app-main">
+            <!-- Autonomy Control Bar — always visible -->
+            <div class="ceo-control-bar" id="ceo-control-bar">
+                <span class="ceo-status-indicator">
+                    <span class="ceo-status-dot" id="ceo-status-dot"></span>
+                    <span id="ceo-status-label">Loading…</span>
+                </span>
+                <span style="font-size:0.8rem;color:var(--color-text-muted)" id="ceo-last-run"></span>
+                <div class="ceo-control-buttons">
+                    <button class="ceo-ctrl-btn" id="ceo-btn-running" onclick="ceoDashboard.setStatus('running')">Running</button>
+                    <button class="ceo-ctrl-btn" id="ceo-btn-paused" onclick="ceoDashboard.setStatus('paused')">Pause</button>
+                    <button class="ceo-ctrl-btn" id="ceo-btn-stopped" onclick="ceoDashboard.setStatus('stopped')">Stop</button>
+                </div>
+            </div>
+
+            <div class="ceo-container">
+                <!-- Page header -->
+                <div class="page-header" style="padding-top:24px">
+                    <div>
+                        <h1 class="page-title">CEO Dashboard</h1>
+                        <p class="page-subtitle">Royal's view of Royalty — revenue, content, outreach, growth</p>
+                    </div>
+                </div>
+
+                <!-- Morning Briefing -->
+                <div class="ceo-section-title">Morning Briefing</div>
+                <div class="ceo-briefing-grid" id="ceo-briefing-grid">
+                    <!-- Skeleton while loading -->
+                    <div class="ceo-briefing-card">
+                        <div class="ceo-briefing-card-label">MRR</div>
+                        <div class="ceo-briefing-card-value ceo-skeleton" style="height:28px;width:80px"></div>
+                    </div>
+                    <div class="ceo-briefing-card">
+                        <div class="ceo-briefing-card-label">New Trials</div>
+                        <div class="ceo-briefing-card-value ceo-skeleton" style="height:28px;width:60px"></div>
+                    </div>
+                    <div class="ceo-briefing-card">
+                        <div class="ceo-briefing-card-label">Content Queue</div>
+                        <div class="ceo-briefing-card-value ceo-skeleton" style="height:28px;width:60px"></div>
+                    </div>
+                    <div class="ceo-briefing-card">
+                        <div class="ceo-briefing-card-label">Outreach Queued</div>
+                        <div class="ceo-briefing-card-value ceo-skeleton" style="height:28px;width:60px"></div>
+                    </div>
+                </div>
+
+                <!-- Task Approval Queue (visible when status = paused OR pending tasks exist) -->
+                <div id="ceo-task-queue-section" style="display:none">
+                    <div class="ceo-section-title">Today's Plan — Pending Approval</div>
+                    <div class="ceo-task-queue" id="ceo-task-queue">
+                        <div class="ceo-task-bulk-bar">
+                            <span class="ceo-task-bulk-label" id="ceo-task-count">0 tasks pending</span>
+                            <button class="ceo-task-btn ceo-task-btn--approve" onclick="ceoDashboard.approveAllTasks()">Approve All</button>
+                            <button class="ceo-task-btn ceo-task-btn--skip" onclick="ceoDashboard.skipAllTasks()">Skip All</button>
+                        </div>
+                        <div id="ceo-task-list">
+                            <div class="ceo-task-queue-empty">No pending tasks</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outreach Approval Queue -->
+                <div id="ceo-outreach-section" style="display:none">
+                    <div class="ceo-section-title">Outreach Drafts — Awaiting Approval</div>
+                    <div id="ceo-outreach-list">
+                        <div class="ceo-empty">No outreach drafts pending</div>
+                    </div>
+                </div>
+
+                <!-- Suggested Questions -->
+                <div class="ceo-section-title">Ask Royal</div>
+                <div class="ceo-chips" id="ceo-chips">
+                    <button class="ceo-chip" onclick="ceoDashboard.sendSuggested(this)">What's our MRR this month?</button>
+                    <button class="ceo-chip" onclick="ceoDashboard.sendSuggested(this)">Who hasn't activated their trial?</button>
+                    <button class="ceo-chip" onclick="ceoDashboard.sendSuggested(this)">What should I publish this week?</button>
+                    <button class="ceo-chip" onclick="ceoDashboard.sendSuggested(this)">What blocked our growth overnight?</button>
+                    <button class="ceo-chip" onclick="ceoDashboard.sendSuggested(this)">What's our trial → paid conversion rate?</button>
+                    <button class="ceo-chip" onclick="ceoDashboard.sendSuggested(this)">Give me the state of the company.</button>
+                </div>
+
+                <!-- Chat -->
+                <div class="ceo-section-title" style="margin-top:20px">Chat with Royal</div>
+                <div class="ceo-chat-wrapper">
+                    <div class="ceo-chat-thread" id="ceo-chat-thread">
+                        <div class="ceo-chat-empty" id="ceo-chat-empty">
+                            Ask Royal anything about Royalty's business — or tap a suggestion above.
+                        </div>
+                    </div>
+                    <div class="ceo-chat-input-bar">
+                        <textarea
+                            class="ceo-chat-input"
+                            id="ceo-chat-input"
+                            placeholder="Ask Royal anything about Royalty…"
+                            rows="1"
+                        ></textarea>
+                        <button class="ceo-chat-send" id="ceo-chat-send" onclick="ceoDashboard.sendMessage()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                            Send
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Log -->
+                <div class="ceo-section-title">Recent Activity</div>
+                <div class="ceo-log-list" id="ceo-log-list">
+                    <div class="ceo-empty">No activity yet — Royal hasn't run yet.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="auth.js?v=12"></script>
+    <script src="sidebar.js?v=18"></script>
+    <script src="../i18n/i18n.js?v=4"></script>
+    <script src="ceo.js?v=2"></script>
+</body>
+</html>
