@@ -876,6 +876,94 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
       },
       required: ['layer', 'category', 'fact']
     }
+  },
+
+  // ── CEO / Self-Growth Tools ──────────────────────────────────────────
+  {
+    name: 'read_own_revenue',
+    description: "Read Royalty's own Stripe revenue metrics: MRR, new trials, churn, active subscriptions. Use when Jay asks about Royalty's financial performance.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        period_days: {
+          type: 'number',
+          description: 'Number of days to look back for new subscriptions/churn (default 30)'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'read_trial_users',
+    description: "Get Royalty's trial organizations that have not yet activated (no customer app set up). Use to identify who needs follow-up.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        days_since_signup: {
+          type: 'number',
+          description: 'Only return trials signed up at least N days ago (default 3)'
+        },
+        limit: {
+          type: 'number',
+          description: 'Max results (default 20)'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'read_content_queue',
+    description: "Check Royalty's blog content pipeline: articles in draft, days since last publish, articles awaiting review in blog-review.",
+    input_schema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: 'log_growth_action',
+    description: "Log an action taken by Royal for Royalty's own business growth. Always call this after taking any autonomous action.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        action_type: {
+          type: 'string',
+          description: 'Type of action (e.g. revenue_snapshot, content_check, outreach_drafted, reflection)'
+        },
+        description: {
+          type: 'string',
+          description: 'What Royal did and why (max 500 chars)'
+        },
+        status: {
+          type: 'string',
+          description: 'Execution status',
+          enum: ['completed', 'failed', 'pending_approval']
+        }
+      },
+      required: ['action_type', 'description']
+    }
+  },
+  {
+    name: 'trigger_article_generation',
+    description: "Generate a new blog article for Royalty's website. Auto-picks the next SEO-priority topic from the content strategy, or writes a specific topic if provided. Article is saved as a draft in blog-review for Jay to publish.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        topic_title: {
+          type: 'string',
+          description: 'Article title (optional — auto-picks next from content strategy if omitted)'
+        },
+        keyword: {
+          type: 'string',
+          description: 'Primary SEO keyword to target (optional)'
+        },
+        description: {
+          type: 'string',
+          description: 'Brief description of what the article should cover (optional)'
+        }
+      },
+      required: []
+    }
   }
 ]
 
@@ -2239,7 +2327,361 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
         importance
       }
     }
-  }
+  },
+
+  // ── CEO: read_own_revenue ────────────────────────────────────────────
+  read_own_revenue: async (_input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const periodDays = Math.min((_input.period_days as number) || 30, 90)
+    const since = new Date()
+    since.setDate(since.getDate() - periodDays)
+
+    try {
+      // Query organizations table for subscription data stored via Stripe webhooks
+      const { data: orgs, error } = await supabase
+        .from('organizations')
+        .select('id, name, plan_type, stripe_subscription_id, stripe_customer_id, created_at, is_lifetime')
+        .not('stripe_subscription_id', 'is', null)
+
+      if (error) throw error
+
+      const active = (orgs || []).filter((o: Record<string, unknown>) => o.plan_type && o.plan_type !== 'free')
+      const newThisPeriod = (orgs || []).filter((o: Record<string, unknown>) => {
+        return o.created_at && new Date(o.created_at as string) >= since
+      })
+
+      // Estimate MRR from plan types (real Stripe MRR would require Stripe API call)
+      const PLAN_MRR: Record<string, number> = {
+        pro: 299,
+        max: 749,
+        royalty_pro: 79,
+        lifetime: 0, // LTD
+      }
+      const estimatedMrr = active.reduce((sum: number, o: Record<string, unknown>) => {
+        return sum + (PLAN_MRR[o.plan_type as string] || 0)
+      }, 0)
+
+      return {
+        success: true,
+        data: {
+          active_subscriptions: active.length,
+          estimated_mrr_usd: estimatedMrr,
+          new_orgs_this_period: newThisPeriod.length,
+          period_days: periodDays,
+          note: 'MRR is estimated from plan types. Connect Stripe API for exact billing data.',
+          plan_breakdown: active.reduce((acc: Record<string, number>, o: Record<string, unknown>) => {
+            const plan = (o.plan_type as string) || 'unknown'
+            acc[plan] = (acc[plan] || 0) + 1
+            return acc
+          }, {}),
+        }
+      }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
+  // ── CEO: read_trial_users ────────────────────────────────────────────
+  read_trial_users: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const daysSince = Math.max((input.days_since_signup as number) || 3, 1)
+    const limit = Math.min((input.limit as number) || 20, 50)
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - daysSince)
+
+    try {
+      // Get orgs with no plan (free/trial) created before the cutoff
+      const { data: orgs, error } = await supabase
+        .from('organizations')
+        .select('id, name, created_at, plan_type')
+        .or('plan_type.is.null,plan_type.eq.free')
+        .lte('created_at', cutoff.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (error) throw error
+
+      // For each org, check if they have a customer app (activation signal)
+      const orgIds = (orgs || []).map((o: Record<string, unknown>) => o.id)
+      const { data: apps } = await supabase
+        .from('customer_apps')
+        .select('organization_id')
+        .in('organization_id', orgIds)
+
+      const activatedOrgIds = new Set((apps || []).map((a: Record<string, unknown>) => a.organization_id))
+
+      const unactivated = (orgs || []).filter((o: Record<string, unknown>) => !activatedOrgIds.has(o.id))
+
+      return {
+        success: true,
+        data: {
+          unactivated_trials: unactivated.map((o: Record<string, unknown>) => ({
+            org_id: o.id,
+            name: o.name,
+            signed_up: o.created_at,
+            days_since_signup: Math.floor((Date.now() - new Date(o.created_at as string).getTime()) / 86400000),
+          })),
+          total_unactivated: unactivated.length,
+          days_threshold: daysSince,
+        }
+      }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
+  // ── CEO: read_content_queue ──────────────────────────────────────────
+  read_content_queue: async (_input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+
+    try {
+      const [draftsRes, publishedRes] = await Promise.all([
+        supabase
+          .from('newsletter_articles')
+          .select('id, title, status, created_at')
+          .eq('status', 'draft')
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('newsletter_articles')
+          .select('id, published_at')
+          .eq('status', 'published')
+          .order('published_at', { ascending: false })
+          .limit(1),
+      ])
+
+      const lastPublished = publishedRes.data?.[0]?.published_at
+      const daysSincePublish = lastPublished
+        ? Math.floor((Date.now() - new Date(lastPublished).getTime()) / 86400000)
+        : null
+
+      return {
+        success: true,
+        data: {
+          drafts_count: draftsRes.data?.length || 0,
+          drafts: (draftsRes.data || []).map((a: Record<string, unknown>) => ({
+            id: a.id,
+            title: a.title,
+            status: a.status,
+            created_at: a.created_at,
+          })),
+          last_published_at: lastPublished || null,
+          days_since_last_publish: daysSincePublish,
+          recommendation: daysSincePublish === null
+            ? 'No articles published yet'
+            : daysSincePublish >= 5
+              ? `${daysSincePublish} days since last publish — content gap detected`
+              : `On track — last published ${daysSincePublish} day(s) ago`,
+        }
+      }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
+  // ── CEO: log_growth_action ───────────────────────────────────────────
+  log_growth_action: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const actionType = (input.action_type as string || '').slice(0, 100)
+    const description = (input.description as string || '').slice(0, 500)
+    const status = (input.status as string) || 'completed'
+
+    if (!actionType || !description) {
+      return { success: false, error: 'action_type and description are required' }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('self_growth_log')
+        .insert({ action_type: actionType, description, status })
+        .select('id')
+        .single()
+
+      if (error) throw error
+
+      return { success: true, data: { logged: true, id: data?.id } }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
+  // ── CEO: trigger_article_generation ─────────────────────────────────
+  trigger_article_generation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const topicTitleRaw = input.topic_title as string | undefined
+    const keywordRaw = input.keyword as string | undefined
+    const descriptionRaw = input.description as string | undefined
+
+    const fnUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    try {
+      // Find the admin org's newsletter app
+      const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('is_admin', true)
+        .limit(1)
+        .single()
+
+      if (!adminProfile) return { success: false, error: 'Admin profile not found' }
+
+      const { data: adminMembership } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', adminProfile.id)
+        .eq('role', 'owner')
+        .single()
+
+      if (!adminMembership) return { success: false, error: 'Admin org not found' }
+
+      const { data: newsletterApp } = await supabase
+        .from('customer_apps')
+        .select('id, name')
+        .eq('organization_id', adminMembership.organization_id)
+        .eq('app_type', 'newsletter')
+        .single()
+
+      if (!newsletterApp) return { success: false, error: 'No newsletter app found. Create one at /app/apps.html first.' }
+
+      // Build topic — use provided or auto-pick from content strategy
+      let topic = {
+        id: 'auto-' + Date.now(),
+        title: topicTitleRaw || '',
+        description: descriptionRaw || '',
+        topic: keywordRaw || 'customer-retention',
+      }
+
+      if (!topicTitleRaw) {
+        // Auto-pick: find next unwritten topic from content_strategies
+        const { data: strategy } = await supabase
+          .from('content_strategies')
+          .select('topic_calendar')
+          .eq('app_id', newsletterApp.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (strategy?.topic_calendar?.length) {
+          const { data: existingArticles } = await supabase
+            .from('newsletter_articles')
+            .select('slug')
+            .eq('app_id', newsletterApp.id)
+
+          const existingSlugs = new Set((existingArticles || []).map((a: { slug: string }) => a.slug))
+          type TopicItem = { slug?: string; title: string; description?: string; pillar?: string }
+          const nextTopic = (strategy.topic_calendar as TopicItem[]).find(t => !existingSlugs.has(t.slug || ''))
+
+          if (nextTopic) {
+            topic = {
+              id: nextTopic.slug || 'auto-' + Date.now(),
+              title: nextTopic.title,
+              description: nextTopic.description || '',
+              topic: nextTopic.pillar || 'customer-retention',
+            }
+          }
+        }
+
+        // Final fallback if still no title
+        if (!topic.title) {
+          topic.title = 'How AI Loyalty Programs Help Small Businesses Compete with Big Chains'
+          topic.topic = 'ai-loyalty'
+        }
+      }
+
+      // Royalty brand context (hardcoded — this is always for Royalty's own blog)
+      const royaltyContext = {
+        business_name: 'Royalty',
+        story: {
+          origin: 'Built so local businesses could compete with the retention tools only big chains could afford',
+          mission: 'Make every local business irreplaceable to its community through AI-powered loyalty',
+          differentiator: 'The only loyalty platform where AI runs the program for you — 60 seconds to launch',
+        },
+        audience: {
+          primary: 'Small business owners (coffee shops, restaurants, gyms, salons, retail)',
+          pain_points: ['Competing with big chains', 'Customer retention', 'No time for marketing', 'Loyalty programs too complex'],
+          aspirations: ['Keep regulars coming back', 'Grow a loyal community', 'Automate customer engagement'],
+        },
+        voice: {
+          personality: 'Smart and warm, like advice from a founder friend who built this thing',
+          tone: 'Direct and practical, never corporate',
+          avoid: ['jargon', 'synergy', 'leverage', 'disrupt', 'game-changer', 'seamless'],
+        },
+      }
+
+      // Call generate-article
+      const genResponse = await fetch(`${fnUrl}/functions/v1/generate-article`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          topic,
+          context: royaltyContext,
+          app_id: newsletterApp.id,
+          organization_id: adminMembership.organization_id,
+        }),
+      })
+
+      if (!genResponse.ok) {
+        const errText = await genResponse.text()
+        return { success: false, error: `generate-article failed: ${genResponse.status} — ${errText.slice(0, 200)}` }
+      }
+
+      const genResult = await genResponse.json()
+      if (!genResult.success || !genResult.article) {
+        return { success: false, error: 'generate-article returned no article' }
+      }
+
+      const article = genResult.article
+
+      // Save to newsletter_articles as draft
+      const { data: saved, error: saveError } = await supabase
+        .from('newsletter_articles')
+        .insert({
+          app_id: newsletterApp.id,
+          title: article.title,
+          slug: article.slug,
+          excerpt: article.excerpt,
+          content: article.content,
+          meta_title: article.meta_title,
+          meta_description: article.meta_description,
+          primary_topic: article.primary_topic,
+          tags: article.tags,
+          status: 'draft',
+          language: 'en',
+        })
+        .select('id, title, slug')
+        .single()
+
+      if (saveError) return { success: false, error: `Failed to save draft: ${saveError.message}` }
+
+      // Log the growth action
+      await supabase.from('self_growth_log').insert({
+        action_type: 'content_published',
+        description: `Generated article draft: "${article.title}" — quality score ${article.quality_score?.total ?? 'N/A'}`,
+        status: 'completed',
+        metadata: { article_id: saved?.id, slug: article.slug, quality_score: article.quality_score },
+      })
+
+      return {
+        success: true,
+        data: {
+          article_id: saved?.id,
+          title: article.title,
+          slug: article.slug,
+          quality_score: article.quality_score?.total,
+          status: 'draft',
+          review_url: '/app/blog-review.html',
+          message: `Draft saved: "${article.title}". Quality score: ${article.quality_score?.total ?? 'N/A'}/100. Ready for review at /app/blog-review.html`,
+        },
+      }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
 }
 
 /**
@@ -2421,7 +2863,43 @@ async function callClaudeWithTools(
       (block): block is TextBlock => block.type === 'text'
     )
 
-    const finalText = textBlocks.map(block => block.text).join('\n')
+    let finalText = textBlocks.map(block => block.text).join('\n')
+
+    // If Claude ended turn with no text after tool use, force a text summary
+    if (!finalText && toolsUsed.length > 0) {
+      log('info', 'No text in final response after tool use — making force-text call', { toolsUsed })
+      const forceResponse = await fetchWithTimeout(
+        'https://api.anthropic.com/v1/messages',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: modelId,
+            max_tokens: maxTokens,
+            system: systemPrompt,
+            messages: [
+              ...currentMessages,
+              { role: 'assistant', content: data.content },
+              { role: 'user', content: 'Please summarize what you found.' }
+            ],
+            // No tools param — forces text-only response
+          }),
+        },
+        API_TIMEOUT_MS
+      )
+      if (forceResponse.ok) {
+        const forceData = await forceResponse.json()
+        const forceBlocks = forceData.content.filter(
+          (block: ContentBlock): block is TextBlock => block.type === 'text'
+        )
+        finalText = forceBlocks.map((b: TextBlock) => b.text).join('\n')
+        totalTokensUsed += forceData.usage.input_tokens + forceData.usage.output_tokens
+      }
+    }
 
     return {
       text: finalText,
@@ -3471,7 +3949,83 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { prompt, session_id, thread_id, mode = 'review', context } = await req.json() as PromptRequest
+    const rawBody = await req.json() as Record<string, unknown>
+    const bodyMode = (rawBody.mode as string) || 'review'
+
+    // ── CEO mode: early branch, separate tool context ──────────────────
+    if (bodyMode === 'ceo') {
+      const messages = rawBody.messages as Array<{ role: string; content: string }> | undefined
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'CEO mode requires messages array' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Security: admin-only (is_admin flag)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile?.is_admin) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'CEO dashboard is admin-only' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const ceoSystemPrompt = `You are Royal — the AI CEO, COO, and CTO of Royalty (royaltyapp.ai), an AI-powered loyalty platform for small businesses.
+
+You are speaking with Jay, your founding partner and investor. Jay is reviewing the company's progress.
+
+Your role: Run the business. Report outcomes, not decisions. You have tools to read Royalty's own revenue, trial users, and content pipeline.
+
+Guidelines:
+- Be direct and specific. Use real numbers when you have them.
+- Call tools proactively to answer questions with live data.
+- After taking any autonomous action, log it with log_growth_action.
+- Surface blockers honestly. Surface opportunities concisely.
+- You are the CEO reporting to a board member — not asking for permission.
+- If revenue data shows $0 MRR or no active subscriptions, report that plainly: "We have 0 paid subscriptions and $0 MRR right now." Do NOT say there is a technical problem unless the tool returns success: false with an explicit error.
+- IMPORTANT: After using any tool, you MUST write a text response summarizing what you found. Never end a turn without writing text.
+
+Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object' ? (rawBody.context as Record<string, unknown>).growth_status || 'unknown' : 'unknown'}`
+
+      // Get org ID for tools that need it (most CEO tools don't filter by org)
+      const { data: ceoMembership } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single()
+
+      const ceoCtx: ToolContext = {
+        supabase,
+        organizationId: ceoMembership?.organization_id || user.id,
+        appId: undefined,
+      }
+
+      const formatted = messages.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: String(m.content || '').slice(0, 5000),
+      }))
+
+      const result = await callClaudeWithTools(ceoSystemPrompt, formatted, ceoCtx, 4000, MODEL_SONNET)
+
+      const responseText = result.text ||
+        (result.toolsUsed.length > 0
+          ? `Data retrieved via ${result.toolsUsed.join(', ')}. Ask a follow-up question for details.`
+          : 'No response generated. Please try again.')
+
+      return new Response(
+        JSON.stringify({ success: true, content: responseText, mode: 'ceo', tools_used: result.toolsUsed }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    // ── End CEO mode ───────────────────────────────────────────────────
+
+    const { prompt, session_id, thread_id, mode = 'review', context } = rawBody as unknown as PromptRequest
 
     // Comprehensive input validation
     if (!prompt || typeof prompt !== 'string') {

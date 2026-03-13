@@ -17,6 +17,8 @@ const AppSidebar = (function() {
         {
             section: 'main',
             items: [
+                // CEO Dashboard - admin only, top of nav
+                { id: 'ceo', icon: 'trendingUp', href: '/app/ceo.html', labelKey: 'nav.ceo', label: 'CEO Dashboard', adminOnly: true },
                 // Dashboard - visible to all, serves as reporting for SMB users
                 { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Dashboard' },
                 // Intelligence - AI brain, visible to all
@@ -165,6 +167,10 @@ const AppSidebar = (function() {
             <line x1="12" y1="22" x2="12" y2="7"></line>
             <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
             <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+        </svg>`,
+        trendingUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
         </svg>`
     };
 
@@ -179,6 +185,7 @@ const AppSidebar = (function() {
     // Get current page ID from URL
     function getCurrentPageId(isAdmin) {
         const path = window.location.pathname;
+        if (path.includes('ceo')) return 'ceo';
         if (path.includes('blog-review')) return 'blog-review';
         // Dashboard page - always highlight 'dashboard' nav item
         if (path.includes('dashboard')) return 'dashboard';
