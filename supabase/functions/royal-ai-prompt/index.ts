@@ -4227,6 +4227,35 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
         content: String(m.content || '').slice(0, 5000),
       }))
 
+      // Brief mode: single-turn Haiku, no tools (metrics already in the prompt)
+      if (rawBody.brief_mode === true) {
+        const briefRes = await fetchWithTimeout(
+          'https://api.anthropic.com/v1/messages',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: MODEL_HAIKU,
+              max_tokens: 400,
+              system: 'You are Royal, CEO of Royalty (royaltyapp.ai). Be direct. Use only the data provided in the message — do not call tools.',
+              messages: formatted,
+            }),
+          },
+          30_000
+        )
+        const briefText = briefRes.ok
+          ? ((await briefRes.json()).content?.[0]?.text ?? 'Brief unavailable — ask Royal directly.')
+          : 'Brief unavailable — ask Royal directly.'
+        return new Response(
+          JSON.stringify({ success: true, content: briefText, mode: 'ceo', tools_used: [] }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       let result: { text: string; toolsUsed: string[]; tokensUsed: number; modelUsed: string }
       try {
         result = await callClaudeWithTools(ceoSystemPrompt, formatted, ceoCtx, 4000, MODEL_SONNET)

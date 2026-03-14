@@ -59,15 +59,17 @@
         }
 
         // Resolve org for chat thread persistence
-        try {
-            const { data: membership } = await window.supabase
-                .from('organization_members')
-                .select('organization_id')
-                .eq('user_id', ceoCeoUserId)
-                .limit(1)
-                .single();
-            if (membership) ceoCeoOrgId = membership.organization_id;
-        } catch (_) { /* non-fatal */ }
+        if (ceoCeoUserId) {
+            try {
+                const { data: membership } = await window.supabase
+                    .from('organization_members')
+                    .select('organization_id')
+                    .eq('user_id', ceoCeoUserId)
+                    .limit(1)
+                    .single();
+                if (membership) ceoCeoOrgId = membership.organization_id;
+            } catch (_) { /* non-fatal */ }
+        }
 
         // Auto-grow textarea
         const input = els.chatInput();
@@ -859,6 +861,7 @@
                 },
                 body: JSON.stringify({
                     mode: 'ceo',
+                    brief_mode: true,
                     messages: [{
                         role: 'user',
                         content: `Morning brief for Royalty (royaltyapp.ai), an AI loyalty platform for SMBs.
