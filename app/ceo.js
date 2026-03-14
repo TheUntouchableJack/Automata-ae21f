@@ -757,7 +757,7 @@
         try {
             const { data, error } = await window.supabase
                 .from('self_growth_log')
-                .select('id, action_type, description, status, created_at')
+                .select('id, action_type, description, status, created_at, metadata')
                 .not('status', 'eq', 'pending_approval')
                 .order('created_at', { ascending: false })
                 .limit(20);
@@ -778,13 +778,21 @@
             return;
         }
 
-        list.innerHTML = items.map(item => `
+        list.innerHTML = items.map(item => {
+            let badge = '';
+            if (item.action_type === 'outreach_sent' && item.metadata) {
+                const rid = item.metadata.resend_id;
+                if (!rid) badge = '<span class="ceo-log-confirm ceo-log-confirm--fail">send failed</span>';
+                else if (rid.startsWith('stub_')) badge = '<span class="ceo-log-confirm ceo-log-confirm--stub">stub — not sent</span>';
+                else badge = '<span class="ceo-log-confirm ceo-log-confirm--ok">✓ Resend accepted</span>';
+            }
+            return `
             <div class="ceo-log-item ceo-log-item--${item.status}">
                 <span class="ceo-log-item-type">${escapeHtml(item.action_type)}</span>
-                <span class="ceo-log-item-desc">${escapeHtml(item.description)}</span>
+                <span class="ceo-log-item-desc">${escapeHtml(item.description)}${badge ? ' ' + badge : ''}</span>
                 <span class="ceo-log-item-time">${formatRelativeTime(item.created_at)}</span>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
 
         // Update bell badge with unread count
         const lastRead = parseInt(localStorage.getItem('ceo-activity-last-read') || '0');
