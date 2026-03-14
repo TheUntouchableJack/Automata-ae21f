@@ -63,7 +63,7 @@ async function loadOrganizationInfo() {
             organizations (
                 id,
                 name,
-                plan,
+                plan_type,
                 created_at
             )
         `)
@@ -88,7 +88,7 @@ async function loadOrganizationInfo() {
     document.getElementById('org-name').textContent = orgName;
     document.getElementById('org-avatar').textContent = orgName.charAt(0).toUpperCase();
 
-    const plan = currentOrganization.plan || 'free';
+    const plan = currentOrganization.plan_type || 'free';
     const planLabels = {
         free: 'Free Plan',
         pro: 'Pro Plan',
@@ -107,7 +107,7 @@ async function loadOrganizationInfo() {
 // ===== Load Stats =====
 async function loadStats() {
     const orgId = currentOrganization.id;
-    const plan = currentOrganization.plan || 'free';
+    const plan = currentOrganization.plan_type || 'free';
     const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 
     try {

@@ -870,6 +870,49 @@
         </div>
     </div>
 
+    <!-- Scroll to Top Button -->
+    <button id="scroll-to-top" aria-label="Scroll to top" title="Back to top">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 4L4 10M10 4L16 10M10 4V16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
+    <style>
+        #scroll-to-top {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--color-primary);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+        #scroll-to-top:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+        }
+        #scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        @media (max-width: 768px) {
+            #scroll-to-top {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="i18n/i18n.js"></script>
@@ -877,7 +920,7 @@
     <script src="app/templates-library.js"></script>
     <script src="app/ai-recommendations.js"></script>
     <script src="app/rate-limiter.js?v=1"></script>
-    <script src="script.js?v=12"></script>
+    <script src="script.js?v=13"></script>
     <script src="network-bg.js?v=7"></script>
     <script src="js/section-nav.js?v=1"></script>
 </body>
