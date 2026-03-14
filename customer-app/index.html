@@ -2522,7 +2522,7 @@
                     p_last_name: document.getElementById('last-name').value.trim(),
                     p_email: document.getElementById('email').value.trim().toLowerCase(),
                     p_phone: phoneFormatted,
-                    p_pin: pin  // Plaintext - hashed server-side with bcrypt
+                    p_pin_hash: pin  // Plaintext - stored as pin_hash
                 });
 
                 if (error) throw error;
@@ -2562,7 +2562,7 @@
                 const { data, error } = await supabaseClient.rpc('verify_app_member_login', {
                     p_app_id: currentApp.id,
                     p_email: email,
-                    p_pin: pin  // Plaintext - verified server-side with bcrypt
+                    p_pin_hash: pin  // Plaintext - verified server-side
                 });
 
                 if (error) throw error;

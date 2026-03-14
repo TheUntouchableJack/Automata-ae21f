@@ -540,7 +540,7 @@ async function handleJoin(formData) {
                 p_last_name: formData.lastName || '',
                 p_email: formData.email || null,
                 p_phone: formData.phone || null,
-                p_pin: formData.pin  // Plaintext - hashed server-side with bcrypt
+                p_pin_hash: formData.pin  // Plaintext - stored as pin_hash
             });
 
             if (error) {
@@ -659,7 +659,7 @@ async function handleLogin(pin) {
                 p_app_id: currentApp.id,
                 p_email: email || null,
                 p_phone: phone || null,
-                p_pin: pin  // Plaintext - verified server-side with bcrypt
+                p_pin_hash: pin  // Plaintext - verified server-side
             });
 
             if (error) {
