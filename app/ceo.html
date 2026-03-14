@@ -709,10 +709,10 @@
         }
         .ceo-brief-hero-text {
             font-size: 15px; font-weight: 500; line-height: 1.65;
-            margin-bottom: 18px; max-width: 78%; opacity: 0.85;
+            margin-bottom: 18px; opacity: 0.85;
         }
         .ceo-brief-hero-text.loaded { opacity: 1; }
-        .ceo-brief-hero-actions { display: flex; align-items: center; gap: 10px; }
+        .ceo-brief-hero-actions { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
         .ceo-brief-hero-cta {
             background: rgba(0,0,0,0.3); color: #fff; border: none;
             border-radius: 8px; padding: 8px 16px;
@@ -988,6 +988,17 @@
                 <div class="ceo-main-grid">
                     <!-- Morning Briefing -->
                         <div class="ceo-section-title">Morning Briefing</div>
+
+                        <!-- Royal's Brief (hero card first) -->
+                        <div class="ceo-brief-hero" id="ceo-brief-bar">
+                            <div class="ceo-brief-hero-label">👑 Royal's Morning Brief</div>
+                            <div class="ceo-brief-hero-text" id="ceo-brief-text">Generating briefing…</div>
+                            <div class="ceo-brief-hero-actions">
+                                <button class="ceo-brief-hero-cta" onclick="ceoDashboard.fireChatQuestion('Give me the state of the company.')">Ask Royal ›</button>
+                                <button class="ceo-brief-hero-refresh" onclick="ceoDashboard.refreshBrief()" title="Refresh brief">↻</button>
+                            </div>
+                        </div>
+
                         <div class="ceo-briefing-grid" id="ceo-briefing-grid">
                             <div class="ceo-briefing-card">
                                 <div class="ceo-briefing-card-label">MRR</div>
@@ -1004,16 +1015,6 @@
                             <div class="ceo-briefing-card">
                                 <div class="ceo-briefing-card-label">Outreach Queued</div>
                                 <div class="ceo-briefing-card-value ceo-skeleton" style="height:28px;width:60px"></div>
-                            </div>
-                        </div>
-
-                        <!-- Royal's Brief -->
-                        <div class="ceo-brief-hero" id="ceo-brief-bar">
-                            <div class="ceo-brief-hero-label">👑 Royal's Morning Brief</div>
-                            <div class="ceo-brief-hero-text" id="ceo-brief-text">Generating briefing…</div>
-                            <div class="ceo-brief-hero-actions">
-                                <button class="ceo-brief-hero-cta" onclick="ceoDashboard.fireChatQuestion('Give me the state of the company.')">Ask Royal ›</button>
-                                <button class="ceo-brief-hero-refresh" onclick="ceoDashboard.refreshBrief()" title="Refresh brief">↻</button>
                             </div>
                         </div>
 
@@ -1150,6 +1151,6 @@
     <script src="auth.js?v=12"></script>
     <script src="sidebar.js?v=20"></script>
     <script src="../i18n/i18n.js?v=4"></script>
-    <script src="ceo.js?v=14"></script>
+    <script src="ceo.js?v=15"></script>
 </body>
 </html>

@@ -4218,7 +4218,7 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
 
       const ceoCtx: ToolContext = {
         supabase,
-        organizationId: ceoMembership?.organization_id || user.id,
+        organizationId: ceoMembership?.organization_id ?? '',
         appId: undefined,
       }
 
@@ -4227,7 +4227,16 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
         content: String(m.content || '').slice(0, 5000),
       }))
 
-      const result = await callClaudeWithTools(ceoSystemPrompt, formatted, ceoCtx, 4000, MODEL_SONNET)
+      let result: { text: string; toolsUsed: string[]; tokensUsed: number; modelUsed: string }
+      try {
+        result = await callClaudeWithTools(ceoSystemPrompt, formatted, ceoCtx, 4000, MODEL_SONNET)
+      } catch (ceoErr) {
+        const msg = ceoErr instanceof Error ? ceoErr.message : String(ceoErr)
+        return new Response(
+          JSON.stringify({ success: true, content: `I ran into an issue: ${msg}. Try asking again.`, mode: 'ceo', tools_used: [] }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
 
       // If tools were used but no text was generated, ask Claude to summarize
       let responseText = result.text

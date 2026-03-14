@@ -1255,6 +1255,8 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
     }
 
     function fireChatQuestion(question) {
+        const chatWrapper = document.querySelector('.ceo-chat-wrapper');
+        if (chatWrapper) chatWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
         const input = els.chatInput();
         if (input) input.value = question;
         sendMessage();
