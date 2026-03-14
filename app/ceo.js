@@ -1422,12 +1422,11 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
     // ── CEO Chat Thread Persistence ────────────────────────────────────
 
     async function loadCeoThread() {
-        if (!ceoCeoOrgId || !ceoCeoUserId) return;
+        if (!ceoCeoUserId) return;
         try {
             const { data: threads } = await window.supabase
                 .from('ai_threads')
                 .select('id')
-                .eq('organization_id', ceoCeoOrgId)
                 .eq('user_id', ceoCeoUserId)
                 .eq('mode', 'ceo')
                 .eq('is_active', true)

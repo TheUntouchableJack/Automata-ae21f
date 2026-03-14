@@ -4229,10 +4229,24 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
 
       const result = await callClaudeWithTools(ceoSystemPrompt, formatted, ceoCtx, 4000, MODEL_SONNET)
 
-      const responseText = result.text ||
-        (result.toolsUsed.length > 0
-          ? `Data retrieved via ${result.toolsUsed.join(', ')}. Ask a follow-up question for details.`
-          : 'No response generated. Please try again.')
+      // If tools were used but no text was generated, ask Claude to summarize
+      let responseText = result.text
+      if (!responseText && result.toolsUsed.length > 0) {
+        // One more request: force a text summary of the tool results
+        try {
+          const summaryMessages = [
+            ...formatted,
+            { role: 'assistant' as const, content: `[Used tools: ${result.toolsUsed.join(', ')}]` },
+            { role: 'user' as const, content: 'Now summarize what you found. Give me the full analysis.' },
+          ]
+          const summary = await callClaudeWithTools(ceoSystemPrompt, summaryMessages, ceoCtx, 2000, MODEL_SONNET)
+          responseText = summary.text || 'I gathered the data but had trouble summarizing it. Try asking again.'
+        } catch (_) {
+          responseText = 'I gathered the data but had trouble summarizing it. Try asking again.'
+        }
+      } else if (!responseText) {
+        responseText = 'No response generated. Please try again.'
+      }
 
       return new Response(
         JSON.stringify({ success: true, content: responseText, mode: 'ceo', tools_used: result.toolsUsed }),
@@ -4680,7 +4694,7 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
           ? 'Too much context accumulated. Try starting a new conversation.'
           : isTimeout
             ? 'Request took too long. Please try a simpler question.'
-            : 'Something went wrong. Please try again.',
+            : `Something went wrong: ${error instanceof Error ? error.message : String(error)}`,
         ideas: [],
         follow_up_questions: ['What would you like to know about your business?']
       }),

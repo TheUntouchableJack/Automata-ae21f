@@ -683,29 +683,50 @@
             gap: 8px;
         }
 
-        /* ── Royal Brief Bar ─────────────────────────────────── */
-        .ceo-brief-bar {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            background: var(--color-surface-2, #f9fafb);
-            border: 1px solid var(--color-border);
-            border-radius: 10px;
-            padding: 14px 16px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            line-height: 1.6;
-            color: var(--color-text);
+        /* ── Royal Brief Hero Card ───────────────────────────── */
+        .ceo-brief-hero {
+            background: var(--color-primary);
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
         }
-        .ceo-brief-crown { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-        .ceo-brief-text { flex: 1; color: var(--color-text-muted); font-style: italic; }
-        .ceo-brief-text.loaded { color: var(--color-text); font-style: normal; }
-        .ceo-brief-refresh {
-            background: none; border: none; cursor: pointer;
-            font-size: 16px; color: var(--color-text-muted);
-            padding: 0 4px; flex-shrink: 0; border-radius: 4px;
+        .ceo-brief-hero::before {
+            content: '✦';
+            position: absolute; right: 36px; top: 12px;
+            font-size: 80px; opacity: 0.1; line-height: 1; pointer-events: none;
         }
-        .ceo-brief-refresh:hover { color: var(--color-text); }
+        .ceo-brief-hero::after {
+            content: '✦';
+            position: absolute; right: 100px; bottom: -12px;
+            font-size: 40px; opacity: 0.07; pointer-events: none;
+        }
+        .ceo-brief-hero-label {
+            font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+            text-transform: uppercase; opacity: 0.7; margin-bottom: 10px;
+        }
+        .ceo-brief-hero-text {
+            font-size: 15px; font-weight: 500; line-height: 1.65;
+            margin-bottom: 18px; max-width: 78%; opacity: 0.85;
+        }
+        .ceo-brief-hero-text.loaded { opacity: 1; }
+        .ceo-brief-hero-actions { display: flex; align-items: center; gap: 10px; }
+        .ceo-brief-hero-cta {
+            background: rgba(0,0,0,0.3); color: #fff; border: none;
+            border-radius: 8px; padding: 8px 16px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 4px;
+            transition: background 0.15s;
+        }
+        .ceo-brief-hero-cta:hover { background: rgba(0,0,0,0.45); }
+        .ceo-brief-hero-refresh {
+            background: rgba(255,255,255,0.15); color: #fff; border: none;
+            border-radius: 8px; padding: 8px 10px;
+            font-size: 15px; cursor: pointer; transition: background 0.15s;
+        }
+        .ceo-brief-hero-refresh:hover { background: rgba(255,255,255,0.28); }
 
         /* ── Header Actions (bell + tasks) ───────────────────── */
         .ceo-header-actions { display: flex; align-items: center; gap: 8px; }
@@ -987,10 +1008,13 @@
                         </div>
 
                         <!-- Royal's Brief -->
-                        <div class="ceo-brief-bar" id="ceo-brief-bar">
-                            <span class="ceo-brief-crown">👑</span>
-                            <span class="ceo-brief-text" id="ceo-brief-text">Generating briefing…</span>
-                            <button class="ceo-brief-refresh" onclick="ceoDashboard.refreshBrief()" title="Refresh brief">↻</button>
+                        <div class="ceo-brief-hero" id="ceo-brief-bar">
+                            <div class="ceo-brief-hero-label">👑 Royal's Morning Brief</div>
+                            <div class="ceo-brief-hero-text" id="ceo-brief-text">Generating briefing…</div>
+                            <div class="ceo-brief-hero-actions">
+                                <button class="ceo-brief-hero-cta" onclick="ceoDashboard.fireChatQuestion('Give me the state of the company.')">Ask Royal ›</button>
+                                <button class="ceo-brief-hero-refresh" onclick="ceoDashboard.refreshBrief()" title="Refresh brief">↻</button>
+                            </div>
                         </div>
 
                         <!-- Task Approval Queue -->
@@ -1126,6 +1150,6 @@
     <script src="auth.js?v=12"></script>
     <script src="sidebar.js?v=20"></script>
     <script src="../i18n/i18n.js?v=4"></script>
-    <script src="ceo.js?v=13"></script>
+    <script src="ceo.js?v=14"></script>
 </body>
 </html>
