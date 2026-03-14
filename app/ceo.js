@@ -95,6 +95,7 @@
             loadBriefingAndBrief(),
             loadPlatformOutreach(),
             loadContentStrategy(),
+            loadContentProposals(),
             loadPendingTasks(),
             loadRoyalTasks(),
             loadOutreachQueue(),
@@ -660,6 +661,95 @@
         }).join('');
     }
 
+    // ── Content Proposals (queue_blog_draft approvals) ────────────────
+    async function loadContentProposals() {
+        try {
+            const { data, error } = await window.supabase
+                .from('content_queue')
+                .select('id, action_type, title, topic, outline, rationale, created_at')
+                .eq('status', 'draft')
+                .order('created_at', { ascending: false })
+                .limit(20);
+            if (error) throw error;
+            renderContentProposals(data || []);
+        } catch (e) {
+            console.error('[ceo] loadContentProposals error:', e);
+        }
+    }
+
+    function renderContentProposals(items) {
+        const section = document.getElementById('ceo-content-proposals-section');
+        const list    = document.getElementById('ceo-content-proposals-list');
+        if (!section || !list) return;
+        if (items.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = 'block';
+        list.innerHTML = items.map(item => `
+            <div class="ceo-outreach-item" data-id="${escapeHtml(item.id)}">
+                <div class="ceo-outreach-item-header">
+                    <span class="ceo-outreach-item-channel">${escapeHtml((item.action_type || '').replace('_', ' '))}</span>
+                    <span class="ceo-outreach-item-to">${escapeHtml(item.title)}</span>
+                </div>
+                ${item.topic ? `<div class="ceo-outreach-item-subject">Topic: ${escapeHtml(item.topic)}</div>` : ''}
+                ${item.outline ? `<div class="ceo-outreach-item-preview">${escapeHtml(item.outline)}</div>` : ''}
+                <div class="ceo-outreach-item-preview" style="font-style:italic">Royal: ${escapeHtml(item.rationale)}</div>
+                <div class="ceo-outreach-item-actions">
+                    <button class="ceo-task-btn ceo-task-btn--approve" onclick="ceoDashboard.approveContentProposal('${escapeHtml(item.id)}', ${JSON.stringify({ title: item.title, topic: item.topic }).replace(/"/g, '&quot;')}, this)">Approve & Generate</button>
+                    <button class="ceo-task-btn" onclick="ceoDashboard.rejectContentProposal('${escapeHtml(item.id)}', this)">Reject</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function approveContentProposal(id, item, btn) {
+        if (btn) btn.disabled = true;
+        try {
+            await window.supabase.from('content_queue').update({ status: 'approved' }).eq('id', id);
+            // Trigger article generation via edge function
+            const session = typeof getValidSession === 'function' ? await getValidSession() : null;
+            const token   = session?.access_token;
+            fetch(`${CEO_FUNCTIONS_URL}/royal-ai-prompt`, {
+                method:  'POST',
+                headers: {
+                    'Content-Type':  'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                    mode: 'ceo',
+                    messages: [{
+                        role: 'user',
+                        content: `Generate the approved blog article now. Title: "${item.title}". Topic/keyword: "${item.topic || item.title}". Use trigger_article_generation tool.`,
+                    }],
+                    context: { growth_status: ceoCurrentStatus },
+                }),
+            }); // fire-and-forget
+            // Remove from UI
+            document.querySelector(`[data-id="${id}"]`)?.remove();
+            const list = document.getElementById('ceo-content-proposals-list');
+            if (list && !list.children.length) document.getElementById('ceo-content-proposals-section').style.display = 'none';
+            showToast('Generating article — check Blog Review shortly');
+        } catch (e) {
+            console.error('[ceo] approveContentProposal error:', e);
+            showToast('Failed to approve', 'error');
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function rejectContentProposal(id, btn) {
+        if (btn) btn.disabled = true;
+        try {
+            await window.supabase.from('content_queue').update({ status: 'rejected' }).eq('id', id);
+            document.querySelector(`[data-id="${id}"]`)?.remove();
+            const list = document.getElementById('ceo-content-proposals-list');
+            if (list && !list.children.length) document.getElementById('ceo-content-proposals-section').style.display = 'none';
+        } catch (e) {
+            console.error('[ceo] rejectContentProposal error:', e);
+            if (btn) btn.disabled = false;
+        }
+    }
+
     // ── Recent Activity Log ────────────────────────────────────────────
     async function loadRecentLog() {
         try {
@@ -896,19 +986,72 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
     async function resolveBlocker(taskId) {
         const input = document.getElementById(`ceo-resolve-input-${taskId}`);
         const resolution = input ? input.value.trim() : '';
+        if (!resolution) return;
         try {
             const { error } = await window.supabase
                 .from('royal_tasks')
                 .update({ status: 'complete', resolution, resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() })
                 .eq('id', taskId);
             if (error) throw error;
-            // Remove from local data and re-render
+            // Update local data
+            const task = _royalTasksData?.find(t => t.id === taskId);
             _royalTasksData = _royalTasksData.map(t => t.id === taskId ? { ...t, status: 'complete', resolution } : t);
             _updateTasksBadge(_royalTasksData.filter(t => t.status === 'blocked').length);
             renderTasksTab(_royalTasksTab);
+            closeTasksDrawer();
+            // Inject resolution into CEO chat so Royal can continue the task
+            const contextMessage = `Blocker resolved: "${task?.title || 'Task'}"\n\nWhat you were blocked on: ${task?.blocker_description || ''}\n\nMy answer: ${resolution}\n\nPlease continue with this task or tell me what you'll do next.`;
+            const chatEl = els.chatThread();
+            if (chatEl) chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            await sendMessageText(contextMessage);
         } catch (e) {
             console.error('[ceo] resolveBlocker error:', e);
             showToast('Failed to resolve task', 'error');
+        }
+    }
+
+    // Programmatic message send — used by resolveBlocker and other internal callers
+    async function sendMessageText(text) {
+        if (!text || ceoIsTyping) return;
+        const send = els.chatSend();
+        const empty = els.chatEmpty();
+        if (empty) empty.style.display = 'none';
+        appendMessage('jay', text);
+        ceoChatHistory.push({ role: 'user', content: text });
+        ceoIsTyping = true;
+        if (send) send.disabled = true;
+        const loadingEl = appendMessage('royal', '…', true);
+        try {
+            const session = typeof getValidSession === 'function' ? await getValidSession() : null;
+            const token   = session?.access_token;
+            const response = await fetch(`${CEO_FUNCTIONS_URL}/royal-ai-prompt`, {
+                method:  'POST',
+                headers: {
+                    'Content-Type':  'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                    mode:     'ceo',
+                    messages: ceoChatHistory,
+                    context:  { growth_status: ceoCurrentStatus },
+                }),
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data  = await response.json();
+            const reply = data.content || data.message || data.response || 'Royal had no response.';
+            if (loadingEl) {
+                loadingEl.querySelector('.ceo-msg-bubble').textContent = '';
+                renderMarkdownText(loadingEl.querySelector('.ceo-msg-bubble'), reply);
+            }
+            ceoChatHistory.push({ role: 'assistant', content: reply });
+            saveCeoMessage(text, reply);
+            ceoChatHistory = ceoChatHistory.slice(-20);
+        } catch (e) {
+            console.error('[ceo] sendMessageText error:', e);
+            if (loadingEl) loadingEl.querySelector('.ceo-msg-bubble').textContent = 'Royal encountered an error.';
+        } finally {
+            ceoIsTyping = false;
+            if (send) send.disabled = false;
         }
     }
 
@@ -1380,6 +1523,8 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
         showResolveForm,
         resolveBlocker,
         newCeoThread,
+        approveContentProposal,
+        rejectContentProposal,
     };
 
 })();

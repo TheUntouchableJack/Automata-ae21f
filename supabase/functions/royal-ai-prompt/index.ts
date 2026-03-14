@@ -1002,6 +1002,20 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
     }
   },
   {
+    name: 'queue_blog_draft',
+    description: "Propose a blog article for Royalty's website and queue it for Jay's approval. Use when identifying a high-value SEO or content opportunity, or when Jay asks you to plan a post. The proposal appears in CEO Dashboard → Blog Proposals. Jay must approve before article generation starts. Use this instead of trigger_article_generation when you want Jay to review the topic first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        title:     { type: 'string', description: 'Proposed article title' },
+        topic:     { type: 'string', description: 'Core topic or target keyword' },
+        outline:   { type: 'string', description: 'Brief outline or key points to cover (shown to Jay)' },
+        rationale: { type: 'string', description: 'Why this is a high-value content opportunity — shown to Jay in the approval queue' },
+      },
+      required: ['title', 'topic', 'rationale'],
+    }
+  },
+  {
     name: 'trigger_article_generation',
     description: "Generate a new blog article for Royalty's website. Auto-picks the next SEO-priority topic from the content strategy, or writes a specific topic if provided. Article is saved as a draft in blog-review for Jay to publish.",
     input_schema: {
@@ -2642,6 +2656,34 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     }
   },
 
+  // ── CEO: queue_blog_draft ─────────────────────────────────────────────
+  queue_blog_draft: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase } = ctx
+    const title     = input.title as string
+    const topic     = input.topic as string
+    const rationale = input.rationale as string
+
+    if (!title || !topic || !rationale) {
+      return { success: false, error: 'title, topic, and rationale are required' }
+    }
+
+    try {
+      const { error } = await supabase.from('content_queue').insert({
+        action_type:      'blog_post',
+        title,
+        topic,
+        outline:          (input.outline as string) || null,
+        rationale,
+        status:           'draft',
+        veto_window_ends: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+      })
+      if (error) throw error
+      return { success: true, data: { queued: true, message: "Blog proposal queued for Jay's approval. Visible in CEO Dashboard → Blog Proposals. Jay approves → article generation starts automatically." } }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  },
+
   // ── CEO: trigger_article_generation ─────────────────────────────────
   trigger_article_generation: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
     const { supabase } = ctx
@@ -4138,7 +4180,13 @@ IN PROGRESS / NOT YET LIVE:
 KEY FACTS:
 - newsletter_articles table = Royalty's OWN blog content, not a customer feature to be built
 - /app/apps.html = loyalty program app builder for customers, NOT newsletter infrastructure
-- Royal's job is to grow Royalty's business, not build Royalty's platform (Jay does that)`
+- Royal's job is to grow Royalty's business, not build Royalty's platform (Jay does that)
+
+INTEGRATIONS — already configured in Supabase secrets. NEVER use request_help with blocker_type='api_key' for these:
+- Email: Resend (RESEND_API_KEY set) — use queue_outreach with channel='email' to draft outreach
+- SMS: Twilio (TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN set) — use queue_outreach with channel='sms'
+- Stripe: configured, subscriptions + webhooks working
+If you need to send email or SMS: USE THE TOOL. Do not ask Jay for credentials — they are already set up.`
 
       const ceoSystemPrompt = `${ROYAL_CONSTITUTION}
 
