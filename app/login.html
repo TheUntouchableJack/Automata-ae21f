@@ -349,14 +349,18 @@
             submitBtn.disabled = true;
 
             try {
-                const { user, error, mfaRequired } = await signIn(email, password);
+                const { user, error } = await signIn(email, password);
 
                 if (error) {
                     throw error;
                 }
 
-                // MFA gate redirected to challenge page — stop here
-                if (mfaRequired) return;
+                // MFA gate: if user has 2FA enrolled and device isn't trusted,
+                // mfaGate() redirects to /app/mfa-challenge.html and returns false.
+                if (typeof mfaGate === 'function') {
+                    const passed = await mfaGate(user);
+                    if (!passed) return;
+                }
 
                 // Check for pending onboarding data and save it
                 const newProjectId = await saveOnboardingDataAfterLogin(user.id);
