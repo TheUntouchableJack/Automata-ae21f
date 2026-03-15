@@ -609,14 +609,73 @@
             min-height: 100vh;
         }
 
-        /* Mobile responsive */
+        /* Mobile responsive — merged single-panel dark flow */
         @media (max-width: 1024px) {
-            .signup-layout { flex-direction: column; height: auto; min-height: 100vh; }
-            .signup-analysis-panel { padding: 32px 24px; min-height: auto; overflow-y: visible; }
+            .signup-layout {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                background: linear-gradient(135deg, #0f0a1e 0%, #1a1033 50%, #0f0a1e 100%);
+            }
+            .signup-analysis-panel {
+                padding: 24px 20px 0;
+                min-height: auto;
+                overflow-y: visible;
+                order: 2;
+            }
+            .signup-form-panel {
+                flex: none;
+                min-height: auto;
+                padding: 32px 20px 16px;
+                background: transparent;
+                order: 1;
+            }
+            .signup-form-panel .auth-card {
+                background: rgba(255, 255, 255, 0.06);
+                border-color: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(12px);
+            }
+            .signup-form-panel .auth-card h1,
+            .signup-form-panel .auth-card .logo-text {
+                color: white;
+            }
+            .signup-form-panel .auth-card p,
+            .signup-form-panel .auth-card label {
+                color: rgba(255, 255, 255, 0.7);
+            }
+            .signup-form-panel .auth-card input {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(255, 255, 255, 0.15);
+                color: white;
+            }
+            .signup-form-panel .auth-card input::placeholder {
+                color: rgba(255, 255, 255, 0.35);
+            }
+            .signup-form-panel .auth-card input:focus {
+                border-color: #7c3aed;
+                background: rgba(255, 255, 255, 0.1);
+            }
+            .signup-form-panel .auth-card .btn-primary {
+                background: #7c3aed;
+            }
+            .signup-form-panel .auth-card .error-message,
+            .signup-form-panel .auth-card .success-message {
+                color: white;
+            }
+            .signup-form-panel .auth-card .strength-text,
+            .signup-form-panel .auth-card .checklist-item {
+                color: rgba(255, 255, 255, 0.6);
+            }
+            .signup-form-panel .auth-card #auth-footer,
+            .signup-form-panel .auth-card #auth-footer a {
+                color: rgba(255, 255, 255, 0.5);
+            }
+            .signup-form-panel .auth-card #auth-footer a:hover {
+                color: #c4b5fd;
+            }
             .analysis-content { padding-top: 0; }
             .analysis-opportunities { grid-template-columns: 1fr; }
-            .signup-form-panel { flex: none; min-height: auto; padding: 24px 0; }
-            .lang-selector.analysis-lang { margin-top: 24px; }
+            .lang-selector.analysis-lang { margin-top: 24px; padding-bottom: 32px; }
         }
 
         /* ===== Auth Card Styles ===== */
@@ -1127,6 +1186,12 @@
                     setTimeout(() => {
                         if (progressGroup) progressGroup.style.display = 'none';
                     }, 400);
+                    // Re-fetch analysis when language changes
+                    window.addEventListener('i18n:changed', (e) => {
+                        if (typeof BusinessAnalysis !== 'undefined') {
+                            BusinessAnalysis.refresh(e.detail.language);
+                        }
+                    });
                 } else {
                     // No analysis module — show fallback directly
                     clearInterval(progressInterval);
@@ -1319,21 +1384,22 @@
                         redirectUrl: '/app/dashboard.html'
                     });
                 } else {
-                    const newProjectId = await saveOnboardingDataToDatabase(signUpData.user.id);
-
                     submitBtn.classList.remove('btn-loading');
                     submitBtn.classList.add('btn-success');
                     submitBtn.textContent = 'Welcome to Royalty!';
                     authCard.classList.add('success');
 
-                    celebrateBig();
-
-                    successMessage.textContent = 'Account created! Redirecting to your dashboard...';
-                    successMessage.classList.add('visible');
-
-                    setTimeout(() => {
+                    if (typeof OnboardingTransition !== 'undefined') {
+                        await OnboardingTransition.show({
+                            onBuild: async () => {
+                                await saveOnboardingDataToDatabase(signUpData.user.id);
+                            },
+                            redirectUrl: '/app/dashboard.html'
+                        });
+                    } else {
+                        await saveOnboardingDataToDatabase(signUpData.user.id);
                         window.location.href = '/app/dashboard.html';
-                    }, 1000);
+                    }
                 }
 
             } catch (error) {
