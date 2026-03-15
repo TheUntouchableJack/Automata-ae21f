@@ -73,9 +73,10 @@ async function getValidSession() {
  * Sign in with email and password
  * @param {string} email
  * @param {string} password
- * @returns {Promise<{user: object|null, error: object|null}>}
+ * @param {string} [returnUrl='/app/dashboard.html'] Where to go after MFA (if required)
+ * @returns {Promise<{user: object|null, error: object|null, mfaRequired?: boolean}>}
  */
-async function signIn(email, password) {
+async function signIn(email, password, returnUrl = '/app/dashboard.html') {
     if (!db) {
         return { user: null, error: { message: 'Supabase not initialized. Please refresh the page.' } };
     }
@@ -109,7 +110,12 @@ async function signIn(email, password) {
         return { user: null, error };
     }
 
-    return { user: data.user, error: null };
+    // ===== MFA GATE =====
+    // mfaGate() checks AAL level + trusted device. If MFA is needed and device
+    // is not trusted it redirects to /app/mfa-challenge.html and returns false.
+    // The caller should stop processing when mfaRequired === true.
+    const mfaPassed = await mfaGate(data.user, returnUrl);
+    return { user: data.user, error: null, mfaRequired: !mfaPassed };
 }
 
 /**

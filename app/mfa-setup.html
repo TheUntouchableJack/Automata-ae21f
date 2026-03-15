@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Factor Authentication - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=4">
+    <style>
+        .mfa-page { max-width: 680px; margin: 0 auto; padding: 32px 24px; }
+
+        .mfa-section {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .mfa-section-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mfa-section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mfa-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .mfa-icon-totp  { background: rgba(124, 58, 237, 0.1); color: var(--color-primary); }
+        .mfa-icon-email { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+        .mfa-icon-device { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+        .mfa-section h3 { font-size: 1rem; font-weight: 600; margin: 0 0 4px; }
+        .mfa-section p  { font-size: 13px; color: var(--color-text-muted); margin: 0; line-height: 1.5; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            flex-shrink: 0;
+        }
+        .status-badge.active   { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+        .status-badge.inactive { background: var(--color-bg-secondary); color: var(--color-text-muted); }
+
+        /* TOTP Enrollment */
+        .totp-enroll {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border);
+        }
+        .totp-enroll.open { display: block; }
+
+        .totp-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .totp-step {
+            display: flex;
+            gap: 14px;
+        }
+
+        .step-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .step-content { flex: 1; }
+        .step-content p { font-size: 14px; color: var(--color-text-muted); margin: 0 0 12px; }
+
+        .qr-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .qr-code-container {
+            width: 160px;
+            height: 160px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-code-container img { width: 100%; height: 100%; }
+
+        .secret-key {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .secret-key label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .secret-display {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 14px;
+            letter-spacing: 0.08em;
+            padding: 10px 12px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            word-break: break-all;
+        }
+
+        .confirm-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .otp-confirm-input {
+            flex: 1;
+            padding: 10px 14px;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-align: center;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text);
+            outline: none;
+        }
+        .otp-confirm-input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        /* Enrolled factors list */
+        .factors-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .factor-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .factor-info { display: flex; flex-direction: column; gap: 2px; }
+        .factor-info span { font-size: 14px; font-weight: 500; }
+        .factor-info small { font-size: 12px; color: var(--color-text-muted); }
+
+        /* Trusted devices */
+        .devices-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .device-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .device-info { display: flex; align-items: center; gap: 12px; }
+        .device-info svg { color: var(--color-text-muted); flex-shrink: 0; }
+        .device-info span { font-size: 14px; font-weight: 500; }
+        .device-info small { display: block; font-size: 12px; color: var(--color-text-muted); }
+
+        .device-current {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(124, 58, 237, 0.1);
+            color: var(--color-primary);
+            margin-left: 8px;
+        }
+
+        /* Buttons */
+        .btn { padding: 8px 16px; font-size: 14px; font-weight: 500; border-radius: var(--radius-md); cursor: pointer; border: none; font-family: inherit; transition: all var(--transition-base); }
+        .btn-primary { background: var(--color-primary); color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: var(--color-primary-dark, #6d28d9); }
+        .btn-secondary { background: transparent; border: 1px solid var(--color-border); color: var(--color-text); }
+        .btn-secondary:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+        .btn-danger { background: transparent; border: 1px solid transparent; color: var(--color-error); }
+        .btn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.08); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+        .inline-error {
+            font-size: 13px;
+            color: var(--color-error);
+            margin-top: 6px;
+            display: none;
+        }
+        .inline-error.visible { display: block; }
+
+        .inline-success {
+            font-size: 13px;
+            color: #10b981;
+            margin-top: 6px;
+            display: none;
+        }
+        .inline-success.visible { display: block; }
+
+        .empty-state {
+            text-align: center;
+            padding: 24px;
+            color: var(--color-text-muted);
+            font-size: 14px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: var(--color-text-muted);
+            text-decoration: none;
+            margin-bottom: 24px;
+        }
+        .back-link:hover { color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar injected by sidebar.js -->
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title">Two-Factor Authentication</h1>
+                        <p class="page-subtitle">Add an extra layer of security to your account</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mfa-page">
+                <a href="/app/settings.html#security" class="back-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                    Back to Security Settings
+                </a>
+
+                <!-- ── TOTP ─────────────────────────────────────────────── -->
+                <div class="mfa-section">
+                    <div class="mfa-section-header">
+                        <div class="mfa-section-title">
+                            <div class="mfa-icon mfa-icon-totp">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Authenticator App (TOTP)</h3>
+                                <p>Use Google Authenticator, Authy, or 1Password to generate time-based codes.</p>
+                            </div>
+                        </div>
+                        <div id="totp-status-badge" class="status-badge inactive">Off</div>
+                    </div>
+
+                    <!-- Enrolled factors list -->
+                    <div id="totp-factors-list"></div>
+
+                    <!-- Add button -->
+                    <div id="totp-add-row" class="btn-row" style="margin-top: 16px;">
+                        <button class="btn btn-primary" id="totp-add-btn" onclick="startTotpEnroll()">
+                            Add Authenticator App
+                        </button>
+                    </div>
+
+                    <!-- Enrollment wizard -->
+                    <div class="totp-enroll" id="totp-enroll-panel">
+                        <div class="totp-steps">
+                            <div class="totp-step">
+                                <div class="step-num">1</div>
+                                <div class="step-content">
+                                    <p>Open your authenticator app and scan the QR code, or enter the secret key manually.</p>
+                                    <div class="qr-wrapper">
+                                        <div class="qr-code-container">
+                                            <img id="qr-img" src="" alt="QR Code" />
+                                        </div>
+                                        <div class="secret-key">
+                                            <label>Manual Entry Key</label>
+                                            <div class="secret-display" id="totp-secret">Loading…</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="totp-step">
+                                <div class="step-num">2</div>
+                                <div class="step-content">
+                                    <p>Enter the 6-digit code shown in your app to confirm the setup.</p>
+                                    <div class="confirm-group">
+                                        <input type="text" class="otp-confirm-input" id="totp-confirm-input"
+                                            placeholder="000000" maxlength="6" inputmode="numeric"
+                                            autocomplete="one-time-code" />
+                                        <button class="btn btn-primary" id="totp-confirm-btn" onclick="confirmTotpEnroll()">
+                                            Confirm
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="cancelTotpEnroll()">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                    <div class="inline-error" id="totp-error"></div>
+                                    <div class="inline-success" id="totp-success"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Email OTP ────────────────────────────────────────── -->
+                <div class="mfa-section">
+                    <div class="mfa-section-header">
+                        <div class="mfa-section-title">
+                            <div class="mfa-icon mfa-icon-email">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Email OTP</h3>
+                                <p>Receive a one-time code to your email address after signing in. No app required.</p>
+                            </div>
+                        </div>
+                        <div class="status-badge inactive">Coming soon</div>
+                    </div>
+                    <p style="font-size:13px; color: var(--color-text-muted); padding: 12px 14px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                        Email OTP will be available in an upcoming update. Use an authenticator app for now.
+                    </p>
+                </div>
+
+                <!-- ── Trusted Devices ─────────────────────────────────── -->
+                <div class="mfa-section">
+                    <div class="mfa-section-header">
+                        <div class="mfa-section-title">
+                            <div class="mfa-icon mfa-icon-device">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                    <line x1="8" y1="21" x2="16" y2="21"/>
+                                    <line x1="12" y1="17" x2="12" y2="21"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Trusted Devices</h3>
+                                <p>Devices you've approved to skip 2FA for 30 days.</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" id="revoke-all-btn" onclick="revokeAllDevices()" style="display:none;">
+                            Revoke All
+                        </button>
+                    </div>
+                    <div id="devices-list">
+                        <div class="empty-state">No trusted devices yet.</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="auth.js?v=8"></script>
+    <script src="mfa.js?v=1"></script>
+    <script src="sidebar.js?v=12"></script>
+    <script>
+        let currentUser = null;
+        let enrollingFactorId = null;
+
+        (async function init() {
+            currentUser = await requireAuth();
+            if (!currentUser) return;
+            await Promise.all([refreshTotpSection(), refreshDevices()]);
+        })();
+
+        // ── TOTP ────────────────────────────────────────────────────────────
+        async function refreshTotpSection() {
+            const { totp } = await mfaListFactors();
+            const verified = totp.filter(f => f.status === 'verified');
+
+            document.getElementById('totp-status-badge').className =
+                'status-badge ' + (verified.length > 0 ? 'active' : 'inactive');
+            document.getElementById('totp-status-badge').textContent =
+                verified.length > 0 ? 'Active' : 'Off';
+
+            const listEl = document.getElementById('totp-factors-list');
+            if (verified.length === 0) {
+                listEl.innerHTML = '';
+            } else {
+                listEl.innerHTML = `
+                    <div class="factors-list">
+                        ${verified.map(f => `
+                            <div class="factor-item">
+                                <div class="factor-info">
+                                    <span>${escapeHtml(f.friendly_name || 'Authenticator App')}</span>
+                                    <small>Added ${formatDate(f.created_at)}</small>
+                                </div>
+                                <button class="btn btn-danger" onclick="removeFactor('${f.id}')">Remove</button>
+                            </div>
+                        `).join('')}
+                    </div>`;
+            }
+
+            // Hide add button if already have one (limit 1 for simplicity)
+            document.getElementById('totp-add-row').style.display =
+                verified.length === 0 ? 'flex' : 'none';
+        }
+
+        async function startTotpEnroll() {
+            const btn = document.getElementById('totp-add-btn');
+            btn.disabled = true;
+            btn.textContent = 'Loading…';
+
+            const result = await mfaEnrollTotp('Royalty');
+            if (!result) {
+                btn.disabled = false;
+                btn.textContent = 'Add Authenticator App';
+                alert('Failed to start enrollment. Please try again.');
+                return;
+            }
+
+            enrollingFactorId = result.factorId;
+
+            // Show QR code (qr_code is already a data URI from Supabase)
+            document.getElementById('qr-img').src = result.qrCode;
+            document.getElementById('totp-secret').textContent = formatSecret(result.secret);
+            document.getElementById('totp-enroll-panel').classList.add('open');
+            document.getElementById('totp-confirm-input').focus();
+            btn.disabled = false;
+            btn.textContent = 'Add Authenticator App';
+        }
+
+        async function confirmTotpEnroll() {
+            const code = document.getElementById('totp-confirm-input').value.trim();
+            if (!/^\d{6}$/.test(code)) {
+                showInlineError('totp-error', 'Enter a valid 6-digit code.');
+                return;
+            }
+
+            const btn = document.getElementById('totp-confirm-btn');
+            btn.disabled = true;
+            btn.textContent = 'Verifying…';
+            hideInlineMsg('totp-error');
+
+            const { success, error } = await mfaConfirmTotpEnrollment(enrollingFactorId, code);
+
+            if (!success) {
+                btn.disabled = false;
+                btn.textContent = 'Confirm';
+                showInlineError('totp-error', error || 'Invalid code. Try again.');
+                return;
+            }
+
+            showInlineSuccess('totp-success', 'Authenticator app added successfully!');
+            document.getElementById('totp-confirm-input').value = '';
+            enrollingFactorId = null;
+
+            setTimeout(() => {
+                document.getElementById('totp-enroll-panel').classList.remove('open');
+                hideInlineMsg('totp-success');
+                refreshTotpSection();
+            }, 1500);
+        }
+
+        function cancelTotpEnroll() {
+            // Unenroll the pending (unverified) factor
+            if (enrollingFactorId) {
+                mfaUnenroll(enrollingFactorId).catch(() => {});
+                enrollingFactorId = null;
+            }
+            document.getElementById('totp-enroll-panel').classList.remove('open');
+            document.getElementById('totp-confirm-input').value = '';
+            hideInlineMsg('totp-error');
+        }
+
+        async function removeFactor(factorId) {
+            if (!confirm('Remove this authenticator app? You\'ll need to re-enroll to use MFA again.')) return;
+            const { success, error } = await mfaUnenroll(factorId);
+            if (!success) { alert('Failed to remove: ' + error); return; }
+            await refreshTotpSection();
+        }
+
+        // ── Trusted Devices ──────────────────────────────────────────────
+        async function refreshDevices() {
+            const devices = await mfaListTrustedDevices(currentUser.id);
+            const currentToken = localStorage.getItem('royalty_device_token');
+            const currentHash  = currentToken ? await mfaHashToken(currentToken) : null;
+
+            const revokeAllBtn = document.getElementById('revoke-all-btn');
+            revokeAllBtn.style.display = devices.length > 0 ? 'inline-flex' : 'none';
+
+            const container = document.getElementById('devices-list');
+            if (devices.length === 0) {
+                container.innerHTML = '<div class="empty-state">No trusted devices yet.</div>';
+                return;
+            }
+
+            container.innerHTML = `<div class="devices-list">
+                ${devices.map(d => {
+                    const isCurrent = currentHash && d.device_token_hash === currentHash;
+                    return `
+                        <div class="device-item">
+                            <div class="device-info">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                    <line x1="8" y1="21" x2="16" y2="21"/>
+                                    <line x1="12" y1="17" x2="12" y2="21"/>
+                                </svg>
+                                <div>
+                                    <span>${escapeHtml(d.device_label || 'Unknown Device')}${isCurrent ? '<span class="device-current">This device</span>' : ''}</span>
+                                    <small>Last seen ${formatDate(d.last_seen_at)} · Expires ${formatDate(d.expires_at)}</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-danger" onclick="revokeDevice('${d.id}')">Revoke</button>
+                        </div>`;
+                }).join('')}
+            </div>`;
+        }
+
+        async function revokeDevice(deviceId) {
+            await mfaRevokeTrustedDevice(deviceId);
+            await refreshDevices();
+        }
+
+        async function revokeAllDevices() {
+            if (!confirm('Revoke all trusted devices? You\'ll need to verify via MFA on your next sign-in from each device.')) return;
+            await mfaRevokeAllTrustedDevices(currentUser.id);
+            await refreshDevices();
+        }
+
+        // ── Auto-submit TOTP confirm ──────────────────────────────────────
+        document.getElementById('totp-confirm-input').addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+            if (this.value.length === 6) confirmTotpEnroll();
+        });
+
+        // ── Helpers ──────────────────────────────────────────────────────
+        function formatSecret(secret) {
+            // Add spaces every 4 chars for readability
+            return secret.match(/.{1,4}/g)?.join(' ') || secret;
+        }
+
+        function formatDate(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function showInlineError(id, msg) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('visible');
+        }
+
+        function showInlineSuccess(id, msg) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('visible');
+        }
+
+        function hideInlineMsg(id) {
+            document.getElementById(id)?.classList.remove('visible');
+        }
+    </script>
+</body>
+</html>
