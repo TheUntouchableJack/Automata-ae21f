@@ -986,19 +986,21 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
   },
   {
     name: 'queue_outreach',
-    description: "Draft an outreach email or message and queue it for Jay's approval in the CEO Dashboard. Use when Jay asks Royal to send outreach, or when Royal identifies a high-value outreach opportunity. Items appear in 'Today's Plan — Pending Approval'. Jay must approve before anything sends.",
+    description: "Draft an outreach email or SMS and queue it for Jay's approval. Use target_org_id (preferred) to contact a Royalty customer — email and phone are looked up automatically from the DB. Use target_email/target_phone only for external contacts not in the DB. Items appear in CEO Dashboard → Today's Plan with a 2-hour veto window.",
     input_schema: {
       type: 'object',
       properties: {
-        target_email: { type: 'string', description: 'Recipient email address' },
-        target_name:  { type: 'string', description: 'Recipient name or org name' },
-        subject:      { type: 'string', description: 'Email subject line' },
-        body_text:    { type: 'string', description: 'Plain text email body' },
-        body_html:    { type: 'string', description: 'HTML email body (optional, falls back to body_text)' },
-        rationale:    { type: 'string', description: "Why this outreach makes sense — shown to Jay in the approval queue" },
-        channel:      { type: 'string', enum: ['email', 'sms'], description: 'Delivery channel (default: email)' },
+        target_org_id: { type: 'string', description: 'Organization ID of the Royalty customer (preferred — email/phone looked up automatically from DB). ALWAYS use this for Royalty customers instead of guessing email/phone.' },
+        target_email:  { type: 'string', description: 'Recipient email address (only for external contacts not in DB)' },
+        target_phone:  { type: 'string', description: 'Recipient phone number for SMS (only for external contacts not in DB; for Royalty customers use target_org_id)' },
+        target_name:   { type: 'string', description: 'Recipient name or org name' },
+        subject:       { type: 'string', description: 'Email subject line (not used for SMS)' },
+        body_text:     { type: 'string', description: 'Plain text message body' },
+        body_html:     { type: 'string', description: 'HTML email body (optional, email only)' },
+        rationale:     { type: 'string', description: "Why this outreach makes sense — shown to Jay in the approval queue" },
+        channel:       { type: 'string', enum: ['email', 'sms'], description: 'Delivery channel (default: email)' },
       },
-      required: ['target_email', 'subject', 'body_text', 'rationale'],
+      required: ['body_text', 'rationale'],
     }
   },
   {
@@ -2627,22 +2629,72 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   // ── CEO: queue_outreach ───────────────────────────────────────────────
   queue_outreach: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
     const { supabase } = ctx
-    const targetEmail = input.target_email as string
-    const subject     = input.subject as string
-    const bodyText    = input.body_text as string
-    const rationale   = input.rationale as string
+    const inputOrgId = input.target_org_id as string | undefined
+    const channel    = (input.channel as string) || 'email'
+    let targetEmail  = input.target_email as string | undefined
+    let targetPhone  = input.target_phone as string | undefined
 
-    if (!targetEmail || !subject || !bodyText || !rationale) {
-      return { success: false, error: 'target_email, subject, body_text, and rationale are required' }
+    if (!inputOrgId && !targetEmail && !targetPhone) {
+      return { success: false, error: 'Provide target_org_id (for Royalty customers) or target_email/target_phone (for external contacts)' }
+    }
+
+    // Auto-lookup contact info from org
+    if (inputOrgId) {
+      if (channel === 'email' && !targetEmail) {
+        const { data: mem } = await supabase
+          .from('organization_members')
+          .select('user_id, profiles(email)')
+          .eq('organization_id', inputOrgId)
+          .eq('role', 'owner')
+          .single()
+        targetEmail = (mem as any)?.profiles?.email
+        if (!targetEmail) return { success: false, error: `No owner email found for org ${inputOrgId}` }
+      }
+      if (channel === 'sms' && !targetPhone) {
+        const { data: mem } = await supabase
+          .from('organization_members')
+          .select('user_id, profiles(email)')
+          .eq('organization_id', inputOrgId)
+          .eq('role', 'owner')
+          .single()
+        const ownerEmail = (mem as any)?.profiles?.email
+        if (ownerEmail) {
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('phone')
+            .ilike('email', ownerEmail)
+            .not('phone', 'is', null)
+            .limit(1)
+            .single()
+          targetPhone = (customer as any)?.phone
+        }
+        if (!targetPhone) {
+          return {
+            success: false,
+            error: `No phone number on file for this customer. To enable SMS outreach, Jay needs to collect their phone number first. Consider asking Jay: "Can you get a phone number for this org so we can reach them via SMS?"`
+          }
+        }
+      }
+    }
+
+    const to        = channel === 'sms' ? targetPhone! : targetEmail!
+    const subject   = input.subject as string
+    const bodyText  = input.body_text as string
+    const rationale = input.rationale as string
+
+    if (!to || !bodyText || !rationale) {
+      return { success: false, error: 'body_text and rationale are required, plus a valid target' }
     }
 
     const vetoWindowEnds = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
     try {
       const { error } = await supabase.from('outreach_queue').insert({
-        target_email:     targetEmail,
+        target_email:     channel === 'email' ? to : (targetEmail || null),
+        target_phone:     channel === 'sms' ? to : (targetPhone || null),
+        target_org_id:    inputOrgId || null,
         target_name:      (input.target_name as string) || null,
-        channel:          (input.channel as string) || 'email',
-        subject,
+        channel,
+        subject:          subject || null,
         body_html:        (input.body_html as string) || `<p>${bodyText.replace(/\n/g, '</p><p>')}</p>`,
         body_text:        bodyText,
         rationale,
@@ -2650,7 +2702,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
         veto_window_ends: vetoWindowEnds,
       })
       if (error) throw error
-      return { success: true, data: { queued: true, message: "Queued for approval. Jay will see this in CEO Dashboard → Today's Plan. 2-hour veto window before auto-send." } }
+      return { success: true, data: { queued: true, to, channel, message: "Queued for approval. Jay will see this in CEO Dashboard → Today's Plan. 2-hour veto window before auto-send." } }
     } catch (e) {
       return { success: false, error: String(e) }
     }
@@ -4186,7 +4238,9 @@ INTEGRATIONS — already configured in Supabase secrets. NEVER use request_help 
 - Email: Resend (RESEND_API_KEY set) — use queue_outreach with channel='email' to draft outreach
 - SMS: Twilio (TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN set) — use queue_outreach with channel='sms'
 - Stripe: configured, subscriptions + webhooks working
-If you need to send email or SMS: USE THE TOOL. Do not ask Jay for credentials — they are already set up.`
+If you need to send email or SMS: USE THE TOOL. Do not ask Jay for credentials — they are already set up.
+
+OUTREACH RULE: When contacting a Royalty customer, ALWAYS pass target_org_id — the tool looks up their real email (for email channel) or phone (for SMS channel) automatically from the database. NEVER guess, invent, or fabricate email addresses or phone numbers. Only use target_email/target_phone for external contacts who are NOT Royalty customers in the DB.`
 
       const ceoSystemPrompt = `${ROYAL_CONSTITUTION}
 

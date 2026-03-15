@@ -24,6 +24,59 @@ const corsHeaders = {
 }
 
 // ============================================================================
+// EMAIL TEMPLATE
+// ============================================================================
+
+function wrapInTemplate(bodyHtml: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#7c3aed;padding:24px 32px;">
+              <span style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Royalty</span>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;color:#18181b;font-size:15px;line-height:1.7;">
+              ${bodyHtml}
+            </td>
+          </tr>
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 32px;">
+              <hr style="border:none;border-top:1px solid #e4e4e7;margin:0;">
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#fafafa;padding:20px 32px;">
+              <p style="margin:0;font-size:12px;color:#71717a;line-height:1.6;">
+                You received this message because you signed up for Royalty.<br>
+                <a href="https://royaltyapp.ai" style="color:#7c3aed;text-decoration:none;">royaltyapp.ai</a>
+                &nbsp;&middot;&nbsp; Royalty &middot; United States
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+// ============================================================================
 // RESEND
 // ============================================================================
 
@@ -82,8 +135,8 @@ async function sendItem(
   item: OutreachItem
 ): Promise<{ success: boolean; error?: string }> {
   const subject = item.subject || `A message from Royal at Royalty`
-  const html = item.body_html
-  const text = item.body_text || html.replace(/<[^>]+>/g, '')
+  const html = wrapInTemplate(item.body_html)
+  const text = item.body_text || item.body_html.replace(/<[^>]+>/g, '')
 
   const result = await sendEmail(item.target_email, subject, html, text)
 
