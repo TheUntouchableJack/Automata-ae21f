@@ -57,6 +57,11 @@ async function initSettings() {
 
     setupEventListeners();
     setupUserMenu();
+
+    // Show settings coaching tour on first visit
+    if (typeof Coaching !== 'undefined' && !Coaching.isCompleted('settings')) {
+        setTimeout(() => Coaching.showTour('settings'), 600);
+    }
 }
 
 // ===== Load Data =====

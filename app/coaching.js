@@ -11,28 +11,54 @@ const Coaching = (function() {
     const TOURS = {
         dashboard: [
             {
-                target: '#new-project-btn',
-                title: 'Create Your First Project',
-                description: 'Projects organize your automations and customers. Start here!',
-                position: 'bottom'
+                target: '[data-nav="intelligence"]',
+                title: 'Meet Royal AI',
+                description: 'Your AI business advisor — it scans your data, spots opportunities, and acts on them automatically.',
+                position: 'right'
             },
             {
-                target: '.nav-link[href*="automations"]',
-                title: 'Automations Library',
-                description: 'View and manage all your automations across projects.',
-                position: 'bottom'
+                target: '[data-nav="automations"]',
+                title: 'Automations',
+                description: 'Win-back campaigns, birthday rewards, streak bonuses — all running automatically for your customers.',
+                position: 'right'
             },
             {
-                target: '.nav-link[href*="customers"]',
+                target: '[data-nav="customers"]',
                 title: 'Customer Database',
-                description: 'Import and manage your customer list here.',
-                position: 'bottom'
+                description: 'Import your customer list, view activity, and segment by tier or behavior.',
+                position: 'right'
             },
             {
-                target: '.nav-link[href*="apps"], [data-nav="apps"]',
-                title: 'Customer Apps',
-                description: 'Build loyalty programs, rewards clubs, and more for your customers!',
-                position: 'bottom'
+                target: '[data-nav="settings"]',
+                title: 'Settings & Security',
+                description: 'Update your profile, invite teammates, and enable two-factor authentication to keep your account safe.',
+                position: 'right'
+            }
+        ],
+        settings: [
+            {
+                target: '.settings-nav-item[data-tab="profile"]',
+                title: 'Your Profile',
+                description: 'Keep your name and contact info up to date so your team knows who you are.',
+                position: 'right'
+            },
+            {
+                target: '.settings-nav-item[data-tab="security"]',
+                title: 'Password & Security',
+                description: 'Update your password here. You can also enable Two-Factor Authentication — a 6-digit code from an authenticator app on every login.',
+                position: 'right'
+            },
+            {
+                target: '.settings-nav-item[data-tab="team"]',
+                title: 'Invite Your Team',
+                description: 'Add teammates so they can help manage your loyalty program alongside you.',
+                position: 'right'
+            },
+            {
+                target: '.settings-nav-item[data-tab="plan"]',
+                title: 'Plan & Billing',
+                description: 'View your current plan, usage limits, and upgrade options as your business grows.',
+                position: 'right'
             }
         ],
         project: [
