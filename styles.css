@@ -1546,6 +1546,14 @@ blockquote {
     border-top: 1px solid var(--color-border);
 }
 
+.custom-builds-section .container {
+    background: white;
+    border-radius: var(--radius-lg, 16px);
+    padding: 60px 48px;
+    box-shadow: var(--shadow-md, 0 4px 20px rgba(0, 0, 0, 0.08));
+    max-width: 720px;
+}
+
 /* ===== CTA Section ===== */
 .cta {
     padding: 100px 0;

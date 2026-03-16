@@ -178,7 +178,23 @@ const IntelligencePage = (function() {
         if (isFirstLogin && organizationId) {
             // Clear the URL param
             history.replaceState(null, '', '/app/intelligence.html');
-            await runFirstLoginFlow();
+
+            // Guard: if user already has an app, skip loader (stale onboarding data)
+            const { data: anyApp } = await supabase
+                .from('customer_apps')
+                .select('id')
+                .eq('organization_id', organizationId)
+                .limit(1)
+                .maybeSingle();
+
+            if (anyApp) {
+                // App already exists — clear stale data, load normally
+                localStorage.removeItem('royalty_onboarding');
+                await loadRecommendations();
+                updateStats();
+            } else {
+                await runFirstLoginFlow();
+            }
         } else {
             // Normal flow - load recommendations
             await loadRecommendations();
@@ -211,25 +227,21 @@ const IntelligencePage = (function() {
         }
 
         // Check if app already exists from onboarding (handles refresh after creation)
-        try {
-            const { data: existingApp } = await supabase
-                .from('customer_apps')
-                .select('id, slug')
-                .eq('organization_id', organizationId)
-                .filter('settings->>created_from', 'eq', 'onboarding')
-                .limit(1)
-                .single();
+        const { data: existingApp } = await supabase
+            .from('customer_apps')
+            .select('id, slug')
+            .eq('organization_id', organizationId)
+            .contains('settings', { created_from: 'onboarding' })
+            .limit(1)
+            .maybeSingle();
 
-            if (existingApp) {
-                createdAppSlug = existingApp.slug;
-                localStorage.removeItem('royalty_onboarding');
-                showAppReadyBanner();
-                loadRecommendations();
-                updateStats();
-                return;
-            }
-        } catch (e) {
-            // No existing app found, continue with creation
+        if (existingApp) {
+            createdAppSlug = existingApp.slug;
+            localStorage.removeItem('royalty_onboarding');
+            showAppReadyBanner();
+            loadRecommendations();
+            updateStats();
+            return;
         }
 
         // Mark as in progress
@@ -286,6 +298,7 @@ const IntelligencePage = (function() {
                     await new Promise(r => setTimeout(r, 500));
                     modal.style.display = 'none';
                     sessionStorage.removeItem('royalty_app_creation_in_progress');
+                    localStorage.removeItem('royalty_onboarding');
                     showAppCreationError(appCreationResult.error);
                     return;
                 }
@@ -638,7 +651,7 @@ const IntelligencePage = (function() {
             supabase.from('automations')
                 .select('id', { count: 'exact', head: true })
                 .eq('organization_id', organizationId)
-                .filter('settings->>created_from', 'eq', 'onboarding')
+                .contains('settings', { created_from: 'onboarding' })
                 .then(({ count }) => {
                     if (count && count > 0) {
                         statsEl.textContent = `${count} automation${count > 1 ? 's' : ''} activated`;

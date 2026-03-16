@@ -615,20 +615,42 @@ function restoreOnboardingData() {
     if (typeof OnboardingStorage === 'undefined') return;
 
     const data = OnboardingStorage.get();
-    if (data) {
-        if (data.businessPrompt && businessPromptInput) {
-            businessPromptInput.value = data.businessPrompt;
+    if (!data) return;
+
+    // If user is already authenticated, clear stale onboarding data instead of restoring
+    if (supabaseClient) {
+        supabaseClient.auth.getSession().then(({ data: sessionData }) => {
+            if (sessionData?.session) {
+                OnboardingStorage.clear();
+                if (businessPromptInput) businessPromptInput.value = '';
+                if (industrySelect) industrySelect.value = '';
+                if (goalsInput) goalsInput.value = '';
+                if (painPointsInput) painPointsInput.value = '';
+            } else {
+                // Not authenticated — restore form data normally
+                applyOnboardingData(data);
+            }
+        });
+        return;
+    }
+
+    // No Supabase client — restore normally
+    applyOnboardingData(data);
+}
+
+function applyOnboardingData(data) {
+    if (data.businessPrompt && businessPromptInput) {
+        businessPromptInput.value = data.businessPrompt;
+    }
+    if (data.businessContext) {
+        if (data.businessContext.industry && industrySelect) {
+            industrySelect.value = data.businessContext.industry;
         }
-        if (data.businessContext) {
-            if (data.businessContext.industry && industrySelect) {
-                industrySelect.value = data.businessContext.industry;
-            }
-            if (data.businessContext.goals?.length && goalsInput) {
-                goalsInput.value = data.businessContext.goals.join('\n');
-            }
-            if (data.businessContext.painPoints?.length && painPointsInput) {
-                painPointsInput.value = data.businessContext.painPoints.join('\n');
-            }
+        if (data.businessContext.goals?.length && goalsInput) {
+            goalsInput.value = data.businessContext.goals.join('\n');
+        }
+        if (data.businessContext.painPoints?.length && painPointsInput) {
+            painPointsInput.value = data.businessContext.painPoints.join('\n');
         }
     }
 }
