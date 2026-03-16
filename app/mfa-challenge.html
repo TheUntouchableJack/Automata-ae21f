@@ -203,6 +203,26 @@
 
         .error-message.visible { display: block; }
 
+        .resend-row {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
+        .resend-link {
+            color: var(--color-primary);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .resend-link:hover { text-decoration: underline; }
+        .resend-link.disabled {
+            color: var(--color-text-muted);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
         .method-switcher {
             margin-top: 24px;
             text-align: center;
@@ -282,7 +302,7 @@
                 </div>
 
                 <h1>Two-Factor Verification</h1>
-                <p id="method-description">Enter the 6-digit code from your authenticator app.</p>
+                <p id="method-description">Enter the 6-digit code sent to your email.</p>
             </div>
 
             <div id="error-msg" class="error-message"></div>
@@ -313,22 +333,32 @@
                 Verify Identity
             </button>
 
+            <!-- Resend row (email OTP only) -->
+            <div class="resend-row" id="resend-row" style="display: none;">
+                Didn't receive the code?
+                <a class="resend-link" id="resend-link" onclick="handleResend()">Resend code</a>
+                <span id="resend-timer" style="display: none;"></span>
+            </div>
+
             <div id="method-switcher" style="display: none;">
                 <div class="divider">or use another method</div>
                 <div class="method-switcher-list" id="other-methods"></div>
             </div>
 
-            <a href="/app/login.html" class="back-link">Sign in with a different account</a>
+            <a href="#" class="back-link" onclick="event.preventDefault(); db.auth.signOut().then(() => { window.location.href = '/app/login.html'; });">Sign in with a different account</a>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="auth.js?v=8"></script>
-    <script src="mfa.js?v=1"></script>
+    <script src="auth.js?v=9"></script>
+    <script src="mfa.js?v=2"></script>
     <script>
         // ── State ──────────────────────────────────────────────────────────
-        let activeFactor   = null;
+        let activeMethod   = sessionStorage.getItem('royalty_mfa_method') || 'email';
+        let activeFactor   = null;   // TOTP factor (when using TOTP)
         let allFactors     = [];
+        let resendCooldown = 0;
+        let resendInterval = null;
         const returnUrl    = sessionStorage.getItem('royalty_mfa_return') || '/app/dashboard.html';
 
         // ── Init ───────────────────────────────────────────────────────────
@@ -340,63 +370,93 @@
                 return;
             }
 
+            // Check if already at aal2 (TOTP already verified)
             const { data: aal } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
-            if (aal?.currentLevel === 'aal2') {
-                // Already verified — move on
+            if (aal?.currentLevel === 'aal2' && activeMethod === 'totp') {
                 sessionStorage.removeItem('royalty_mfa_return');
+                sessionStorage.removeItem('royalty_mfa_method');
                 window.location.href = returnUrl;
                 return;
             }
 
+            // Load TOTP factors
             const { totp } = await mfaListFactors();
             allFactors = totp;
 
-            if (allFactors.length === 0) {
-                // No factors — shouldn't be here
-                window.location.href = returnUrl;
-                return;
+            if (activeMethod === 'totp' && allFactors.length > 0) {
+                activeFactor = allFactors.find(f => f.status === 'verified') || allFactors[0];
             }
 
-            // Default to first verified factor
-            activeFactor = allFactors.find(f => f.status === 'verified') || allFactors[0];
-            renderActiveMethod();
-            renderSwitcher();
+            renderUI();
         })();
 
-        function renderActiveMethod() {
-            if (!activeFactor) return;
+        function renderUI() {
             const desc = document.getElementById('method-description');
-            desc.textContent = 'Enter the 6-digit code from your authenticator app.';
-        }
+            const resendRow = document.getElementById('resend-row');
+            const switcherContainer = document.getElementById('method-switcher');
+            const switcherList = document.getElementById('other-methods');
 
-        function renderSwitcher() {
-            const others = allFactors.filter(f => f.id !== activeFactor?.id && f.status === 'verified');
-            const container = document.getElementById('method-switcher');
-            const list      = document.getElementById('other-methods');
-
-            if (others.length === 0) {
-                container.style.display = 'none';
-                return;
+            if (activeMethod === 'email') {
+                desc.textContent = 'Enter the 6-digit code sent to your email.';
+                resendRow.style.display = 'block';
+                startResendCooldown(30); // 30s cooldown after initial send
+            } else {
+                desc.textContent = 'Enter the 6-digit code from your authenticator app.';
+                resendRow.style.display = 'none';
             }
 
-            container.style.display = 'block';
-            list.innerHTML = others.map(f => `
-                <button class="method-btn" onclick="switchFactor('${f.id}')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                        <line x1="12" y1="18" x2="12.01" y2="18"/>
-                    </svg>
-                    Use authenticator: ${escapeHtml(f.friendly_name || 'Authenticator App')}
-                </button>
-            `).join('');
-        }
+            // Build method switcher
+            const hasTotpFactors = allFactors.some(f => f.status === 'verified');
+            const user = null; // We'll check asynchronously
+            const alternatives = [];
 
-        function switchFactor(factorId) {
-            activeFactor = allFactors.find(f => f.id === factorId);
-            renderActiveMethod();
-            renderSwitcher();
+            if (activeMethod === 'email' && hasTotpFactors) {
+                alternatives.push({
+                    label: 'Use authenticator app',
+                    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+                    method: 'totp',
+                });
+            } else if (activeMethod === 'totp') {
+                alternatives.push({
+                    label: 'Use email verification',
+                    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+                    method: 'email',
+                });
+            }
+
+            if (alternatives.length > 0) {
+                switcherContainer.style.display = 'block';
+                switcherList.innerHTML = alternatives.map(alt => `
+                    <button class="method-btn" onclick="switchMethod('${alt.method}')">
+                        ${alt.icon}
+                        ${alt.label}
+                    </button>
+                `).join('');
+            } else {
+                switcherContainer.style.display = 'none';
+            }
+
+            // Focus input
             document.getElementById('otp-input').value = '';
             document.getElementById('otp-input').focus();
+        }
+
+        async function switchMethod(method) {
+            activeMethod = method;
+            sessionStorage.setItem('royalty_mfa_method', method);
+
+            if (method === 'totp') {
+                activeFactor = allFactors.find(f => f.status === 'verified') || allFactors[0];
+            } else if (method === 'email') {
+                // Send a new code
+                const result = await mfaSendEmailCode();
+                if (!result.ok) {
+                    showError('Failed to send email code: ' + result.error);
+                }
+            }
+
+            hideError();
+            renderUI();
         }
 
         function showError(msg) {
@@ -421,7 +481,20 @@
             btn.disabled = true;
             btn.textContent = 'Verifying…';
 
-            const { success, error } = await mfaChallengeAndVerify(activeFactor.id, code);
+            let success = false;
+            let error = null;
+
+            if (activeMethod === 'email') {
+                const result = await mfaVerifyEmailCode(code);
+                success = result.ok;
+                error = result.error;
+            } else if (activeMethod === 'totp' && activeFactor) {
+                const result = await mfaChallengeAndVerify(activeFactor.id, code);
+                success = result.success;
+                error = result.error;
+            } else {
+                error = 'No MFA method configured.';
+            }
 
             if (!success) {
                 btn.disabled = false;
@@ -439,7 +512,53 @@
             }
 
             sessionStorage.removeItem('royalty_mfa_return');
+            sessionStorage.removeItem('royalty_mfa_method');
             window.location.href = returnUrl;
+        }
+
+        // ── Resend email code ──────────────────────────────────────────────
+        async function handleResend() {
+            if (resendCooldown > 0) return;
+
+            const link = document.getElementById('resend-link');
+            link.classList.add('disabled');
+            link.textContent = 'Sending…';
+
+            const result = await mfaSendEmailCode();
+
+            if (result.ok) {
+                link.textContent = 'Code sent!';
+                startResendCooldown(60);
+            } else {
+                link.textContent = 'Resend code';
+                link.classList.remove('disabled');
+                showError(result.error || 'Failed to resend code.');
+            }
+        }
+
+        function startResendCooldown(seconds) {
+            resendCooldown = seconds;
+            const link = document.getElementById('resend-link');
+            const timer = document.getElementById('resend-timer');
+
+            link.style.display = 'none';
+            timer.style.display = 'inline';
+            timer.textContent = `Resend in ${resendCooldown}s`;
+
+            if (resendInterval) clearInterval(resendInterval);
+            resendInterval = setInterval(() => {
+                resendCooldown--;
+                if (resendCooldown <= 0) {
+                    clearInterval(resendInterval);
+                    resendInterval = null;
+                    link.style.display = 'inline';
+                    link.textContent = 'Resend code';
+                    link.classList.remove('disabled');
+                    timer.style.display = 'none';
+                } else {
+                    timer.textContent = `Resend in ${resendCooldown}s`;
+                }
+            }, 1000);
         }
 
         // Auto-submit when 6 digits entered
@@ -452,14 +571,6 @@
         document.getElementById('otp-input').addEventListener('keydown', function (e) {
             if (e.key === 'Enter') handleVerify();
         });
-
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
     </script>
 </body>
 </html>

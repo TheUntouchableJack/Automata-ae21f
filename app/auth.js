@@ -229,18 +229,20 @@ async function requireAuth() {
 }
 
 /**
- * Redirect authenticated users away from login/signup pages
+ * Redirect authenticated users away from login/signup pages.
+ * If onboarding data exists, sign out first so user can complete fresh signup.
  */
 async function redirectIfAuthenticated() {
     const user = await getCurrentUser();
     if (user) {
-        // Check if this is a new signup with onboarding data
         const hasOnboarding = localStorage.getItem('royalty_onboarding');
         if (hasOnboarding) {
-            window.location.href = '/app/intelligence.html?firstLogin=true';
-        } else {
-            window.location.href = '/app/dashboard.html';
+            // User came from landing page with onboarding data — they intend to
+            // create a NEW account, not continue an old session. Sign out first.
+            await db.auth.signOut();
+            return; // Stay on signup/login page
         }
+        window.location.href = '/app/dashboard.html';
     }
 }
 

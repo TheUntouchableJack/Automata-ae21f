@@ -304,8 +304,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js?v=1"></script>
     <script src="onboarding-storage.js?v=1"></script>
-    <script src="auth.js?v=8"></script>
-    <script src="mfa.js?v=1"></script>
+    <script src="auth.js?v=9"></script>
+    <script src="mfa.js?v=2"></script>
+    <script src="onboarding-transition.js?v=1"></script>
     <script src="celebrate.js?v=2"></script>
     <script>
         // CAPTCHA state
@@ -325,6 +326,9 @@
         const errorMessage = document.getElementById('error-message');
         const successMessage = document.getElementById('success-message');
         const submitBtn = document.getElementById('submit-btn');
+
+        // Clear form inputs on every page load
+        loginForm.reset();
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -459,36 +463,49 @@
             if (user) {
                 // User is authenticated!
                 if (hasAuthParams) {
-                    // Coming from email confirmation - process onboarding
-                    successMessage.innerHTML = `
-                        <div style="text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
-                            <h3 style="color: var(--color-accent); margin-bottom: 8px;">Email confirmed!</h3>
-                            <p>Setting up your account...</p>
-                        </div>
-                    `;
+                    // Coming from email confirmation — show onboarding transition if available
+                    const hasOnboarding = typeof OnboardingStorage !== 'undefined' && OnboardingStorage.isComplete();
 
-                    // Save onboarding data and get project ID
-                    const newProjectId = await saveOnboardingDataAfterLogin(user.id);
+                    if (hasOnboarding && typeof OnboardingTransition !== 'undefined') {
+                        // Hide the login card entirely and show the beautiful transition
+                        document.querySelector('.auth-card').style.display = 'none';
+                        successMessage.classList.remove('visible');
 
-                    // Celebrate!
-                    celebrate();
+                        window.history.replaceState({}, '', window.location.pathname);
 
-                    // Update message
-                    successMessage.innerHTML = `
-                        <div style="text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
-                            <h3 style="color: var(--color-accent); margin-bottom: 8px;">Welcome to Royalty!</h3>
-                            <p>Taking you to your dashboard...</p>
-                        </div>
-                    `;
+                        await OnboardingTransition.show({
+                            onBuild: async () => {
+                                await saveOnboardingDataAfterLogin(user.id);
+                            },
+                            redirectUrl: '/app/dashboard.html'
+                        });
+                    } else {
+                        // No onboarding data — simple confirmation message
+                        successMessage.innerHTML = `
+                            <div style="text-align: center;">
+                                <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
+                                <h3 style="color: var(--color-accent); margin-bottom: 8px;">Email confirmed!</h3>
+                                <p>Setting up your account...</p>
+                            </div>
+                        `;
 
-                    // Clean URL (hash) and redirect
-                    window.history.replaceState({}, '', window.location.pathname);
+                        await saveOnboardingDataAfterLogin(user.id);
+                        celebrate();
 
-                    setTimeout(() => {
-                        window.location.href = '/app/dashboard.html';
-                    }, 1000);
+                        successMessage.innerHTML = `
+                            <div style="text-align: center;">
+                                <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+                                <h3 style="color: var(--color-accent); margin-bottom: 8px;">Welcome to Royalty!</h3>
+                                <p>Taking you to your dashboard...</p>
+                            </div>
+                        `;
+
+                        window.history.replaceState({}, '', window.location.pathname);
+
+                        setTimeout(() => {
+                            window.location.href = '/app/dashboard.html';
+                        }, 1000);
+                    }
                 } else {
                     // Already logged in (not from email confirmation)
                     window.location.href = '/app/dashboard.html';

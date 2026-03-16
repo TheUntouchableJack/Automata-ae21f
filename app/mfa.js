@@ -1,10 +1,11 @@
 // ===== MFA (Multi-Factor Authentication) =====
-// Phase 1: TOTP + Email OTP + Trusted Device
+// TOTP + Email OTP + Trusted Device
 // Requires auth.js (window.supabase / db) to be loaded first.
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const MFA_DEVICE_TOKEN_KEY  = 'royalty_device_token';
 const MFA_PENDING_RETURN    = 'royalty_mfa_return';   // URL to return to after verify
+const MFA_PENDING_METHOD    = 'royalty_mfa_method';   // 'email' or 'totp'
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ async function mfaRevokeAllTrustedDevices(userId) {
     return !error;
 }
 
-// ── Supabase MFA Factor Management ────────────────────────────────────────
+// ── Supabase MFA Factor Management (TOTP) ──────────────────────────────────
 
 /**
  * List enrolled MFA factors.
@@ -237,7 +238,7 @@ async function mfaConfirmTotpEnrollment(factorId, code) {
 }
 
 /**
- * Unenroll (remove) a factor.
+ * Unenroll (remove) a TOTP factor.
  * @param {string} factorId
  * @returns {Promise<{success: boolean, error?: string}>}
  */
@@ -245,22 +246,122 @@ async function mfaUnenroll(factorId) {
     const { error } = await db.auth.mfa.unenroll({ factorId });
     if (error) return { success: false, error: error.message };
 
-    // Update profile if no factors remain
+    // Update profile — check if any MFA methods remain
     const user = await getCurrentUser();
     if (user) {
         const { totp } = await mfaListFactors();
-        if (totp.length === 0) {
-            await db.from('profiles').update({ mfa_enabled: false, mfa_methods: [] }).eq('id', user.id);
+        const { data: profile } = await db.from('profiles').select('mfa_methods').eq('id', user.id).single();
+        const methods = (profile?.mfa_methods || []).filter(m => m !== 'totp');
+        if (totp.length === 0 && !methods.includes('totp')) {
+            // Remove totp from methods; keep email if still enrolled
+            await db.from('profiles').update({
+                mfa_enabled: methods.length > 0,
+                mfa_methods: methods
+            }).eq('id', user.id);
         }
     }
 
     return { success: true };
 }
 
-// ── MFA Challenge & Verify (login flow) ────────────────────────────────────
+// ── Email OTP ──────────────────────────────────────────────────────────────
 
 /**
- * Challenge + verify a factor in one call.
+ * Call the mfa-email-otp edge function.
+ * @param {string} action  'send' | 'verify' | 'enroll' | 'unenroll'
+ * @param {object} [body]  Request body (for verify: { code })
+ * @returns {Promise<{ok: boolean, data?: object, error?: string}>}
+ */
+async function mfaEmailOtpCall(action, body = {}) {
+    try {
+        const session = await getValidSession();
+        if (!session) return { ok: false, error: 'Not authenticated' };
+
+        const url = `${SUPABASE_URL}/functions/v1/mfa-email-otp/${action}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify(body),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { ok: false, error: data.error || `Request failed (${response.status})` };
+        }
+
+        return { ok: true, data };
+    } catch (e) {
+        console.error('mfaEmailOtpCall error:', e);
+        return { ok: false, error: e.message };
+    }
+}
+
+/**
+ * Send a 6-digit code to the user's email.
+ * @returns {Promise<{ok: boolean, email?: string, error?: string}>}
+ */
+async function mfaSendEmailCode() {
+    const result = await mfaEmailOtpCall('send');
+    if (result.ok) {
+        return { ok: true, email: result.data.email };
+    }
+    return { ok: false, error: result.error };
+}
+
+/**
+ * Verify a 6-digit email code.
+ * @param {string} code
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
+async function mfaVerifyEmailCode(code) {
+    const result = await mfaEmailOtpCall('verify', { code });
+    return { ok: result.ok, error: result.error };
+}
+
+/**
+ * Enroll (enable) email MFA for the current user.
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
+async function mfaEnrollEmail() {
+    return await mfaEmailOtpCall('enroll');
+}
+
+/**
+ * Unenroll (disable) email MFA for the current user.
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
+async function mfaUnenrollEmail() {
+    return await mfaEmailOtpCall('unenroll');
+}
+
+/**
+ * Check if the current user has email MFA enabled (from profile).
+ * @param {string} userId
+ * @returns {Promise<boolean>}
+ */
+async function mfaHasEmailMfa(userId) {
+    try {
+        const { data, error } = await db
+            .from('profiles')
+            .select('mfa_methods')
+            .eq('id', userId)
+            .single();
+        if (error || !data) return false;
+        return (data.mfa_methods || []).includes('email');
+    } catch {
+        return false;
+    }
+}
+
+// ── MFA Challenge & Verify (TOTP login flow) ──────────────────────────────
+
+/**
+ * Challenge + verify a TOTP factor in one call.
  * Used on the mfa-challenge.html page.
  * @param {string} factorId
  * @param {string} code
@@ -284,8 +385,10 @@ async function mfaChallengeAndVerify(factorId, code) {
 
 /**
  * Called immediately after a successful password sign-in.
- * Checks if MFA is required and either passes through or redirects to the
- * challenge page.
+ * Checks if MFA is required (email OTP or TOTP) and either passes through
+ * or redirects to the challenge page.
+ *
+ * Priority: Email OTP (default) > TOTP (advanced)
  *
  * Returns true  → MFA satisfied, caller may proceed with login.
  * Returns false → Redirecting to challenge page; caller should stop.
@@ -296,23 +399,40 @@ async function mfaChallengeAndVerify(factorId, code) {
  */
 async function mfaGate(user, returnUrl = '/app/dashboard.html') {
     try {
+        // Check if device is trusted first (skips all MFA)
+        const trusted = await mfaCheckTrustedDevice(user.id);
+        if (trusted) return true;
+
+        // Check email MFA (custom, profile-based)
+        const hasEmailMfa = await mfaHasEmailMfa(user.id);
+        if (hasEmailMfa) {
+            // Send email code automatically
+            const sendResult = await mfaSendEmailCode();
+            if (!sendResult.ok) {
+                console.warn('mfaGate: failed to send email code, allowing login:', sendResult.error);
+                return true; // fail open if email send fails
+            }
+
+            sessionStorage.setItem(MFA_PENDING_RETURN, returnUrl);
+            sessionStorage.setItem(MFA_PENDING_METHOD, 'email');
+            window.location.href = '/app/mfa-challenge.html';
+            return false;
+        }
+
+        // Check TOTP MFA (Supabase native AAL)
         const { data, error } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
         if (error) {
             console.warn('mfaGate: could not get AAL, skipping MFA check:', error);
             return true; // fail open
         }
 
-        // currentLevel is already aal2, or nextLevel doesn't require aal2
         if (data.nextLevel !== 'aal2' || data.currentLevel === 'aal2') {
-            return true;
+            return true; // No TOTP required or already satisfied
         }
 
-        // MFA required — check if device is trusted
-        const trusted = await mfaCheckTrustedDevice(user.id);
-        if (trusted) return true;
-
-        // Redirect to challenge page
+        // TOTP required — redirect to challenge page
         sessionStorage.setItem(MFA_PENDING_RETURN, returnUrl);
+        sessionStorage.setItem(MFA_PENDING_METHOD, 'totp');
         window.location.href = '/app/mfa-challenge.html';
         return false;
     } catch (e) {

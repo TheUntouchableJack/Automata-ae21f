@@ -1090,7 +1090,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="../i18n/i18n.js?v=1"></script>
     <script src="onboarding-storage.js?v=2"></script>
-    <script src="auth.js?v=5"></script>
+    <script src="auth.js?v=9"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="onboarding-transition.js?v=1"></script>
     <script src="business-analysis.js?v=2"></script>
@@ -1229,6 +1229,9 @@
         const strengthFill = document.getElementById('strength-fill');
         const strengthText = document.getElementById('strength-text');
         const authCard = document.getElementById('auth-card');
+
+        // Clear form inputs on every page load
+        signupForm.reset();
 
         // Password strength checker
         passwordInput.addEventListener('input', (e) => {
