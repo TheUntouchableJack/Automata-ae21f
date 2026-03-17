@@ -25,6 +25,13 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Force redirect Netlify subdomain to custom domain
+[[redirects]]
+  from = "https://automata-jay.netlify.app/*"
+  to = "https://royaltyapp.ai/:splat"
+  status = 301
+  force = true
+
 # Redirects for SPA-like behavior (optional)
 [[redirects]]
   from = "/app/*"
