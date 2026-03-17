@@ -24,14 +24,14 @@
       <circle cx="52" cy="-18" r="4.5" fill="white" opacity="0.65"/>
       <rect x="-65" y="14" width="130" height="10" rx="3" fill="url(#crown)" opacity="0.8"/>
     </g>
-    <text x="256" y="390" text-anchor="middle" font-family="'Space Grotesk', 'Inter', Arial, sans-serif" font-weight="700" font-size="260" fill="white" letter-spacing="-8">R</text>
+    <text x="256" y="390" text-anchor="middle" font-family="'Outfit', 'Outfit', Arial, sans-serif" font-weight="700" font-size="260" fill="white" letter-spacing="-8">R</text>
   </g>
 
   <!-- "Royalty" wordmark — x=205 to give 25px gap after 160px icon + 20px padding -->
   <text
     x="205"
     y="130"
-    font-family="'Space Grotesk', 'Inter', Arial, sans-serif"
+    font-family="'Outfit', 'Outfit', Arial, sans-serif"
     font-weight="700"
     font-size="88"
     fill="#7c3aed"

@@ -9,6 +9,7 @@
         "blog": "المدونة",
         "login": "تسجيل الدخول",
         "joinWaitlist": "انضم للنسخة التجريبية",
+        "getStarted": "ابدأ مجاناً",
         "projects": "المشاريع",
         "customers": "العملاء",
         "dashboard": "لوحة التحكم",
@@ -661,6 +662,7 @@
     },
     "common": {
         "loading": "جاري التحميل...",
+        "select": "اختر...",
         "error": "خطأ",
         "success": "نجاح",
         "confirm": "تأكيد",

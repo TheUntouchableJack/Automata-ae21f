@@ -9,6 +9,7 @@
         "blog": "博客",
         "login": "登录",
         "joinWaitlist": "加入测试版",
+        "getStarted": "免费开始",
         "projects": "项目",
         "customers": "客户",
         "dashboard": "仪表板",
@@ -661,6 +662,7 @@
     },
     "common": {
         "loading": "加载中...",
+        "select": "选择...",
         "error": "错误",
         "success": "成功",
         "confirm": "确认",

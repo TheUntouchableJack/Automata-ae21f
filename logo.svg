@@ -20,5 +20,5 @@
     <rect x="-65" y="14" width="130" height="10" rx="3" fill="url(#crown)" opacity="0.8"/>
   </g>
   <!-- R letterform -->
-  <text x="256" y="390" text-anchor="middle" font-family="'Space Grotesk', 'Inter', Arial, sans-serif" font-weight="700" font-size="260" fill="white" letter-spacing="-8">R</text>
+  <text x="256" y="390" text-anchor="middle" font-family="'Outfit', 'Outfit', Arial, sans-serif" font-weight="700" font-size="260" fill="white" letter-spacing="-8">R</text>
 </svg>

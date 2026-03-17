@@ -726,13 +726,26 @@ const EstimatePage = (function () {
             const phone = document.getElementById('contact-phone').value.trim();
             const message = document.getElementById('contact-message').value.trim();
 
-            const mailtoBody = encodeURIComponent(
-                `Name: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\n\n${message}`
-            );
-            const subject = encodeURIComponent(tt('estimate.emailSubject', 'Custom App Consultation Request'));
-            const mailtoUrl = `mailto:hello@royaltyapp.ai?subject=${subject}&body=${mailtoBody}`;
-
-            window.location.href = mailtoUrl;
+            try {
+                const res = await fetch('https://vhpmmfhfwnpmavytoomd.supabase.co/functions/v1/contact-inquiry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'custom-app',
+                        name,
+                        email,
+                        phone,
+                        message,
+                        source: 'estimate-page'
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to send');
+                }
+            } catch (e) {
+                console.error('Contact form error:', e);
+            }
 
             document.getElementById('contact-form').classList.remove('visible');
             document.getElementById('form-success').classList.add('visible');

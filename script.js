@@ -617,17 +617,18 @@ function restoreOnboardingData() {
     const data = OnboardingStorage.get();
     if (!data) return;
 
-    // If user is already authenticated, clear stale onboarding data instead of restoring
+    // Clear fields synchronously first to prevent browser auto-fill showing stale data
+    if (businessPromptInput) businessPromptInput.value = '';
+    if (industrySelect) industrySelect.value = '';
+    if (goalsInput) goalsInput.value = '';
+    if (painPointsInput) painPointsInput.value = '';
+
+    // Check auth — if authenticated, discard onboarding data; otherwise restore it
     if (supabaseClient) {
         supabaseClient.auth.getSession().then(({ data: sessionData }) => {
             if (sessionData?.session) {
                 OnboardingStorage.clear();
-                if (businessPromptInput) businessPromptInput.value = '';
-                if (industrySelect) industrySelect.value = '';
-                if (goalsInput) goalsInput.value = '';
-                if (painPointsInput) painPointsInput.value = '';
             } else {
-                // Not authenticated — restore form data normally
                 applyOnboardingData(data);
             }
         });

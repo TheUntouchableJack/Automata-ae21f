@@ -169,7 +169,7 @@ Analyze this business and show what Royalty can do for them.`
       const errorText = await response.text()
       console.error('Claude API error:', response.status, errorText)
       return new Response(
-        JSON.stringify({ success: false, error: 'AI analysis failed' }),
+        JSON.stringify({ success: false, error: `Claude API returned ${response.status}`, detail: errorText }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

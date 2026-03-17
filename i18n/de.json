@@ -9,6 +9,7 @@
         "blog": "Blog",
         "login": "Anmelden",
         "joinWaitlist": "Beta beitreten",
+        "getStarted": "Kostenlos Starten",
         "projects": "Projekte",
         "customers": "Kunden",
         "dashboard": "Dashboard",
@@ -661,6 +662,7 @@
     },
     "common": {
         "loading": "Wird geladen...",
+        "select": "Auswählen...",
         "error": "Fehler",
         "success": "Erfolg",
         "confirm": "Bestätigen",
