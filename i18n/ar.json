@@ -1279,7 +1279,22 @@
         "platformHighlights": "أبرز ميزات المنصة",
         "expandHint": "انقر لرؤية الخطة",
         "loading": "جاري تحليل عملك...",
-        "fallbackTitle": "خططك جاهزة للإطلاق"
+        "fallbackTitle": "منصة Royalty الخاصة بك",
+        "growthPotential": "إمكانات النمو الخاصة بك",
+        "opportunities": "الفرص",
+        "disclaimer": "توقعات مبنية على متوسطات القطاع لأعمال مشابهة",
+        "fallbackDesc": "كل ما تحتاجه لبناء الولاء، وأتمتة التفاعل، وزيادة الإيرادات — مدعوم بالذكاء الاصطناعي.",
+        "fallback": {
+            "brandedApp": "تطبيقك المخصص",
+            "brandedAppDesc": "تطبيق ولاء مع مكافآت رقمية وبطاقات طوابع وإشعارات فورية",
+            "automations": "أتمتة ذكية",
+            "automationsDesc": "حملات آلية — استعادة العملاء، مكافآت أعياد الميلاد، متابعة ما بعد الزيارة",
+            "insights": "رؤى العملاء",
+            "insightsDesc": "تحليلات في الوقت الفعلي، أنماط الإنفاق وتقسيم العملاء",
+            "revenue": "نمو الإيرادات",
+            "revenueDesc": "برامج إحالة، عروض مستهدفة وفرص بيع متقاطع"
+        },
+        "fallbackCta": "أنشئ حسابك لرؤية تحليل مخصص"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",
@@ -1387,7 +1402,7 @@
     },
     "customBuilds": {
         "tag": "Custom Apps",
-        "title": "Beyond Loyalty",
+        "title": "نبني تطبيقك",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
         "cta": "Get a Free Estimate →"
     },

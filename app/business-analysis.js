@@ -170,9 +170,17 @@ const BusinessAnalysis = (function() {
         const results = document.getElementById('analysis-results');
         if (!results) return;
 
-        // Business name in heading
-        const nameEl = document.getElementById('analysis-biz-name');
-        if (nameEl) nameEl.textContent = businessName || 'your business';
+        // Business name in heading (use i18n if available)
+        const headingEl = results.querySelector('.analysis-heading');
+        if (headingEl && window.I18n) {
+            const name = businessName || 'your business';
+            const translated = I18n.t('analysis.heading', { businessName: name });
+            headingEl.innerHTML = translated;
+            headingEl.dataset.bizName = name; // store for language switch re-render
+        } else {
+            const nameEl = document.getElementById('analysis-biz-name');
+            if (nameEl) nameEl.textContent = businessName || 'your business';
+        }
 
         // Summary
         const summaryEl = document.getElementById('analysis-summary');
@@ -380,6 +388,14 @@ const BusinessAnalysis = (function() {
             return false;
         }
     }
+
+    // Re-render heading on language change (for already-rendered analysis)
+    window.addEventListener('i18n:changed', (e) => {
+        const headingEl = document.querySelector('#analysis-results .analysis-heading');
+        if (headingEl && headingEl.dataset.bizName && window.I18n) {
+            headingEl.innerHTML = I18n.t('analysis.heading', { businessName: headingEl.dataset.bizName });
+        }
+    });
 
     return { init, clearCache, getCached, refresh };
 })();

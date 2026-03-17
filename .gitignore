@@ -43,6 +43,11 @@ build/
 test-results/
 playwright-report/
 
+# Video project (Remotion)
+video/node_modules/
+video/out/
+video/.remotion/
+
 # Large temporary images (testing/screenshots)
 *.screenshot.png
 *-test-*.png

@@ -714,7 +714,7 @@ const EstimatePage = (function () {
         });
 
         // Submit consultation
-        document.getElementById('btn-submit-consultation').addEventListener('click', () => {
+        document.getElementById('btn-submit-consultation').addEventListener('click', async () => {
             const name = document.getElementById('contact-name').value.trim();
             const email = document.getElementById('contact-email').value.trim();
 

@@ -1279,7 +1279,22 @@
         "platformHighlights": "Plattform-Highlights",
         "expandHint": "Klicken Sie, um den Plan zu sehen",
         "loading": "Ihr Unternehmen wird analysiert...",
-        "fallbackTitle": "Ihre Pläne sind startbereit"
+        "fallbackTitle": "Ihre Royalty-Plattform",
+        "growthPotential": "Ihr Wachstumspotenzial",
+        "opportunities": "Möglichkeiten",
+        "disclaimer": "Prognosen basierend auf Branchendurchschnitten für ähnliche Unternehmen",
+        "fallbackDesc": "Alles, was Sie brauchen, um Kundenbindung aufzubauen, Engagement zu automatisieren und Umsatz zu steigern — KI-gestützt.",
+        "fallback": {
+            "brandedApp": "Ihre eigene App",
+            "brandedAppDesc": "Kundenbindungs-App mit digitalen Prämien, Stempelkarten und Push-Benachrichtigungen",
+            "automations": "Intelligente Automatisierungen",
+            "automationsDesc": "Automatisierte Kampagnen — Rückgewinnung, Geburtstagsbelohnungen, Follow-ups nach Besuchen",
+            "insights": "Kundeneinblicke",
+            "insightsDesc": "Echtzeitanalysen, Ausgabemuster und Kundensegmentierung",
+            "revenue": "Umsatzwachstum",
+            "revenueDesc": "Empfehlungsprogramme, gezielte Aktionen und Cross-Selling-Möglichkeiten"
+        },
+        "fallbackCta": "Erstellen Sie Ihr Konto für eine personalisierte Analyse"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",
@@ -1387,7 +1402,7 @@
     },
     "customBuilds": {
         "tag": "Custom Apps",
-        "title": "Beyond Loyalty",
+        "title": "Wir Bauen Ihre App",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
         "cta": "Get a Free Estimate →"
     },

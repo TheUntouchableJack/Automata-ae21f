@@ -1282,7 +1282,22 @@
         "platformHighlights": "平台亮点",
         "expandHint": "点击查看计划",
         "loading": "正在分析您的业务...",
-        "fallbackTitle": "您的计划已准备就绪"
+        "fallbackTitle": "您的 Royalty 平台",
+        "growthPotential": "您的增长潜力",
+        "opportunities": "发展机会",
+        "disclaimer": "基于同类企业行业平均数据的预测",
+        "fallbackDesc": "构建客户忠诚度、自动化互动、提升收入所需的一切 — 由 AI 驱动。",
+        "fallback": {
+            "brandedApp": "您的品牌应用",
+            "brandedAppDesc": "带有数字奖励、集章卡和推送通知的忠诚度应用",
+            "automations": "智能自动化",
+            "automationsDesc": "自动化营销活动 — 挽回客户、生日奖励、到店后跟进",
+            "insights": "客户洞察",
+            "insightsDesc": "实时分析、消费模式和客户细分",
+            "revenue": "收入增长",
+            "revenueDesc": "推荐计划、定向促销和交叉销售机会"
+        },
+        "fallbackCta": "创建账户查看个性化分析"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",
@@ -1390,7 +1405,7 @@
     },
     "customBuilds": {
         "tag": "Custom Apps",
-        "title": "Beyond Loyalty",
+        "title": "我们为您打造应用",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
         "cta": "Get a Free Estimate →"
     },

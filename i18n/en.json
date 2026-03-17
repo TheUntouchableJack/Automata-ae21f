@@ -383,7 +383,7 @@
     },
     "customBuilds": {
         "tag": "Custom Apps",
-        "title": "Beyond Loyalty",
+        "title": "We Build Your App",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
         "cta": "Get a Free Estimate →"
     },
@@ -1579,7 +1579,22 @@
         "platformHighlights": "Platform Highlights",
         "expandHint": "Click to see the plan",
         "loading": "Analyzing your business...",
-        "fallbackTitle": "Your plans are ready to launch"
+        "fallbackTitle": "Your Royalty Platform",
+        "growthPotential": "Your Growth Potential",
+        "opportunities": "Opportunities",
+        "disclaimer": "Projections based on industry averages for similar businesses",
+        "fallbackDesc": "Everything you need to build loyalty, automate engagement, and grow revenue — powered by AI.",
+        "fallback": {
+            "brandedApp": "Your Branded App",
+            "brandedAppDesc": "Custom loyalty app with digital rewards, stamp cards, and push notifications",
+            "automations": "Smart Automations",
+            "automationsDesc": "Automated campaigns — win-back, birthday rewards, post-visit follow-ups",
+            "insights": "Customer Insights",
+            "insightsDesc": "Real-time analytics, spending patterns, and customer segmentation",
+            "revenue": "Revenue Growth",
+            "revenueDesc": "Referral programs, targeted promotions, and upsell opportunities"
+        },
+        "fallbackCta": "Create your account to see a personalized analysis"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",
