@@ -1048,9 +1048,9 @@
         "optionalStep": "Optional",
         "skipDetails": "Skip — I'll add details later",
         "transition": {
-            "analyzing": "Analyzing your business...",
-            "selecting": "Selecting best strategies...",
-            "building": "Building your workspace...",
+            "confirming": "Confirming your account...",
+            "settingUp": "Setting up your workspace...",
+            "activatingAI": "Activating your AI assistant...",
             "preparing": "Preparing your dashboard..."
         }
     },

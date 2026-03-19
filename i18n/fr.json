@@ -760,9 +760,9 @@
         "optionalStep": "Facultatif",
         "skipDetails": "Passer — J'ajouterai les détails plus tard",
         "transition": {
-            "analyzing": "Analyse de votre entreprise...",
-            "selecting": "Sélection des meilleures stratégies...",
-            "building": "Construction de votre espace de travail...",
+            "confirming": "Confirmation de votre compte...",
+            "settingUp": "Configuration de votre espace de travail...",
+            "activatingAI": "Activation de votre assistant IA...",
             "preparing": "Préparation de votre tableau de bord..."
         }
     },

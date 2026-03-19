@@ -748,9 +748,9 @@
         "optionalStep": "Facoltativo",
         "skipDetails": "Salta — Aggiungerò i dettagli dopo",
         "transition": {
-            "analyzing": "Analisi della tua attività...",
-            "selecting": "Selezione delle migliori strategie...",
-            "building": "Creazione del tuo spazio di lavoro...",
+            "confirming": "Conferma del tuo account...",
+            "settingUp": "Configurazione del tuo spazio di lavoro...",
+            "activatingAI": "Attivazione del tuo assistente IA...",
             "preparing": "Preparazione della tua dashboard..."
         }
     },

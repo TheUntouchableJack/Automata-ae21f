@@ -1,18 +1,19 @@
 // ===== Onboarding Transition Module =====
-// Animated "building your workspace" screen between signup and dashboard
+// Animated "setting up your workspace" screen between signup and dashboard
 
 const OnboardingTransition = (function() {
 
     const STEPS = [
-        { key: 'analyzing', fallback: 'Analyzing your business...' },
-        { key: 'selecting', fallback: 'Selecting best strategies...' },
-        { key: 'building', fallback: 'Building your workspace...' },
+        { key: 'confirming', fallback: 'Confirming your account...' },
+        { key: 'settingUp', fallback: 'Setting up your workspace...' },
+        { key: 'activatingAI', fallback: 'Activating your AI assistant...' },
         { key: 'preparing', fallback: 'Preparing your dashboard...' }
     ];
 
     function t(key, fallback) {
         if (typeof I18n !== 'undefined' && I18n.t) {
-            return I18n.t('onboarding.transition.' + key) || fallback;
+            const val = I18n.t('onboarding.transition.' + key);
+            return (val && !val.includes('onboarding.transition.')) ? val : fallback;
         }
         return fallback;
     }
@@ -22,6 +23,16 @@ const OnboardingTransition = (function() {
         overlay.className = 'onboarding-transition-overlay';
         overlay.innerHTML = `
             <div class="onboarding-transition-content">
+                <div class="onboarding-transition-orb">
+                    <div class="orb-sphere"></div>
+                    <div class="orb-glow"></div>
+                    <div class="orb-particle orb-particle-1"></div>
+                    <div class="orb-particle orb-particle-2"></div>
+                    <div class="orb-particle orb-particle-3"></div>
+                    <div class="orb-particle orb-particle-4"></div>
+                    <div class="orb-particle orb-particle-5"></div>
+                    <div class="orb-particle orb-particle-6"></div>
+                </div>
                 <div class="onboarding-transition-logo">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
                         <rect width="40" height="40" rx="10" fill="#7c3aed"/>
@@ -62,7 +73,7 @@ const OnboardingTransition = (function() {
                 position: fixed;
                 inset: 0;
                 z-index: 10000;
-                background: linear-gradient(135deg, #0f0a1e 0%, #1a1033 50%, #0f0a1e 100%);
+                background: #ffffff;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -80,6 +91,119 @@ const OnboardingTransition = (function() {
                 max-width: 400px;
                 padding: 40px;
             }
+
+            /* ---- Bouncing Orb ---- */
+            .onboarding-transition-orb {
+                position: relative;
+                width: 120px;
+                height: 120px;
+                margin: 0 auto 32px;
+                animation: orbFloat 2.4s ease-in-out infinite;
+            }
+            .orb-sphere {
+                position: absolute;
+                inset: 10px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 35% 35%,
+                    rgba(167, 139, 250, 0.6) 0%,
+                    rgba(124, 58, 237, 0.45) 40%,
+                    rgba(99, 102, 241, 0.3) 70%,
+                    rgba(79, 70, 229, 0.15) 100%
+                );
+                box-shadow:
+                    inset 0 -8px 20px rgba(124, 58, 237, 0.2),
+                    inset 0 8px 16px rgba(255, 255, 255, 0.4),
+                    0 0 40px rgba(124, 58, 237, 0.15);
+                backdrop-filter: blur(2px);
+                animation: orbPulse 3s ease-in-out infinite;
+            }
+            .orb-glow {
+                position: absolute;
+                inset: -8px;
+                border-radius: 50%;
+                background: radial-gradient(circle,
+                    rgba(124, 58, 237, 0.12) 0%,
+                    rgba(124, 58, 237, 0.04) 50%,
+                    transparent 70%
+                );
+                animation: orbGlow 3s ease-in-out infinite;
+            }
+            .orb-particle {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                top: 50%;
+                left: 50%;
+                margin: -3px 0 0 -3px;
+            }
+            .orb-particle-1 {
+                background: rgba(124, 58, 237, 0.5);
+                animation: orbOrbit1 4s linear infinite;
+            }
+            .orb-particle-2 {
+                background: rgba(99, 102, 241, 0.4);
+                width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+                animation: orbOrbit2 5s linear infinite;
+            }
+            .orb-particle-3 {
+                background: rgba(168, 85, 247, 0.45);
+                width: 4px; height: 4px; margin: -2px 0 0 -2px;
+                animation: orbOrbit3 3.5s linear infinite;
+            }
+            .orb-particle-4 {
+                background: rgba(6, 182, 212, 0.35);
+                width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+                animation: orbOrbit4 4.5s linear infinite;
+            }
+            .orb-particle-5 {
+                background: rgba(124, 58, 237, 0.3);
+                width: 4px; height: 4px; margin: -2px 0 0 -2px;
+                animation: orbOrbit5 5.5s linear infinite;
+            }
+            .orb-particle-6 {
+                background: rgba(167, 139, 250, 0.4);
+                width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px;
+                animation: orbOrbit6 3s linear infinite;
+            }
+            @keyframes orbFloat {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-12px); }
+            }
+            @keyframes orbPulse {
+                0%, 100% { transform: scale(1); opacity: 0.9; }
+                50% { transform: scale(1.04); opacity: 1; }
+            }
+            @keyframes orbGlow {
+                0%, 100% { opacity: 0.6; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.08); }
+            }
+            @keyframes orbOrbit1 {
+                from { transform: rotate(0deg) translateX(52px) rotate(0deg); }
+                to { transform: rotate(360deg) translateX(52px) rotate(-360deg); }
+            }
+            @keyframes orbOrbit2 {
+                from { transform: rotate(60deg) translateX(58px) rotate(-60deg); }
+                to { transform: rotate(420deg) translateX(58px) rotate(-420deg); }
+            }
+            @keyframes orbOrbit3 {
+                from { transform: rotate(120deg) translateX(48px) rotate(-120deg); }
+                to { transform: rotate(480deg) translateX(48px) rotate(-480deg); }
+            }
+            @keyframes orbOrbit4 {
+                from { transform: rotate(200deg) translateX(55px) rotate(-200deg); }
+                to { transform: rotate(560deg) translateX(55px) rotate(-560deg); }
+            }
+            @keyframes orbOrbit5 {
+                from { transform: rotate(280deg) translateX(50px) rotate(-280deg); }
+                to { transform: rotate(640deg) translateX(50px) rotate(-640deg); }
+            }
+            @keyframes orbOrbit6 {
+                from { transform: rotate(340deg) translateX(45px) rotate(-340deg); }
+                to { transform: rotate(700deg) translateX(45px) rotate(-700deg); }
+            }
+
+            /* ---- Logo ---- */
             .onboarding-transition-logo {
                 display: flex;
                 align-items: center;
@@ -92,9 +216,11 @@ const OnboardingTransition = (function() {
             .onboarding-transition-brand {
                 font-size: 24px;
                 font-weight: 700;
-                color: white;
+                color: #1a1a2e;
                 letter-spacing: -0.02em;
             }
+
+            /* ---- Steps ---- */
             .onboarding-transition-steps {
                 display: flex;
                 flex-direction: column;
@@ -134,11 +260,11 @@ const OnboardingTransition = (function() {
                 transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             }
             .onboarding-transition-step.pending .step-icon {
-                background: rgba(255,255,255,0.08);
+                background: rgba(124, 58, 237, 0.08);
             }
             .onboarding-transition-step.active .step-icon {
-                background: rgba(124, 58, 237, 0.3);
-                box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+                background: rgba(124, 58, 237, 0.15);
+                box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.3);
                 animation: transitionPulse 1.5s ease infinite;
             }
             .onboarding-transition-step.complete .step-icon {
@@ -158,7 +284,7 @@ const OnboardingTransition = (function() {
                 width: 8px;
                 height: 8px;
                 border-radius: 50%;
-                background: rgba(255,255,255,0.4);
+                background: rgba(0, 0, 0, 0.2);
             }
             .onboarding-transition-step.active .step-dot {
                 background: #7c3aed;
@@ -168,23 +294,25 @@ const OnboardingTransition = (function() {
             }
             .step-text {
                 font-size: 15px;
-                color: rgba(255,255,255,0.5);
+                color: rgba(0, 0, 0, 0.35);
                 transition: color 0.3s ease;
             }
             .onboarding-transition-step.active .step-text {
-                color: white;
+                color: #1a1a2e;
                 font-weight: 500;
             }
             .onboarding-transition-step.complete .step-text {
-                color: rgba(255,255,255,0.7);
+                color: rgba(0, 0, 0, 0.5);
             }
+
+            /* ---- Progress Bar ---- */
             .onboarding-transition-progress {
                 opacity: 0;
                 animation: transitionFadeIn 0.6s ease 0.3s forwards;
             }
             .progress-track {
                 height: 4px;
-                background: rgba(255,255,255,0.1);
+                background: rgba(0, 0, 0, 0.08);
                 border-radius: 2px;
                 overflow: hidden;
             }
@@ -195,12 +323,14 @@ const OnboardingTransition = (function() {
                 border-radius: 2px;
                 transition: width 0.8s ease;
             }
+
+            /* ---- Keyframes ---- */
             @keyframes transitionFadeIn {
                 from { opacity: 0; transform: translateY(10px); }
                 to { opacity: 1; transform: translateY(0); }
             }
             @keyframes transitionPulse {
-                0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+                0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.3); }
                 50% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0); }
             }
             @keyframes transitionCheckIn {
@@ -211,6 +341,10 @@ const OnboardingTransition = (function() {
                 .onboarding-transition-step,
                 .onboarding-transition-logo,
                 .onboarding-transition-progress,
+                .onboarding-transition-orb,
+                .orb-sphere,
+                .orb-glow,
+                .orb-particle,
                 .progress-fill {
                     animation: none !important;
                     transition: none !important;
@@ -228,7 +362,7 @@ const OnboardingTransition = (function() {
     /**
      * Show the transition overlay and run through steps.
      * @param {object} options
-     * @param {function} options.onBuild - Async function to run during "Building" step (e.g., OnboardingProcessor)
+     * @param {function} options.onBuild - Async function to run during "Activating AI" step (e.g., OnboardingProcessor)
      * @param {function} options.onComplete - Called when all steps finish (before fade-out)
      * @param {string} options.redirectUrl - URL to redirect to after completion
      */
@@ -261,7 +395,7 @@ const OnboardingTransition = (function() {
             const progress = ((i + 0.5) / steps.length) * 100;
             if (progressFill) progressFill.style.width = progress + '%';
 
-            // If this is the "building" step (index 2), run the actual DB work
+            // If this is the "activating AI" step (index 2), run the actual DB work
             if (i === 2 && typeof onBuild === 'function') {
                 try {
                     await Promise.all([

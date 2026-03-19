@@ -747,9 +747,9 @@
         "optionalStep": "Opcional",
         "skipDetails": "Pular — Adicionarei detalhes depois",
         "transition": {
-            "analyzing": "Analisando seu negócio...",
-            "selecting": "Selecionando as melhores estratégias...",
-            "building": "Construindo seu espaço de trabalho...",
+            "confirming": "Confirmando sua conta...",
+            "settingUp": "Configurando seu espaço de trabalho...",
+            "activatingAI": "Ativando seu assistente de IA...",
             "preparing": "Preparando seu painel de controle..."
         }
     },

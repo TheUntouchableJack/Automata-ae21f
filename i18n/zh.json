@@ -747,9 +747,9 @@
         "optionalStep": "可选",
         "skipDetails": "跳过 — 稍后添加详细信息",
         "transition": {
-            "analyzing": "正在分析您的业务...",
-            "selecting": "正在选择最佳策略...",
-            "building": "正在构建您的工作空间...",
+            "confirming": "正在确认您的账户...",
+            "settingUp": "正在设置您的工作空间...",
+            "activatingAI": "正在激活您的AI助手...",
             "preparing": "正在准备您的控制面板..."
         }
     },

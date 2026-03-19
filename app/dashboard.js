@@ -16,6 +16,13 @@ async function initDashboard() {
     currentUser = await requireAuth();
     if (!currentUser) return;
 
+    // Show onboarding transition if arriving from email confirmation
+    if (sessionStorage.getItem('show_onboarding_transition') && typeof OnboardingTransition !== 'undefined') {
+        sessionStorage.removeItem('show_onboarding_transition');
+        // Show transition overlay (runs visually while dashboard loads underneath)
+        OnboardingTransition.show();
+    }
+
     // Load user info and organization in parallel (optimized)
     const [userInfo, orgData] = await Promise.all([
         AppUtils.loadUserInfo(currentUser.id, currentUser.email),

@@ -279,7 +279,8 @@ if (db) {
                     // Check if this is a new signup with onboarding data
                     const hasOnboarding = localStorage.getItem('royalty_onboarding');
                     if (hasOnboarding) {
-                        // New user from landing page - go to dashboard
+                        // New user from landing page - show transition on dashboard
+                        sessionStorage.setItem('show_onboarding_transition', 'true');
                         window.location.href = '/app/dashboard.html';
                     } else if (!window.location.pathname.includes('login.html')) {
                         // Returning user - go to dashboard
