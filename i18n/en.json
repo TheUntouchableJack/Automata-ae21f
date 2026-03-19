@@ -54,7 +54,26 @@
             "setupTime": "Setup Time",
             "moreRepeatVisits": "More Repeat Visits",
             "aiRunning": "AI Running For You"
-        }
+        },
+        "ctaTitle": "Build your loyalty program in 60 seconds",
+        "ctaSubtitle": "Describe your business and our AI handles the rest — points, tiers, rewards, all automated.",
+        "ctaButton": "Get Started Free",
+        "promptTitle": "Describe your business",
+        "promptSubtitle": "Tell us about your business in a few sentences — our AI will extract the details and build your loyalty program.",
+        "promptPlaceholder": "e.g., I run a ramen shop in Brooklyn called Slurp Ramen. We have about 300 regulars and want to reward loyal customers and bring back people who haven't visited in a while...",
+        "analyzeButton": "Analyze My Business",
+        "analyzingTitle": "Analyzing your business...",
+        "analyzingSubtitle": "Our AI is reading your description and building your loyalty program",
+        "confirmTitle": "We understood your business",
+        "editHint": "Edit any field above if needed, then continue.",
+        "confirmButton": "Looks Good — Create My Account",
+        "retryButton": "Start over with a different description",
+        "extractedLocation": "Location",
+        "loadingStep1": "Reading your description...",
+        "loadingStep2": "Identifying your industry...",
+        "loadingStep3": "Building your loyalty program...",
+        "loadingStep4": "Calculating growth potential...",
+        "loadingSubtext": "This usually takes about 10 seconds"
     },
     "preview": {
         "title": "Royalty Dashboard",
@@ -978,6 +997,8 @@
         "tryAgain": "Try Again"
     },
     "onboarding": {
+        "step1of2": "Step 1 of 2",
+        "step2of2": "Step 2 of 2",
         "title": "Tell us about your business",
         "subtitle": "We'll show you exactly how to keep every customer coming back.",
         "placeholder": "e.g., I run a coffee shop in Austin. We want to keep customers coming back...",
@@ -1556,6 +1577,8 @@
         "lastNamePlaceholder": "Doe",
         "createPasswordPlaceholder": "Create a password",
         "createAccountBtn": "Create Account",
+        "creatingAccount": "Creating your account...",
+        "settingUpPlatform": "Setting up your platform...",
         "hasAccount": "Already have an account?",
         "forgotPassword": "Forgot password?",
         "forgotPasswordTitle": "Reset your password",
@@ -1571,7 +1594,8 @@
         "resetPasswordBtn": "Reset Password",
         "passwordResetSuccess": "Password updated successfully",
         "resetLinkExpired": "This reset link has expired. Please request a new one.",
-        "backToLogin": "Back to login"
+        "backToLogin": "Back to login",
+        "signUpSubtitleOnboarding": "Almost done, {businessName}! Create your account to launch."
     },
     "analysis": {
         "badge": "AI Business Analysis",
@@ -1594,7 +1618,18 @@
             "revenue": "Revenue Growth",
             "revenueDesc": "Referral programs, targeted promotions, and upsell opportunities"
         },
-        "fallbackCta": "Create your account to see a personalized analysis"
+        "fallbackCta": "Create your account to see a personalized analysis",
+        "tabOverview": "Overview",
+        "tabOpportunities": "Opportunities",
+        "tabPlatform": "Platform",
+        "emailReport": "Email Me This Report",
+        "emailPlaceholder": "your@email.com",
+        "emailSend": "Send",
+        "emailSending": "Sending...",
+        "emailSent": "Sent! Check your inbox.",
+        "emailSpamNote": "Don't see it? Check your spam folder.",
+        "emailModalDesc": "We'll send a copy of this analysis to your inbox.",
+        "buildMyProgram": "Build My Loyalty Program"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",

@@ -54,7 +54,26 @@
             "setupTime": "Temps de Configuration",
             "moreRepeatVisits": "Plus de Visites Récurrentes",
             "aiRunning": "IA Qui Travaille Pour Vous"
-        }
+        },
+        "ctaTitle": "Créez votre programme de fidélité en 60 secondes",
+        "ctaSubtitle": "Décrivez votre entreprise et notre IA s'occupe du reste — points, niveaux, récompenses, tout est automatisé.",
+        "ctaButton": "Commencer Gratuitement",
+        "promptTitle": "Décrivez votre entreprise",
+        "promptSubtitle": "Décrivez votre entreprise en quelques phrases — notre IA extraira les détails et créera votre programme de fidélité.",
+        "promptPlaceholder": "ex., Je gère un restaurant de ramen à Paris appelé Slurp Ramen. Nous avons environ 300 habitués et voulons récompenser les clients fidèles et faire revenir ceux qui ne sont pas venus depuis un moment...",
+        "analyzeButton": "Analyser Mon Entreprise",
+        "analyzingTitle": "Analyse de votre entreprise...",
+        "analyzingSubtitle": "Notre IA lit votre description et construit votre programme de fidélité",
+        "confirmTitle": "Nous avons compris votre entreprise",
+        "editHint": "Modifiez les champs ci-dessus si nécessaire, puis continuez.",
+        "confirmButton": "C'est Bon — Créer Mon Compte",
+        "retryButton": "Recommencer avec une autre description",
+        "extractedLocation": "Emplacement",
+        "loadingStep1": "Lecture de votre description...",
+        "loadingStep2": "Identification de votre secteur...",
+        "loadingStep3": "Construction de votre programme de fidélité...",
+        "loadingStep4": "Calcul du potentiel de croissance...",
+        "loadingSubtext": "Cela prend généralement environ 10 secondes"
     },
     "preview": {
         "title": "Tableau de Bord Royalty",
@@ -690,6 +709,8 @@
         "tryAgain": "Réessayer"
     },
     "onboarding": {
+        "step1of2": "Étape 1 sur 2",
+        "step2of2": "Étape 2 sur 2",
         "title": "Parlez-nous de votre entreprise",
         "subtitle": "Nous vous montrerons exactement comment fidéliser chaque client.",
         "placeholder": "ex., Je gère un café à Paris. Nous voulons fidéliser nos clients...",
@@ -1219,6 +1240,8 @@
         "lastNamePlaceholder": "Dupont",
         "createPasswordPlaceholder": "Créez un mot de passe",
         "createAccountBtn": "Créer un compte",
+        "creatingAccount": "Création de votre compte...",
+        "settingUpPlatform": "Configuration de votre plateforme...",
         "hasAccount": "Vous avez déjà un compte ?",
         "forgotPassword": "Forgot password?",
         "forgotPasswordTitle": "Reset your password",
@@ -1234,7 +1257,8 @@
         "resetPasswordBtn": "Reset Password",
         "passwordResetSuccess": "Password updated successfully",
         "resetLinkExpired": "This reset link has expired. Please request a new one.",
-        "backToLogin": "Back to login"
+        "backToLogin": "Back to login",
+        "signUpSubtitleOnboarding": "Presque fini, {businessName} ! Créez votre compte pour lancer."
     },
     "supportSettings": {
         "title": "Support Settings",
@@ -1307,7 +1331,18 @@
             "revenue": "Croissance des Revenus",
             "revenueDesc": "Programmes de parrainage, promotions ciblées et opportunités de vente additionnelle"
         },
-        "fallbackCta": "Créez votre compte pour voir une analyse personnalisée"
+        "fallbackCta": "Créez votre compte pour voir une analyse personnalisée",
+        "tabOverview": "Aperçu",
+        "tabOpportunities": "Opportunités",
+        "tabPlatform": "Plateforme",
+        "emailReport": "Envoyez-moi ce rapport",
+        "emailPlaceholder": "votre@email.com",
+        "emailSend": "Envoyer",
+        "emailSending": "Envoi en cours...",
+        "emailSent": "Envoyé ! Vérifiez votre boîte.",
+        "emailSpamNote": "Vous ne le voyez pas ? Vérifiez votre dossier spam.",
+        "emailModalDesc": "Nous enverrons une copie de cette analyse à votre boîte de réception.",
+        "buildMyProgram": "Créer Mon Programme de Fidélité"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",

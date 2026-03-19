@@ -54,7 +54,26 @@
             "setupTime": "وقت الإعداد",
             "moreRepeatVisits": "زيارات متكررة أكثر",
             "aiRunning": "الذكاء الاصطناعي يعمل لأجلك"
-        }
+        },
+        "ctaTitle": "أنشئ برنامج الولاء الخاص بك في 60 ثانية",
+        "ctaSubtitle": "صِف عملك التجاري وذكاؤنا الاصطناعي يتولى الباقي — نقاط، مستويات، مكافآت، كل شيء مؤتمت.",
+        "ctaButton": "ابدأ مجاناً",
+        "promptTitle": "صِف عملك التجاري",
+        "promptSubtitle": "أخبرنا عن عملك في بضع جمل — سيستخرج ذكاؤنا الاصطناعي التفاصيل ويبني برنامج الولاء الخاص بك.",
+        "promptPlaceholder": "مثال: أدير مطعم رامن في دبي اسمه سلرب رامن. لدينا حوالي 300 عميل منتظم ونريد مكافأة العملاء الأوفياء واستعادة من لم يزرنا منذ فترة...",
+        "analyzeButton": "تحليل عملي",
+        "analyzingTitle": "جارٍ تحليل عملك...",
+        "analyzingSubtitle": "ذكاؤنا الاصطناعي يقرأ وصفك ويبني برنامج الولاء الخاص بك",
+        "confirmTitle": "فهمنا عملك",
+        "editHint": "عدّل أي حقل أعلاه إذا لزم الأمر، ثم تابع.",
+        "confirmButton": "يبدو جيداً — أنشئ حسابي",
+        "retryButton": "ابدأ من جديد بوصف مختلف",
+        "extractedLocation": "الموقع",
+        "loadingStep1": "جارٍ قراءة وصفك...",
+        "loadingStep2": "جارٍ تحديد مجال عملك...",
+        "loadingStep3": "جارٍ بناء برنامج الولاء...",
+        "loadingStep4": "جارٍ حساب إمكانات النمو...",
+        "loadingSubtext": "يستغرق هذا عادةً حوالي 10 ثوانٍ"
     },
     "preview": {
         "title": "لوحة تحكم أوتوماتا",
@@ -677,6 +696,8 @@
         "tryAgain": "حاول مرة أخرى"
     },
     "onboarding": {
+        "step1of2": "الخطوة 1 من 2",
+        "step2of2": "الخطوة 2 من 2",
         "title": "أخبرنا عن عملك",
         "subtitle": "سنوضح لك بالضبط كيفية جعل كل عميل يعود.",
         "placeholder": "مثال، أدير مقهى في دبي. نريد أن يعود العملاء...",
@@ -1206,6 +1227,8 @@
         "lastNamePlaceholder": "محمد",
         "createPasswordPlaceholder": "أنشئ كلمة مرور",
         "createAccountBtn": "إنشاء حساب",
+        "creatingAccount": "جارٍ إنشاء حسابك...",
+        "settingUpPlatform": "جارٍ إعداد منصتك...",
         "hasAccount": "لديك حساب بالفعل؟",
         "forgotPassword": "Forgot password?",
         "forgotPasswordTitle": "Reset your password",
@@ -1221,7 +1244,8 @@
         "resetPasswordBtn": "Reset Password",
         "passwordResetSuccess": "Password updated successfully",
         "resetLinkExpired": "This reset link has expired. Please request a new one.",
-        "backToLogin": "Back to login"
+        "backToLogin": "Back to login",
+        "signUpSubtitleOnboarding": "أوشكت على الانتهاء، {businessName}! أنشئ حسابك للإطلاق."
     },
     "supportSettings": {
         "title": "Support Settings",
@@ -1294,7 +1318,18 @@
             "revenue": "نمو الإيرادات",
             "revenueDesc": "برامج إحالة، عروض مستهدفة وفرص بيع متقاطع"
         },
-        "fallbackCta": "أنشئ حسابك لرؤية تحليل مخصص"
+        "fallbackCta": "أنشئ حسابك لرؤية تحليل مخصص",
+        "tabOverview": "نظرة عامة",
+        "tabOpportunities": "الفرص",
+        "tabPlatform": "المنصة",
+        "emailReport": "أرسل لي هذا التقرير",
+        "emailPlaceholder": "بريدك@الإلكتروني.com",
+        "emailSend": "إرسال",
+        "emailSending": "جارٍ الإرسال...",
+        "emailSent": "تم الإرسال! تحقق من بريدك.",
+        "emailSpamNote": "لم تجده؟ تحقق من مجلد البريد العشوائي.",
+        "emailModalDesc": "سنرسل نسخة من هذا التحليل إلى بريدك الإلكتروني.",
+        "buildMyProgram": "إنشاء برنامج الولاء الخاص بي"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",

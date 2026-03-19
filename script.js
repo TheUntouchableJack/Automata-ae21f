@@ -4,6 +4,18 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ===== Auth Code Exchange (safety net for email verification landing here) =====
+(function handleAuthCodeOnLandingPage() {
+    const authCode = new URLSearchParams(window.location.search).get('code');
+    if (authCode && supabaseClient) {
+        supabaseClient.auth.exchangeCodeForSession(authCode).then(({ error }) => {
+            if (!error) {
+                window.location.href = '/app/dashboard.html';
+            }
+        });
+    }
+})();
+
 // ===== Mobile Menu =====
 const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
 const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
@@ -599,35 +611,207 @@ if (billingToggle) {
     }
 }
 
-// ===== Onboarding Flow =====
-const getRecommendationsBtn = document.getElementById('get-recommendations-btn');
-const businessPromptInput = document.getElementById('business-prompt');
-const industrySelect = document.getElementById('ctx-industry');
-const goalsInput = document.getElementById('ctx-goals');
-const painPointsInput = document.getElementById('ctx-pain-points');
+// ===== Hybrid AI Onboarding Flow =====
+// States: CTA → Prompt (textarea) → Loading → Confirmation → Signup redirect
 
-if (getRecommendationsBtn) {
-    getRecommendationsBtn.addEventListener('click', handleStartOnboarding);
+const EDGE_FUNCTION_URL = SUPABASE_URL + '/functions/v1/analyze-business-signup';
+
+// Store analysis result between states
+let _analysisResult = null;
+let _loadingStepTimer = null;
+let _typewriterInterval = null;
+
+// Store original text for each step on first call
+function _initStepTexts() {
+    document.querySelectorAll('#hero-loading-state .extraction-step-text').forEach(el => {
+        if (!el.dataset.fulltext) el.dataset.fulltext = el.textContent;
+    });
 }
 
-// Restore onboarding data if available
+// Typewriter effect: reveals text character by character
+function _typewriteStep(stepEl) {
+    if (_typewriterInterval) { clearInterval(_typewriterInterval); _typewriterInterval = null; }
+    const textEl = stepEl.querySelector('.extraction-step-text');
+    if (!textEl || !textEl.dataset.fulltext) return;
+
+    const fullText = textEl.dataset.fulltext;
+    let i = 0;
+    textEl.textContent = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    cursor.textContent = '|';
+    textEl.appendChild(cursor);
+
+    _typewriterInterval = setInterval(() => {
+        if (i < fullText.length) {
+            textEl.textContent = fullText.slice(0, i + 1);
+            textEl.appendChild(cursor);
+            i++;
+        } else {
+            clearInterval(_typewriterInterval);
+            _typewriterInterval = null;
+            cursor.remove();
+        }
+    }, 30);
+}
+
+// Show/hide the orb (centered above progress bar, no positioning needed)
+function _showOrb(show) {
+    const orb = document.getElementById('ai-thinking-orb');
+    if (orb) orb.classList.toggle('visible', show);
+}
+
+// Update progress percentage text
+function _updatePct(text) {
+    const pctEl = document.getElementById('extraction-progress-pct');
+    if (pctEl) pctEl.textContent = text;
+}
+
+// Cycle through loading steps for visual progress
+function startLoadingSteps() {
+    const steps = document.querySelectorAll('#hero-loading-state .extraction-step');
+    const progressFill = document.getElementById('extraction-progress-fill');
+    if (!steps.length) return;
+
+    _initStepTexts();
+
+    let currentStep = 0;
+    const durations = [2500, 3000, 3500, 5000];
+    const widths = ['20%', '45%', '70%', '88%'];
+
+    // First step is already active via HTML class
+    if (progressFill) progressFill.style.width = widths[0];
+    _updatePct(widths[0]);
+    _typewriteStep(steps[0]);
+    _showOrb(true);
+
+    function advanceStep() {
+        if (currentStep < steps.length - 1) {
+            // Complete current step
+            steps[currentStep].classList.remove('active');
+            steps[currentStep].classList.add('completed');
+            // Snap completed step to full text
+            const completedText = steps[currentStep].querySelector('.extraction-step-text');
+            if (completedText && completedText.dataset.fulltext) {
+                if (_typewriterInterval) { clearInterval(_typewriterInterval); _typewriterInterval = null; }
+                completedText.textContent = completedText.dataset.fulltext;
+                const cursor = completedText.querySelector('.typing-cursor');
+                if (cursor) cursor.remove();
+            }
+
+            currentStep++;
+            steps[currentStep].classList.add('active');
+            if (progressFill) progressFill.style.width = widths[currentStep];
+            _updatePct(widths[currentStep]);
+            _typewriteStep(steps[currentStep]);
+        }
+        if (currentStep < steps.length - 1) {
+            _loadingStepTimer = setTimeout(advanceStep, durations[currentStep]);
+        }
+    }
+
+    _loadingStepTimer = setTimeout(advanceStep, durations[0]);
+}
+
+function completeLoadingSteps(callback) {
+    if (_loadingStepTimer) { clearTimeout(_loadingStepTimer); _loadingStepTimer = null; }
+    if (_typewriterInterval) { clearInterval(_typewriterInterval); _typewriterInterval = null; }
+    const steps = document.querySelectorAll('#hero-loading-state .extraction-step');
+    const progressFill = document.getElementById('extraction-progress-fill');
+    const orb = document.getElementById('ai-thinking-orb');
+
+    steps.forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('completed');
+        // Snap all text to full
+        const textEl = s.querySelector('.extraction-step-text');
+        if (textEl && textEl.dataset.fulltext) {
+            textEl.textContent = textEl.dataset.fulltext;
+            const cursor = textEl.querySelector('.typing-cursor');
+            if (cursor) cursor.remove();
+        }
+    });
+    if (progressFill) progressFill.style.width = '100%';
+    _updatePct('100%');
+    _showOrb(false);
+    setTimeout(callback, 400);
+}
+
+function clearLoadingSteps() {
+    if (_loadingStepTimer) { clearTimeout(_loadingStepTimer); _loadingStepTimer = null; }
+    if (_typewriterInterval) { clearInterval(_typewriterInterval); _typewriterInterval = null; }
+    const steps = document.querySelectorAll('#hero-loading-state .extraction-step');
+    const progressFill = document.getElementById('extraction-progress-fill');
+    const orb = document.getElementById('ai-thinking-orb');
+
+    steps.forEach(s => {
+        s.classList.remove('active', 'completed');
+        // Restore full text
+        const textEl = s.querySelector('.extraction-step-text');
+        if (textEl && textEl.dataset.fulltext) {
+            textEl.textContent = textEl.dataset.fulltext;
+            const cursor = textEl.querySelector('.typing-cursor');
+            if (cursor) cursor.remove();
+        }
+    });
+    steps[0]?.classList.add('active');
+    if (progressFill) progressFill.style.width = '0%';
+    _updatePct('0%');
+    _showOrb(false);
+}
+
+function showHeroState(stateId) {
+    ['hero-cta-state', 'hero-prompt-state', 'hero-loading-state', 'hero-confirm-state'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = id === stateId ? 'block' : 'none';
+    });
+}
+
+// CTA button → show prompt textarea
+const heroCTABtn = document.getElementById('hero-cta-btn');
+if (heroCTABtn) {
+    heroCTABtn.addEventListener('click', () => {
+        showHeroState('hero-prompt-state');
+        document.getElementById('hero-business-prompt')?.focus();
+    });
+}
+
+// Analyze button → call edge function → show confirmation
+const analyzeBtn = document.getElementById('analyze-business-btn');
+if (analyzeBtn) {
+    analyzeBtn.addEventListener('click', handleAnalyzeBusiness);
+}
+
+// Confirm button → save to OnboardingStorage → redirect to signup
+const confirmBtn = document.getElementById('confirm-and-signup-btn');
+if (confirmBtn) {
+    confirmBtn.addEventListener('click', handleConfirmAndSignup);
+}
+
+// Retry button → go back to prompt state
+const retryBtn = document.getElementById('retry-prompt-btn');
+if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+        _analysisResult = null;
+        showHeroState('hero-prompt-state');
+        document.getElementById('hero-business-prompt')?.focus();
+    });
+}
+
+// Restore onboarding data if returning user has saved data
 function restoreOnboardingData() {
     if (typeof OnboardingStorage === 'undefined') return;
 
     const data = OnboardingStorage.get();
     if (!data) return;
 
-    // Clear fields synchronously first to prevent browser auto-fill showing stale data
-    if (businessPromptInput) businessPromptInput.value = '';
-    if (industrySelect) industrySelect.value = '';
-    if (goalsInput) goalsInput.value = '';
-    if (painPointsInput) painPointsInput.value = '';
-
-    // Check auth — if authenticated, discard onboarding data; otherwise restore it
+    // Check auth — if authenticated, discard onboarding data and go to dashboard
     if (supabaseClient) {
         supabaseClient.auth.getSession().then(({ data: sessionData }) => {
             if (sessionData?.session) {
                 OnboardingStorage.clear();
+                window.location.href = '/app/dashboard.html';
+                return;
             } else {
                 applyOnboardingData(data);
             }
@@ -635,147 +819,154 @@ function restoreOnboardingData() {
         return;
     }
 
-    // No Supabase client — restore normally
     applyOnboardingData(data);
 }
 
 function applyOnboardingData(data) {
-    if (data.businessPrompt && businessPromptInput) {
-        businessPromptInput.value = data.businessPrompt;
+    // If they have a business prompt, show the prompt state with their text pre-filled
+    if (data.businessPrompt) {
+        showHeroState('hero-prompt-state');
+        const promptEl = document.getElementById('hero-business-prompt');
+        if (promptEl) promptEl.value = data.businessPrompt;
     }
-    if (data.businessContext) {
-        if (data.businessContext.industry && industrySelect) {
-            industrySelect.value = data.businessContext.industry;
+}
+
+restoreOnboardingData();
+
+// Main analysis handler
+async function handleAnalyzeBusiness() {
+    const promptEl = document.getElementById('hero-business-prompt');
+    const prompt = promptEl?.value?.trim() || '';
+
+    if (prompt.length < 10) {
+        promptEl?.focus();
+        promptEl?.classList.add('shake');
+        setTimeout(() => promptEl?.classList.remove('shake'), 500);
+        return;
+    }
+
+    // Show loading with step progress
+    showHeroState('hero-loading-state');
+    startLoadingSteps();
+
+    // Detect language
+    const lang = document.documentElement.lang || 'en';
+
+    try {
+        const response = await fetch(EDGE_FUNCTION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+            body: JSON.stringify({
+                businessPrompt: prompt,
+                language: lang
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success || !data.analysis) {
+            throw new Error(data.error || 'Analysis failed');
         }
-        if (data.businessContext.goals?.length && goalsInput) {
-            goalsInput.value = data.businessContext.goals.join('\n');
+
+        _analysisResult = data.analysis;
+
+        // Populate confirmation fields
+        const extracted = data.analysis.extractedDetails || {};
+        const nameEl = document.getElementById('extracted-name');
+        const industryEl = document.getElementById('extracted-industry');
+        const customersEl = document.getElementById('extracted-customers');
+        const locationEl = document.getElementById('extracted-location');
+        const websiteEl = document.getElementById('extracted-website');
+        const summaryEl = document.getElementById('hero-business-summary');
+
+        if (nameEl) nameEl.value = extracted.businessName || '';
+        if (industryEl) industryEl.value = extracted.industry || '';
+        if (customersEl) customersEl.value = extracted.customerCount || '';
+        if (locationEl) locationEl.value = extracted.location || '';
+        if (websiteEl) websiteEl.value = extracted.websiteUrl || '';
+        if (summaryEl) summaryEl.textContent = data.analysis.businessSummary || '';
+
+        // Save prompt immediately
+        if (typeof OnboardingStorage !== 'undefined') {
+            OnboardingStorage.setBusinessPrompt(prompt);
         }
-        if (data.businessContext.painPoints?.length && painPointsInput) {
-            painPointsInput.value = data.businessContext.painPoints.join('\n');
+
+        // Complete all steps, brief pause, then show confirmation
+        completeLoadingSteps(() => {
+            showHeroState('hero-confirm-state');
+            clearLoadingSteps(); // Reset for potential retry
+        });
+    } catch (err) {
+        console.error('Analysis error:', err);
+        clearLoadingSteps();
+        // Fall back to prompt state with an error message
+        showHeroState('hero-prompt-state');
+        const promptState = document.getElementById('hero-prompt-state');
+        // Remove any existing error
+        promptState?.querySelector('.extraction-error-msg')?.remove();
+        if (promptState) {
+            const errMsg = document.createElement('p');
+            errMsg.className = 'extraction-error-msg';
+            errMsg.style.cssText = 'color: #ef4444; font-size: 0.85rem; text-align: center; margin-top: 8px;';
+            errMsg.textContent = 'Something went wrong analyzing your business. Please try again.';
+            promptState.querySelector('.discovery-field')?.after(errMsg);
+            setTimeout(() => errMsg.remove(), 5000);
         }
     }
 }
 
-// Restore saved onboarding data (DOM is already ready since script loads at end of body)
-restoreOnboardingData();
+// Confirm extracted data and redirect to signup
+function handleConfirmAndSignup() {
+    const businessName = document.getElementById('extracted-name')?.value?.trim() || '';
+    const industry = document.getElementById('extracted-industry')?.value || '';
+    const customerCount = document.getElementById('extracted-customers')?.value || '';
+    const location = document.getElementById('extracted-location')?.value?.trim() || '';
+    const websiteUrl = document.getElementById('extracted-website')?.value?.trim() || '';
 
-// Main onboarding entry point — AI auto-selects templates, then shows optional info step
-function handleStartOnboarding() {
-    const prompt = businessPromptInput?.value?.trim() || '';
-
-    if (!prompt) {
-        businessPromptInput.focus();
-        businessPromptInput.classList.add('shake');
-        setTimeout(() => businessPromptInput.classList.remove('shake'), 500);
-        return;
-    }
-
-    // Check rate limiting for AI analysis
-    if (window.RateLimiter && window.RateLimiter.isRateLimited('ai_analysis')) {
-        const errorMsg = window.RateLimiter.getRateLimitErrorMessage('ai_analysis');
-        alert(errorMsg);
-        return;
-    }
-
-    // Collect business context
-    const context = {
-        industry: industrySelect?.value || '',
-        goals: goalsInput?.value?.split('\n').filter(g => g.trim()) || [],
-        painPoints: painPointsInput?.value?.split('\n').filter(p => p.trim()) || []
-    };
-
-    // Save to onboarding storage
     if (typeof OnboardingStorage !== 'undefined') {
-        OnboardingStorage.setBusinessPrompt(prompt);
-        OnboardingStorage.setBusinessContext(context);
-    }
+        // Save business details from confirmed extraction
+        OnboardingStorage.setBusinessDetails({
+            businessName: businessName,
+            businessType: industry,
+            customerCount: customerCount,
+            websiteUrl: websiteUrl,
+            location: location
+        });
 
-    // Show loading state on button
-    const btn = getRecommendationsBtn;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `
-        <svg class="spinner" width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" stroke-dasharray="40" stroke-dashoffset="10">
-                <animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="1s" repeatCount="indefinite"/>
-            </circle>
-        </svg>
-        ${(typeof I18n !== 'undefined' && I18n.t) ? (I18n.t('onboarding.analyzing') || 'Analyzing...') : 'Analyzing...'}
-    `;
+        // Save context
+        OnboardingStorage.setBusinessContext({
+            industry: industry,
+            goals: [],
+            painPoints: []
+        });
 
-    // AI runs silently — auto-selects best templates
-    setTimeout(() => {
-        // Record rate limit
-        if (window.RateLimiter) {
-            window.RateLimiter.recordRateLimit('ai_analysis');
-        }
-
-        // Get AI recommendations
-        let recommendations = [];
-        if (typeof AIRecommendations !== 'undefined') {
-            recommendations = AIRecommendations.getRecommendations(prompt, context);
-        }
-
-        // Save recommendations and auto-select all of them
-        if (typeof OnboardingStorage !== 'undefined') {
+        // Run local keyword recommendations as fallback
+        const prompt = OnboardingStorage.get()?.businessPrompt || '';
+        if (prompt && typeof AIRecommendations !== 'undefined') {
+            const recommendations = AIRecommendations.getRecommendations(prompt, { industry });
             OnboardingStorage.setRecommendations(recommendations);
             recommendations.forEach(rec => OnboardingStorage.addTemplate(rec.id));
         }
-
-        // Reset button
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-
-        // Show optional info-gathering section
-        onboardingShowInfoGathering();
-    }, 800);
-}
-
-function onboardingShowInfoGathering() {
-    const section = document.getElementById('info-gathering-section');
-    if (!section) return;
-
-    section.style.display = 'block';
-
-    // Pre-fill business type from detected industry
-    const industryVal = industrySelect?.value || '';
-    if (industryVal) {
-        const typeSelect = document.getElementById('info-business-type');
-        if (typeSelect) typeSelect.value = industryVal;
     }
 
-    // Smooth scroll to the section
-    setTimeout(() => {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-}
-
-// Continue to signup with optional business details
-function handleContinueToSignup() {
-    const businessDetails = {
-        businessName: document.getElementById('info-business-name')?.value?.trim() || '',
-        businessType: document.getElementById('info-business-type')?.value || '',
-        customerCount: document.getElementById('info-customer-count')?.value || '',
-        websiteUrl: document.getElementById('info-website-url')?.value?.trim() || ''
-    };
-
-    if (typeof OnboardingStorage !== 'undefined') {
-        OnboardingStorage.setBusinessDetails(businessDetails);
-    }
-
-    // Signal that analysis should be triggered on signup page
+    // Cache analysis result so signup page's BusinessAnalysis module picks it up
     try {
-        localStorage.setItem('royalty_signup_analysis', JSON.stringify({
-            status: 'pending',
-            timestamp: Date.now()
-        }));
+        const lang = document.documentElement.lang || 'en';
+        const cacheKey = `royalty_signup_analysis_${lang}`;
+        if (_analysisResult) {
+            localStorage.setItem(cacheKey, JSON.stringify({
+                status: 'complete',
+                analysis: _analysisResult,
+                timestamp: Date.now()
+            }));
+        } else {
+            localStorage.setItem(cacheKey, JSON.stringify({
+                status: 'pending',
+                timestamp: Date.now()
+            }));
+        }
     } catch (e) { /* ignore */ }
 
-    window.location.href = '/app/signup.html?onboarding=true';
-}
-
-// Skip info-gathering and go straight to signup
-function handleSkipToSignup() {
     window.location.href = '/app/signup.html?onboarding=true';
 }
 

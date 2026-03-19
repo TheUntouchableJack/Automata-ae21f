@@ -430,7 +430,33 @@
     margin-bottom: 8px;
 }
 
-.tier-card input {
+.tier-name-input {
+    width: 100%;
+    padding: 6px 8px;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--color-text);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    margin-bottom: 8px;
+    transition: all var(--transition-base);
+}
+
+.tier-name-input:hover {
+    border-color: var(--color-border);
+    background: var(--color-bg);
+}
+
+.tier-name-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: var(--color-bg);
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+}
+
+.tier-card input[type="number"] {
     width: 80px;
     padding: 8px;
     text-align: center;

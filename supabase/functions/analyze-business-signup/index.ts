@@ -97,6 +97,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
       "value": "Display string (e.g. '+32%', '3.2x', '$2,400/mo')",
       "numericValue": 32,
       "label": "What this metric represents for their business",
+      "source": "Brief citation: industry benchmark, study, or trend that supports this projection",
       "icon": "revenue|retention|engagement",
       "color": "green|purple|blue"
     }
@@ -106,6 +107,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
       "title": "Short title (3-5 words)",
       "description": "2-3 sentences about this specific opportunity for their business. Be concrete.",
       "impact": "One sentence about expected measurable outcome",
+      "source": "Industry insight or benchmark supporting this opportunity",
       "icon": "loyalty|automation|insights|growth",
       "actionSteps": [
         "Step 1: Specific concrete action Royalty will take",
@@ -119,7 +121,15 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
       "name": "Feature or capability name",
       "reason": "One sentence on why this matters for their specific business"
     }
-  ]
+  ],
+  "extractedDetails": {
+    "businessName": "Extracted business name (or empty string if not mentioned)",
+    "industry": "food|retail|health|service|technology|education|other",
+    "businessType": "food|retail|health|service|technology|education|other",
+    "location": "City/area mentioned (or empty string)",
+    "customerCount": "1-50|51-200|201-500|501-1000|1001+|'' (best estimate from description)",
+    "websiteUrl": "URL if mentioned (or empty string)"
+  }
 }
 
 Rules:
@@ -131,9 +141,11 @@ Rules:
   4. "Revenue Growth Engine" (icon: growth) — upsell opportunities, referral programs, targeted promotions, competitive advantage
 - Each opportunity must include exactly 3 actionSteps — specific, concrete things Royalty will do for THIS business
 - Generate 4-5 platformHighlights — short feature callouts spanning the full platform (not just automations). Mix of app features, automation types, analytics capabilities, and growth tools.
+- Each impactMetric and opportunity must include a "source" field citing the specific industry benchmark, study, statistic, or market trend that supports the projection (e.g. "Harvard Business Review: loyalty programs increase repeat visits by 20-30%", "National Restaurant Association 2024: 67% of diners prefer digital rewards")
 - Use your knowledge about the industry to make insights specific and credible
 - Reference specific industry trends, competitive dynamics, or market opportunities
 - Tone: confident, specific, exciting — this is a "wow" moment to convince them to sign up
+- Generate extractedDetails by parsing the business description. Extract the business name, industry category (must be one of the enum values), location, and customer count estimate. If explicit structured fields were provided (business name, industry, etc.), prefer those over extracted values. If a field cannot be determined, use an empty string.
 - IMPORTANT: Generate ALL text content in ${lang === 'en' ? 'English' : langName}. This includes businessSummary, opportunity titles/descriptions/impacts/actionSteps, metric labels, and highlight names/reasons. Do NOT translate JSON field names or icon/color identifiers.`
 
     const userPrompt = `Business description: "${prompt}"
@@ -159,7 +171,7 @@ Analyze this business and show what Royalty can do for them.`
       },
       body: JSON.stringify({
         model: MODEL_HAIKU,
-        max_tokens: 2500,
+        max_tokens: 3000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       }),

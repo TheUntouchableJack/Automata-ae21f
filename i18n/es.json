@@ -54,7 +54,26 @@
             "setupTime": "Tiempo de Configuración",
             "moreRepeatVisits": "Más Visitas Repetidas",
             "aiRunning": "IA Trabajando Para Ti"
-        }
+        },
+        "ctaTitle": "Crea tu programa de fidelización en 60 segundos",
+        "ctaSubtitle": "Describe tu negocio y nuestra IA se encarga del resto — puntos, niveles, recompensas, todo automatizado.",
+        "ctaButton": "Comenzar Gratis",
+        "promptTitle": "Describe tu negocio",
+        "promptSubtitle": "Cuéntanos sobre tu negocio en unas frases — nuestra IA extraerá los detalles y creará tu programa de fidelización.",
+        "promptPlaceholder": "ej., Tengo un restaurante de ramen en Barcelona llamado Slurp Ramen. Tenemos unos 300 clientes habituales y queremos recompensar a los clientes fieles y recuperar a quienes no han venido en un tiempo...",
+        "analyzeButton": "Analizar Mi Negocio",
+        "analyzingTitle": "Analizando tu negocio...",
+        "analyzingSubtitle": "Nuestra IA está leyendo tu descripción y construyendo tu programa de fidelización",
+        "confirmTitle": "Entendimos tu negocio",
+        "editHint": "Edita cualquier campo si es necesario, luego continúa.",
+        "confirmButton": "Todo Bien — Crear Mi Cuenta",
+        "retryButton": "Empezar de nuevo con otra descripción",
+        "extractedLocation": "Ubicación",
+        "loadingStep1": "Leyendo tu descripción...",
+        "loadingStep2": "Identificando tu industria...",
+        "loadingStep3": "Construyendo tu programa de fidelización...",
+        "loadingStep4": "Calculando el potencial de crecimiento...",
+        "loadingSubtext": "Esto suele tardar unos 10 segundos"
     },
     "preview": {
         "title": "Panel de Royalty",
@@ -677,6 +696,8 @@
         "tryAgain": "Intentar de Nuevo"
     },
     "onboarding": {
+        "step1of2": "Paso 1 de 2",
+        "step2of2": "Paso 2 de 2",
         "title": "Cuéntanos sobre tu negocio",
         "subtitle": "Te mostraremos exactamente cómo hacer que cada cliente regrese.",
         "placeholder": "ej., Tengo una cafetería en Madrid. Queremos que los clientes regresen...",
@@ -1206,6 +1227,8 @@
         "lastNamePlaceholder": "García",
         "createPasswordPlaceholder": "Crea una contraseña",
         "createAccountBtn": "Crear cuenta",
+        "creatingAccount": "Creando tu cuenta...",
+        "settingUpPlatform": "Configurando tu plataforma...",
         "hasAccount": "¿Ya tienes una cuenta?",
         "forgotPassword": "Forgot password?",
         "forgotPasswordTitle": "Reset your password",
@@ -1221,7 +1244,8 @@
         "resetPasswordBtn": "Reset Password",
         "passwordResetSuccess": "Password updated successfully",
         "resetLinkExpired": "This reset link has expired. Please request a new one.",
-        "backToLogin": "Back to login"
+        "backToLogin": "Back to login",
+        "signUpSubtitleOnboarding": "¡Ya casi, {businessName}! Crea tu cuenta para lanzar."
     },
     "supportSettings": {
         "title": "Support Settings",
@@ -1294,7 +1318,18 @@
             "revenue": "Crecimiento de Ingresos",
             "revenueDesc": "Programas de referidos, promociones dirigidas y oportunidades de venta cruzada"
         },
-        "fallbackCta": "Crea tu cuenta para ver un análisis personalizado"
+        "fallbackCta": "Crea tu cuenta para ver un análisis personalizado",
+        "tabOverview": "Resumen",
+        "tabOpportunities": "Oportunidades",
+        "tabPlatform": "Plataforma",
+        "emailReport": "Envíame este informe",
+        "emailPlaceholder": "tu@correo.com",
+        "emailSend": "Enviar",
+        "emailSending": "Enviando...",
+        "emailSent": "¡Enviado! Revisa tu bandeja.",
+        "emailSpamNote": "¿No lo ves? Revisa tu carpeta de spam.",
+        "emailModalDesc": "Enviaremos una copia de este análisis a tu correo.",
+        "buildMyProgram": "Crear Mi Programa de Fidelización"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",

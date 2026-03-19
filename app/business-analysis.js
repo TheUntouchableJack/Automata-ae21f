@@ -172,14 +172,20 @@ const BusinessAnalysis = (function() {
 
         // Business name in heading (use i18n if available)
         const headingEl = results.querySelector('.analysis-heading');
-        if (headingEl && window.I18n) {
-            const name = businessName || 'your business';
-            const translated = I18n.t('analysis.heading', { businessName: name });
-            headingEl.innerHTML = translated;
+        const name = businessName || 'your business';
+        if (headingEl) {
+            let headingText = '';
+            if (window.I18n) {
+                const translated = I18n.t('analysis.heading', { businessName: name });
+                // If i18n returns raw key (not yet loaded), use English fallback
+                headingText = (translated && !translated.startsWith('analysis.'))
+                    ? translated
+                    : `Here's what we see for <span>${name}</span>`;
+            } else {
+                headingText = `Here's what we see for <span>${name}</span>`;
+            }
+            headingEl.innerHTML = headingText;
             headingEl.dataset.bizName = name; // store for language switch re-render
-        } else {
-            const nameEl = document.getElementById('analysis-biz-name');
-            if (nameEl) nameEl.textContent = businessName || 'your business';
         }
 
         // Summary
@@ -215,6 +221,7 @@ const BusinessAnalysis = (function() {
                             <svg class="metric-arrow" width="16" height="16" viewBox="0 0 16 16"><path d="M8 12V4M8 4L4 8M8 4L12 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </div>
                         <div class="impact-metric-label">${escapeHtml(m.label)}</div>
+                        ${m.source ? `<div class="metric-source">${escapeHtml(m.source)}</div>` : ''}
                         <div class="impact-metric-bar">
                             <div class="impact-metric-bar-fill ${escapeHtml(color)}" data-width="${barWidth}"></div>
                         </div>
@@ -246,6 +253,7 @@ const BusinessAnalysis = (function() {
                                     <span>${escapeHtml(step)}</span>
                                 </div>
                             `).join('')}
+                            ${opp.source ? `<div class="opportunity-source">${escapeHtml(opp.source)}</div>` : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -393,7 +401,10 @@ const BusinessAnalysis = (function() {
     window.addEventListener('i18n:changed', (e) => {
         const headingEl = document.querySelector('#analysis-results .analysis-heading');
         if (headingEl && headingEl.dataset.bizName && window.I18n) {
-            headingEl.innerHTML = I18n.t('analysis.heading', { businessName: headingEl.dataset.bizName });
+            const translated = I18n.t('analysis.heading', { businessName: headingEl.dataset.bizName });
+            if (translated && !translated.startsWith('analysis.')) {
+                headingEl.innerHTML = translated;
+            }
         }
     });
 

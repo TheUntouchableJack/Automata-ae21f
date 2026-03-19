@@ -49,17 +49,17 @@
                 <div class="progress-line"></div>
                 <div class="progress-step" data-step="2">
                     <div class="step-number">2</div>
-                    <div class="step-label">Features</div>
+                    <div class="step-label">Branding</div>
                 </div>
                 <div class="progress-line"></div>
                 <div class="progress-step" data-step="3">
                     <div class="step-number">3</div>
-                    <div class="step-label">Settings</div>
+                    <div class="step-label">Features</div>
                 </div>
                 <div class="progress-line"></div>
                 <div class="progress-step" data-step="4">
                     <div class="step-number">4</div>
-                    <div class="step-label">Branding</div>
+                    <div class="step-label">Settings</div>
                 </div>
                 <div class="progress-line"></div>
                 <div class="progress-step" data-step="5">
@@ -166,8 +166,8 @@
                     </div>
                 </div>
 
-                <!-- Step 2: Features -->
-                <div class="builder-step" id="step-2" style="display: none;">
+                <!-- Step 3: Features (was step 2) -->
+                <div class="builder-step" id="step-3" style="display: none;">
                     <div class="step-header">
                         <h2>Features</h2>
                         <p>Choose which features to enable for your customers</p>
@@ -179,8 +179,8 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Settings -->
-                <div class="builder-step" id="step-3" style="display: none;">
+                <!-- Step 4: Settings (was step 3) -->
+                <div class="builder-step" id="step-4" style="display: none;">
                     <div class="step-header">
                         <h2>Settings</h2>
                         <p>Configure how your points and tiers work</p>
@@ -214,26 +214,26 @@
 
                         <div class="settings-section tiers-settings">
                             <h3>Tier Thresholds</h3>
-                            <p class="section-desc">Customers automatically upgrade tiers when they reach these point totals</p>
+                            <p class="section-desc">Customers automatically upgrade tiers when they reach these point totals. Customize names to match your brand voice.</p>
                             <div class="tiers-grid">
                                 <div class="tier-card bronze">
                                     <div class="tier-badge">&#129353;</div>
-                                    <div class="tier-name">Bronze</div>
+                                    <input type="text" id="tier-bronze-name" class="tier-name-input" value="Bronze" placeholder="e.g., Newcomer">
                                     <div class="tier-threshold">Starting tier</div>
                                 </div>
                                 <div class="tier-card silver">
                                     <div class="tier-badge">&#129352;</div>
-                                    <div class="tier-name">Silver</div>
+                                    <input type="text" id="tier-silver-name" class="tier-name-input" value="Silver" placeholder="e.g., Regular">
                                     <input type="number" id="tier-silver" value="500" min="0"> points
                                 </div>
                                 <div class="tier-card gold">
                                     <div class="tier-badge">&#129351;</div>
-                                    <div class="tier-name">Gold</div>
+                                    <input type="text" id="tier-gold-name" class="tier-name-input" value="Gold" placeholder="e.g., VIP">
                                     <input type="number" id="tier-gold" value="1500" min="0"> points
                                 </div>
                                 <div class="tier-card platinum">
                                     <div class="tier-badge">&#128142;</div>
-                                    <div class="tier-name">Platinum</div>
+                                    <input type="text" id="tier-platinum-name" class="tier-name-input" value="Platinum" placeholder="e.g., Slurp Society">
                                     <input type="number" id="tier-platinum" value="5000" min="0"> points
                                 </div>
                             </div>
@@ -259,8 +259,8 @@
                     </div>
                 </div>
 
-                <!-- Step 4: Branding -->
-                <div class="builder-step" id="step-4" style="display: none;">
+                <!-- Step 2: Branding (was step 4) -->
+                <div class="builder-step" id="step-2" style="display: none;">
                     <div class="step-header">
                         <h2>Branding</h2>
                         <p>Customize the look and feel of your app</p>

@@ -478,9 +478,21 @@ function populateFormFromApp(app) {
     document.getElementById('daily-scan-limit').value = settings.daily_scan_limit || 5;
 
     const tiers = settings.tier_thresholds || {};
-    document.getElementById('tier-silver').value = tiers.silver || 500;
-    document.getElementById('tier-gold').value = tiers.gold || 1500;
-    document.getElementById('tier-platinum').value = tiers.platinum || 5000;
+    // Support both flat (silver: 500) and object ({silver: {points: 500, name: "..."}}) formats
+    const getSilver = typeof tiers.silver === 'object' ? tiers.silver : { points: tiers.silver || 500 };
+    const getGold = typeof tiers.gold === 'object' ? tiers.gold : { points: tiers.gold || 1500 };
+    const getPlatinum = typeof tiers.platinum === 'object' ? tiers.platinum : { points: tiers.platinum || 5000 };
+    const getBronze = typeof tiers.bronze === 'object' ? tiers.bronze : {};
+
+    document.getElementById('tier-silver').value = getSilver.points || 500;
+    document.getElementById('tier-gold').value = getGold.points || 1500;
+    document.getElementById('tier-platinum').value = getPlatinum.points || 5000;
+
+    // Load custom tier names
+    document.getElementById('tier-bronze-name').value = getBronze.name || 'Bronze';
+    document.getElementById('tier-silver-name').value = getSilver.name || 'Silver';
+    document.getElementById('tier-gold-name').value = getGold.name || 'Gold';
+    document.getElementById('tier-platinum-name').value = getPlatinum.name || 'Platinum';
 
     const requireEmailEl = document.getElementById('require-email');
     const requirePhoneEl = document.getElementById('require-phone');
@@ -714,6 +726,7 @@ function setupAutoSaveListeners() {
         'app-name', 'app-description', 'app-slug',
         'points-per-scan', 'points-per-dollar', 'welcome-points', 'daily-scan-limit',
         'tier-silver', 'tier-gold', 'tier-platinum',
+        'tier-bronze-name', 'tier-silver-name', 'tier-gold-name', 'tier-platinum-name',
         'primary-color-hex', 'secondary-color-hex',
         // Business info fields
         'business-hours', 'business-phone', 'business-email', 'business-address',
@@ -798,9 +811,22 @@ function getAppData() {
         require_email: requireEmailEl ? requireEmailEl.checked : true,
         require_phone: requirePhoneEl ? requirePhoneEl.checked : false,
         tier_thresholds: {
-            silver: parseInt(document.getElementById('tier-silver').value) || 500,
-            gold: parseInt(document.getElementById('tier-gold').value) || 1500,
-            platinum: parseInt(document.getElementById('tier-platinum').value) || 5000
+            bronze: {
+                points: 0,
+                name: document.getElementById('tier-bronze-name').value.trim() || 'Bronze'
+            },
+            silver: {
+                points: parseInt(document.getElementById('tier-silver').value) || 500,
+                name: document.getElementById('tier-silver-name').value.trim() || 'Silver'
+            },
+            gold: {
+                points: parseInt(document.getElementById('tier-gold').value) || 1500,
+                name: document.getElementById('tier-gold-name').value.trim() || 'Gold'
+            },
+            platinum: {
+                points: parseInt(document.getElementById('tier-platinum').value) || 5000,
+                name: document.getElementById('tier-platinum-name').value.trim() || 'Platinum'
+            }
         }
     };
 
@@ -982,6 +1008,27 @@ function updateBrandPreview() {
         const pointsNum = phonePreview.querySelector('.points-number');
         if (logo) logo.style.background = primary;
         if (pointsNum) pointsNum.style.color = primary;
+    }
+
+    // Apply brand colors to wizard chrome (live branding)
+    document.documentElement.style.setProperty('--brand-primary', primary);
+    document.documentElement.style.setProperty('--brand-secondary', secondary);
+
+    // Color active progress steps
+    document.querySelectorAll('.progress-step.active .step-number, .progress-step.completed .step-number').forEach(el => {
+        el.style.background = primary;
+    });
+
+    // Color primary buttons in the wizard
+    const nextBtn = document.getElementById('next-btn');
+    if (nextBtn) {
+        nextBtn.style.background = primary;
+        nextBtn.style.borderColor = primary;
+    }
+    const publishBtn = document.getElementById('publish-btn');
+    if (publishBtn) {
+        publishBtn.style.background = primary;
+        publishBtn.style.borderColor = primary;
     }
 }
 

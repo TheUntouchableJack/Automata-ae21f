@@ -54,7 +54,26 @@
             "setupTime": "Einrichtungszeit",
             "moreRepeatVisits": "Mehr Wiederholungsbesuche",
             "aiRunning": "KI arbeitet für Sie"
-        }
+        },
+        "ctaTitle": "Erstellen Sie Ihr Treueprogramm in 60 Sekunden",
+        "ctaSubtitle": "Beschreiben Sie Ihr Unternehmen und unsere KI erledigt den Rest — Punkte, Stufen, Belohnungen, alles automatisiert.",
+        "ctaButton": "Kostenlos Starten",
+        "promptTitle": "Beschreiben Sie Ihr Unternehmen",
+        "promptSubtitle": "Erzählen Sie uns in ein paar Sätzen von Ihrem Unternehmen — unsere KI wird die Details extrahieren und Ihr Treueprogramm erstellen.",
+        "promptPlaceholder": "z.B., Ich betreibe ein Ramen-Restaurant in Berlin namens Slurp Ramen. Wir haben etwa 300 Stammkunden und möchten treue Kunden belohnen und Kunden zurückgewinnen, die länger nicht da waren...",
+        "analyzeButton": "Mein Unternehmen Analysieren",
+        "analyzingTitle": "Ihr Unternehmen wird analysiert...",
+        "analyzingSubtitle": "Unsere KI liest Ihre Beschreibung und erstellt Ihr Treueprogramm",
+        "confirmTitle": "Wir haben Ihr Unternehmen verstanden",
+        "editHint": "Bearbeiten Sie bei Bedarf die Felder oben, dann fahren Sie fort.",
+        "confirmButton": "Sieht Gut Aus — Mein Konto Erstellen",
+        "retryButton": "Mit einer anderen Beschreibung neu starten",
+        "extractedLocation": "Standort",
+        "loadingStep1": "Lese Ihre Beschreibung...",
+        "loadingStep2": "Identifiziere Ihre Branche...",
+        "loadingStep3": "Erstelle Ihr Treueprogramm...",
+        "loadingStep4": "Berechne Wachstumspotenzial...",
+        "loadingSubtext": "Das dauert normalerweise etwa 10 Sekunden"
     },
     "preview": {
         "title": "Royalty Dashboard",
@@ -677,6 +696,8 @@
         "tryAgain": "Erneut Versuchen"
     },
     "onboarding": {
+        "step1of2": "Schritt 1 von 2",
+        "step2of2": "Schritt 2 von 2",
         "title": "Erzählen Sie uns von Ihrem Unternehmen",
         "subtitle": "Wir zeigen Ihnen genau, wie Sie jeden Kunden zum Wiederkommen bringen.",
         "placeholder": "z.B., Ich betreibe ein Café in Berlin. Wir möchten, dass Kunden wiederkommen...",
@@ -1206,6 +1227,8 @@
         "lastNamePlaceholder": "Mustermann",
         "createPasswordPlaceholder": "Passwort erstellen",
         "createAccountBtn": "Konto erstellen",
+        "creatingAccount": "Ihr Konto wird erstellt...",
+        "settingUpPlatform": "Ihre Plattform wird eingerichtet...",
         "hasAccount": "Haben Sie bereits ein Konto?",
         "forgotPassword": "Forgot password?",
         "forgotPasswordTitle": "Reset your password",
@@ -1221,7 +1244,8 @@
         "resetPasswordBtn": "Reset Password",
         "passwordResetSuccess": "Password updated successfully",
         "resetLinkExpired": "This reset link has expired. Please request a new one.",
-        "backToLogin": "Back to login"
+        "backToLogin": "Back to login",
+        "signUpSubtitleOnboarding": "Fast fertig, {businessName}! Erstellen Sie Ihr Konto, um loszulegen."
     },
     "supportSettings": {
         "title": "Support Settings",
@@ -1294,7 +1318,18 @@
             "revenue": "Umsatzwachstum",
             "revenueDesc": "Empfehlungsprogramme, gezielte Aktionen und Cross-Selling-Möglichkeiten"
         },
-        "fallbackCta": "Erstellen Sie Ihr Konto für eine personalisierte Analyse"
+        "fallbackCta": "Erstellen Sie Ihr Konto für eine personalisierte Analyse",
+        "tabOverview": "Überblick",
+        "tabOpportunities": "Chancen",
+        "tabPlatform": "Plattform",
+        "emailReport": "Bericht per E-Mail senden",
+        "emailPlaceholder": "ihre@email.de",
+        "emailSend": "Senden",
+        "emailSending": "Wird gesendet...",
+        "emailSent": "Gesendet! Prüfen Sie Ihren Posteingang.",
+        "emailSpamNote": "Nicht gefunden? Überprüfen Sie Ihren Spam-Ordner.",
+        "emailModalDesc": "Wir senden Ihnen eine Kopie dieser Analyse per E-Mail.",
+        "buildMyProgram": "Mein Treueprogramm erstellen"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",

@@ -170,53 +170,149 @@
                     Royalty is an AI that builds your loyalty program in 60 seconds—then runs it forever. Customers earn points, you see what's working, and AI tells you exactly how to grow.
                 </p>
 
-                <!-- Discovery Card - Conversational Onboarding -->
+                <!-- Discovery Card -->
                 <div class="discovery-card" id="discovery-card">
-                    <h2 class="discovery-title" data-i18n="hero.discoveryTitle">Describe your business</h2>
-                    <p class="discovery-subtitle" data-i18n="hero.discoverySubtitle">Our AI will build you a custom loyalty program in 60 seconds.</p>
+                    <!-- State 1: CTA (default) -->
+                    <div id="hero-cta-state">
+                        <h2 class="discovery-title" data-i18n="hero.ctaTitle">Build your loyalty program in 60 seconds</h2>
+                        <p class="discovery-subtitle" data-i18n="hero.ctaSubtitle">Describe your business and our AI handles the rest — points, tiers, rewards, all automated.</p>
+                        <button id="hero-cta-btn" class="btn btn-primary btn-large discovery-btn">
+                            <span data-i18n="hero.ctaButton">Get Started Free</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
 
-                    <textarea
-                        id="business-prompt"
-                        class="discovery-input"
-                        data-i18n-placeholder="hero.discoveryPlaceholder"
-                        placeholder="e.g., I run a coffee shop in Austin with 200 regulars. I want to reward loyalty and bring back customers who haven't visited in a while..."
-                        rows="3"
-                    ></textarea>
+                    <!-- State 2: Single textarea (shown after CTA click) -->
+                    <div id="hero-prompt-state" style="display: none;">
+                        <div class="discovery-step-badge" data-i18n="onboarding.step1of2">Step 1 of 2</div>
+                        <h2 class="discovery-title" data-i18n="hero.promptTitle">Describe your business</h2>
+                        <p class="discovery-subtitle" data-i18n="hero.promptSubtitle">Tell us about your business in a few sentences — our AI will extract the details and build your loyalty program.</p>
 
-                    <!-- Expandable business context -->
-                    <details class="discovery-details">
-                        <summary data-i18n="onboarding.moreDetails">Add details for better suggestions</summary>
-                        <div class="discovery-details-content">
-                            <div class="discovery-field">
-                                <label for="ctx-industry" data-i18n="onboarding.industry">Industry</label>
-                                <select id="ctx-industry">
-                                    <option value="" data-i18n="onboarding.selectIndustry">Select your industry</option>
-                                    <option value="food" data-i18n="onboarding.industries.food">Food & Beverage</option>
-                                    <option value="retail" data-i18n="onboarding.industries.retail">Retail & E-commerce</option>
-                                    <option value="health" data-i18n="onboarding.industries.health">Health & Wellness</option>
-                                    <option value="service" data-i18n="onboarding.industries.service">Professional Services</option>
-                                    <option value="technology" data-i18n="onboarding.industries.technology">Technology</option>
-                                    <option value="education" data-i18n="onboarding.industries.education">Education</option>
-                                    <option value="other" data-i18n="onboarding.industries.other">Other</option>
-                                </select>
+                        <div class="discovery-field">
+                            <textarea
+                                id="hero-business-prompt"
+                                class="discovery-input discovery-textarea"
+                                data-i18n-placeholder="hero.promptPlaceholder"
+                                placeholder="e.g., I run a ramen shop in Brooklyn called Slurp Ramen. We have about 300 regulars and want to reward loyal customers and bring back people who haven't visited in a while..."
+                                rows="4"
+                            ></textarea>
+                        </div>
+
+                        <button id="analyze-business-btn" class="btn btn-primary btn-large discovery-btn">
+                            <span data-i18n="hero.analyzeButton">Analyze My Business</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- State 3: Loading (AI analyzing) -->
+                    <div id="hero-loading-state" style="display: none;">
+                        <div class="extraction-loading">
+                            <div class="ai-orb" id="ai-thinking-orb"></div>
+                            <div class="extraction-progress-row">
+                                <div class="extraction-progress-bar">
+                                    <div class="extraction-progress-fill" id="extraction-progress-fill"></div>
+                                </div>
+                                <span class="extraction-progress-pct" id="extraction-progress-pct">0%</span>
                             </div>
-                            <div class="discovery-field">
-                                <label for="ctx-goals" data-i18n="onboarding.goals">Goals</label>
-                                <textarea id="ctx-goals" placeholder="What do you want to achieve? (one per line)" rows="2"></textarea>
+                            <div class="extraction-steps">
+                                <div class="extraction-step active" data-step="0">
+                                    <div class="extraction-step-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                        <svg class="step-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                    </div>
+                                    <span class="extraction-step-text" data-i18n="hero.loadingStep1">Reading your description...</span>
+                                </div>
+                                <div class="extraction-step" data-step="1">
+                                    <div class="extraction-step-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+                                        <svg class="step-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                    </div>
+                                    <span class="extraction-step-text" data-i18n="hero.loadingStep2">Identifying your industry...</span>
+                                </div>
+                                <div class="extraction-step" data-step="2">
+                                    <div class="extraction-step-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="6" height="12" rx="1"/><rect x="9" y="2" width="6" height="16" rx="1"/><rect x="16" y="9" width="6" height="9" rx="1"/></svg>
+                                        <svg class="step-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                    </div>
+                                    <span class="extraction-step-text" data-i18n="hero.loadingStep3">Building your loyalty program...</span>
+                                </div>
+                                <div class="extraction-step" data-step="3">
+                                    <div class="extraction-step-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                        <svg class="step-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                    </div>
+                                    <span class="extraction-step-text" data-i18n="hero.loadingStep4">Calculating growth potential...</span>
+                                </div>
                             </div>
-                            <div class="discovery-field">
-                                <label for="ctx-pain-points" data-i18n="onboarding.painPoints">Challenges</label>
-                                <textarea id="ctx-pain-points" placeholder="What challenges are you facing? (one per line)" rows="2"></textarea>
+                            <p class="extraction-subtext" data-i18n="hero.loadingSubtext">This usually takes about 10 seconds</p>
+                        </div>
+                    </div>
+
+                    <!-- State 4: Confirmation (extracted details + analysis preview) -->
+                    <div id="hero-confirm-state" style="display: none;">
+                        <div class="discovery-step-badge" data-i18n="onboarding.step2of2">Step 2 of 2</div>
+                        <h2 class="discovery-title" data-i18n="hero.confirmTitle">We understood your business</h2>
+                        <p class="discovery-subtitle" id="hero-business-summary"></p>
+
+                        <div class="extracted-fields" id="extracted-fields">
+                            <div class="extracted-field">
+                                <label data-i18n="onboarding.businessName">Business Name</label>
+                                <input type="text" id="extracted-name" class="discovery-input">
+                            </div>
+                            <div class="extracted-field-row">
+                                <div class="extracted-field">
+                                    <label data-i18n="onboarding.industry">Industry</label>
+                                    <select id="extracted-industry">
+                                        <option value="" data-i18n="onboarding.selectIndustry">Select your industry</option>
+                                        <option value="food" data-i18n="onboarding.industries.food">Food & Beverage</option>
+                                        <option value="retail" data-i18n="onboarding.industries.retail">Retail & E-commerce</option>
+                                        <option value="health" data-i18n="onboarding.industries.health">Health & Wellness</option>
+                                        <option value="service" data-i18n="onboarding.industries.service">Professional Services</option>
+                                        <option value="technology" data-i18n="onboarding.industries.technology">Technology</option>
+                                        <option value="education" data-i18n="onboarding.industries.education">Education</option>
+                                        <option value="other" data-i18n="onboarding.industries.other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="extracted-field">
+                                    <label data-i18n="onboarding.customerCount">Approx. Customers</label>
+                                    <select id="extracted-customers">
+                                        <option value="">—</option>
+                                        <option value="1-50">1 - 50</option>
+                                        <option value="51-200">51 - 200</option>
+                                        <option value="201-500">201 - 500</option>
+                                        <option value="501-1000">501 - 1,000</option>
+                                        <option value="1001+">1,000+</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="extracted-field-row">
+                                <div class="extracted-field">
+                                    <label data-i18n="hero.extractedLocation">Location</label>
+                                    <input type="text" id="extracted-location" class="discovery-input" placeholder="City or area">
+                                </div>
+                                <div class="extracted-field">
+                                    <label data-i18n="onboarding.websiteUrl">Website (optional)</label>
+                                    <input type="url" id="extracted-website" class="discovery-input" placeholder="https://yourbusiness.com">
+                                </div>
                             </div>
                         </div>
-                    </details>
 
-                    <button id="get-recommendations-btn" class="btn btn-primary btn-large discovery-btn">
-                        <span data-i18n="onboarding.getStarted">Get Started</span>
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
+                        <p class="extracted-edit-hint" data-i18n="hero.editHint">Edit any field above if needed, then continue.</p>
+
+                        <button id="confirm-and-signup-btn" class="btn btn-primary btn-large discovery-btn">
+                            <span data-i18n="hero.confirmButton">Looks Good — Create My Account</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <button id="retry-prompt-btn" class="btn-link skip-link">
+                            <span data-i18n="hero.retryButton">Start over with a different description</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="hero-stats">
@@ -239,65 +335,7 @@
         </div>
     </section>
 
-    <!-- Info-Gathering Section (shown after clicking Get Started — optional, skippable) -->
-    <section id="info-gathering-section" class="info-gathering" style="display: none;">
-        <div class="container">
-            <div class="info-gathering-card">
-                <div class="info-gathering-header">
-                    <div class="info-gathering-step" data-i18n="onboarding.optionalStep">Optional</div>
-                    <h2 data-i18n="onboarding.infoTitle">Tell us about your business</h2>
-                    <p data-i18n="onboarding.infoSubtitle">This helps us personalize your loyalty program and get it right from day one.</p>
-                </div>
-                <div class="info-gathering-form">
-                    <div class="form-field">
-                        <label for="info-business-name" data-i18n="onboarding.businessName">Business Name</label>
-                        <input type="text" id="info-business-name" placeholder="e.g., Blue Bottle Coffee">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-field">
-                            <label for="info-business-type" data-i18n="onboarding.businessType">Business Type</label>
-                            <select id="info-business-type">
-                                <option value="" data-i18n="common.select">Select...</option>
-                                <option value="food" data-i18n="industries.food">Food & Beverage</option>
-                                <option value="retail" data-i18n="industries.retail">Retail</option>
-                                <option value="health" data-i18n="industries.health">Health & Wellness</option>
-                                <option value="service" data-i18n="industries.service">Professional Services</option>
-                                <option value="technology" data-i18n="industries.technology">Technology</option>
-                                <option value="education" data-i18n="industries.education">Education</option>
-                                <option value="other" data-i18n="industries.other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-field">
-                            <label for="info-customer-count" data-i18n="onboarding.customerCount">Approx. Customers</label>
-                            <select id="info-customer-count">
-                                <option value="" data-i18n="common.select">Select...</option>
-                                <option value="1-50">1 - 50</option>
-                                <option value="51-200">51 - 200</option>
-                                <option value="201-500">201 - 500</option>
-                                <option value="501-1000">501 - 1,000</option>
-                                <option value="1001+">1,000+</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-field">
-                        <label for="info-website-url" data-i18n="onboarding.websiteUrl">Website (optional)</label>
-                        <input type="url" id="info-website-url" placeholder="https://yourbusiness.com">
-                    </div>
-                </div>
-                <div class="info-gathering-actions">
-                    <button id="continue-to-signup-btn" class="btn btn-primary btn-large" onclick="handleContinueToSignup()">
-                        <span data-i18n="onboarding.continueToSignup">Continue to Sign Up</span>
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <button id="skip-details-btn" class="btn-link skip-link" onclick="handleSkipToSignup()">
-                        <span data-i18n="onboarding.skipDetails">Skip — I'll add details later</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- Step 2 section removed — hybrid onboarding handles everything in the hero card -->
 
     <!-- Problem/Solution Section -->
     <section class="problem-solution">

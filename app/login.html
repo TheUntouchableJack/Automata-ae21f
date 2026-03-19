@@ -633,11 +633,12 @@
                         .from('automations')
                         .insert({
                             project_id: project.id,
-                            name: 'Custom Automation',
+                            name: 'Custom Request: ' + (onboardingData.customAutomation.trim().slice(0, 60) || 'Pending'),
                             description: onboardingData.customAutomation,
                             type: 'custom',
                             frequency: 'manual',
-                            is_active: false
+                            is_active: false,
+                            settings: { status: 'requested', source: 'onboarding' }
                         });
 
                     if (customError) {

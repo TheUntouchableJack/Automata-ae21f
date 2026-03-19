@@ -54,7 +54,26 @@
             "setupTime": "搭建时间",
             "moreRepeatVisits": "更多回头客",
             "aiRunning": "AI为您运营"
-        }
+        },
+        "ctaTitle": "60秒创建您的会员计划",
+        "ctaSubtitle": "描述您的生意，我们的AI完成其余一切——积分、等级、奖励，全部自动化。",
+        "ctaButton": "免费开始",
+        "promptTitle": "描述您的生意",
+        "promptSubtitle": "用几句话告诉我们您的生意——我们的AI将提取关键信息并为您打造会员计划。",
+        "promptPlaceholder": "例如，我在上海经营一家叫「一碗拉面」的拉面店。我们有约300位常客，想奖励忠实顾客，并吸引好久没来的顾客回来...",
+        "analyzeButton": "分析我的生意",
+        "analyzingTitle": "正在分析您的生意...",
+        "analyzingSubtitle": "我们的AI正在阅读您的描述并构建您的会员计划",
+        "confirmTitle": "我们理解了您的生意",
+        "editHint": "如需修改，请编辑上方字段，然后继续。",
+        "confirmButton": "没问题——创建我的账户",
+        "retryButton": "用不同的描述重新开始",
+        "extractedLocation": "位置",
+        "loadingStep1": "正在阅读您的描述...",
+        "loadingStep2": "正在识别您的行业...",
+        "loadingStep3": "正在构建您的忠诚度计划...",
+        "loadingStep4": "正在计算增长潜力...",
+        "loadingSubtext": "通常需要大约10秒钟"
     },
     "preview": {
         "title": "Royalty 仪表板",
@@ -677,6 +696,8 @@
         "tryAgain": "重试"
     },
     "onboarding": {
+        "step1of2": "第1步，共2步",
+        "step2of2": "第2步，共2步",
         "title": "告诉我们您的业务",
         "subtitle": "我们会告诉您如何让每位顾客都回头。",
         "placeholder": "例如，我在上海经营一家咖啡店。我们希望顾客能够再次光临...",
@@ -1209,6 +1230,8 @@
         "lastNamePlaceholder": "李",
         "createPasswordPlaceholder": "创建密码",
         "createAccountBtn": "创建账户",
+        "creatingAccount": "正在创建您的账户...",
+        "settingUpPlatform": "正在设置您的平台...",
         "hasAccount": "已有账户？",
         "forgotPassword": "Forgot password?",
         "forgotPasswordTitle": "Reset your password",
@@ -1224,7 +1247,8 @@
         "resetPasswordBtn": "Reset Password",
         "passwordResetSuccess": "Password updated successfully",
         "resetLinkExpired": "This reset link has expired. Please request a new one.",
-        "backToLogin": "Back to login"
+        "backToLogin": "Back to login",
+        "signUpSubtitleOnboarding": "即将完成，{businessName}！创建账户即可启动。"
     },
     "supportSettings": {
         "title": "Support Settings",
@@ -1297,7 +1321,18 @@
             "revenue": "收入增长",
             "revenueDesc": "推荐计划、定向促销和交叉销售机会"
         },
-        "fallbackCta": "创建账户查看个性化分析"
+        "fallbackCta": "创建账户查看个性化分析",
+        "tabOverview": "概览",
+        "tabOpportunities": "机会",
+        "tabPlatform": "平台",
+        "emailReport": "将报告发送到邮箱",
+        "emailPlaceholder": "你的@邮箱.com",
+        "emailSend": "发送",
+        "emailSending": "发送中...",
+        "emailSent": "已发送！请检查收件箱。",
+        "emailSpamNote": "没有收到？请检查垃圾邮件文件夹。",
+        "emailModalDesc": "我们将把此分析报告的副本发送到您的邮箱。",
+        "buildMyProgram": "创建我的忠诚度计划"
     },
     "errors": {
         "generic": "Something went wrong. Please try again.",

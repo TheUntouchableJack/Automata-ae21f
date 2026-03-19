@@ -2163,6 +2163,220 @@ blockquote {
     text-align: left;
 }
 
+#hero-cta-state {
+    text-align: center;
+}
+#hero-cta-state .discovery-subtitle {
+    max-width: 400px;
+    margin: 0 auto 24px;
+}
+
+#hero-prompt-state,
+#hero-confirm-state {
+    animation: fadeSlideIn 0.4s ease-out;
+}
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hybrid onboarding textarea */
+.discovery-textarea {
+    min-height: 100px;
+    resize: vertical;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Loading state — multi-step progress */
+.extraction-loading {
+    text-align: center;
+    padding: 40px 20px;
+}
+.extraction-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+.extraction-progress-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(124, 58, 237, 0.15);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.extraction-progress-pct {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary, #7c3aed);
+    min-width: 32px;
+    text-align: right;
+    font-family: 'Outfit', sans-serif;
+}
+.extraction-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #7c3aed, #10b981);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+.extraction-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 280px;
+    margin: 0 auto;
+    text-align: left;
+    position: relative;
+}
+.extraction-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0.3;
+    transition: opacity 0.4s ease;
+}
+.extraction-step.active {
+    opacity: 1;
+}
+.extraction-step.completed {
+    opacity: 0.6;
+}
+.extraction-step-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border, #e5e7eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-text-secondary, #6b7280);
+    transition: all 0.3s ease;
+    position: relative;
+}
+.extraction-step-icon .step-check {
+    display: none;
+    position: absolute;
+}
+.extraction-step.active .extraction-step-icon {
+    border-color: var(--color-primary, #7c3aed);
+    color: var(--color-primary, #7c3aed);
+    background: rgba(124, 58, 237, 0.08);
+    animation: stepPulse 2s ease-in-out infinite;
+}
+.extraction-step.completed .extraction-step-icon {
+    border-color: #10b981;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.08);
+    animation: none;
+}
+.extraction-step.completed .extraction-step-icon svg:not(.step-check) {
+    display: none;
+}
+.extraction-step.completed .extraction-step-icon .step-check {
+    display: block;
+}
+@keyframes stepPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(124, 58, 237, 0); }
+}
+.extraction-step-text {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary, #6b7280);
+    transition: color 0.3s, font-weight 0.3s;
+}
+.extraction-step.active .extraction-step-text {
+    color: var(--color-text, #111827);
+    font-weight: 600;
+}
+.extraction-step.completed .extraction-step-text {
+    color: #10b981;
+    font-weight: 500;
+}
+.typing-cursor {
+    display: inline;
+    animation: blink 0.6s step-end infinite;
+}
+@keyframes blink {
+    50% { opacity: 0; }
+}
+.ai-orb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #7c3aed;
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.5), 0 0 32px rgba(124, 58, 237, 0.2);
+    margin: 0 auto 16px;
+    transition: opacity 0.3s ease;
+    animation: orbFloat 2s ease-in-out infinite;
+    opacity: 0;
+}
+.ai-orb.visible {
+    opacity: 1;
+}
+@keyframes orbFloat {
+    0%, 100% { transform: translateY(-3px); }
+    50% { transform: translateY(3px); }
+}
+.extraction-subtext {
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #9ca3af);
+    margin-top: 24px;
+}
+
+/* Confirmation: extracted fields */
+.extracted-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+}
+.extracted-field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary, #6b7280);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.extracted-field input,
+.extracted-field select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius-md, 8px);
+    font-size: 0.9rem;
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #111827);
+    transition: border-color 0.2s;
+}
+.extracted-field input:focus,
+.extracted-field select:focus {
+    outline: none;
+    border-color: var(--color-primary, #7c3aed);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+.extracted-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.extracted-edit-hint {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary, #6b7280);
+    text-align: center;
+    margin: 4px 0 8px;
+}
+
+@media (max-width: 600px) {
+    .extracted-field-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 .discovery-title {
     font-size: 1.5rem;
     font-weight: 700;
@@ -2281,6 +2495,55 @@ blockquote {
 .discovery-field textarea {
     resize: vertical;
     min-height: 60px;
+}
+
+.discovery-step-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: var(--color-primary-subtle);
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+}
+
+.discovery-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.discovery-field input[type="text"],
+.discovery-field input[type="url"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition: all var(--transition-base);
+}
+
+.discovery-field input[type="text"]:focus,
+.discovery-field input[type="url"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+input.discovery-input {
+    min-height: auto;
+    resize: none;
+}
+
+@media (max-width: 600px) {
+    .discovery-field-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 .discovery-btn {

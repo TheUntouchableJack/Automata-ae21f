@@ -323,12 +323,15 @@ function updateMemberUI() {
         pointsValue.textContent = formatNumber(currentMember.points_balance);
     }
 
-    // Update tier badge
+    // Update tier badge — use custom tier name if available
     const tierBadge = document.querySelector('.tier-badge');
     if (tierBadge) {
         tierBadge.className = `tier-badge ${currentMember.tier}`;
         tierBadge.querySelector('span')?.remove();
-        tierBadge.textContent = capitalizeFirst(currentMember.tier);
+        const tiers = getTierData(currentApp?.settings?.tier_thresholds);
+        const tierKey = currentMember.tier || 'bronze';
+        const displayName = tiers[tierKey]?.name || capitalizeFirst(tierKey);
+        tierBadge.textContent = displayName;
     }
 
     // Update tier progress
@@ -366,30 +369,37 @@ function updateMemberUI() {
     }
 }
 
-function updateTierProgress() {
-    const thresholds = currentApp.settings?.tier_thresholds || {
-        silver: 500,
-        gold: 1500,
-        platinum: 5000
+function getTierData(rawThresholds) {
+    // Support both flat (silver: 500) and object ({silver: {points: 500, name: "..."}}) formats
+    const t = rawThresholds || {};
+    return {
+        bronze: { points: 0, name: (typeof t.bronze === 'object' ? t.bronze?.name : null) || 'Bronze' },
+        silver: { points: (typeof t.silver === 'object' ? t.silver?.points : t.silver) || 500, name: (typeof t.silver === 'object' ? t.silver?.name : null) || 'Silver' },
+        gold: { points: (typeof t.gold === 'object' ? t.gold?.points : t.gold) || 1500, name: (typeof t.gold === 'object' ? t.gold?.name : null) || 'Gold' },
+        platinum: { points: (typeof t.platinum === 'object' ? t.platinum?.points : t.platinum) || 5000, name: (typeof t.platinum === 'object' ? t.platinum?.name : null) || 'Platinum' }
     };
+}
+
+function updateTierProgress() {
+    const tiers = getTierData(currentApp.settings?.tier_thresholds);
 
     const points = currentMember.total_points_earned || 0;
     let currentTierThreshold = 0;
-    let nextTierThreshold = thresholds.silver;
-    let nextTier = 'Silver';
+    let nextTierThreshold = tiers.silver.points;
+    let nextTier = tiers.silver.name;
 
-    if (points >= thresholds.platinum) {
-        currentTierThreshold = thresholds.platinum;
-        nextTierThreshold = thresholds.platinum;
+    if (points >= tiers.platinum.points) {
+        currentTierThreshold = tiers.platinum.points;
+        nextTierThreshold = tiers.platinum.points;
         nextTier = 'Max';
-    } else if (points >= thresholds.gold) {
-        currentTierThreshold = thresholds.gold;
-        nextTierThreshold = thresholds.platinum;
-        nextTier = 'Platinum';
-    } else if (points >= thresholds.silver) {
-        currentTierThreshold = thresholds.silver;
-        nextTierThreshold = thresholds.gold;
-        nextTier = 'Gold';
+    } else if (points >= tiers.gold.points) {
+        currentTierThreshold = tiers.gold.points;
+        nextTierThreshold = tiers.platinum.points;
+        nextTier = tiers.platinum.name;
+    } else if (points >= tiers.silver.points) {
+        currentTierThreshold = tiers.silver.points;
+        nextTierThreshold = tiers.gold.points;
+        nextTier = tiers.gold.name;
     }
 
     const progress = nextTier === 'Max' ? 100 :
@@ -806,7 +816,7 @@ function renderLeaderboard(leaders) {
                 <div class="leaderboard-avatar">${initial}</div>
                 <div class="leaderboard-info">
                     <div class="leaderboard-name">${escapeHtml(name)}${isCurrentUser ? ' (You)' : ''}</div>
-                    <div class="leaderboard-tier">${capitalizeFirst(leader.tier)}</div>
+                    <div class="leaderboard-tier">${getTierData(currentApp?.settings?.tier_thresholds)[leader.tier || 'bronze']?.name || capitalizeFirst(leader.tier)}</div>
                 </div>
                 <div class="leaderboard-points">${formatNumber(leader.total_points_earned)}</div>
             </div>

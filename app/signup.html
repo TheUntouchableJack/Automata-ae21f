@@ -31,8 +31,8 @@
         /* Left panel — AI Analysis (dark) */
         .signup-analysis-panel {
             flex: 1;
-            background: linear-gradient(135deg, #0f0a1e 0%, #1a1033 50%, #0f0a1e 100%);
-            color: white;
+            background: #f8f9fc;
+            color: var(--color-text, #1e293b);
             display: flex;
             align-items: flex-start;
             justify-content: center;
@@ -41,36 +41,8 @@
             position: relative;
         }
 
-        /* Animated background gradient blobs */
-        .signup-analysis-panel::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
-                        radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.10) 0%, transparent 50%),
-                        radial-gradient(ellipse at 50% 80%, rgba(124, 58, 237, 0.12) 0%, transparent 50%);
-            animation: bgShift 12s ease-in-out infinite alternate;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* Subtle dot grid pattern */
-        .signup-analysis-panel::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-            background-size: 24px 24px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        @keyframes bgShift {
-            0% { opacity: 0.6; transform: scale(1) translate(0, 0); }
-            33% { opacity: 0.8; transform: scale(1.05) translate(-10px, 5px); }
-            66% { opacity: 0.7; transform: scale(1.02) translate(5px, -10px); }
-            100% { opacity: 0.9; transform: scale(1.08) translate(-5px, 8px); }
-        }
+        .signup-analysis-panel::before { display: none; }
+        .signup-analysis-panel::after { display: none; }
 
         .analysis-content {
             max-width: 560px;
@@ -89,19 +61,19 @@
         }
 
         .analysis-logo .logo-icon { width: 36px; height: 36px; }
-        .analysis-logo .logo-text { color: white; font-size: 20px; font-weight: 700; font-family: 'Outfit', sans-serif; }
+        .analysis-logo .logo-text { color: var(--color-text, #1e293b); font-size: 20px; font-weight: 700; font-family: 'Outfit', sans-serif; }
 
         .analysis-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 6px 14px;
-            background: rgba(124, 58, 237, 0.2);
-            border: 1px solid rgba(124, 58, 237, 0.3);
+            background: rgba(124, 58, 237, 0.08);
+            border: 1px solid rgba(124, 58, 237, 0.2);
             border-radius: 100px;
             font-size: 13px;
             font-weight: 500;
-            color: #c4b5fd;
+            color: #7c3aed;
             margin-bottom: 20px;
         }
 
@@ -112,16 +84,16 @@
             font-weight: 700;
             line-height: 1.3;
             margin: 0 0 16px;
-            color: white;
+            color: var(--color-text, #1e293b);
             font-family: 'Outfit', sans-serif;
         }
 
-        .analysis-heading span { color: #a78bfa; }
+        .analysis-heading span { color: #7c3aed; }
 
         .analysis-summary {
             font-size: 16px;
             line-height: 1.6;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--color-text-secondary, #64748b);
             margin: 0 0 24px;
         }
 
@@ -138,14 +110,13 @@
             align-items: center;
             gap: 16px;
             padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: white;
+            border: 1px solid var(--color-border, #e2e8f0);
             border-radius: 12px;
             opacity: 0;
             transform: translateX(-20px);
             transition: opacity 0.5s ease, transform 0.5s ease;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
         }
 
         .impact-metric.animate-in {
@@ -180,7 +151,7 @@
             font-size: 28px;
             font-weight: 800;
             font-family: 'Outfit', sans-serif;
-            color: white;
+            color: var(--color-text, #1e293b);
             line-height: 1;
             display: inline-block;
         }
@@ -191,7 +162,7 @@
 
         @keyframes countFlash {
             0% { transform: scale(1.1); color: #10b981; }
-            100% { transform: scale(1); color: white; }
+            100% { transform: scale(1); color: var(--color-text, #1e293b); }
         }
 
         .metric-arrow {
@@ -207,13 +178,21 @@
 
         .impact-metric-label {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--color-text-muted, #94a3b8);
+            line-height: 1.3;
+        }
+
+        .metric-source {
+            font-size: 11px;
+            color: var(--color-text-muted, #94a3b8);
+            font-style: italic;
+            margin-top: 4px;
             line-height: 1.3;
         }
 
         .impact-metric-bar {
             height: 6px;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.06);
             border-radius: 3px;
             margin-top: 8px;
             overflow: hidden;
@@ -265,16 +244,15 @@
         }
 
         .opportunity-card {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: white;
+            border: 1px solid var(--color-border, #e2e8f0);
             border-radius: 12px;
             padding: 20px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
         }
 
         /* Gradient border on hover (mask trick) */
@@ -294,9 +272,9 @@
         }
 
         .opportunity-card:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: white;
             transform: translateY(-4px);
-            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15);
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.12);
         }
 
         .opportunity-card:hover::before { opacity: 1; }
@@ -304,7 +282,7 @@
         /* Expanded state */
         .opportunity-card.expanded {
             grid-column: 1 / -1;
-            background: rgba(255, 255, 255, 0.07);
+            background: white;
             border-color: rgba(124, 58, 237, 0.3);
         }
 
@@ -333,14 +311,14 @@
         .opportunity-title {
             font-size: 15px;
             font-weight: 600;
-            color: white;
+            color: var(--color-text, #1e293b);
             margin-bottom: 8px;
         }
 
         .opportunity-desc {
             font-size: 13px;
             line-height: 1.5;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--color-text-secondary, #64748b);
             margin-bottom: 8px;
         }
 
@@ -352,12 +330,12 @@
 
         .opportunity-expand-hint {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
+            color: var(--color-text-muted, #94a3b8);
             margin-top: 8px;
             transition: color 0.2s ease;
         }
 
-        .opportunity-card:hover .opportunity-expand-hint { color: rgba(255, 255, 255, 0.5); }
+        .opportunity-card:hover .opportunity-expand-hint { color: var(--color-text-secondary, #64748b); }
         .opportunity-card.expanded .opportunity-expand-hint { display: none; }
 
         /* Action steps (revealed on expand) */
@@ -383,8 +361,8 @@
             gap: 10px;
             padding: 8px 0;
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--color-text-secondary, #64748b);
+            border-top: 1px solid var(--color-border-light, #f1f5f9);
         }
 
         .action-step:first-child { border-top: none; }
@@ -393,8 +371,8 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: rgba(124, 58, 237, 0.2);
-            color: #c4b5fd;
+            background: rgba(124, 58, 237, 0.1);
+            color: #7c3aed;
             font-size: 11px;
             font-weight: 700;
             display: flex;
@@ -404,10 +382,20 @@
             margin-top: 1px;
         }
 
+        .opportunity-source {
+            font-size: 11px;
+            color: var(--color-text-muted, #94a3b8);
+            font-style: italic;
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid var(--color-border-light, #e2e8f0);
+            line-height: 1.4;
+        }
+
         /* ===== Disclaimer ===== */
         .analysis-disclaimer {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.35);
+            color: var(--color-text-muted, #94a3b8);
             font-style: italic;
             margin: -20px 0 24px;
         }
@@ -416,7 +404,7 @@
         .analysis-section-label {
             font-size: 12px;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.4);
+            color: var(--color-text-muted, #94a3b8);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin: 0 0 12px;
@@ -428,7 +416,7 @@
         .analysis-highlights h3 {
             font-size: 12px;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.4);
+            color: var(--color-text-muted, #94a3b8);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin: 0 0 12px;
@@ -448,13 +436,14 @@
             align-items: flex-start;
             gap: 10px;
             padding: 12px 14px;
-            background: rgba(255, 255, 255, 0.05);
+            background: white;
+            border: 1px solid var(--color-border, #e2e8f0);
             border-radius: 8px;
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--color-text-secondary, #64748b);
         }
 
-        .highlight-item strong { color: rgba(255, 255, 255, 0.9); }
+        .highlight-item strong { color: var(--color-text, #1e293b); }
         .highlight-check { color: #10b981; flex-shrink: 0; margin-top: 1px; }
         .highlight-reason { opacity: 0.6; margin-top: 2px; }
 
@@ -496,6 +485,48 @@
             50% { box-shadow: 0 0 12px 2px rgba(124, 58, 237, 0.15); }
         }
 
+        /* ===== Analysis Tabs ===== */
+        .analysis-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 10px;
+            padding: 4px;
+        }
+        .analysis-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-muted, #94a3b8);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .analysis-tab:hover {
+            color: var(--color-text-secondary, #64748b);
+        }
+        .analysis-tab.active {
+            background: rgba(124, 58, 237, 0.1);
+            color: #7c3aed;
+        }
+        .analysis-tab-content {
+            display: none;
+        }
+        .analysis-tab-content.active {
+            display: block;
+        }
+
+        /* Stagger animation for tabs */
+        .analysis-results.animate-in .analysis-tabs {
+            animation: fadeSlideUp 0.5s ease forwards;
+            animation-delay: 200ms;
+        }
+
         /* Progress bar group — under logo */
         .analysis-progress {
             margin-bottom: 32px;
@@ -532,7 +563,7 @@
 
         /* Skeleton loading */
         .analysis-skeleton .sk {
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.06);
             border-radius: 8px;
             position: relative;
             overflow: hidden;
@@ -542,7 +573,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.08) 40%, rgba(255, 255, 255, 0.08) 50%, rgba(124, 58, 237, 0.08) 60%, transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.06) 40%, rgba(0, 0, 0, 0.04) 50%, rgba(124, 58, 237, 0.06) 60%, transparent 100%);
             animation: skeletonSweep 2s ease-in-out infinite;
         }
 
@@ -556,7 +587,7 @@
         .sk-auto { width: 100%; height: 48px; margin-bottom: 8px; }
 
         .skeleton-progress {
-            color: rgba(196, 181, 253, 0.7);
+            color: var(--color-text-muted, #94a3b8);
             font-size: 13px;
             min-height: 20px;
             transition: opacity 0.3s ease;
@@ -579,16 +610,178 @@
             40% { opacity: 1; }
         }
 
-        /* Right panel — Signup Form */
+        /* Right panel — Signup Form (hidden by default, shown in state-form) */
         .signup-form-panel {
             flex: 0 0 480px;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             background: var(--color-bg-secondary);
             position: relative;
             overflow-y: auto;
         }
+        .signup-layout.state-form .signup-form-panel {
+            display: flex;
+            opacity: 0;
+            transform: translateX(40px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .signup-layout.state-form .signup-form-panel.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Sticky CTA bar — shown in state-analysis */
+        .signup-sticky-cta {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid var(--color-border, #e2e8f0);
+            z-index: 100;
+            animation: stickySlideUp 0.4s ease;
+        }
+        .signup-layout.state-analysis .signup-sticky-cta { display: flex; }
+        .signup-layout.state-form .signup-sticky-cta { display: none; }
+
+        @keyframes stickySlideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .sticky-cta-primary {
+            padding: 12px 28px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .sticky-cta-primary:hover { background: #059669; transform: translateY(-1px); }
+
+        .sticky-cta-secondary {
+            padding: 12px 28px;
+            background: transparent;
+            color: var(--color-text-secondary, #64748b);
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .sticky-cta-secondary:hover { border-color: var(--color-primary, #7c3aed); color: var(--color-primary, #7c3aed); }
+
+        /* Bottom padding when sticky bar visible */
+        .signup-layout.state-analysis .analysis-content { padding-bottom: 80px; }
+
+        /* ===== Email Report Modal ===== */
+        .email-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: modalFadeIn 0.2s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .email-modal {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            animation: modalSlideUp 0.3s ease;
+            text-align: center;
+        }
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .email-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--color-text-muted, #94a3b8);
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+        }
+        .email-modal-close:hover { color: var(--color-text, #1e293b); }
+        .email-modal-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        .email-modal h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text, #1e293b);
+            margin: 0 0 8px;
+            font-family: 'Outfit', sans-serif;
+        }
+        .email-modal p {
+            font-size: 14px;
+            color: var(--color-text-secondary, #64748b);
+            margin: 0 0 20px;
+        }
+        .email-modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: 10px;
+            font-size: 15px;
+            color: var(--color-text, #1e293b);
+            outline: none;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        .email-modal-input:focus { border-color: var(--color-primary, #7c3aed); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+        .email-modal-input::placeholder { color: var(--color-text-muted, #94a3b8); }
+        .email-modal-send {
+            width: 100%;
+            padding: 12px 20px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .email-modal-send:hover { background: #6d28d9; }
+        .email-modal-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .email-modal-status {
+            font-size: 13px;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+        .email-modal-status.success { color: #10b981; }
+        .email-modal-status.error { color: #ef4444; }
 
         .signup-form-panel .auth-container {
             min-height: auto;
@@ -597,25 +790,30 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            max-width: 420px;
-            padding: 24px;
+            max-width: 380px;
+            padding: 48px 32px 24px;
             margin: 0 auto;
         }
 
         /* No-analysis fallback: hide left panel, center form */
         .signup-layout.no-analysis .signup-analysis-panel { display: none; }
+        .signup-layout.no-analysis .signup-sticky-cta { display: none; }
         .signup-layout.no-analysis .signup-form-panel {
+            display: flex;
             flex: 1;
             min-height: 100vh;
+            padding: 48px 24px;
+            opacity: 1;
+            transform: none;
         }
 
-        /* Mobile responsive — merged single-panel dark flow */
+        /* Mobile responsive — single-panel light flow */
         @media (max-width: 1024px) {
             .signup-layout {
                 flex-direction: column;
                 height: auto;
                 min-height: 100vh;
-                background: linear-gradient(135deg, #0f0a1e 0%, #1a1033 50%, #0f0a1e 100%);
+                background: #f8f9fc;
             }
             .signup-analysis-panel {
                 padding: 24px 20px 0;
@@ -630,52 +828,12 @@
                 background: transparent;
                 order: 1;
             }
-            .signup-form-panel .auth-card {
-                background: rgba(255, 255, 255, 0.06);
-                border-color: rgba(255, 255, 255, 0.1);
-                backdrop-filter: blur(12px);
-            }
-            .signup-form-panel .auth-card h1,
-            .signup-form-panel .auth-card .logo-text {
-                color: white;
-            }
-            .signup-form-panel .auth-card p,
-            .signup-form-panel .auth-card label {
-                color: rgba(255, 255, 255, 0.7);
-            }
-            .signup-form-panel .auth-card input {
-                background: rgba(255, 255, 255, 0.08);
-                border-color: rgba(255, 255, 255, 0.15);
-                color: white;
-            }
-            .signup-form-panel .auth-card input::placeholder {
-                color: rgba(255, 255, 255, 0.35);
-            }
-            .signup-form-panel .auth-card input:focus {
-                border-color: #7c3aed;
-                background: rgba(255, 255, 255, 0.1);
-            }
-            .signup-form-panel .auth-card .btn-primary {
-                background: #7c3aed;
-            }
-            .signup-form-panel .auth-card .error-message,
-            .signup-form-panel .auth-card .success-message {
-                color: white;
-            }
-            .signup-form-panel .auth-card .strength-text,
-            .signup-form-panel .auth-card .checklist-item {
-                color: rgba(255, 255, 255, 0.6);
-            }
-            .signup-form-panel .auth-card #auth-footer,
-            .signup-form-panel .auth-card #auth-footer a {
-                color: rgba(255, 255, 255, 0.5);
-            }
-            .signup-form-panel .auth-card #auth-footer a:hover {
-                color: #c4b5fd;
-            }
             .analysis-content { padding-top: 0; }
             .analysis-opportunities { grid-template-columns: 1fr; }
             .lang-selector.analysis-lang { margin-top: 24px; padding-bottom: 32px; }
+            .signup-sticky-cta { flex-direction: column; padding: 12px 16px; }
+            .sticky-cta-primary, .sticky-cta-secondary { width: 100%; text-align: center; }
+            .signup-layout.state-form .signup-form-panel { display: flex; }
         }
 
         /* ===== Auth Card Styles ===== */
@@ -683,14 +841,27 @@
             background: var(--color-bg);
             border-radius: var(--radius-xl);
             border: 1px solid var(--color-border);
-            padding: 40px;
+            padding: 32px;
             box-shadow: var(--shadow-lg);
         }
 
         .auth-header { text-align: center; margin-bottom: 32px; }
-        .auth-header .logo { display: inline-flex; margin-bottom: 24px; }
+        .auth-header .logo { display: inline-flex; margin-bottom: 16px; }
         .auth-header h1 { font-size: 1.5rem; margin-bottom: 8px; }
         .auth-header p { color: var(--color-text-muted); font-size: 15px; }
+
+        .onboarding-step-badge {
+            display: none;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-primary);
+            background: rgba(124, 58, 237, 0.1);
+            padding: 4px 14px;
+            border-radius: 20px;
+            margin: 0 auto 12px;
+            width: fit-content;
+        }
 
         .auth-form { display: flex; flex-direction: column; gap: 20px; }
 
@@ -737,20 +908,33 @@
         .auth-footer a { color: var(--color-primary); font-weight: 500; }
         .auth-footer a:hover { text-decoration: underline; }
 
-        .back-link { display: block; text-align: center; margin-top: 24px; font-size: 14px; color: var(--color-text-muted); }
-        .back-link:hover { color: var(--color-text); }
-
-        .btn-loading { position: relative; color: transparent !important; }
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            width: 20px; height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
+        .btn-loading { position: relative; pointer-events: none; }
+        .btn-loading .btn-text { display: none; }
+        .btn-loading .btn-spinner { display: inline-flex; }
+        .btn-spinner { display: none; align-items: center; gap: 8px; }
+        .spin-icon { animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .auth-card { position: relative; overflow: hidden; }
+        .auth-card-progress {
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--color-border-light, #e2e8f0);
+            border-radius: 16px 16px 0 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .auth-card.form-loading .auth-card-progress { opacity: 1; }
+        .auth-card-progress-fill {
+            height: 100%; width: 0%;
+            background: var(--color-primary, #7c3aed);
+            transition: width 0.4s ease;
+        }
+        .auth-card.form-loading input,
+        .auth-card.form-loading select,
+        .auth-card.form-loading .cf-turnstile { opacity: 0.5; pointer-events: none; }
+        .auth-card.form-loading .password-strength { opacity: 0.5; }
+        .btn-success { background: var(--color-accent, #10b981) !important; pointer-events: none; }
 
         .invite-notice {
             background: rgba(124, 58, 237, 0.1);
@@ -800,37 +984,38 @@
         }
 
         .lang-selector.analysis-lang .lang-selector-btn {
-            color: rgba(255, 255, 255, 0.6);
-            border-color: rgba(255, 255, 255, 0.15);
-            background: transparent;
+            color: var(--color-text-secondary, #64748b);
+            border-color: var(--color-border, #e2e8f0);
+            background: white;
         }
 
         .lang-selector.analysis-lang .lang-selector-btn:hover {
-            color: white;
-            border-color: rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.08);
+            color: var(--color-text, #1e293b);
+            border-color: var(--color-primary, #7c3aed);
+            background: white;
         }
 
         .lang-selector.analysis-lang .lang-dropdown {
             bottom: calc(100% + 6px);
             top: auto;
-            background: #1e1538;
-            border-color: rgba(255, 255, 255, 0.1);
+            background: white;
+            border-color: var(--color-border, #e2e8f0);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .lang-selector.analysis-lang .lang-option {
-            color: rgba(255, 255, 255, 0.6);
-            border-bottom-color: rgba(255, 255, 255, 0.06);
+            color: var(--color-text-secondary, #64748b);
+            border-bottom-color: var(--color-border-light, #f1f5f9);
         }
 
         .lang-selector.analysis-lang .lang-option:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: white;
+            background: var(--color-bg-secondary, #f8fafc);
+            color: var(--color-text, #1e293b);
         }
 
         .lang-selector.analysis-lang .lang-option.active {
-            background: rgba(124, 58, 237, 0.2);
-            color: #c4b5fd;
+            background: rgba(124, 58, 237, 0.08);
+            color: #7c3aed;
         }
 
         /* Hide right-panel lang selector by default (left panel has its own) */
@@ -907,16 +1092,32 @@
 
                     <p class="analysis-summary" id="analysis-summary"></p>
 
-                    <h3 class="analysis-section-label" data-i18n="analysis.growthPotential">Your Growth Potential</h3>
-                    <div class="analysis-metrics" id="analysis-metrics"></div>
-                    <p class="analysis-disclaimer" data-i18n="analysis.disclaimer">Projections based on industry averages for similar businesses</p>
+                    <!-- Tabs -->
+                    <div class="analysis-tabs">
+                        <button class="analysis-tab active" data-tab="overview" data-i18n="analysis.tabOverview">Overview</button>
+                        <button class="analysis-tab" data-tab="opportunities" data-i18n="analysis.tabOpportunities">Opportunities</button>
+                        <button class="analysis-tab" data-tab="platform" data-i18n="analysis.tabPlatform">Platform</button>
+                    </div>
 
-                    <h3 class="analysis-section-label" data-i18n="analysis.opportunities">Opportunities</h3>
-                    <div class="analysis-opportunities" id="analysis-opportunities"></div>
+                    <!-- Tab: Overview -->
+                    <div class="analysis-tab-content active" id="tab-overview">
+                        <h3 class="analysis-section-label" data-i18n="analysis.growthPotential">Your Growth Potential</h3>
+                        <div class="analysis-metrics" id="analysis-metrics"></div>
+                        <p class="analysis-disclaimer" data-i18n="analysis.disclaimer">Projections based on industry averages for similar businesses</p>
+                    </div>
 
-                    <div class="analysis-highlights" id="analysis-highlights">
-                        <h3 data-i18n="analysis.platformHighlights">Platform Highlights</h3>
-                        <ul id="highlights-list"></ul>
+                    <!-- Tab: Opportunities -->
+                    <div class="analysis-tab-content" id="tab-opportunities">
+                        <h3 class="analysis-section-label" data-i18n="analysis.opportunities">Opportunities</h3>
+                        <div class="analysis-opportunities" id="analysis-opportunities"></div>
+                    </div>
+
+                    <!-- Tab: Platform -->
+                    <div class="analysis-tab-content" id="tab-platform">
+                        <div class="analysis-highlights" id="analysis-highlights">
+                            <h3 data-i18n="analysis.platformHighlights">Platform Highlights</h3>
+                            <ul id="highlights-list"></ul>
+                        </div>
                     </div>
                 </div>
 
@@ -1001,11 +1202,15 @@
                 </div>
 
                 <div class="auth-card" id="auth-card">
+                    <div class="auth-card-progress" id="auth-card-progress">
+                        <div class="auth-card-progress-fill" id="auth-card-progress-fill"></div>
+                    </div>
                     <div class="auth-header">
                         <a href="/" class="logo">
                             <img src="/logo.svg" alt="Royalty" class="logo-icon">
                             <span class="logo-text">Royalty</span>
                         </a>
+                        <div class="onboarding-step-badge" id="signup-step-badge" style="display: none;">Step 3 of 3</div>
                         <h1 data-i18n="auth.createAccount">Create an account</h1>
                         <p data-i18n="auth.signUpSubtitle">Start automating your customer relationships</p>
                     </div>
@@ -1071,8 +1276,12 @@
                         <div class="cf-turnstile" data-sitekey="0x4AAAAAACWKZKBFwf0yeBCo" data-callback="onTurnstileSuccess" data-theme="light"></div>
                         <div class="captcha-error" id="captcha-error" style="display: none; color: var(--color-error); font-size: 13px; margin-bottom: 12px;" data-i18n="auth.captchaError">Please complete the CAPTCHA verification.</div>
 
-                        <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="auth.createAccountBtn">
-                            Create Account
+                        <button type="submit" class="btn btn-primary btn-block" id="submit-btn">
+                            <span class="btn-text" data-i18n="auth.createAccountBtn">Create Account</span>
+                            <span class="btn-spinner">
+                                <svg class="spin-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+                                <span class="btn-spinner-text" data-i18n="auth.creatingAccount">Creating your account...</span>
+                            </span>
                         </button>
                     </form>
 
@@ -1080,8 +1289,25 @@
                         <p><span data-i18n="auth.hasAccount">Already have an account?</span> <a href="/app/login.html" data-i18n="auth.signIn">Sign in</a></p>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <a href="/" class="back-link" data-i18n="auth.backToHome">Back to home</a>
+        <!-- Sticky CTA bar (visible in state-analysis) -->
+        <div class="signup-sticky-cta" id="signup-sticky-cta">
+            <button class="sticky-cta-secondary" id="sticky-email-report-btn" data-i18n="analysis.emailReport">Email Me This Report</button>
+            <button class="sticky-cta-primary" id="build-loyalty-btn" data-i18n="analysis.buildMyProgram">Build My Loyalty Program</button>
+        </div>
+
+        <!-- Email Report Modal -->
+        <div class="email-modal-overlay" id="email-modal-overlay" style="display: none;">
+            <div class="email-modal">
+                <button class="email-modal-close" id="email-modal-close">&times;</button>
+                <div class="email-modal-icon">&#9993;</div>
+                <h3 data-i18n="analysis.emailReport">Email Me This Report</h3>
+                <p data-i18n="analysis.emailModalDesc">We'll send a copy of this analysis to your inbox.</p>
+                <input type="email" id="modal-report-email" class="email-modal-input" placeholder="your@email.com" data-i18n-placeholder="analysis.emailPlaceholder">
+                <button id="modal-send-report-btn" class="email-modal-send" data-i18n="analysis.emailSend">Send</button>
+                <div class="email-modal-status" id="modal-email-status" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -1095,11 +1321,21 @@
     <script src="onboarding-transition.js?v=1"></script>
     <script src="business-analysis.js?v=2"></script>
     <script>
+        // Page-level language
+        const currentLang = localStorage.getItem('royalty_language') || document.documentElement.lang || 'en';
+
         // CAPTCHA state
         let turnstileToken = null;
         function onTurnstileSuccess(token) {
             turnstileToken = token;
             document.getElementById('captcha-error').style.display = 'none';
+        }
+
+        // Layout state management
+        function setSignupState(state) {
+            const layout = document.getElementById('signup-layout');
+            layout.classList.remove('state-loading', 'state-analysis', 'state-form');
+            layout.classList.add('state-' + state);
         }
 
         // Redirect if already logged in
@@ -1108,10 +1344,21 @@
         // Initialize the signup page
         async function initSignupPage() {
             const layout = document.getElementById('signup-layout');
-            const hasOnboarding = typeof OnboardingStorage !== 'undefined' &&
-                                  OnboardingStorage.get()?.businessPrompt;
+            const onboardingCheck = typeof OnboardingStorage !== 'undefined' && OnboardingStorage.get();
+            const hasOnboarding = onboardingCheck?.businessPrompt || onboardingCheck?.businessDetails?.businessName;
 
             if (hasOnboarding) {
+                // Show step badge when coming from onboarding flow
+                const stepBadge = document.getElementById('signup-step-badge');
+                if (stepBadge) stepBadge.style.display = 'block';
+
+                // Personalize subtitle with business name
+                const businessName = onboardingCheck.businessDetails?.businessName;
+                const subtitle = document.querySelector('[data-i18n="auth.signUpSubtitle"]');
+                if (subtitle && businessName) {
+                    subtitle.textContent = `Almost done, ${businessName}! Create your account to launch.`;
+                }
+
                 // Hide invite notice when coming from onboarding
                 const inviteNotice = document.getElementById('invite-notice');
                 if (inviteNotice) inviteNotice.style.display = 'none';
@@ -1178,6 +1425,8 @@
                 // Initialize AI analysis (shows skeleton, then results or fallback)
                 if (typeof BusinessAnalysis !== 'undefined') {
                     await BusinessAnalysis.init(currentLang);
+                    // Show full-screen analysis with sticky CTA bar
+                    setSignupState('analysis');
                     clearInterval(progressInterval);
                     // Snap to 100%
                     if (progressFill) progressFill.style.width = '100%';
@@ -1193,11 +1442,17 @@
                         }
                     });
                 } else {
-                    // No analysis module — show fallback directly
+                    // No analysis module — show fallback + form directly
                     clearInterval(progressInterval);
                     if (progressGroup) progressGroup.style.display = 'none';
                     document.getElementById('analysis-skeleton').style.display = 'none';
                     document.getElementById('analysis-fallback').style.display = 'block';
+                    setSignupState('form');
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            document.getElementById('form-panel')?.classList.add('visible');
+                        });
+                    });
                 }
             } else {
                 // No onboarding data: hide analysis panel, show form-only
@@ -1249,7 +1504,7 @@
                 upper: /[A-Z]/.test(password),
                 lower: /[a-z]/.test(password),
                 number: /[0-9]/.test(password),
-                special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+                special: /[^a-zA-Z0-9\s]/.test(password)
             };
 
             document.getElementById('check-length').classList.toggle('valid', checks.length);
@@ -1308,8 +1563,12 @@
                 return;
             }
 
+            // Enhanced loading state
             submitBtn.classList.add('btn-loading');
             submitBtn.disabled = true;
+            authCard.classList.add('form-loading');
+            const progressFill = document.getElementById('auth-card-progress-fill');
+            if (progressFill) progressFill.style.width = '30%';
 
             try {
                 const { data: signUpData, error: signUpError } = await db.auth.signUp({
@@ -1330,12 +1589,21 @@
                 if (typeof BusinessAnalysis !== 'undefined') {
                     BusinessAnalysis.clearCache();
                 }
+                // Clear onboarding localStorage — data is captured in memory, no longer needed
+                if (typeof OnboardingStorage !== 'undefined') {
+                    OnboardingStorage.clear();
+                }
+
+                if (progressFill) progressFill.style.width = '70%';
 
                 if (!signUpData.session) {
                     // Email confirmation required
+                    if (progressFill) progressFill.style.width = '100%';
                     submitBtn.classList.remove('btn-loading');
                     submitBtn.classList.add('btn-success');
-                    submitBtn.textContent = 'Check your email!';
+                    submitBtn.querySelector('.btn-text').style.display = '';
+                    submitBtn.querySelector('.btn-text').textContent = 'Check your email!';
+                    submitBtn.querySelector('.btn-spinner').style.display = 'none';
                     authCard.classList.add('success');
 
                     const inviteNotice = document.getElementById('invite-notice');
@@ -1372,12 +1640,23 @@
                 }
 
                 // User logged in (email confirmation disabled)
+                // Update spinner text for setup phase
+                const spinnerText = submitBtn.querySelector('.btn-spinner-text');
+                if (spinnerText) {
+                    const t = typeof I18n !== 'undefined' ? I18n.t('auth.settingUpPlatform') : '';
+                    spinnerText.textContent = (t && !t.includes('.')) ? t : 'Setting up your platform...';
+                }
+                if (progressFill) progressFill.style.width = '85%';
+
                 const hasOnboarding = typeof OnboardingStorage !== 'undefined' && OnboardingStorage.isComplete();
 
                 if (hasOnboarding && typeof OnboardingTransition !== 'undefined') {
+                    if (progressFill) progressFill.style.width = '100%';
                     submitBtn.classList.remove('btn-loading');
                     submitBtn.classList.add('btn-success');
-                    submitBtn.textContent = 'Welcome to Royalty!';
+                    submitBtn.querySelector('.btn-text').style.display = '';
+                    submitBtn.querySelector('.btn-text').textContent = 'Welcome to Royalty!';
+                    submitBtn.querySelector('.btn-spinner').style.display = 'none';
                     authCard.classList.add('success');
 
                     await OnboardingTransition.show({
@@ -1387,9 +1666,12 @@
                         redirectUrl: '/app/dashboard.html'
                     });
                 } else {
+                    if (progressFill) progressFill.style.width = '100%';
                     submitBtn.classList.remove('btn-loading');
                     submitBtn.classList.add('btn-success');
-                    submitBtn.textContent = 'Welcome to Royalty!';
+                    submitBtn.querySelector('.btn-text').style.display = '';
+                    submitBtn.querySelector('.btn-text').textContent = 'Welcome to Royalty!';
+                    submitBtn.querySelector('.btn-spinner').style.display = 'none';
                     authCard.classList.add('success');
 
                     if (typeof OnboardingTransition !== 'undefined') {
@@ -1424,6 +1706,8 @@
 
                 submitBtn.classList.remove('btn-loading');
                 submitBtn.disabled = false;
+                authCard.classList.remove('form-loading');
+                if (progressFill) { progressFill.style.width = '0%'; }
             }
         });
 
@@ -1451,7 +1735,7 @@
 
                 const projectName = onboardingData.businessDetails?.businessName
                     || (onboardingData.businessContext?.industry
-                        ? `${onboardingData.businessContext.industry} Loyalty Program`
+                        ? `${onboardingData.businessContext.industry.charAt(0).toUpperCase() + onboardingData.businessContext.industry.slice(1)} Rewards`
                         : 'My Loyalty Program');
 
                 const { data: project, error: projectError } = await db
@@ -1500,11 +1784,12 @@
                         .from('automations')
                         .insert({
                             project_id: project.id,
-                            name: 'Custom Automation',
+                            name: 'Custom Request: ' + (onboardingData.customAutomation.trim().slice(0, 60) || 'Pending'),
                             description: onboardingData.customAutomation,
                             type: 'custom',
                             frequency: 'manual',
-                            is_active: false
+                            is_active: false,
+                            settings: { status: 'requested', source: 'onboarding' }
                         });
 
                     if (customError) {
@@ -1727,6 +2012,113 @@
                 console.error('Error saving onboarding data:', err);
                 return null;
             }
+        }
+
+        // ── Tab Switching ──
+        document.querySelector('.analysis-tabs')?.addEventListener('click', (e) => {
+            const tab = e.target.closest('.analysis-tab');
+            if (!tab) return;
+            document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.analysis-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('tab-' + tab.dataset.tab)?.classList.add('active');
+        });
+
+        // ── "Build My Loyalty Program" — reveal form panel ──
+        document.getElementById('build-loyalty-btn')?.addEventListener('click', () => {
+            setSignupState('form');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    document.getElementById('form-panel')?.classList.add('visible');
+                });
+            });
+        });
+
+        // ── Email Report Modal Handler ──
+        const emailModalOverlay = document.getElementById('email-modal-overlay');
+        const emailModalClose = document.getElementById('email-modal-close');
+        const modalEmailInput = document.getElementById('modal-report-email');
+        const modalSendBtn = document.getElementById('modal-send-report-btn');
+        const modalEmailStatus = document.getElementById('modal-email-status');
+
+        function openEmailModal() {
+            emailModalOverlay.style.display = 'flex';
+            modalEmailInput.value = '';
+            modalEmailStatus.style.display = 'none';
+            modalSendBtn.disabled = false;
+            modalSendBtn.textContent = 'Send';
+            setTimeout(() => modalEmailInput.focus(), 100);
+        }
+
+        function closeEmailModal() {
+            emailModalOverlay.style.display = 'none';
+        }
+
+        document.getElementById('sticky-email-report-btn')?.addEventListener('click', openEmailModal);
+        emailModalClose?.addEventListener('click', closeEmailModal);
+        emailModalOverlay?.addEventListener('click', (e) => {
+            if (e.target === emailModalOverlay) closeEmailModal();
+        });
+
+        if (modalSendBtn) {
+            modalSendBtn.addEventListener('click', async () => {
+                const email = modalEmailInput.value.trim();
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    modalEmailStatus.textContent = 'Please enter a valid email.';
+                    modalEmailStatus.className = 'email-modal-status error';
+                    modalEmailStatus.style.display = 'block';
+                    return;
+                }
+
+                modalSendBtn.disabled = true;
+                modalSendBtn.textContent = 'Sending...';
+                modalEmailStatus.style.display = 'none';
+
+                try {
+                    const analysis = typeof BusinessAnalysis !== 'undefined'
+                        ? (BusinessAnalysis.getCached(currentLang) || BusinessAnalysis.getCached('en'))
+                        : null;
+
+                    if (!analysis) {
+                        throw new Error('No analysis data available');
+                    }
+
+                    const onboarding = typeof OnboardingStorage !== 'undefined' ? OnboardingStorage.get() : null;
+                    const businessName = onboarding?.businessDetails?.businessName || analysis.extractedDetails?.businessName || '';
+
+                    const res = await fetch(SUPABASE_URL + '/functions/v1/send-analysis-report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email,
+                            analysis,
+                            businessName,
+                            language: currentLang || 'en'
+                        })
+                    });
+
+                    const result = await res.json();
+                    if (!res.ok || !result.success) {
+                        throw new Error(result.error || 'Failed to send report');
+                    }
+
+                    modalEmailStatus.innerHTML = 'Sent! Check your inbox.<br><small style="opacity:0.7">Don\'t see it? Check your spam folder.</small>';
+                    modalEmailStatus.className = 'email-modal-status success';
+                    modalEmailStatus.style.display = 'block';
+                    modalSendBtn.style.display = 'none';
+                    modalEmailInput.style.display = 'none';
+
+                    // Auto-close modal after 3 seconds
+                    setTimeout(closeEmailModal, 3000);
+                } catch (err) {
+                    console.error('Email report error:', err);
+                    modalEmailStatus.textContent = err.message || 'Something went wrong. Try again.';
+                    modalEmailStatus.className = 'email-modal-status error';
+                    modalEmailStatus.style.display = 'block';
+                    modalSendBtn.disabled = false;
+                    modalSendBtn.textContent = 'Send';
+                }
+            });
         }
     </script>
 </body>
