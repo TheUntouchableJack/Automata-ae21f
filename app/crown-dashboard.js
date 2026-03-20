@@ -579,8 +579,8 @@ const CrownDashboard = (function() {
 
         // Handle auto-accept for autonomous mode
         if (crownMode === 'autonomous') {
-            // Initialize and render the hybrid feed
-            initAutonomousFeed();
+            // Keep insight cards visible — don't replace with queue layout
+            startCountdownTimer();
             // Start monitoring for suggestions running dry
             startSuggestionsDryMonitor();
             // Start planning cycles
@@ -729,8 +729,8 @@ const CrownDashboard = (function() {
             }
             updateStatus(modeState.current === 'autonomous' ? 'autonomous' : 'idle');
 
-            // Render new recommendation cards
-            if (e.detail && e.detail.recommendations) {
+            // Render new recommendation cards (only if non-empty to preserve mock cards)
+            if (e.detail && e.detail.recommendations && e.detail.recommendations.length > 0) {
                 renderRecommendationCards(e.detail.recommendations);
             }
         };
@@ -746,7 +746,7 @@ const CrownDashboard = (function() {
         };
 
         eventListenerRefs.recommendationsLoaded = (e) => {
-            if (e.detail && e.detail.recommendations) {
+            if (e.detail && e.detail.recommendations && e.detail.recommendations.length > 0) {
                 renderRecommendationCards(e.detail.recommendations);
             }
         };
@@ -871,8 +871,15 @@ const CrownDashboard = (function() {
             <div class="insight-card-body">${escapeHtml(rec.description || '')}</div>
             ${!isCompleted && !isDismissed && modeState.current === 'review' ? `
                 <div class="insight-card-actions">
-                    <button class="card-action-btn secondary" data-action="dismiss" data-rec-id="${rec.id}">Dismiss</button>
-                    <button class="card-action-btn primary" data-action="accept" data-rec-id="${rec.id}">Accept</button>
+                    <button class="card-action-btn ghost detail-toggle" data-action="view" data-rec-id="${rec.id}">View Details</button>
+                    <div class="insight-card-actions-right">
+                        <button class="card-action-btn secondary" data-action="dismiss" data-rec-id="${rec.id}">Dismiss</button>
+                        <button class="card-action-btn primary" data-action="accept" data-rec-id="${rec.id}">Accept</button>
+                    </div>
+                </div>
+            ` : !isCompleted && !isDismissed ? `
+                <div class="insight-card-actions">
+                    <button class="card-action-btn ghost detail-toggle" data-action="view" data-rec-id="${rec.id}">View Details</button>
                 </div>
             ` : isDismissed ? `
                 <div class="insight-card-actions">
@@ -880,7 +887,7 @@ const CrownDashboard = (function() {
                 </div>
             ` : isCompleted ? `
                 <div class="insight-card-actions">
-                    <button class="card-action-btn secondary" data-action="view" data-rec-id="${rec.id}">View Details</button>
+                    <button class="card-action-btn ghost detail-toggle" data-action="view" data-rec-id="${rec.id}">View Details</button>
                 </div>
             ` : ''}
         `;
@@ -1123,9 +1130,7 @@ const CrownDashboard = (function() {
                         <span class="metric-label">Time to Result</span>
                     </div>
                 </div>
-                <div class="expanded-actions">
-                    <button class="btn-primary" data-action="implement-expanded" data-rec-id="${recId}">Implement Now</button>
-                    <button class="btn-secondary" data-action="schedule-expanded" data-rec-id="${recId}">Schedule</button>
+                <div class="expanded-collapse">
                     <button class="btn-ghost" data-action="collapse">Close Details</button>
                 </div>
             </div>
@@ -1135,26 +1140,19 @@ const CrownDashboard = (function() {
         cardEl.insertAdjacentHTML('beforeend', expandedHtml);
         cardEl.classList.add('expanded');
 
-        // Update the view button to collapse
-        const viewBtn = cardEl.querySelector('.card-action-btn[data-action="view"]');
+        // Update the toggle button to Hide Details
+        const viewBtn = cardEl.querySelector('.card-action-btn.detail-toggle[data-action="view"]');
         if (viewBtn) {
             viewBtn.textContent = 'Hide Details';
             viewBtn.dataset.action = 'collapse';
         }
 
-        // Bind handlers for expanded actions
-        cardEl.querySelectorAll('.expanded-actions button').forEach(btn => {
+        // Bind handler for collapse button
+        cardEl.querySelectorAll('.expanded-collapse button').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const act = btn.dataset.action;
-                if (act === 'collapse') {
+                if (btn.dataset.action === 'collapse') {
                     collapseCardDetails(cardEl);
-                } else if (act === 'implement-expanded') {
-                    handleCardAction('accept', btn.dataset.recId, cardEl);
-                    collapseCardDetails(cardEl);
-                } else if (act === 'schedule-expanded') {
-                    // Future: open scheduling modal
-                    showActivityToast('info', 'Scheduling feature coming soon');
                 }
             });
         });
@@ -1170,8 +1168,8 @@ const CrownDashboard = (function() {
             expandedContent.remove();
         }
 
-        // Reset button to View Details
-        const collapseBtn = cardEl.querySelector('.card-action-btn[data-action="collapse"]');
+        // Reset toggle button to View Details
+        const collapseBtn = cardEl.querySelector('.card-action-btn.detail-toggle[data-action="collapse"]');
         if (collapseBtn) {
             collapseBtn.textContent = 'View Details';
             collapseBtn.dataset.action = 'view';
@@ -1670,21 +1668,27 @@ const CrownDashboard = (function() {
     function renderCardsForMode(mode) {
         // Re-render card actions based on mode
         document.querySelectorAll('.insight-card').forEach(card => {
-            const actions = card.querySelector('.insight-card-actions');
-            if (!actions) return;
-
             const isCompleted = card.classList.contains('type-completed');
             if (isCompleted) return;
 
             const recId = card.dataset.recId;
+            const isDismissed = card.dataset.status === 'dismissed';
+            const actions = card.querySelector('.insight-card-actions');
+            if (!actions) return;
+
+            if (isDismissed) return; // dismissed cards keep their Re-accept button
+
             if (mode === 'autonomous') {
                 actions.innerHTML = `
-                    <button class="card-action-btn secondary" data-action="view" data-rec-id="${recId}">View Details</button>
+                    <button class="card-action-btn ghost detail-toggle" data-action="view" data-rec-id="${recId}">View Details</button>
                 `;
             } else {
                 actions.innerHTML = `
-                    <button class="card-action-btn secondary" data-action="dismiss" data-rec-id="${recId}">Dismiss</button>
-                    <button class="card-action-btn primary" data-action="accept" data-rec-id="${recId}">Accept</button>
+                    <button class="card-action-btn ghost detail-toggle" data-action="view" data-rec-id="${recId}">View Details</button>
+                    <div class="insight-card-actions-right">
+                        <button class="card-action-btn secondary" data-action="dismiss" data-rec-id="${recId}">Dismiss</button>
+                        <button class="card-action-btn primary" data-action="accept" data-rec-id="${recId}">Accept</button>
+                    </div>
                 `;
             }
 

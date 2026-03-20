@@ -2347,16 +2347,19 @@
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border, #e2e8f0);
 }
 
 .expanded-actions .btn-primary {
-    padding: 8px 16px;
+    padding: 10px 20px;
     background: var(--color-primary);
     color: white;
     border: none;
     border-radius: var(--radius-md);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -2367,12 +2370,12 @@
 }
 
 .expanded-actions .btn-secondary {
-    padding: 8px 16px;
-    background: var(--color-bg-secondary);
+    padding: 10px 20px;
+    background: transparent;
     color: var(--color-text);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -2380,20 +2383,26 @@
 
 .expanded-actions .btn-secondary:hover {
     background: var(--color-bg-tertiary);
+    border-color: var(--color-text-muted);
 }
 
-.expanded-actions .btn-ghost {
-    padding: 8px 16px;
+.expanded-collapse {
+    margin-top: 8px;
+    text-align: center;
+}
+
+.expanded-collapse .btn-ghost {
+    padding: 6px 12px;
     background: transparent;
     color: var(--color-text-muted);
     border: none;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: color 0.2s ease;
 }
 
-.expanded-actions .btn-ghost:hover {
+.expanded-collapse .btn-ghost:hover {
     color: var(--color-text);
 }
 
