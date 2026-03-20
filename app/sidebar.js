@@ -25,6 +25,8 @@ const AppSidebar = (function() {
                 { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', adminOnly: true },
                 // Automations - visible to all
                 { id: 'automations', icon: 'zap', href: '/app/automations.html', labelKey: 'nav.automations', label: 'Automations' },
+                // Campaigns - output of automations, visible to all
+                { id: 'campaigns', icon: 'send', href: '/app/outgoing.html', labelKey: 'nav.campaigns', label: 'Campaigns' },
                 // Customers - visible to all
                 { id: 'customers', icon: 'users', href: '/app/customers.html', labelKey: 'nav.customers', label: 'Customers' },
                 // Rewards - manage loyalty rewards
@@ -36,7 +38,6 @@ const AppSidebar = (function() {
             labelKey: 'nav.management',
             label: 'Management',
             items: [
-                { id: 'outgoing', icon: 'send', href: '/app/outgoing.html', labelKey: 'nav.outgoing', label: 'Outgoing' },
                 // Roadmap visible to ALL users - customers can give feedback!
                 { id: 'roadmap', icon: 'map', href: '/app/roadmap.html', labelKey: 'nav.roadmap', label: 'Roadmap' },
                 // Support - manage customer tickets, FAQs, and AI support (with notification badge)
@@ -200,7 +201,7 @@ const AppSidebar = (function() {
         if (path.includes('apps.html')) return 'apps';
         if (path.includes('app-builder.html')) return 'apps';
         if (path.includes('customers')) return 'customers';
-        if (path.includes('outgoing')) return 'outgoing';
+        if (path.includes('outgoing')) return 'campaigns';
         if (path.includes('roadmap')) return 'roadmap';
         if (path.includes('settings')) return 'settings';
         if (path.includes('launch-plan')) return 'launch-plan';

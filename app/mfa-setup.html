@@ -299,6 +299,35 @@
                     Back to Security Settings
                 </a>
 
+                <!-- ── Email OTP (Recommended) ─────────────────────────── -->
+                <div class="mfa-section">
+                    <div class="mfa-section-header">
+                        <div class="mfa-section-title">
+                            <div class="mfa-icon mfa-icon-email">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Email OTP <span style="display:inline-block;font-size:11px;font-weight:600;background:rgba(124,58,237,0.1);color:var(--color-primary);padding:2px 8px;border-radius:var(--radius-full);margin-left:8px;vertical-align:middle;">Recommended</span></h3>
+                                <p>Receive a one-time code to your email address after signing in. No app required.</p>
+                            </div>
+                        </div>
+                        <div id="email-status-badge" class="status-badge inactive">Off</div>
+                    </div>
+                    <div id="email-mfa-actions" class="btn-row" style="margin-top: 16px;">
+                        <button class="btn btn-primary" id="email-toggle-btn" onclick="toggleEmailMfa()">
+                            Enable Email OTP
+                        </button>
+                    </div>
+                    <div class="inline-success" id="email-success"></div>
+                    <div class="inline-error" id="email-error"></div>
+                    <p style="font-size:13px; color: var(--color-text-muted); padding: 12px 14px; background: var(--color-bg-secondary); border-radius: var(--radius-md); margin-top: 12px;">
+                        Recommended for most users. A 6-digit code will be sent to your email each time you sign in from an untrusted device.
+                    </p>
+                </div>
+
                 <!-- ── TOTP ─────────────────────────────────────────────── -->
                 <div class="mfa-section">
                     <div class="mfa-section-header">
@@ -366,35 +395,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- ── Email OTP ────────────────────────────────────────── -->
-                <div class="mfa-section">
-                    <div class="mfa-section-header">
-                        <div class="mfa-section-title">
-                            <div class="mfa-icon mfa-icon-email">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                                    <polyline points="22,6 12,13 2,6"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3>Email OTP</h3>
-                                <p>Receive a one-time code to your email address after signing in. No app required.</p>
-                            </div>
-                        </div>
-                        <div id="email-status-badge" class="status-badge inactive">Off</div>
-                    </div>
-                    <div id="email-mfa-actions" class="btn-row" style="margin-top: 16px;">
-                        <button class="btn btn-primary" id="email-toggle-btn" onclick="toggleEmailMfa()">
-                            Enable Email OTP
-                        </button>
-                    </div>
-                    <div class="inline-success" id="email-success"></div>
-                    <div class="inline-error" id="email-error"></div>
-                    <p style="font-size:13px; color: var(--color-text-muted); padding: 12px 14px; background: var(--color-bg-secondary); border-radius: var(--radius-md); margin-top: 12px;">
-                        Recommended for most users. A 6-digit code will be sent to your email each time you sign in from an untrusted device.
-                    </p>
                 </div>
 
                 <!-- ── Trusted Devices ─────────────────────────────────── -->

@@ -4,6 +4,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { wrapEmail } from '../_shared/email-template.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -91,7 +92,7 @@ async function sendEmail(
         to: [to],
         subject,
         text: body,
-        html: htmlBody || body.replace(/\n/g, '<br>')
+        html: htmlBody ? wrapEmail(htmlBody) : wrapEmail(body.replace(/\n/g, '<br>'))
       })
     })
 

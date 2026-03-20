@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Outgoing Messages - Royalty</title>
+    <title>Campaign Manager - Royalty</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -14,233 +14,120 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="outgoing.css?v=5">
     <link rel="stylesheet" href="../i18n/i18n.css">
-    <style>
-        .coming-soon-container {
-            max-width: 600px;
-            margin: 80px auto;
-            text-align: center;
-            padding: 0 24px;
-        }
-
-        .coming-soon-icon {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 32px;
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
-            border-radius: var(--radius-full);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--color-primary);
-        }
-
-        .coming-soon-icon svg {
-            width: 56px;
-            height: 56px;
-        }
-
-        .coming-soon-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--color-text);
-            margin-bottom: 12px;
-        }
-
-        .coming-soon-subtitle {
-            font-size: 16px;
-            color: var(--color-text-muted);
-            margin-bottom: 40px;
-            line-height: 1.6;
-        }
-
-        .feature-preview {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            padding: 32px;
-            text-align: left;
-        }
-
-        .feature-preview h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--color-text);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .feature-preview h3 svg {
-            color: var(--color-primary);
-        }
-
-        .feature-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .feature-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--color-border);
-            color: var(--color-text-secondary);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .feature-list li:last-child {
-            border-bottom: none;
-        }
-
-        .feature-list li svg {
-            flex-shrink: 0;
-            color: var(--color-accent);
-            margin-top: 2px;
-        }
-
-        .coming-soon-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-            color: white;
-            padding: 6px 14px;
-            border-radius: var(--radius-full);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 24px;
-        }
-
-        .coming-soon-badge svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--color-text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            margin-top: 32px;
-            transition: color 0.2s ease;
-        }
-
-        .back-link:hover {
-            color: var(--color-primary);
-        }
-    </style>
 </head>
 <body>
-    <!-- App Layout with Sidebar -->
     <div class="app-layout">
-        <!-- Sidebar will be injected here by JS -->
+        <!-- Sidebar injected by sidebar.js -->
 
-        <!-- Main Content -->
         <main class="app-main">
-            <div class="coming-soon-container">
-                <div class="coming-soon-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                    </svg>
-                    <span data-i18n="outgoing.comingSoon">Coming Soon</span>
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title" data-i18n="outgoing.title">Campaign Manager</h1>
+                        <p class="page-subtitle" data-i18n="outgoing.subtitle">Monitor and manage campaigns created by Royal AI</p>
+                    </div>
+                    <a href="/app/automations.html" class="btn btn-secondary" style="text-decoration:none;" data-i18n="outgoing.viewAutomations">View Automations</a>
+                </div>
+            </div>
+
+            <div class="outgoing-page">
+                <!-- Summary Cards -->
+                <div class="summary-cards" id="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-card-label" data-i18n="outgoing.totalSent">Total Sent</div>
+                        <div class="summary-card-value">&mdash;</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-label" data-i18n="outgoing.delivered">Delivered</div>
+                        <div class="summary-card-value">&mdash;</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-label" data-i18n="outgoing.opened">Opened</div>
+                        <div class="summary-card-value">&mdash;</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-label" data-i18n="outgoing.clicked">Clicked</div>
+                        <div class="summary-card-value">&mdash;</div>
+                    </div>
                 </div>
 
-                <div class="coming-soon-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M22 2L11 13"/>
-                        <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
-                    </svg>
+                <!-- Search -->
+                <div class="search-bar">
+                    <svg class="search-bar-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" class="search-input" id="filter-search" placeholder="Search campaigns..." data-i18n-placeholder="outgoing.searchPlaceholder">
                 </div>
 
-                <h1 class="coming-soon-title" data-i18n="outgoing.title">Outgoing Messages</h1>
-                <p class="coming-soon-subtitle" data-i18n="outgoing.subtitle">
-                    Your command center for all scheduled messages. Monitor, pause, cancel, or reschedule any automation message before it's sent.
-                </p>
-
-                <div class="feature-preview">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                        </svg>
-                        <span data-i18n="outgoing.featuresTitle">What you'll be able to do</span>
-                    </h3>
-                    <ul class="feature-list">
-                        <li>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                <polyline points="22 4 12 14.01 9 11.01"/>
-                            </svg>
-                            <span data-i18n="outgoing.feature1">View all scheduled SMS and email messages in one place</span>
-                        </li>
-                        <li>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                <polyline points="22 4 12 14.01 9 11.01"/>
-                            </svg>
-                            <span data-i18n="outgoing.feature2">Filter by project, automation, channel, or date range</span>
-                        </li>
-                        <li>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                <polyline points="22 4 12 14.01 9 11.01"/>
-                            </svg>
-                            <span data-i18n="outgoing.feature3">Pause, cancel, or reschedule individual messages</span>
-                        </li>
-                        <li>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                <polyline points="22 4 12 14.01 9 11.01"/>
-                            </svg>
-                            <span data-i18n="outgoing.feature4">Bulk actions to manage multiple messages at once</span>
-                        </li>
-                        <li>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                <polyline points="22 4 12 14.01 9 11.01"/>
-                            </svg>
-                            <span data-i18n="outgoing.feature5">Real-time delivery status and error tracking</span>
-                        </li>
-                    </ul>
+                <!-- Filters -->
+                <div class="filters-bar">
+                    <select class="filter-select" id="filter-channel">
+                        <option value="" data-i18n="outgoing.allChannels">All Channels</option>
+                        <option value="email">Email</option>
+                        <option value="sms">SMS</option>
+                        <option value="push">Push</option>
+                        <option value="in_app">In-App</option>
+                    </select>
+                    <select class="filter-select" id="filter-status">
+                        <option value="" data-i18n="outgoing.allStatuses">All Statuses</option>
+                        <option value="upcoming" selected data-i18n="outgoing.statusUpcoming">Upcoming</option>
+                        <option value="sent" data-i18n="outgoing.statusSent">Sent</option>
+                        <option value="sending" data-i18n="outgoing.statusSending">Sending</option>
+                        <option value="scheduled" data-i18n="outgoing.statusScheduled">Scheduled</option>
+                        <option value="draft" data-i18n="outgoing.statusDraft">Draft</option>
+                        <option value="failed" data-i18n="outgoing.statusFailed">Failed</option>
+                        <option value="paused" data-i18n="outgoing.statusPaused">Paused</option>
+                        <option value="cancelled" data-i18n="outgoing.statusCancelled">Cancelled</option>
+                    </select>
+                    <select class="filter-select" id="filter-days">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                    <select class="filter-select" id="filter-sort">
+                        <option value="date" data-i18n="outgoing.sortDate">Sort: Date</option>
+                        <option value="recipients" data-i18n="outgoing.sortRecipients">Sort: Recipients</option>
+                        <option value="open_rate" data-i18n="outgoing.sortOpenRate">Sort: Open Rate</option>
+                    </select>
+                    <div class="filters-spacer"></div>
+                    <div class="bulk-actions">
+                        <button class="btn-sm" onclick="OutgoingManager.pauseAllAutomations()" data-i18n="outgoing.pauseAll">Pause All</button>
+                        <button class="btn-sm" onclick="OutgoingManager.resumeAllAutomations()" data-i18n="outgoing.resumeAll">Resume All</button>
+                    </div>
                 </div>
 
-                <a href="/app/dashboard.html" class="back-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7"/>
-                    </svg>
-                    <span data-i18n="outgoing.backToDashboard">Back to Dashboard</span>
-                </a>
+                <!-- Campaign List -->
+                <div id="outgoing-content">
+                    <div class="loading-spinner"><div class="spinner"></div><span>Loading campaigns...</span></div>
+                </div>
             </div>
         </main>
     </div>
 
+    <!-- Detail Modal -->
+    <div class="modal-backdrop" id="detail-modal" onclick="if(event.target===this) OutgoingManager.closeDetail()">
+        <div class="modal-content" id="detail-modal-body"></div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="../i18n/i18n.js?v=1"></script>
-    <script src="auth.js?v=5"></script>
+    <script src="auth.js?v=9"></script>
     <script src="sidebar.js?v=20"></script>
+    <script src="celebrate.js"></script>
+    <script src="undo-toast.js"></script>
+    <script src="outgoing.js?v=6"></script>
     <script>
-        // ===== Outgoing Page Initialization =====
         let currentUser = null;
         let currentOrganization = null;
         let currentUserRole = null;
 
         async function initOutgoing() {
-            // Require authentication
             currentUser = await requireAuth();
             if (!currentUser) return;
 
-            // Load user info
             const userProfile = await loadUserInfo();
 
-            // Initialize sidebar with role for admin features
             if (typeof AppSidebar !== 'undefined') {
                 AppSidebar.init({
                     name: userProfile?.fullName || currentUser.email.split('@')[0],
@@ -250,15 +137,17 @@
                     isAdmin: userProfile?.profile?.is_admin === true
                 });
             }
+
+            if (currentOrganization?.id) {
+                OutgoingManager.init(currentOrganization.id);
+            }
         }
 
-        // ===== Load User Info =====
         async function loadUserInfo() {
             const profile = await getUserProfile(currentUser.id);
 
-            // Load organization membership for role
             try {
-                const { data: membership } = await supabase
+                const { data: membership } = await db
                     .from('organization_members')
                     .select('role, organizations(id, name)')
                     .eq('user_id', currentUser.id)
@@ -280,25 +169,15 @@
                 fullName = currentUser.email.split('@')[0];
             }
 
-            return {
-                profile,
-                fullName
-            };
+            return { profile, fullName };
         }
 
-        function getInitials(firstName, lastName) {
-            if (firstName && lastName) {
-                return (firstName[0] + lastName[0]).toUpperCase();
-            } else if (firstName) {
-                return firstName.substring(0, 2).toUpperCase();
-            } else if (lastName) {
-                return lastName.substring(0, 2).toUpperCase();
-            }
-            return '?';
-        }
-
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', initOutgoing);
+
+        // Close modal on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') OutgoingManager.closeDetail();
+        });
     </script>
 </body>
 </html>

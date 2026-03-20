@@ -542,6 +542,7 @@ function updatePreviewContent(previewCol, toggleBtn, grid) {
         if (toggleBtn) toggleBtn.style.display = 'inline-flex';
     } else {
         previewCol.style.display = 'flex';
+        if (grid) grid.style.gridTemplateColumns = '1fr 340px';
         if (toggleBtn) toggleBtn.style.display = 'none';
     }
 
@@ -1563,6 +1564,14 @@ async function loadProjects() {
     const loading = document.getElementById('loading');
     const projectsGrid = document.getElementById('projects-grid');
     const emptyState = document.getElementById('empty-state');
+    const projectsSection = document.querySelector('.projects-section');
+
+    // Hide projects section for non-admin, non-advanced users (loyalty-only launch)
+    const showProjects = (typeof isAdmin === 'function' && isAdmin()) || localStorage.getItem('advancedMode') === 'true';
+    if (!showProjects && projectsSection) {
+        projectsSection.style.display = 'none';
+        return;
+    }
 
     if (!currentOrganization) {
         loading.innerHTML = '<p style="color: var(--color-error);">No organization found. Please contact support.</p>';

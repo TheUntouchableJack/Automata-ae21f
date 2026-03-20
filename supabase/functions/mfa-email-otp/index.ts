@@ -4,6 +4,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { wrapEmail } from '../_shared/email-template.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -46,25 +47,18 @@ async function sendEmailViaResend(to: string, code: string): Promise<{ success: 
         from: 'Royalty Security <noreply@royaltyapp.ai>',
         to: [to],
         subject: `${code} is your Royalty verification code`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <div style="display: inline-block; background: #7c3aed; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
-                <span style="color: white; font-size: 24px; font-weight: 700;">R</span>
-              </div>
-              <h2 style="margin: 0; color: #1a1a2e; font-size: 22px;">Verification Code</h2>
+        html: wrapEmail(`
+          <h2 style="margin: 0 0 24px; color: #1a1a2e; font-size: 22px; text-align: center;">Verification Code</h2>
+          <div style="background: #f8f7ff; border: 2px solid #e9e5ff; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
+            <p style="margin: 0 0 8px; color: #666; font-size: 14px;">Your one-time code:</p>
+            <div style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; letter-spacing: 0.3em; color: #7c3aed;">
+              ${code}
             </div>
-            <div style="background: #f8f7ff; border: 2px solid #e9e5ff; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
-              <p style="margin: 0 0 8px; color: #666; font-size: 14px;">Your one-time code:</p>
-              <div style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; letter-spacing: 0.3em; color: #7c3aed;">
-                ${code}
-              </div>
-            </div>
-            <p style="color: #888; font-size: 13px; text-align: center; margin: 0;">
-              This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.
-            </p>
           </div>
-        `,
+          <p style="color: #888; font-size: 13px; text-align: center; margin: 0;">
+            This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.
+          </p>
+        `, { footerText: 'This is an automated security email from Royalty. Do not share this code with anyone.' }),
         text: `Your Royalty verification code is: ${code}\n\nThis code expires in 5 minutes. If you didn't request this, you can safely ignore this email.`,
       }),
     })

@@ -5,6 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { wrapEmail } from '../_shared/email-template.ts'
 
 const NOTIFY_EMAIL = 'jay@24hour.design'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
@@ -71,23 +72,17 @@ Deno.serve(async (req) => {
 
     const subject = TYPE_SUBJECTS[type] || TYPE_SUBJECTS['general']
 
-    const htmlBody = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #7c3aed; color: white; padding: 24px; border-radius: 12px 12px 0 0;">
-          <h2 style="margin: 0;">${subject}</h2>
-          <p style="margin: 8px 0 0; opacity: 0.9;">From ${source || 'royaltyapp.ai'}</p>
-        </div>
-        <div style="background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px 0; color: #6b7280; width: 100px;">Name</td><td style="padding: 8px 0;">${name || 'Not provided'}</td></tr>
-            <tr><td style="padding: 8px 0; color: #6b7280;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}">${email}</a></td></tr>
-            ${phone ? `<tr><td style="padding: 8px 0; color: #6b7280;">Phone</td><td style="padding: 8px 0;">${phone}</td></tr>` : ''}
-            <tr><td style="padding: 8px 0; color: #6b7280;">Type</td><td style="padding: 8px 0;">${type}</td></tr>
-          </table>
-          ${message ? `<div style="margin-top: 16px; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e5e7eb;"><p style="margin: 0; white-space: pre-wrap;">${message}</p></div>` : ''}
-        </div>
-      </div>
-    `
+    const htmlBody = wrapEmail(`
+      <h2 style="margin: 0 0 4px; color: #1a1a2e; font-size: 20px;">${subject}</h2>
+      <p style="margin: 0 0 20px; color: #71717a; font-size: 14px;">From ${source || 'royaltyapp.ai'}</p>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><td style="padding: 8px 0; color: #6b7280; width: 100px;">Name</td><td style="padding: 8px 0;">${name || 'Not provided'}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #7c3aed;">${email}</a></td></tr>
+        ${phone ? `<tr><td style="padding: 8px 0; color: #6b7280;">Phone</td><td style="padding: 8px 0;">${phone}</td></tr>` : ''}
+        <tr><td style="padding: 8px 0; color: #6b7280;">Type</td><td style="padding: 8px 0;">${type}</td></tr>
+      </table>
+      ${message ? `<div style="margin-top: 16px; padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;"><p style="margin: 0; white-space: pre-wrap;">${message}</p></div>` : ''}
+    `, { footerText: 'Internal notification — contact inquiry received on royaltyapp.ai' })
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
