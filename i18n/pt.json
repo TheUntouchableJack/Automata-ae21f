@@ -1869,5 +1869,31 @@
         "publishDisabled": "Resolva todas as edições antes de publicar",
         "saved": "Salvo",
         "published": "Publicado no blog"
+    },
+    "welcome": {
+        "summaryTitle": "Seu programa de fidelidade está pronto",
+        "summaryLine": "Automações + Aplicativo + Inteligência IA",
+        "title": "Bem-vindo ao Royalty — veja o que preparamos para você",
+        "skip": "Pular",
+        "exploreOwn": "Vou explorar por conta própria",
+        "completed": "Concluído",
+        "automationsTitle": "Automações sugeridas",
+        "automationsDesc": "Preparamos 4 automações baseadas no seu negócio: Mensagem de boas-vindas, Bônus de visita, Verificação de risco e Oferta de reconquista. Revise e ative as que se adequam à sua estratégia.",
+        "automationsLink": "Revisar automações",
+        "appTitle": "Seu novo aplicativo",
+        "appDesc": "{name} Rewards está pronto para personalizar. Adicione sua marca, defina valores de pontos e configure recompensas antes de compartilhar com clientes.",
+        "appLink": "Personalizar app",
+        "aiTitle": "Inteligência IA",
+        "aiDesc": "Royal AI está monitorando seu programa. Vai aprender seu negócio, sugerir melhorias e pode executar campanhas em seu nome. Escolha entre revisão Manual ou modo Auto-piloto.",
+        "aiLink": "Explorar aprendizados IA",
+        "hidePanel": "Ocultar painel",
+        "showPanel": "Mostrar painel",
+        "confirmDismissTitle": "Dispensar guia de boas-vindas?",
+        "confirmDismissMessage": "Você não verá mais este guia. Você sempre pode encontrar esses recursos na barra lateral.",
+        "confirmDismissCancel": "Cancelar",
+        "confirmDismissConfirm": "Sim, dispensar",
+        "rewardsTitle": "Programa de recompensas",
+        "rewardsDesc": "Configure recompensas que seus clientes vão adorar. Crie benefícios por pontos, exclusivos por nível, ou deixe a IA sugerir as melhores recompensas.",
+        "rewardsLink": "Ver recompensas"
     }
 }

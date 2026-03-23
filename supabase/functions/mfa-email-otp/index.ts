@@ -10,9 +10,33 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const resendApiKey = Deno.env.get('RESEND_API_KEY')
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://royaltyapp.ai',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = [
+  'https://royaltyapp.ai',
+  'https://www.royaltyapp.ai',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+  'http://127.0.0.1:5176',
+]
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin') || ''
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      'Access-Control-Allow-Origin': '',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    }
+  }
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -23,10 +47,10 @@ function generateCode(): string {
   return String(array[0] % 1000000).padStart(6, '0')
 }
 
-function jsonResponse(data: Record<string, unknown>, status = 200) {
+function jsonResponse(req: Request, data: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
   })
 }
 
@@ -78,17 +102,17 @@ async function sendEmailViaResend(to: string, code: string): Promise<{ success: 
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   if (req.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed' }, 405)
+    return jsonResponse(req, { error: 'Method not allowed' }, 405)
   }
 
   // Authenticate user via JWT
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) {
-    return jsonResponse({ error: 'Missing authorization header' }, 401)
+    return jsonResponse(req, { error: 'Missing authorization header' }, 401)
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -97,7 +121,7 @@ Deno.serve(async (req) => {
   const token = authHeader.replace('Bearer ', '')
   const { data: { user }, error: userError } = await supabase.auth.getUser(token)
   if (userError || !user) {
-    return jsonResponse({ error: 'Invalid or expired token' }, 401)
+    return jsonResponse(req, { error: 'Invalid or expired token' }, 401)
   }
 
   // Parse action from URL path
@@ -107,27 +131,27 @@ Deno.serve(async (req) => {
   try {
     switch (action) {
       case 'send':
-        return await handleSend(supabase, user)
+        return await handleSend(req, supabase, user)
       case 'verify':
-        return await handleVerify(supabase, user, req)
+        return await handleVerify(req, supabase, user)
       case 'enroll':
-        return await handleEnroll(supabase, user)
+        return await handleEnroll(req, supabase, user)
       case 'unenroll':
-        return await handleUnenroll(supabase, user)
+        return await handleUnenroll(req, supabase, user)
       default:
-        return jsonResponse({ error: 'Unknown action. Use /send, /verify, /enroll, or /unenroll' }, 400)
+        return jsonResponse(req, { error: 'Unknown action. Use /send, /verify, /enroll, or /unenroll' }, 400)
     }
   } catch (err) {
     console.error('MFA email OTP error:', err)
-    return jsonResponse({ error: 'Internal server error' }, 500)
+    return jsonResponse(req, { error: 'Internal server error' }, 500)
   }
 })
 
 // ── Send Code ────────────────────────────────────────────────────────────────
 
-async function handleSend(supabase: ReturnType<typeof createClient>, user: { id: string; email?: string }) {
+async function handleSend(req: Request, supabase: ReturnType<typeof createClient>, user: { id: string; email?: string }) {
   if (!user.email) {
-    return jsonResponse({ error: 'No email address on account' }, 400)
+    return jsonResponse(req, { error: 'No email address on account' }, 400)
   }
 
   // Rate limit: max 5 codes per 15 minutes
@@ -143,7 +167,7 @@ async function handleSend(supabase: ReturnType<typeof createClient>, user: { id:
   }
 
   if ((count ?? 0) >= 5) {
-    return jsonResponse({ error: 'Too many code requests. Please wait a few minutes.' }, 429)
+    return jsonResponse(req, { error: 'Too many code requests. Please wait a few minutes.' }, 429)
   }
 
   // Invalidate any previous unused codes
@@ -165,31 +189,31 @@ async function handleSend(supabase: ReturnType<typeof createClient>, user: { id:
 
   if (insertError) {
     console.error('Insert code error:', insertError)
-    return jsonResponse({ error: 'Failed to generate code' }, 500)
+    return jsonResponse(req, { error: 'Failed to generate code' }, 500)
   }
 
   // Send email
   const { success, error: emailError } = await sendEmailViaResend(user.email, code)
   if (!success) {
     console.error('Email send error:', emailError)
-    return jsonResponse({ error: 'Failed to send verification email' }, 500)
+    return jsonResponse(req, { error: 'Failed to send verification email' }, 500)
   }
 
   // Mask email for response
   const parts = user.email.split('@')
   const masked = parts[0].slice(0, 2) + '***@' + parts[1]
 
-  return jsonResponse({ sent: true, email: masked })
+  return jsonResponse(req, { sent: true, email: masked })
 }
 
 // ── Verify Code ──────────────────────────────────────────────────────────────
 
-async function handleVerify(supabase: ReturnType<typeof createClient>, user: { id: string }, req: Request) {
+async function handleVerify(req: Request, supabase: ReturnType<typeof createClient>, user: { id: string }) {
   const body = await req.json()
   const code = String(body.code || '').trim()
 
   if (!/^\d{6}$/.test(code)) {
-    return jsonResponse({ error: 'Invalid code format' }, 400)
+    return jsonResponse(req, { error: 'Invalid code format' }, 400)
   }
 
   // Find matching unexpired, unverified code
@@ -206,11 +230,11 @@ async function handleVerify(supabase: ReturnType<typeof createClient>, user: { i
 
   if (findError) {
     console.error('Code lookup error:', findError)
-    return jsonResponse({ error: 'Verification failed' }, 500)
+    return jsonResponse(req, { error: 'Verification failed' }, 500)
   }
 
   if (!codeRecord) {
-    return jsonResponse({ error: 'Invalid or expired code' }, 400)
+    return jsonResponse(req, { error: 'Invalid or expired code' }, 400)
   }
 
   // Mark as verified
@@ -226,12 +250,12 @@ async function handleVerify(supabase: ReturnType<typeof createClient>, user: { i
     .eq('user_id', user.id)
     .neq('id', codeRecord.id)
 
-  return jsonResponse({ verified: true })
+  return jsonResponse(req, { verified: true })
 }
 
 // ── Enroll (enable email MFA) ────────────────────────────────────────────────
 
-async function handleEnroll(supabase: ReturnType<typeof createClient>, user: { id: string }) {
+async function handleEnroll(req: Request, supabase: ReturnType<typeof createClient>, user: { id: string }) {
   // Update profile to include 'email' in mfa_methods
   const { data: profile } = await supabase
     .from('profiles')
@@ -250,15 +274,15 @@ async function handleEnroll(supabase: ReturnType<typeof createClient>, user: { i
     .eq('id', user.id)
 
   if (error) {
-    return jsonResponse({ error: 'Failed to enable email MFA' }, 500)
+    return jsonResponse(req, { error: 'Failed to enable email MFA' }, 500)
   }
 
-  return jsonResponse({ enrolled: true, methods })
+  return jsonResponse(req, { enrolled: true, methods })
 }
 
 // ── Unenroll (disable email MFA) ─────────────────────────────────────────────
 
-async function handleUnenroll(supabase: ReturnType<typeof createClient>, user: { id: string }) {
+async function handleUnenroll(req: Request, supabase: ReturnType<typeof createClient>, user: { id: string }) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('mfa_methods')
@@ -276,7 +300,7 @@ async function handleUnenroll(supabase: ReturnType<typeof createClient>, user: {
     .eq('id', user.id)
 
   if (error) {
-    return jsonResponse({ error: 'Failed to disable email MFA' }, 500)
+    return jsonResponse(req, { error: 'Failed to disable email MFA' }, 500)
   }
 
   // Clean up any pending codes
@@ -285,5 +309,5 @@ async function handleUnenroll(supabase: ReturnType<typeof createClient>, user: {
     .delete()
     .eq('user_id', user.id)
 
-  return jsonResponse({ unenrolled: true, methods })
+  return jsonResponse(req, { unenrolled: true, methods })
 }

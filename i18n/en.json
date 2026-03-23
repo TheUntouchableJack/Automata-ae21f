@@ -1862,5 +1862,31 @@
         "publishDisabled": "Resolve all edits before publishing",
         "saved": "Saved",
         "published": "Published to blog"
+    },
+    "welcome": {
+        "summaryTitle": "Your loyalty program is ready",
+        "summaryLine": "Automations + App + AI Intelligence",
+        "title": "Welcome to Royalty — here's what we've prepared for you",
+        "skip": "Skip",
+        "exploreOwn": "I'll explore on my own",
+        "completed": "Completed",
+        "automationsTitle": "Suggested Automations",
+        "automationsDesc": "We've drafted 4 automations based on your business: Welcome Message, Visit Bonus, At-Risk Check-in, and Win-Back Offer. Review and activate the ones that fit your strategy.",
+        "automationsLink": "Review Automations",
+        "appTitle": "Your New Application",
+        "appDesc": "{name} Rewards is ready to customize. Add your branding, set point values, and configure rewards before sharing with customers.",
+        "appLink": "Customize App",
+        "aiTitle": "AI Intelligence",
+        "aiDesc": "Royal AI is now monitoring your program. It will learn your business, suggest improvements, and can run campaigns on your behalf. Choose between Manual review or Auto-pilot mode.",
+        "aiLink": "Explore AI Learnings",
+        "hidePanel": "Hide Panel",
+        "showPanel": "Show Panel",
+        "confirmDismissTitle": "Dismiss welcome guide?",
+        "confirmDismissMessage": "You won't see this guide again. You can always find these features in the sidebar.",
+        "confirmDismissCancel": "Cancel",
+        "confirmDismissConfirm": "Yes, dismiss",
+        "rewardsTitle": "Rewards Program",
+        "rewardsDesc": "Set up rewards your customers will love. Create point-based perks, tier exclusives, or let AI suggest the best rewards for your business.",
+        "rewardsLink": "Browse Rewards"
     }
 }

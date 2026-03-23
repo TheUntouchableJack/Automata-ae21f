@@ -1869,5 +1869,31 @@
         "publishDisabled": "Alle Bearbeitungen vor dem Veröffentlichen auflösen",
         "saved": "Gespeichert",
         "published": "Im Blog veröffentlicht"
+    },
+    "welcome": {
+        "summaryTitle": "Ihr Treueprogramm ist bereit",
+        "summaryLine": "Automatisierungen + Anwendung + KI-Intelligenz",
+        "title": "Willkommen bei Royalty — das haben wir für Sie vorbereitet",
+        "skip": "Überspringen",
+        "exploreOwn": "Ich erkunde selbst",
+        "completed": "Abgeschlossen",
+        "automationsTitle": "Vorgeschlagene Automatisierungen",
+        "automationsDesc": "Wir haben 4 Automatisierungen basierend auf Ihrem Geschäft erstellt: Willkommensnachricht, Besuchsbonus, Risiko-Check und Rückgewinnungsangebot. Überprüfen und aktivieren Sie die passenden.",
+        "automationsLink": "Automatisierungen prüfen",
+        "appTitle": "Ihre neue Anwendung",
+        "appDesc": "{name} Rewards ist bereit zur Anpassung. Fügen Sie Ihr Branding hinzu, legen Sie Punktwerte fest und konfigurieren Sie Prämien, bevor Sie es mit Kunden teilen.",
+        "appLink": "App anpassen",
+        "aiTitle": "KI-Intelligenz",
+        "aiDesc": "Royal AI überwacht jetzt Ihr Programm. Es lernt Ihr Geschäft kennen, schlägt Verbesserungen vor und kann Kampagnen in Ihrem Namen durchführen. Wählen Sie zwischen manueller Überprüfung oder Auto-Pilot-Modus.",
+        "aiLink": "KI-Erkenntnisse erkunden",
+        "hidePanel": "Panel ausblenden",
+        "showPanel": "Panel einblenden",
+        "confirmDismissTitle": "Willkommensleitfaden schließen?",
+        "confirmDismissMessage": "Sie werden diesen Leitfaden nicht mehr sehen. Sie finden diese Funktionen jederzeit in der Seitenleiste.",
+        "confirmDismissCancel": "Abbrechen",
+        "confirmDismissConfirm": "Ja, schließen",
+        "rewardsTitle": "Belohnungsprogramm",
+        "rewardsDesc": "Richten Sie Belohnungen ein, die Ihre Kunden lieben werden. Erstellen Sie punktebasierte Vorteile, Stufen-Exklusives oder lassen Sie die KI die besten Belohnungen vorschlagen.",
+        "rewardsLink": "Belohnungen ansehen"
     }
 }

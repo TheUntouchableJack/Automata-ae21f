@@ -1869,5 +1869,31 @@
         "publishDisabled": "Resuelve todas las ediciones antes de publicar",
         "saved": "Guardado",
         "published": "Publicado en el blog"
+    },
+    "welcome": {
+        "summaryTitle": "Tu programa de fidelización está listo",
+        "summaryLine": "Automatizaciones + Aplicación + Inteligencia IA",
+        "title": "Bienvenido a Royalty — esto es lo que hemos preparado para ti",
+        "skip": "Omitir",
+        "exploreOwn": "Exploraré por mi cuenta",
+        "completed": "Completado",
+        "automationsTitle": "Automatizaciones sugeridas",
+        "automationsDesc": "Hemos preparado 4 automatizaciones basadas en tu negocio: Mensaje de bienvenida, Bono por visita, Control de riesgo y Oferta de recuperación. Revisa y activa las que se ajusten a tu estrategia.",
+        "automationsLink": "Revisar automatizaciones",
+        "appTitle": "Tu nueva aplicación",
+        "appDesc": "{name} Rewards está lista para personalizar. Agrega tu marca, configura valores de puntos y establece recompensas antes de compartir con clientes.",
+        "appLink": "Personalizar app",
+        "aiTitle": "Inteligencia IA",
+        "aiDesc": "Royal AI está monitoreando tu programa. Aprenderá tu negocio, sugerirá mejoras y puede ejecutar campañas en tu nombre. Elige entre revisión Manual o modo Auto-piloto.",
+        "aiLink": "Explorar aprendizajes IA",
+        "hidePanel": "Ocultar panel",
+        "showPanel": "Mostrar panel",
+        "confirmDismissTitle": "¿Descartar guía de bienvenida?",
+        "confirmDismissMessage": "No volverás a ver esta guía. Siempre puedes encontrar estas funciones en la barra lateral.",
+        "confirmDismissCancel": "Cancelar",
+        "confirmDismissConfirm": "Sí, descartar",
+        "rewardsTitle": "Programa de recompensas",
+        "rewardsDesc": "Configura recompensas que encantarán a tus clientes. Crea beneficios por puntos, exclusivos por nivel, o deja que la IA sugiera las mejores recompensas.",
+        "rewardsLink": "Ver recompensas"
     }
 }

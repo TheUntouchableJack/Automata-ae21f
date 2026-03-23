@@ -16,9 +16,33 @@ const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN')
 const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER')
 const twilioWebhookUrl = `${supabaseUrl}/functions/v1/twilio-webhook`
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://royaltyapp.ai',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = [
+  'https://royaltyapp.ai',
+  'https://www.royaltyapp.ai',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+  'http://127.0.0.1:5176',
+]
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin') || ''
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      'Access-Control-Allow-Origin': '',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    }
+  }
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 // ============================================================================
@@ -527,7 +551,7 @@ async function processBatch(
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   try {
@@ -550,7 +574,7 @@ Deno.serve(async (req) => {
       if (!member) {
         return new Response(
           JSON.stringify({ success: false, error: 'Member not found' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+          { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 404 }
         )
       }
 
@@ -621,14 +645,14 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, ...result }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 200 }
     )
 
   } catch (error) {
     console.error('Message sender error:', error)
     return new Response(
       JSON.stringify({ success: false, error: 'Message sending failed' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 500 }
     )
   }
 })

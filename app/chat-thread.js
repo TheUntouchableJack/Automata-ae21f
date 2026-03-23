@@ -93,90 +93,123 @@ const ChatThread = (function() {
     }
 
     function setupTabSwitching() {
-        const tabChat = document.getElementById('tab-chat');
-        const tabActivity = document.getElementById('tab-activity');
-        const tabIntel = document.getElementById('tab-intel');
-        const tabKnowledge = document.getElementById('tab-knowledge');
+        const dropdown = document.getElementById('panel-tab-dropdown');
+        const trigger = document.getElementById('panel-tab-trigger');
+        const menu = document.getElementById('panel-tab-menu');
+        const options = menu ? menu.querySelectorAll('.panel-tab-option') : [];
+
         const contentChat = document.getElementById('tab-content-chat');
         const contentActivity = document.getElementById('tab-content-activity');
         const contentIntel = document.getElementById('tab-content-intel');
         const contentKnowledge = document.getElementById('tab-content-knowledge');
         const panelStats = document.getElementById('cards-panel-stats');
-        // Chat-specific elements in right sidebar (HISTORY section)
         const threadSectionHeader = document.querySelector('.thread-section-header');
         const threadSelector = document.getElementById('thread-selector');
 
-        if (!tabChat || !tabActivity) return;
+        if (!trigger || !menu) return;
 
-        // Helper to deactivate all tabs
-        function deactivateAllTabs() {
-            [tabChat, tabActivity, tabIntel, tabKnowledge].forEach(tab => {
-                if (tab) tab.classList.remove('active');
-            });
-            [contentChat, contentActivity, contentIntel, contentKnowledge].forEach(content => {
-                if (content) content.classList.remove('active');
-            });
-        }
+        const contents = {
+            activity: contentActivity,
+            intel: contentIntel,
+            knowledge: contentKnowledge,
+            chat: contentChat
+        };
 
-        tabChat.addEventListener('click', () => {
-            deactivateAllTabs();
-            tabChat.classList.add('active');
-            contentChat.classList.add('active');
-            if (panelStats) panelStats.style.display = 'none';
-            // Show HISTORY section on Chat tab
-            if (threadSectionHeader) threadSectionHeader.style.display = '';
-            if (threadSelector) threadSelector.style.display = '';
+        // Toggle dropdown open/close
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+            trigger.setAttribute('aria-expanded', dropdown.classList.contains('open'));
         });
 
-        tabActivity.addEventListener('click', () => {
-            deactivateAllTabs();
-            tabActivity.classList.add('active');
-            contentActivity.classList.add('active');
-            if (panelStats) panelStats.style.display = 'flex';
-            // Hide HISTORY section on Actions tab
-            if (threadSectionHeader) threadSectionHeader.style.display = 'none';
-            if (threadSelector) threadSelector.style.display = 'none';
-
-            // Clear activity badge
-            const badge = document.getElementById('activity-badge');
-            if (badge) {
-                badge.style.display = 'none';
-                badge.textContent = '0';
+        // Close on click outside
+        document.addEventListener('click', function() {
+            if (dropdown.classList.contains('open')) {
+                dropdown.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
             }
         });
 
-        if (tabIntel) {
-            tabIntel.addEventListener('click', () => {
-                deactivateAllTabs();
-                tabIntel.classList.add('active');
-                if (contentIntel) contentIntel.classList.add('active');
-                if (panelStats) panelStats.style.display = 'none';
-                // Hide HISTORY section on Intel tab
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // Tab option clicks
+        options.forEach(function(option) {
+            option.addEventListener('click', function() {
+                var tabId = this.dataset.tab;
+                switchTab(tabId, this);
+                dropdown.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        function switchTab(tabId, optionEl) {
+            // Deactivate all
+            options.forEach(function(opt) { opt.classList.remove('active'); });
+            Object.values(contents).forEach(function(c) { if (c) c.classList.remove('active'); });
+
+            // Activate selected
+            if (optionEl) optionEl.classList.add('active');
+            if (contents[tabId]) contents[tabId].classList.add('active');
+
+            // Update trigger to show active tab
+            var icon = optionEl.querySelector('svg');
+            var text = optionEl.querySelector('span[data-i18n]');
+            var triggerIcon = trigger.querySelector('.panel-tab-trigger-icon');
+            var triggerText = trigger.querySelector('.panel-tab-trigger-text');
+            if (icon && triggerIcon) triggerIcon.innerHTML = icon.innerHTML;
+            if (text && triggerText) {
+                triggerText.textContent = text.textContent;
+                triggerText.setAttribute('data-i18n', text.getAttribute('data-i18n'));
+            }
+
+            // Tab-specific logic
+            if (panelStats) panelStats.style.display = tabId === 'activity' ? 'flex' : 'none';
+
+            if (tabId === 'chat') {
+                if (threadSectionHeader) threadSectionHeader.style.display = '';
+                if (threadSelector) threadSelector.style.display = '';
+            } else {
                 if (threadSectionHeader) threadSectionHeader.style.display = 'none';
                 if (threadSelector) threadSelector.style.display = 'none';
+            }
 
-                // Clear intel badge
-                const badge = document.getElementById('intel-badge');
-                if (badge) {
-                    badge.style.display = 'none';
-                    badge.textContent = '0';
-                }
+            // Clear badges
+            if (tabId === 'activity') {
+                var badge = document.getElementById('activity-badge');
+                if (badge) { badge.style.display = 'none'; badge.textContent = '0'; }
+                var menuBadge = document.getElementById('activity-badge-menu');
+                if (menuBadge) { menuBadge.style.display = 'none'; menuBadge.textContent = '0'; }
+            }
+            if (tabId === 'intel') {
+                var intelBadge = document.getElementById('intel-badge');
+                if (intelBadge) { intelBadge.style.display = 'none'; intelBadge.textContent = '0'; }
+            }
+
+            // Load knowledge on first visit
+            if (tabId === 'knowledge' && typeof CrownDashboard !== 'undefined' && typeof CrownDashboard.loadKnowledge === 'function') {
+                CrownDashboard.loadKnowledge();
+            }
+        }
+
+        // Setup panel toggle (hides/shows right cards panel)
+        var panelToggle = document.getElementById('panel-sidebar-toggle');
+        if (panelToggle) {
+            panelToggle.addEventListener('click', function() {
+                var dashboard = document.getElementById('crown-dashboard');
+                if (dashboard) dashboard.classList.toggle('panel-hidden');
+                window.dispatchEvent(new Event('resize'));
             });
         }
 
-        if (tabKnowledge) {
-            tabKnowledge.addEventListener('click', () => {
-                deactivateAllTabs();
-                tabKnowledge.classList.add('active');
-                if (contentKnowledge) contentKnowledge.classList.add('active');
-                if (panelStats) panelStats.style.display = 'none';
-                if (threadSectionHeader) threadSectionHeader.style.display = 'none';
-                if (threadSelector) threadSelector.style.display = 'none';
-
-                // Load knowledge on first visit
-                if (typeof CrownDashboard !== 'undefined' && typeof CrownDashboard.loadKnowledge === 'function') {
-                    CrownDashboard.loadKnowledge();
-                }
+        // Panel reopen button (visible in viewport when panel is hidden)
+        var panelReopen = document.getElementById('panel-reopen-btn');
+        if (panelReopen) {
+            panelReopen.addEventListener('click', function() {
+                var dashboard = document.getElementById('crown-dashboard');
+                if (dashboard) dashboard.classList.remove('panel-hidden');
+                window.dispatchEvent(new Event('resize'));
             });
         }
 
@@ -497,15 +530,18 @@ const ChatThread = (function() {
 
     function incrementActivityBadge() {
         const badge = document.getElementById('activity-badge');
+        const menuBadge = document.getElementById('activity-badge-menu');
         const tabActivity = document.getElementById('tab-activity');
 
         // Only show badge if Activity tab is not active
         if (tabActivity && !tabActivity.classList.contains('active')) {
-            if (badge) {
-                const current = parseInt(badge.textContent) || 0;
-                badge.textContent = current + 1;
-                badge.style.display = 'inline-flex';
-            }
+            [badge, menuBadge].forEach(function(b) {
+                if (b) {
+                    const current = parseInt(b.textContent) || 0;
+                    b.textContent = current + 1;
+                    b.style.display = 'inline-flex';
+                }
+            });
         }
     }
 

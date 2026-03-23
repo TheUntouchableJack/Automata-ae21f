@@ -1882,5 +1882,31 @@
         "publishDisabled": "Résolvez toutes les modifications avant de publier",
         "saved": "Enregistré",
         "published": "Publié sur le blog"
+    },
+    "welcome": {
+        "summaryTitle": "Votre programme de fidélité est prêt",
+        "summaryLine": "Automatisations + Application + Intelligence IA",
+        "title": "Bienvenue sur Royalty — voici ce que nous avons préparé pour vous",
+        "skip": "Passer",
+        "exploreOwn": "Je vais explorer par moi-même",
+        "completed": "Terminé",
+        "automationsTitle": "Automatisations suggérées",
+        "automationsDesc": "Nous avons préparé 4 automatisations basées sur votre entreprise : Message de bienvenue, Bonus de visite, Vérification de risque et Offre de reconquête. Examinez et activez celles qui correspondent à votre stratégie.",
+        "automationsLink": "Examiner les automatisations",
+        "appTitle": "Votre nouvelle application",
+        "appDesc": "{name} Rewards est prête à personnaliser. Ajoutez votre marque, définissez les valeurs de points et configurez les récompenses avant de partager avec vos clients.",
+        "appLink": "Personnaliser l'app",
+        "aiTitle": "Intelligence IA",
+        "aiDesc": "Royal AI surveille désormais votre programme. Il apprendra votre entreprise, suggérera des améliorations et pourra lancer des campagnes en votre nom. Choisissez entre la révision Manuelle ou le mode Auto-pilote.",
+        "aiLink": "Explorer les apprentissages IA",
+        "hidePanel": "Masquer le panneau",
+        "showPanel": "Afficher le panneau",
+        "confirmDismissTitle": "Fermer le guide de bienvenue ?",
+        "confirmDismissMessage": "Vous ne verrez plus ce guide. Vous pouvez toujours retrouver ces fonctionnalités dans la barre latérale.",
+        "confirmDismissCancel": "Annuler",
+        "confirmDismissConfirm": "Oui, fermer",
+        "rewardsTitle": "Programme de récompenses",
+        "rewardsDesc": "Créez des récompenses que vos clients adoreront. Configurez des avantages par points, des exclusivités par niveau, ou laissez l'IA suggérer les meilleures récompenses.",
+        "rewardsLink": "Voir les récompenses"
     }
 }

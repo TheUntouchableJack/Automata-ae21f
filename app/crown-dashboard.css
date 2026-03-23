@@ -122,7 +122,7 @@
 .theme-toggle-btn {
     position: absolute;
     top: 24px;
-    right: 24px;
+    right: 84px;
     width: 44px;
     height: 44px;
     display: flex;
@@ -213,7 +213,10 @@
 }
 
 .cards-panel-header {
-    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--color-border, #e2e8f0);
     flex-shrink: 0;
 }
@@ -448,6 +451,89 @@
 
 
 /* =============================================
+   WELCOME BANNER — Full-Width Grid Row
+   ============================================= */
+
+/* Hide empty banner container so it doesn't break grid auto-placement */
+#welcome-banner-container:empty {
+    display: none;
+}
+
+/* JS-managed class: added in show(), removed in removeBanner() */
+.crown-dashboard.has-welcome-banner {
+    grid-template-rows: auto 1fr;
+}
+
+.crown-dashboard.has-welcome-banner #welcome-banner-container {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    z-index: 5;
+}
+
+/* Panel hide/show toggle */
+.crown-dashboard.panel-hidden {
+    grid-template-columns: 1fr !important;
+}
+
+.crown-dashboard.panel-hidden .crown-cards-panel {
+    display: none;
+}
+
+.crown-dashboard.panel-hidden .crown-viewport {
+    grid-column: 1 / -1;
+}
+
+/* Full-screen sphere — dark bg to match Three.js scene (canvas alpha is transparent) */
+.crown-dashboard.panel-hidden .crown-viewport {
+    background: #0a0612;
+}
+
+/* Wider prompts, closer to bottom — overlay feel */
+.crown-dashboard.panel-hidden .crown-prompt-container {
+    max-width: 700px;
+    bottom: 40px;
+}
+
+/* Hide controls during onboarding */
+.crown-dashboard.has-welcome-banner .crown-mode-toggle { display: none; }
+.crown-dashboard.has-welcome-banner .theme-toggle-btn { display: none; }
+.crown-dashboard.has-welcome-banner .crown-status { display: none; }
+.crown-dashboard.has-welcome-banner .llm-model-badge { display: none; }
+.crown-dashboard.has-welcome-banner .panel-reopen-btn { display: none !important; }
+
+/* Panel reopen button — only visible when panel is hidden */
+.panel-reopen-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    border-radius: 50%;
+    color: #6366f1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 20;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.panel-reopen-btn:hover {
+    background: #f5f3ff;
+    border-color: rgba(124, 58, 237, 0.4);
+    color: #7c3aed;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+}
+
+.crown-dashboard.panel-hidden .panel-reopen-btn {
+    display: flex;
+}
+
+
+/* =============================================
    DARK MODE
    ============================================= */
 
@@ -499,6 +585,18 @@
     border-color: #a855f7;
     box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
     transform: scale(1.05);
+}
+
+.crown-dashboard[data-theme="dark"] .panel-reopen-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #c4b5fd;
+}
+
+.crown-dashboard[data-theme="dark"] .panel-reopen-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-color: #a855f7;
 }
 
 /* Dark cards panel */
@@ -985,12 +1083,20 @@
         grid-template-columns: 1fr;
         grid-template-rows: 50vh 1fr;
     }
+    /* When banner visible on tablet, add auto row before viewport */
+    .crown-dashboard.has-welcome-banner {
+        grid-template-rows: auto 50vh 1fr;
+    }
     .crown-cards-panel {
         border-left: none;
         border-top: 1px solid var(--color-border, #e2e8f0);
     }
     .crown-dashboard[data-theme="dark"] .crown-cards-panel {
         border-top-color: rgba(124, 58, 237, 0.15);
+    }
+    /* No panel toggle on tablet — single column already */
+    .crown-dashboard.panel-hidden {
+        grid-template-columns: 1fr !important;
     }
 }
 

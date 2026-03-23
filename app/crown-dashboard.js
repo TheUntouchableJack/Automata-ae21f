@@ -1627,16 +1627,17 @@ const CrownDashboard = (function() {
 
     function updateActivityBadge() {
         const badge = document.getElementById('activity-badge');
+        const menuBadge = document.getElementById('activity-badge-menu');
         const feed = document.getElementById('cards-feed');
-        if (!badge || !feed) return;
+        if (!feed) return;
 
         const activityCards = feed.querySelectorAll('.activity-card');
-        if (activityCards.length > 0) {
-            badge.textContent = activityCards.length;
-            badge.style.display = '';
-        } else {
-            badge.style.display = 'none';
-        }
+        const count = activityCards.length;
+        [badge, menuBadge].forEach(function(b) {
+            if (!b) return;
+            if (count > 0) { b.textContent = count; b.style.display = ''; }
+            else { b.style.display = 'none'; }
+        });
     }
 
     function addCompletedCard(detail) {
@@ -2052,7 +2053,8 @@ const CrownDashboard = (function() {
                     </div>
                     <div class="knowledge-group-facts">
                         ${facts.map(f => `
-                            <div class="knowledge-fact ${AppUtils.escapeHtml(f.importance)}">
+                            <div class="knowledge-fact ${AppUtils.escapeHtml(f.importance)}" data-fact-id="${AppUtils.escapeHtml(f.id)}">
+                                <button class="knowledge-dismiss" data-id="${AppUtils.escapeHtml(f.id)}" title="Dismiss">&times;</button>
                                 <div class="knowledge-fact-text">${AppUtils.escapeHtml(f.fact)}</div>
                                 <div class="knowledge-fact-meta">
                                     <span class="knowledge-confidence" title="Confidence">${Math.round(f.confidence * 100)}%</span>
@@ -2065,9 +2067,71 @@ const CrownDashboard = (function() {
                 </div>
             `).join('');
 
+            // Dismiss handler via event delegation
+            feed.addEventListener('click', async function(e) {
+                const dismissBtn = e.target.closest('.knowledge-dismiss');
+                if (!dismissBtn) return;
+
+                const factId = dismissBtn.dataset.id;
+                const factEl = dismissBtn.closest('.knowledge-fact');
+                if (!factEl) return;
+
+                // Fade out
+                factEl.style.opacity = '0';
+                setTimeout(async () => {
+                    const groupEl = factEl.closest('.knowledge-group');
+                    factEl.remove();
+
+                    // Update group count
+                    if (groupEl) {
+                        const remaining = groupEl.querySelectorAll('.knowledge-fact').length;
+                        const countEl = groupEl.querySelector('.knowledge-group-count');
+                        if (countEl) countEl.textContent = remaining;
+                        if (remaining === 0) groupEl.remove();
+                    }
+                }, 300);
+
+                // Invalidate in DB
+                try {
+                    await supabase
+                        .from('business_knowledge')
+                        .update({ status: 'invalidated' })
+                        .eq('id', factId);
+                } catch (err) {
+                    console.error('Failed to dismiss knowledge:', err);
+                }
+            });
+
             knowledgeLoaded = true;
+
+            // Show a discovery question at the top of the Learnings feed
+            showLearningsDiscoveryCard(feed);
         } catch (err) {
             console.error('Error loading knowledge:', err);
+        }
+    }
+
+    /**
+     * Show a discovery input card at the top of the Learnings tab feed.
+     * Reuses the existing createInfoRequestCard() system but targets the knowledge feed.
+     */
+    function showLearningsDiscoveryCard(feedEl) {
+        if (!feedEl) return;
+        // Don't show if one is already pending
+        if (infoRequestState.pending) return;
+
+        const question = getNextInfoQuestion();
+        if (!question) return;
+
+        infoRequestState.pending = question;
+        const card = createInfoRequestCard(question);
+        card.classList.add('learnings-discovery-card');
+
+        // Insert at top of feed
+        if (feedEl.firstChild) {
+            feedEl.insertBefore(card, feedEl.firstChild);
+        } else {
+            feedEl.appendChild(card);
         }
     }
 

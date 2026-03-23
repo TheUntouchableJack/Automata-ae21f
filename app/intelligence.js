@@ -136,7 +136,7 @@ const IntelligencePage = (function() {
                 .single(),
             supabase
                 .from('profiles')
-                .select('first_name, last_name, is_admin')
+                .select('first_name, last_name, is_admin, welcome_progress')
                 .eq('id', user.id)
                 .single(),
             supabase
@@ -165,6 +165,11 @@ const IntelligencePage = (function() {
                 role: member.role,
                 isAdmin: (userInfo?.is_admin === true) || (userInfo?.profile?.is_admin === true)
             });
+        }
+
+        // Show welcome banner for new users
+        if (typeof WelcomeBanner !== 'undefined') {
+            WelcomeBanner.show(supabase, userInfo, orgData?.organizations?.name || 'Your');
         }
 
         // Setup event listeners

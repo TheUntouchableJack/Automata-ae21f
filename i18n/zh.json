@@ -1872,5 +1872,31 @@
         "publishDisabled": "发布前请解决所有编辑",
         "saved": "已保存",
         "published": "已发布到博客"
+    },
+    "welcome": {
+        "summaryTitle": "您的忠诚计划已准备就绪",
+        "summaryLine": "自动化 + 应用 + AI智能",
+        "title": "欢迎来到 Royalty — 以下是我们为您准备的内容",
+        "skip": "跳过",
+        "exploreOwn": "我自己探索",
+        "completed": "已完成",
+        "automationsTitle": "建议的自动化",
+        "automationsDesc": "我们根据您的业务制定了4个自动化方案：欢迎消息、访问奖励、风险检查和挽回优惠。审查并激活适合您策略的方案。",
+        "automationsLink": "查看自动化",
+        "appTitle": "您的新应用",
+        "appDesc": "{name} Rewards 已准备好进行自定义。添加您的品牌，设置积分值，并在与客户分享之前配置奖励。",
+        "appLink": "自定义应用",
+        "aiTitle": "AI智能",
+        "aiDesc": "Royal AI 正在监控您的计划。它将了解您的业务，建议改进，并可以代表您运行活动。在手动审核和自动驾驶模式之间选择。",
+        "aiLink": "探索AI学习",
+        "hidePanel": "隐藏面板",
+        "showPanel": "显示面板",
+        "confirmDismissTitle": "关闭欢迎指南？",
+        "confirmDismissMessage": "您将不再看到此指南。您随时可以在侧边栏中找到这些功能。",
+        "confirmDismissCancel": "取消",
+        "confirmDismissConfirm": "是的，关闭",
+        "rewardsTitle": "奖励计划",
+        "rewardsDesc": "设置客户喜爱的奖励。创建积分福利、等级专属优惠，或让AI为您推荐最佳奖励方案。",
+        "rewardsLink": "浏览奖励"
     }
 }

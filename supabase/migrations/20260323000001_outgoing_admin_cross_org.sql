@@ -3,6 +3,8 @@
 -- Regular users must always provide their org_id (enforced by RPC guard).
 
 -- 1. Modify get_outgoing_campaigns to support NULL org_id (admin = all orgs)
+-- Must DROP first because return type changes (adds org_name column)
+DROP FUNCTION IF EXISTS get_outgoing_campaigns(UUID, TEXT, TEXT, INTEGER, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION get_outgoing_campaigns(
     p_organization_id UUID DEFAULT NULL,
     p_channel TEXT DEFAULT NULL,
@@ -105,6 +107,7 @@ END;
 $$;
 
 -- 2. Modify get_outgoing_summary to support NULL org_id
+DROP FUNCTION IF EXISTS get_outgoing_summary(UUID, INTEGER);
 CREATE OR REPLACE FUNCTION get_outgoing_summary(
     p_organization_id UUID DEFAULT NULL,
     p_days INTEGER DEFAULT 30

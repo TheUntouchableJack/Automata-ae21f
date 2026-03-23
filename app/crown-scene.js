@@ -8,6 +8,8 @@ const CrownScene = (function() {
     let scene, camera, renderer, composer;
     let orbGroup = null;
     let orbMesh = null;
+    let orbScaleMultiplier = 1.0;
+    let orbYOffset = 0;
     let waveMeshes = [];  // Ocean wave planes (horizontal layers)
     let clock = null;
     let animationId = null;
@@ -477,7 +479,7 @@ const CrownScene = (function() {
             }
 
             orbBaseY = bounce1 + bounce2 + bounce3;
-            orbGroup.position.y = orbBaseY;
+            orbGroup.position.y = orbBaseY + orbYOffset;
 
             // Curiosity lean (smooth) - only when not analyzing
             if (crownState !== 'analyzing') {
@@ -486,7 +488,7 @@ const CrownScene = (function() {
 
             // Apply breathing scale (when not analyzing)
             if (crownState !== 'analyzing') {
-                orbGroup.scale.setScalar(breathScale);
+                orbGroup.scale.setScalar(breathScale * orbScaleMultiplier);
             }
         }
 
@@ -791,6 +793,11 @@ const CrownScene = (function() {
         return scene;
     }
 
+    function setOrbScale(multiplier, yOffset) {
+        orbScaleMultiplier = multiplier;
+        if (yOffset !== undefined) orbYOffset = yOffset;
+    }
+
     return {
         init,
         destroy,
@@ -801,6 +808,7 @@ const CrownScene = (function() {
         setTheme,
         getScene,
         getAnalyzingTime,
+        setOrbScale,
     };
 })();
 

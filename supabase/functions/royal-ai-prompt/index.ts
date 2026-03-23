@@ -39,26 +39,20 @@ function selectModel(prompt: string, mode: string): string {
   return MODEL_SONNET
 }
 
-// Allowed origins for CORS - production and development
+// Allowed origins for CORS - production only (localhost handled by regex below)
 const ALLOWED_ORIGINS = [
   'https://royaltyapp.ai',
   'https://www.royaltyapp.ai',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:5176',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'http://127.0.0.1:5175',
-  'http://127.0.0.1:5176',
 ]
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('Origin') || ''
 
-  // Security fix: Only allow exact matches, no fallback to default origin
-  // Unknown origins get empty Access-Control-Allow-Origin which blocks the request
-  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+  // Allow any localhost/127.0.0.1 port for development
+  const isLocalDev = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+
+  // Security: Only allow exact production matches or local dev origins
+  if (!origin || (!ALLOWED_ORIGINS.includes(origin) && !isLocalDev)) {
     return {
       'Access-Control-Allow-Origin': '',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
