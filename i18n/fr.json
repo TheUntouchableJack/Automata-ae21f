@@ -12,7 +12,7 @@
         "getStarted": "Commencer Gratuitement",
         "projects": "Projets",
         "customers": "Clients",
-        "dashboard": "Tableau de bord",
+        "dashboard": "Application",
         "signOut": "Déconnexion",
         "outgoing": "Sortants",
         "campaigns": "Campagnes",
@@ -431,7 +431,7 @@
         "success": "Merci de nous avoir contactés. Nous vous répondrons bientôt."
     },
     "dashboard": {
-        "title": "Tableau de Bord",
+        "title": "Application",
         "subtitle": "Votre programme de fidélité en un coup d'œil",
         "refresh": "Actualiser",
         "newProject": "Nouveau Projet",
@@ -818,6 +818,8 @@
     "outgoing": {
         "title": "Gestionnaire de Campagnes",
         "subtitle": "Surveillez et gérez les campagnes créées par Royal AI",
+        "allCompanies": "Toutes les Entreprises",
+        "company": "Entreprise",
         "loading": "Chargement des campagnes...",
         "loadingDetail": "Chargement des détails...",
         "totalSent": "Total Envoyés",

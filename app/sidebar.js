@@ -17,10 +17,10 @@ const AppSidebar = (function() {
         {
             section: 'main',
             items: [
-                        // Dashboard - visible to all, serves as reporting for SMB users
-                { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Dashboard' },
-                // Intelligence - AI brain, visible to all
+                // Intelligence - AI brain, visible to all (default landing)
                 { id: 'intelligence', icon: 'brain', href: '/app/intelligence.html', labelKey: 'nav.intelligence', label: 'Intelligence' },
+                        // Application - app metrics & growth data
+                { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Application' },
                 // Apps - admin only (SMB users manage their single program)
                 { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', adminOnly: true },
                 // Automations - visible to all

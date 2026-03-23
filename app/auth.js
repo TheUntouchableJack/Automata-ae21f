@@ -242,7 +242,7 @@ async function redirectIfAuthenticated() {
             await db.auth.signOut();
             return; // Stay on signup/login page
         }
-        window.location.href = '/app/dashboard.html';
+        window.location.href = '/app/intelligence.html';
     }
 }
 
@@ -281,10 +281,10 @@ if (db) {
                     if (hasOnboarding) {
                         // New user from landing page - show transition on dashboard
                         sessionStorage.setItem('show_onboarding_transition', 'true');
-                        window.location.href = '/app/dashboard.html';
+                        window.location.href = '/app/intelligence.html';
                     } else if (!window.location.pathname.includes('login.html')) {
-                        // Returning user - go to dashboard
-                        window.location.href = '/app/dashboard.html';
+                        // Returning user - go to intelligence
+                        window.location.href = '/app/intelligence.html';
                     }
                 }
             } catch (err) {

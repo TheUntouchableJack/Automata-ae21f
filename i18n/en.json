@@ -12,7 +12,7 @@
         "getStarted": "Get Started Free",
         "projects": "Projects",
         "customers": "Customers",
-        "dashboard": "Dashboard",
+        "dashboard": "Application",
         "signOut": "Sign Out",
         "outgoing": "Outgoing",
         "campaigns": "Campaigns",
@@ -734,7 +734,7 @@
         "success": "Thanks for reaching out. We'll get back to you shortly."
     },
     "dashboard": {
-        "title": "Dashboard",
+        "title": "Application",
         "subtitle": "Your loyalty program at a glance",
         "refresh": "Refresh",
         "newProject": "New Project",
@@ -1106,6 +1106,8 @@
     "outgoing": {
         "title": "Campaign Manager",
         "subtitle": "Monitor and manage campaigns created by Royal AI",
+        "allCompanies": "All Companies",
+        "company": "Company",
         "loading": "Loading campaigns...",
         "loadingDetail": "Loading details...",
         "totalSent": "Total Sent",

@@ -394,10 +394,10 @@ async function mfaChallengeAndVerify(factorId, code) {
  * Returns false → Redirecting to challenge page; caller should stop.
  *
  * @param {object} user  Supabase user object from signInWithPassword
- * @param {string} [returnUrl='/app/dashboard.html']
+ * @param {string} [returnUrl='/app/intelligence.html']
  * @returns {Promise<boolean>}
  */
-async function mfaGate(user, returnUrl = '/app/dashboard.html') {
+async function mfaGate(user, returnUrl = '/app/intelligence.html') {
     try {
         // Check if device is trusted first (skips all MFA)
         const trusted = await mfaCheckTrustedDevice(user.id);

@@ -12,7 +12,7 @@
         "getStarted": "Inizia Gratis",
         "projects": "Progetti",
         "customers": "Clienti",
-        "dashboard": "Dashboard",
+        "dashboard": "Applicazione",
         "signOut": "Esci",
         "outgoing": "In Uscita",
         "campaigns": "Campagne",
@@ -419,7 +419,7 @@
         "success": "Grazie per averci contattato. Ti risponderemo a breve."
     },
     "dashboard": {
-        "title": "Dashboard",
+        "title": "Applicazione",
         "subtitle": "Il tuo programma fedeltà a colpo d'occhio",
         "refresh": "Aggiorna",
         "newProject": "Nuovo Progetto",
@@ -806,6 +806,8 @@
     "outgoing": {
         "title": "Gestore Campagne",
         "subtitle": "Monitora e gestisci le campagne create da Royal AI",
+        "allCompanies": "Tutte le Aziende",
+        "company": "Azienda",
         "loading": "Caricamento campagne...",
         "loadingDetail": "Caricamento dettagli...",
         "totalSent": "Totale Inviati",

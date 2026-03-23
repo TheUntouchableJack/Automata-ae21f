@@ -10,6 +10,9 @@ const OutgoingManager = (function () {
     let searchQuery = '';
     let sortBy = 'date';
     let countdownInterval = null;
+    let isSuperAdmin = false;
+    let selectedOrgId = null; // null = all orgs (admin only)
+    let allOrgs = [];
 
     // ── i18n helper ─────────────────────────────────────────────────
     function t(key, fallback) {
@@ -21,9 +24,12 @@ const OutgoingManager = (function () {
     }
 
     // ── Init ─────────────────────────────────────────────────────────
-    async function init(orgId) {
+    async function init(orgId, isAdmin) {
         currentOrgId = orgId;
+        isSuperAdmin = isAdmin === true;
+        selectedOrgId = isSuperAdmin ? null : orgId; // admin defaults to all orgs
         renderSkeleton();
+        if (isSuperAdmin) await loadOrganizations();
         await Promise.all([loadSummary(), loadCampaigns()]);
         renderAll();
         bindFilterEvents();
@@ -32,10 +38,9 @@ const OutgoingManager = (function () {
 
     // ── Data Loading ─────────────────────────────────────────────────
     async function loadSummary() {
-        const { data, error } = await db.rpc('get_outgoing_summary', {
-            p_organization_id: currentOrgId,
-            p_days: currentFilters.days
-        });
+        const params = { p_days: currentFilters.days };
+        if (selectedOrgId) params.p_organization_id = selectedOrgId;
+        const { data, error } = await db.rpc('get_outgoing_summary', params);
         if (error) {
             console.error('loadSummary error:', error);
             summary = {};
@@ -46,11 +51,11 @@ const OutgoingManager = (function () {
 
     async function loadCampaigns() {
         const params = {
-            p_organization_id: currentOrgId,
             p_days: currentFilters.days,
             p_limit: 50,
             p_offset: 0
         };
+        if (selectedOrgId) params.p_organization_id = selectedOrgId;
         if (currentFilters.channel) params.p_channel = currentFilters.channel;
         if (currentFilters.status) params.p_status = currentFilters.status;
 
@@ -61,6 +66,53 @@ const OutgoingManager = (function () {
             return;
         }
         campaigns = data || [];
+    }
+
+    async function loadOrganizations() {
+        const { data, error } = await db.rpc('get_all_organization_names');
+        if (error) {
+            console.error('loadOrganizations error:', error);
+            allOrgs = [];
+            return;
+        }
+        allOrgs = data || [];
+        renderOrgFilter();
+    }
+
+    function renderOrgFilter() {
+        const filtersBar = document.querySelector('.filters-bar');
+        if (!filtersBar || !isSuperAdmin) return;
+
+        // Remove existing org filter if present
+        const existing = document.getElementById('filter-org');
+        if (existing) existing.remove();
+
+        const select = document.createElement('select');
+        select.className = 'filter-select';
+        select.id = 'filter-org';
+
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = t('outgoing.allCompanies', 'All Companies');
+        select.appendChild(allOpt);
+
+        allOrgs.forEach(org => {
+            const opt = document.createElement('option');
+            opt.value = org.id;
+            opt.textContent = org.name;
+            if (selectedOrgId === org.id) opt.selected = true;
+            select.appendChild(opt);
+        });
+
+        // Insert as first filter
+        filtersBar.insertBefore(select, filtersBar.firstChild);
+
+        select.addEventListener('change', async () => {
+            selectedOrgId = select.value || null;
+            renderSkeleton();
+            await Promise.all([loadSummary(), loadCampaigns()]);
+            renderAll();
+        });
     }
 
     async function loadRecipients(batchId) {
@@ -252,7 +304,7 @@ const OutgoingManager = (function () {
                         </div>
                         <div style="min-width:0">
                             <div class="campaign-subject">${subjectText}</div>
-                            <div class="campaign-meta">${channelLabel} &middot; ${dateStr} &middot; ${c.total_recipients || 0} ${t('outgoing.recipients', 'recipients')}${countdown ? ' &middot; ' + countdown : ''}</div>
+                            <div class="campaign-meta">${isSuperAdmin && !selectedOrgId && c.org_name ? '<strong>' + escapeHtml(c.org_name) + '</strong> &middot; ' : ''}${channelLabel} &middot; ${dateStr} &middot; ${c.total_recipients || 0} ${t('outgoing.recipients', 'recipients')}${countdown ? ' &middot; ' + countdown : ''}</div>
                         </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px">

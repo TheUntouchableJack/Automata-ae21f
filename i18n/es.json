@@ -12,7 +12,7 @@
         "getStarted": "Comenzar Gratis",
         "projects": "Proyectos",
         "customers": "Clientes",
-        "dashboard": "Panel",
+        "dashboard": "Aplicación",
         "signOut": "Cerrar Sesión",
         "outgoing": "Salientes",
         "campaigns": "Campañas",
@@ -418,7 +418,7 @@
         "success": "Gracias por contactarnos. Te responderemos en breve."
     },
     "dashboard": {
-        "title": "Panel",
+        "title": "Aplicación",
         "subtitle": "Tu programa de fidelización de un vistazo",
         "refresh": "Actualizar",
         "newProject": "Nuevo Proyecto",
@@ -805,6 +805,8 @@
     "outgoing": {
         "title": "Gestor de Campañas",
         "subtitle": "Monitorea y gestiona las campañas creadas por Royal AI",
+        "allCompanies": "Todas las Empresas",
+        "company": "Empresa",
         "loading": "Cargando campañas...",
         "loadingDetail": "Cargando detalles...",
         "totalSent": "Total Enviados",

@@ -12,7 +12,7 @@
         "getStarted": "免费开始",
         "projects": "项目",
         "customers": "客户",
-        "dashboard": "仪表板",
+        "dashboard": "应用",
         "signOut": "退出",
         "outgoing": "发送消息",
         "campaigns": "营销活动",
@@ -418,7 +418,7 @@
         "success": "感谢您的联系，我们将尽快回复您。"
     },
     "dashboard": {
-        "title": "仪表板",
+        "title": "应用",
         "subtitle": "一目了然您的忠诚度计划",
         "refresh": "刷新",
         "newProject": "新项目",
@@ -805,6 +805,8 @@
     "outgoing": {
         "title": "活动管理",
         "subtitle": "监控和管理由 Royal AI 创建的活动",
+        "allCompanies": "所有公司",
+        "company": "公司",
         "loading": "正在加载活动...",
         "loadingDetail": "正在加载详情...",
         "totalSent": "总发送量",

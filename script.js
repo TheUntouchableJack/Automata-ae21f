@@ -10,7 +10,7 @@ const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON
     if (authCode && supabaseClient) {
         supabaseClient.auth.exchangeCodeForSession(authCode).then(({ error }) => {
             if (!error) {
-                window.location.href = '/app/dashboard.html';
+                window.location.href = '/app/intelligence.html';
             }
         });
     }
@@ -810,7 +810,7 @@ function restoreOnboardingData() {
         supabaseClient.auth.getSession().then(({ data: sessionData }) => {
             if (sessionData?.session) {
                 OnboardingStorage.clear();
-                window.location.href = '/app/dashboard.html';
+                window.location.href = '/app/intelligence.html';
                 return;
             } else {
                 applyOnboardingData(data);

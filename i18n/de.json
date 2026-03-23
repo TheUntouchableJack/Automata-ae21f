@@ -12,7 +12,7 @@
         "getStarted": "Kostenlos Starten",
         "projects": "Projekte",
         "customers": "Kunden",
-        "dashboard": "Dashboard",
+        "dashboard": "Anwendung",
         "signOut": "Abmelden",
         "outgoing": "Ausgehend",
         "campaigns": "Kampagnen",
@@ -418,7 +418,7 @@
         "success": "Danke für Ihre Nachricht. Wir werden uns bald bei Ihnen melden."
     },
     "dashboard": {
-        "title": "Dashboard",
+        "title": "Anwendung",
         "subtitle": "Ihr Treueprogramm auf einen Blick",
         "refresh": "Aktualisieren",
         "newProject": "Neues Projekt",
@@ -805,6 +805,8 @@
     "outgoing": {
         "title": "Kampagnen-Manager",
         "subtitle": "Überwachen und verwalten Sie Kampagnen, die von Royal AI erstellt wurden",
+        "allCompanies": "Alle Unternehmen",
+        "company": "Unternehmen",
         "loading": "Kampagnen werden geladen...",
         "loadingDetail": "Details werden geladen...",
         "totalSent": "Gesamt Gesendet",

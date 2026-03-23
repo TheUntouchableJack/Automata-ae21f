@@ -12,7 +12,7 @@
         "getStarted": "ابدأ مجاناً",
         "projects": "المشاريع",
         "customers": "العملاء",
-        "dashboard": "لوحة التحكم",
+        "dashboard": "التطبيق",
         "signOut": "تسجيل الخروج",
         "outgoing": "الرسائل الصادرة",
         "campaigns": "الحملات",
@@ -418,7 +418,7 @@
         "success": "شكراً للتواصل معنا. سنرد عليك قريباً."
     },
     "dashboard": {
-        "title": "لوحة التحكم",
+        "title": "التطبيق",
         "subtitle": "برنامج الولاء الخاص بك في لمحة",
         "refresh": "تحديث",
         "newProject": "مشروع جديد",
@@ -805,6 +805,8 @@
     "outgoing": {
         "title": "مدير الحملات",
         "subtitle": "راقب وأدر الحملات التي أنشأها Royal AI",
+        "allCompanies": "جميع الشركات",
+        "company": "الشركة",
         "loading": "جارٍ تحميل الحملات...",
         "loadingDetail": "جارٍ تحميل التفاصيل...",
         "totalSent": "إجمالي المرسل",
