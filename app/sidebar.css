@@ -193,7 +193,7 @@
     position: relative;
 }
 
-.sidebar-item:hover {
+.sidebar-item:not(.active):hover {
     background: var(--sidebar-hover-bg);
     color: var(--sidebar-text);
 }

@@ -10,22 +10,21 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const resendApiKey = Deno.env.get('RESEND_API_KEY')
 
-const ALLOWED_ORIGINS = [
+const PRODUCTION_ORIGINS = [
   'https://royaltyapp.ai',
   'https://www.royaltyapp.ai',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:5176',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'http://127.0.0.1:5175',
-  'http://127.0.0.1:5176',
 ]
+
+function isAllowedOrigin(origin: string): boolean {
+  if (PRODUCTION_ORIGINS.includes(origin)) return true
+  // Allow any localhost/127.0.0.1 port for dev
+  if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return true
+  return false
+}
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('Origin') || ''
-  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+  if (!origin || !isAllowedOrigin(origin)) {
     return {
       'Access-Control-Allow-Origin': '',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

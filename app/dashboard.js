@@ -43,6 +43,14 @@ async function initDashboard() {
         });
     }
 
+    // Capture business context before onboarding clears it (for reward proposals)
+    if (typeof OnboardingProcessor !== 'undefined' && OnboardingProcessor.hasPendingOnboarding()) {
+        const obData = OnboardingProcessor.getPendingData();
+        if (obData?.businessContext?.industry) {
+            sessionStorage.setItem('onboarding_industry', obData.businessContext.industry);
+        }
+    }
+
     // Process pending onboarding (if user just signed up with onboarding data)
     const onboardingResult = await processPendingOnboarding();
 
@@ -53,10 +61,9 @@ async function initDashboard() {
             celebrateBig();
         }
 
-        // Redirect to the first automation in guided mode
+        // Redirect to rewards page to review AI-proposed rewards
         setTimeout(() => {
-            const firstAutomation = onboardingResult.automations[0];
-            window.location.href = `/app/automation.html#${firstAutomation.id}?guided=true`;
+            window.location.href = '/app/rewards.html?onboarding=true';
         }, 1500);
         return;
     }
@@ -208,6 +215,14 @@ async function loadAppMetrics() {
             // Seed default rewards and starter automations in background
             seedDefaultRewards(newApp.id).catch(e => console.error('[Dashboard] Reward seeding error:', e));
             seedStarterAutomations(currentOrganization.id).catch(e => console.error('[Dashboard] Automation seeding error:', e));
+
+            // Seed AI reward proposals based on industry (if onboarding context available)
+            const onboardingIndustry = sessionStorage.getItem('onboarding_industry');
+            if (onboardingIndustry) {
+                seedAiRewardProposals(newApp.id, currentOrganization.id, onboardingIndustry)
+                    .catch(e => console.error('[Dashboard] AI reward proposal seeding error:', e));
+                sessionStorage.removeItem('onboarding_industry');
+            }
 
             // Show success toast
             const toastMsg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appAutoCreated') : 'Your loyalty program is ready! Customize it anytime.';
@@ -399,6 +414,60 @@ async function seedDefaultRewards(appId) {
     else console.log('[Dashboard] Seeded', rewards.length, 'default rewards');
 }
 
+// ===== Seed AI Reward Proposals (Industry-Specific) =====
+const INDUSTRY_REWARD_PROPOSALS = {
+    food: [
+        { reward_name: 'Free Appetizer', description: 'Complimentary starter with any entree', points_cost: 100, category: 'food', reasoning: 'Appetizers have high margins and encourage larger orders' },
+        { reward_name: '20% Off Next Visit', description: 'Discount on your next meal', points_cost: 150, category: 'discount', reasoning: 'Percentage discounts drive repeat visits within 7 days' },
+        { reward_name: 'Free Dessert', description: 'Any dessert on the house', points_cost: 75, category: 'food', reasoning: 'Low-cost reward that creates a memorable dining experience' }
+    ],
+    retail: [
+        { reward_name: '15% Off Purchase', description: 'Discount on any single item', points_cost: 120, category: 'discount', reasoning: 'Percentage discounts are retail gold — customers spend 20% more to earn the discount' },
+        { reward_name: 'Free Gift Wrapping', description: 'Complimentary gift wrap service', points_cost: 50, category: 'experience', reasoning: 'Zero-cost perk that increases perceived value' },
+        { reward_name: 'Early Access Sale', description: 'Shop sales 24 hours before public', points_cost: 200, category: 'experience', reasoning: 'Exclusivity drives loyalty — VIP feeling at zero cost' }
+    ],
+    health: [
+        { reward_name: 'Free Consultation Add-on', description: 'Complimentary extra service during visit', points_cost: 150, category: 'experience', reasoning: 'Upsells naturally when customers experience premium service' },
+        { reward_name: '15% Off Next Visit', description: 'Discount on your next appointment', points_cost: 120, category: 'discount', reasoning: 'Rebooking discounts reduce churn by 25%' },
+        { reward_name: 'Priority Booking', description: 'Book preferred time slots before others', points_cost: 100, category: 'experience', reasoning: 'Scheduling priority costs nothing but feels premium' }
+    ],
+    service: [
+        { reward_name: '10% Off Next Service', description: 'Discount on your next booking', points_cost: 100, category: 'discount', reasoning: 'Universal reward that drives return visits' },
+        { reward_name: 'Priority Scheduling', description: 'Get preferred time slots', points_cost: 120, category: 'experience', reasoning: 'Costs nothing to offer but creates VIP feeling' },
+        { reward_name: 'Free Upgrade', description: 'Complimentary upgrade on your next service', points_cost: 150, category: 'experience', reasoning: 'Upgrades showcase premium offerings and drive future upsells' }
+    ]
+};
+
+async function seedAiRewardProposals(appId, orgId, industry) {
+    const proposals = INDUSTRY_REWARD_PROPOSALS[industry] || INDUSTRY_REWARD_PROPOSALS.service;
+
+    for (const r of proposals) {
+        const { error } = await supabase
+            .from('reward_suggestions')
+            .insert({
+                app_id: appId,
+                organization_id: orgId,
+                member_id: null,
+                reward_name: r.reward_name,
+                description: r.description,
+                suggested_points: r.points_cost,
+                category: r.category,
+                source_type: 'ai_proactive',
+                ai_proposal: {
+                    reward_name: r.reward_name,
+                    description: r.description,
+                    points_cost: r.points_cost,
+                    category: r.category,
+                    reasoning: r.reasoning
+                },
+                status: 'new'
+            });
+
+        if (error) console.error('[Dashboard] Failed to seed reward proposal:', error);
+    }
+    console.log('[Dashboard] Seeded', proposals.length, 'AI reward proposals for industry:', industry);
+}
+
 // ===== Seed Starter Automations =====
 async function seedStarterAutomations(orgId) {
     const starters = [
@@ -517,6 +586,12 @@ function showPreviewPanel() {
     // Header toggle button (restore preview)
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
+            // If app is published, launch customer app in new tab
+            if (currentApp?.is_published && currentApp?.slug) {
+                window.open(`${window.location.origin}/a/${currentApp.slug}`, '_blank');
+                return;
+            }
+            // Otherwise, restore preview panel
             localStorage.removeItem('previewHidden');
             previewCol.style.display = 'flex';
             if (grid) grid.style.gridTemplateColumns = '';
@@ -1381,6 +1456,19 @@ async function refreshDashboard() {
             loadMemberGrowthChart(currentPeriodDays),
             loadRecentActivity()
         ]);
+
+        // Restore preview panel (hard refresh behavior)
+        localStorage.removeItem('previewHidden');
+        const previewCol = document.getElementById('dashboard-preview-col');
+        const toggleBtn = document.getElementById('preview-toggle-btn');
+        const grid = document.getElementById('dashboard-with-preview');
+        if (previewCol) {
+            previewCol.style.display = 'flex';
+            previewCol.classList.add('open');
+        }
+        if (grid) grid.style.gridTemplateColumns = '';
+        if (toggleBtn) toggleBtn.style.display = 'none';
+        updatePreviewContent();
     } catch (error) {
         console.error('Error refreshing dashboard:', error);
     } finally {

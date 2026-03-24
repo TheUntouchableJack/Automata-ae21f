@@ -198,6 +198,15 @@
     justify-content: space-between;
 }
 
+/* Header spans all grid columns — flexes with preview state */
+.dashboard-with-preview > .page-header {
+    grid-column: 1 / -1;
+}
+.dashboard-with-preview > .page-header > .container {
+    max-width: none;
+    padding: 0 24px;
+}
+
 .page-title {
     font-size: 1.5rem;
     font-weight: 700;

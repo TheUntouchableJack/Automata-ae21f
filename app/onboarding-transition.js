@@ -53,6 +53,7 @@ const OnboardingTransition = (function() {
                         </div>
                     `).join('')}
                 </div>
+                <p class="onboarding-transition-subtitle">This can take 10–20 seconds to complete, thank you for your patience.</p>
                 <div class="onboarding-transition-progress">
                     <div class="progress-track">
                         <div class="progress-fill" id="transition-progress-fill"></div>
@@ -218,6 +219,13 @@ const OnboardingTransition = (function() {
                 font-weight: 700;
                 color: #1a1a2e;
                 letter-spacing: -0.02em;
+            }
+
+            .onboarding-transition-subtitle {
+                font-size: 13px;
+                color: #6b7280;
+                margin: -8px 0 24px;
+                font-weight: 400;
             }
 
             /* ---- Steps ---- */

@@ -1325,6 +1325,205 @@
     color: var(--color-text, #1e293b);
 }
 
+/* Panel expand button */
+.panel-expand-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: var(--color-bg-secondary, #f1f5f9);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted, #64748b);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.panel-expand-btn:hover {
+    background: var(--color-bg-tertiary, #e2e8f0);
+    color: var(--color-text, #1e293b);
+}
+
+/* Panel expand backdrop */
+.panel-expand-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+}
+
+.panel-expand-backdrop.active {
+    display: block;
+}
+
+/* Expanded panel — modal overlay */
+.crown-cards-panel.panel-expanded {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vw;
+    max-width: 900px;
+    height: 80vh;
+    z-index: 1000;
+    border-radius: var(--radius-xl, 16px);
+    border: 1px solid var(--color-border, #e2e8f0);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+}
+
+/* Change expand icon to collapse icon when expanded */
+.crown-cards-panel.panel-expanded .panel-expand-btn svg {
+    transform: rotate(180deg);
+}
+
+/* Hide sidebar toggle when in expanded mode */
+.crown-cards-panel.panel-expanded .panel-sidebar-toggle {
+    display: none;
+}
+
+/* ===== Onboarding Mode — focused Learnings experience ===== */
+
+/* Hide entire panel header bar, thread controls in onboarding mode */
+.crown-cards-panel.onboarding-mode .cards-panel-header,
+.crown-cards-panel.onboarding-mode #thread-section-header,
+.crown-cards-panel.onboarding-mode #thread-selector,
+.crown-cards-panel.onboarding-mode .thread-controls {
+    display: none !important;
+}
+
+/* Onboarding header */
+.onboarding-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-bg, #ffffff);
+}
+
+.onboarding-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--color-text, #1e293b);
+}
+
+.onboarding-header p {
+    font-size: 13px;
+    color: var(--color-text-muted, #64748b);
+    margin: 0;
+}
+
+.onboarding-close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--color-text-muted, #64748b);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.onboarding-close-btn:hover {
+    background: var(--color-bg-tertiary, #f1f5f9);
+    color: var(--color-text, #1e293b);
+}
+
+/* Compact AI Understanding widget in onboarding mode */
+.crown-cards-panel.onboarding-mode .knowledge-score-widget {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 0;
+    border-top: none;
+}
+
+/* Hide knowledge groups and empty state in onboarding mode */
+.crown-cards-panel.onboarding-mode .knowledge-group {
+    display: none !important;
+}
+
+/* Hide knowledge empty state in onboarding mode (questions are the content) */
+.crown-cards-panel.onboarding-mode #knowledge-empty {
+    display: none !important;
+}
+
+/* Ensure only Learnings tab visible in onboarding mode */
+.crown-cards-panel.onboarding-mode #tab-content-chat,
+.crown-cards-panel.onboarding-mode #tab-content-activity,
+.crown-cards-panel.onboarding-mode #tab-content-intel {
+    display: none !important;
+}
+.crown-cards-panel.onboarding-mode #tab-content-knowledge {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Onboarding progress bar (in header) */
+.onboarding-progress {
+    margin-top: 12px;
+}
+
+.onboarding-progress-text {
+    font-size: 12px;
+    color: var(--color-text-muted, #64748b);
+    margin-bottom: 6px;
+}
+
+.onboarding-progress-bar {
+    height: 6px;
+    background: var(--color-bg-tertiary, #f1f5f9);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.onboarding-progress-fill {
+    height: 100%;
+    background: var(--color-primary, #7c3aed);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* Onboarding footer (close + save buttons) */
+.onboarding-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-top: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-bg, #ffffff);
+    flex-shrink: 0;
+}
+
+.btn-success {
+    background: #10b981;
+    color: #fff;
+    border: none;
+}
+.btn-success:hover:not(:disabled) {
+    background: #059669;
+}
+.btn-success:disabled {
+    background: #10b981;
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.card-countdown {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-primary, #7c3aed);
+    white-space: nowrap;
+}
+
 .tab-badge {
     display: inline-flex;
     align-items: center;
@@ -1855,6 +2054,8 @@
     max-width: 320px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     pointer-events: auto;
+    touch-action: pan-y;
+    user-select: none;
 }
 
 .activity-toast.dismissing {
@@ -1902,6 +2103,19 @@
     flex-shrink: 0;
 }
 
+.activity-toast .toast-dismiss {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+.activity-toast .toast-dismiss:hover { color: rgba(255, 255, 255, 0.8); }
+
 /* Toast type accents */
 .activity-toast.type-ai-accepted {
     border-left: 3px solid #a855f7;
@@ -1937,6 +2151,13 @@
 
 [data-theme="light"] .activity-toast .toast-time {
     color: var(--color-text-muted);
+}
+
+[data-theme="light"] .activity-toast .toast-dismiss {
+    color: var(--color-text-muted);
+}
+[data-theme="light"] .activity-toast .toast-dismiss:hover {
+    color: var(--color-text);
 }
 
 /* ===== Auto-Accept Card Animation ===== */
@@ -3500,4 +3721,132 @@
 
 [data-theme="dark"] .knowledge-fact:hover {
     background: rgba(139, 92, 246, 0.08);
+}
+
+/* Knowledge usage badges — "Applied" indicator */
+.knowledge-usage-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 4px 8px;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 6px;
+    font-size: 11px;
+    color: #6366f1;
+}
+
+.knowledge-usage-icon {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.knowledge-usage-label {
+    line-height: 1.3;
+}
+
+.knowledge-fact.has-usage {
+    border-left-color: #6366f1;
+}
+
+[data-theme="dark"] .knowledge-usage-badge {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c4b5fd;
+}
+
+[data-theme="dark"] .knowledge-fact.has-usage {
+    border-left-color: #8b5cf6;
+}
+
+/* ── Knowledge Score Widget ──────────────────────────────────── */
+.knowledge-score-widget {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.knowledge-score-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.knowledge-score-icon { font-size: 20px; }
+.knowledge-score-title { font-weight: 600; font-size: 14px; flex: 1; color: var(--color-text); }
+.knowledge-score-value { font-weight: 700; font-size: 18px; color: var(--color-primary); }
+.knowledge-score-bar {
+    height: 8px;
+    background: var(--color-bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+.knowledge-score-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+.knowledge-score-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.knowledge-score-layer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 4px 0;
+}
+.knowledge-score-layer-icon { font-size: 14px; width: 20px; text-align: center; }
+.knowledge-score-layer-name { flex: 1; font-weight: 500; color: var(--color-text); }
+.knowledge-score-layer-count { color: var(--color-text-muted); font-size: 12px; }
+
+/* Collapsible toggle */
+.knowledge-score-toggle {
+    background: rgba(139, 92, 246, 0.1);
+    border: none;
+    color: var(--color-primary, #7c3aed);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s, background 0.15s;
+}
+.knowledge-score-toggle:hover { color: var(--color-text, #1e293b); }
+.knowledge-score-widget.collapsed .knowledge-score-toggle {
+    background: none;
+    color: var(--color-text-muted, #64748b);
+}
+.knowledge-score-toggle svg { transition: transform 0.2s ease; }
+.knowledge-score-widget.collapsed .knowledge-score-layers { display: none; }
+.knowledge-score-widget.collapsed .knowledge-score-bar { margin-bottom: 0; }
+.knowledge-score-widget.collapsed .knowledge-score-toggle svg { transform: rotate(-90deg); }
+
+.knowledge-tell-ai-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+.knowledge-tell-ai-btn:hover { background: rgba(139, 92, 246, 0.2); }
+
+[data-theme="dark"] .knowledge-score-widget {
+    background: var(--color-bg-secondary);
+    border-color: var(--color-border);
+}
+[data-theme="dark"] .knowledge-tell-ai-btn {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c4b5fd;
+}
+[data-theme="dark"] .knowledge-tell-ai-btn:hover {
+    background: rgba(139, 92, 246, 0.25);
 }

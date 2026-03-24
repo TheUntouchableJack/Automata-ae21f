@@ -8,7 +8,7 @@ const WelcomeBanner = (function() {
     let currentProgress = null;
     let orgName = '';
 
-    const CARDS = ['automations', 'app', 'ai', 'rewards'];
+    const CARDS = ['ai', 'automations', 'app', 'rewards'];
 
     function t(key, fallback) {
         if (typeof i18n !== 'undefined' && i18n.t) return i18n.t(key) || fallback;
@@ -20,18 +20,29 @@ const WelcomeBanner = (function() {
         supabaseClient = supabase;
         orgName = organizationName || 'Your';
 
-        // DEV: Reset welcome progress on every refresh for testing
-        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-            profile = { ...profile, welcome_progress: null };
-            updateProgress(null);
-        }
-
         // Already completed — never show
         if (profile?.welcome_progress?.completed_at) return;
 
         currentProgress = profile?.welcome_progress || {
             automations: null, app: null, ai: null, rewards: null, completed_at: null
         };
+
+        // Auto-mark card if user is currently on the corresponding page
+        // (skip intelligence.html — that's where the banner lives, auto-marking it defeats the purpose)
+        const path = window.location.pathname;
+        const pageCardMap = {
+            '/app/automations.html': 'automations',
+            '/app/automation.html': 'automations',
+            '/app/apps.html': 'app',
+            '/app/app-builder.html': 'app',
+            '/app/rewards.html': 'rewards'
+        };
+        for (const [pagePath, cardId] of Object.entries(pageCardMap)) {
+            if (path.includes(pagePath) && !currentProgress[cardId]) {
+                currentProgress[cardId] = 'visited';
+                updateProgress(currentProgress);
+            }
+        }
 
         // If all cards already actioned, skip
         if (CARDS.every(c => currentProgress[c])) return;
@@ -106,9 +117,9 @@ const WelcomeBanner = (function() {
                 </div>
 
                 <div class="welcome-banner-cards">
-                    ${renderCard('automations', '1', 'zap', progress)}
-                    ${renderCard('app', '2', 'smartphone', progress)}
-                    ${renderCard('ai', '3', 'brain', progress)}
+                    ${renderCard('ai', '1', 'brain', progress)}
+                    ${renderCard('automations', '2', 'zap', progress)}
+                    ${renderCard('app', '3', 'smartphone', progress)}
                     ${renderCard('rewards', '4', 'gift', progress)}
                 </div>
 
@@ -147,23 +158,23 @@ const WelcomeBanner = (function() {
         };
 
         const titles = {
+            ai: t('welcome.aiTitle', 'Teach Royal AI'),
             automations: t('welcome.automationsTitle', 'Suggested Automations'),
             app: t('welcome.appTitle', 'Your New Application'),
-            ai: t('welcome.aiTitle', 'AI Intelligence'),
             rewards: t('welcome.rewardsTitle', 'Rewards Program')
         };
 
         const descs = {
+            ai: t('welcome.aiDesc', 'Answer a few questions so Royal AI can personalize your automations, rewards, and growth strategy.'),
             automations: t('welcome.automationsDesc', 'We\'ve drafted 4 automations based on your business: Welcome Message, Visit Bonus, At-Risk Check-in, and Win-Back Offer. Review and activate the ones that fit your strategy.'),
             app: t('welcome.appDesc', `${orgName} Rewards is ready to customize. Add your branding, set point values, and configure rewards before sharing with customers.`),
-            ai: t('welcome.aiDesc', 'Royal AI is now monitoring your program. It will learn your business, suggest improvements, and can run campaigns on your behalf. Choose between Manual review or Auto-pilot mode.'),
             rewards: t('welcome.rewardsDesc', 'Set up rewards your customers will love. Create point-based perks, tier exclusives, or let AI suggest the best rewards for your business.')
         };
 
         const links = {
+            ai: { href: '#learnings', text: t('welcome.aiLink', 'Get Started') },
             automations: { href: '/app/automations.html', text: t('welcome.automationsLink', 'Review Automations') },
             app: { href: '/app/app-builder.html', text: t('welcome.appLink', 'Customize App') },
-            ai: { href: '#learnings', text: t('welcome.aiLink', 'Explore AI Learnings') },
             rewards: { href: '/app/rewards.html', text: t('welcome.rewardsLink', 'Browse Rewards') }
         };
 
@@ -247,11 +258,19 @@ const WelcomeBanner = (function() {
                 const cardId = this.dataset.card;
                 if (cardId === 'ai') {
                     e.preventDefault();
-                    markCard(cardId, 'visited');
-                    // Show panel and switch to Learnings tab
+                    // Open expanded panel in onboarding mode — focused Learnings experience
                     showPanel();
+                    const cardsPanel = document.querySelector('.crown-cards-panel');
+                    if (cardsPanel && !cardsPanel.classList.contains('panel-expanded')) {
+                        document.getElementById('panel-expand-btn')?.click();
+                    }
+                    // Switch to Learnings tab
                     const knowledgeTab = document.querySelector('[data-tab="knowledge"]');
                     if (knowledgeTab) knowledgeTab.click();
+                    // Enter onboarding mode (focused, no distractions)
+                    if (typeof CrownDashboard !== 'undefined' && CrownDashboard.enterOnboardingMode) {
+                        CrownDashboard.enterOnboardingMode();
+                    }
                 } else {
                     markCard(cardId, 'visited');
                 }
@@ -368,5 +387,11 @@ const WelcomeBanner = (function() {
         }
     }
 
-    return { show, togglePanel: togglePanelVisibility };
+    function markAiComplete() {
+        if (currentProgress && !currentProgress.ai) {
+            markCard('ai', 'visited');
+        }
+    }
+
+    return { show, togglePanel: togglePanelVisibility, markAiComplete };
 })();

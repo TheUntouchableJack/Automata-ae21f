@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="sidebar.css?v=5">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <style>
@@ -535,9 +535,9 @@
             align-items: center;
         }
 
-        /* View Toggle */
+        /* View Toggle — hidden for SMB simplicity */
         .view-toggle {
-            display: flex;
+            display: none;
             gap: 8px;
             margin-bottom: 20px;
             padding: 4px;
@@ -669,6 +669,7 @@
         .search-filter-bar {
             display: flex;
             gap: 12px;
+            margin-top: 16px;
             margin-bottom: 24px;
         }
 
@@ -1149,7 +1150,7 @@
     <script src="templates-library.js?v=1"></script>
     <script src="soft-delete.js?v=1"></script>
     <script src="undo-toast.js?v=1"></script>
-    <script src="sidebar.js?v=21"></script>
+    <script src="sidebar.js?v=23"></script>
     <script src="automations.js?v=9"></script>
 </body>
 </html>

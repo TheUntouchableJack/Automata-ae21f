@@ -40,6 +40,21 @@ async function initRewards() {
 
     await Promise.all([loadRewards(), loadSuggestions()]);
     setupEventListeners();
+
+    // Onboarding: auto-switch to Suggestions tab and show banner
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('onboarding') === 'true') {
+        document.querySelector('[data-filter="suggestions"]')?.click();
+        showOnboardingRewardBanner();
+        history.replaceState({}, '', '/app/rewards.html');
+    } else {
+        // Auto-switch to Suggestions if new AI proposals exist (non-onboarding visits)
+        const aiNewCount = allSuggestions.filter(s => s.source_type === 'ai_proactive' && s.status === 'new').length;
+        if (aiNewCount > 0 && !sessionStorage.getItem('rewards-seen-ai')) {
+            sessionStorage.setItem('rewards-seen-ai', '1');
+            document.querySelector('[data-filter="suggestions"]')?.click();
+        }
+    }
 }
 
 async function loadApp() {
@@ -380,14 +395,15 @@ function renderSuggestions(grid) {
 
     grid.innerHTML = allSuggestions.map(s => {
         const date = new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const isAiProposal = s.source_type === 'ai_proactive';
         const memberName = s.app_members?.display_name || 'Anonymous';
         const memberTier = s.app_members?.tier ? ` (${s.app_members.tier})` : '';
         const statusBadge = `<span class="badge badge-${s.status}">${s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span>`;
 
         const actions = s.status === 'new' || s.status === 'reviewed' ? `
             <div class="suggestion-actions">
-                <button class="btn btn-primary btn-sm" onclick="approveSuggestion('${s.id}')">Create Reward</button>
                 <button class="btn btn-secondary btn-sm" onclick="dismissSuggestion('${s.id}')">Dismiss</button>
+                <button class="btn btn-primary btn-sm" onclick="approveSuggestion('${s.id}')">Create Reward</button>
             </div>
         ` : s.status === 'approved' ? `
             <div class="suggestion-actions">
@@ -399,7 +415,14 @@ function renderSuggestions(grid) {
             </div>
         `;
 
-        const aiSection = s.ai_proposal ? `
+        // AI-proactive proposals show reasoning directly (no "Analyzing..." state)
+        // Customer suggestions show AI analysis if available, or "Analyzing..." if new
+        const aiSection = isAiProposal ? `
+            <div class="ai-proposal ai-proactive-proposal">
+                <div class="ai-proposal-detail"><strong>${escapeHtml(s.ai_proposal?.reward_name || s.reward_name)}</strong> — ${(s.ai_proposal?.points_cost || s.suggested_points)?.toLocaleString()} pts</div>
+                <div class="ai-proposal-reasoning">${escapeHtml(s.ai_proposal?.reasoning || '')}</div>
+            </div>
+        ` : s.ai_proposal ? `
             <div class="ai-proposal">
                 <div class="ai-proposal-header">Royal AI recommends</div>
                 <div class="ai-proposal-detail"><strong>${escapeHtml(s.ai_proposal.reward_name)}</strong> — ${s.ai_proposal.points_cost?.toLocaleString()} pts</div>
@@ -409,15 +432,21 @@ function renderSuggestions(grid) {
             <div class="ai-proposal analyzing">Analyzing suggestion...</div>
         ` : '';
 
+        // Header differs: AI proposals vs customer suggestions
+        const sourceHeader = isAiProposal
+            ? `<div class="suggestion-member suggestion-ai-source"><span class="ai-source-icon">&#x1F9E0;</span> Royal AI suggests</div>`
+            : `<div class="suggestion-member">Suggested by ${escapeHtml(memberName)}${memberTier}${s.suggested_points ? ` &middot; ${s.suggested_points} pts suggested` : ''}</div>`;
+
         return `
-            <div class="reward-card suggestion-card">
+            <div class="reward-card suggestion-card${isAiProposal ? ' ai-proactive-card' : ''}">
                 <div class="suggestion-meta">
                     ${statusBadge}
                     <span class="suggestion-date">${date}</span>
                 </div>
                 <div class="reward-card-name">"${escapeHtml(s.reward_name)}"</div>
                 <div class="reward-card-description">${escapeHtml(s.description || 'No description provided')}</div>
-                <div class="suggestion-member">Suggested by ${escapeHtml(memberName)}${memberTier}${s.suggested_points ? ` · ${s.suggested_points} pts suggested` : ''}</div>
+                <div class="suggestion-app-name">For: ${escapeHtml(currentApp?.name || 'Your App')}</div>
+                ${sourceHeader}
                 ${aiSection}
                 ${actions}
             </div>
@@ -466,6 +495,113 @@ async function dismissSuggestion(suggestionId) {
         console.error('Error dismissing suggestion:', err);
         showToast('Failed to dismiss suggestion', 'error');
     }
+}
+
+// ===== AI Generate Rewards =====
+
+const INDUSTRY_REWARD_PROPOSALS = {
+    food: [
+        { reward_name: 'Free Appetizer', description: 'Complimentary starter with any entree', points_cost: 100, category: 'food', reasoning: 'Appetizers have high margins and encourage larger orders' },
+        { reward_name: '20% Off Next Visit', description: 'Discount on your next meal', points_cost: 150, category: 'discount', reasoning: 'Percentage discounts drive repeat visits within 7 days' },
+        { reward_name: 'Free Dessert', description: 'Any dessert on the house', points_cost: 75, category: 'food', reasoning: 'Low-cost reward that creates a memorable dining experience' }
+    ],
+    retail: [
+        { reward_name: '15% Off Purchase', description: 'Discount on any single item', points_cost: 120, category: 'discount', reasoning: 'Percentage discounts are retail gold — customers spend 20% more to earn the discount' },
+        { reward_name: 'Free Gift Wrapping', description: 'Complimentary gift wrap service', points_cost: 50, category: 'experience', reasoning: 'Zero-cost perk that increases perceived value' },
+        { reward_name: 'Early Access Sale', description: 'Shop sales 24 hours before public', points_cost: 200, category: 'experience', reasoning: 'Exclusivity drives loyalty — VIP feeling at zero cost' }
+    ],
+    health: [
+        { reward_name: 'Free Consultation Add-on', description: 'Complimentary extra service during visit', points_cost: 150, category: 'experience', reasoning: 'Upsells naturally when customers experience premium service' },
+        { reward_name: '15% Off Next Visit', description: 'Discount on your next appointment', points_cost: 120, category: 'discount', reasoning: 'Rebooking discounts reduce churn by 25%' },
+        { reward_name: 'Priority Booking', description: 'Book preferred time slots before others', points_cost: 100, category: 'experience', reasoning: 'Scheduling priority costs nothing but feels premium' }
+    ],
+    service: [
+        { reward_name: '10% Off Next Service', description: 'Discount on your next booking', points_cost: 100, category: 'discount', reasoning: 'Universal reward that drives return visits' },
+        { reward_name: 'Priority Scheduling', description: 'Get preferred time slots', points_cost: 120, category: 'experience', reasoning: 'Costs nothing to offer but creates VIP feeling' },
+        { reward_name: 'Free Upgrade', description: 'Complimentary upgrade on your next service', points_cost: 150, category: 'experience', reasoning: 'Upgrades showcase premium offerings and drive future upsells' }
+    ]
+};
+
+async function generateAiRewards() {
+    const btn = document.getElementById('ai-generate-rewards-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Generating...';
+    }
+
+    try {
+        // Try to determine industry from project
+        let industry = 'service';
+        const { data: project } = await supabase
+            .from('projects')
+            .select('industry')
+            .eq('organization_id', currentOrganization.id)
+            .limit(1)
+            .single();
+        if (project?.industry) industry = project.industry;
+
+        const proposals = INDUSTRY_REWARD_PROPOSALS[industry] || INDUSTRY_REWARD_PROPOSALS.service;
+
+        for (const r of proposals) {
+            await supabase
+                .from('reward_suggestions')
+                .insert({
+                    app_id: currentApp.id,
+                    organization_id: currentOrganization.id,
+                    member_id: null,
+                    reward_name: r.reward_name,
+                    description: r.description,
+                    suggested_points: r.points_cost,
+                    category: r.category,
+                    source_type: 'ai_proactive',
+                    ai_proposal: {
+                        reward_name: r.reward_name,
+                        description: r.description,
+                        points_cost: r.points_cost,
+                        category: r.category,
+                        reasoning: r.reasoning
+                    },
+                    status: 'new'
+                });
+        }
+
+        showToast('AI rewards generated! Review them in the Suggestions tab.', 'success');
+        await loadSuggestions();
+        // Switch to suggestions tab
+        document.querySelector('[data-filter="suggestions"]')?.click();
+    } catch (err) {
+        console.error('Error generating AI rewards:', err);
+        showToast('Failed to generate rewards', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                    <path d="M12 5v13"/>
+                </svg>
+                Generate AI Rewards`;
+        }
+    }
+}
+
+// ===== Onboarding Reward Banner =====
+function showOnboardingRewardBanner() {
+    const grid = document.getElementById('rewards-grid');
+    if (!grid) return;
+
+    const banner = document.createElement('div');
+    banner.className = 'onboarding-reward-banner';
+    banner.innerHTML = `
+        <div class="onboarding-reward-banner-icon">&#x1F381;</div>
+        <div class="onboarding-reward-banner-content">
+            <div class="onboarding-reward-banner-title">Review your reward suggestions</div>
+            <div class="onboarding-reward-banner-text">Royal AI has proposed rewards based on your industry. Approve the ones you like, edit them, or create your own.</div>
+        </div>
+        <button class="onboarding-reward-banner-close" onclick="this.closest('.onboarding-reward-banner').remove()">&times;</button>
+    `;
+    grid.parentNode.insertBefore(banner, grid);
 }
 
 // ===== Event Listeners =====

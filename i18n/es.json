@@ -74,7 +74,7 @@
         "loadingStep2": "Identificando tu industria...",
         "loadingStep3": "Construyendo tu programa de fidelización...",
         "loadingStep4": "Calculando el potencial de crecimiento...",
-        "loadingSubtext": "Esto suele tardar unos 10 segundos"
+        "loadingSubtext": "Esto puede tardar de 10 a 20 segundos en analizar tus datos"
     },
     "preview": {
         "title": "Panel de Royalty",
@@ -1883,9 +1883,9 @@
         "appTitle": "Tu nueva aplicación",
         "appDesc": "{name} Rewards está lista para personalizar. Agrega tu marca, configura valores de puntos y establece recompensas antes de compartir con clientes.",
         "appLink": "Personalizar app",
-        "aiTitle": "Inteligencia IA",
-        "aiDesc": "Royal AI está monitoreando tu programa. Aprenderá tu negocio, sugerirá mejoras y puede ejecutar campañas en tu nombre. Elige entre revisión Manual o modo Auto-piloto.",
-        "aiLink": "Explorar aprendizajes IA",
+        "aiTitle": "Enseña a Royal AI",
+        "aiDesc": "Responde algunas preguntas para que Royal AI pueda personalizar tus automatizaciones, recompensas y estrategia de crecimiento.",
+        "aiLink": "Comenzar",
         "hidePanel": "Ocultar panel",
         "showPanel": "Mostrar panel",
         "confirmDismissTitle": "¿Descartar guía de bienvenida?",

@@ -19,8 +19,10 @@ const AppSidebar = (function() {
             items: [
                 // Intelligence - AI brain, visible to all (default landing)
                 { id: 'intelligence', icon: 'brain', href: '/app/intelligence.html', labelKey: 'nav.intelligence', label: 'Intelligence' },
-                        // Application - app metrics & growth data
+                // Application - app metrics & growth data
                 { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Application' },
+                // Rewards - manage loyalty rewards (elevated — daily-use feature)
+                { id: 'rewards', icon: 'gift', href: '/app/rewards.html', labelKey: 'nav.rewards', label: 'Rewards' },
                 // Apps - admin only (SMB users manage their single program)
                 { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', adminOnly: true },
                 // Automations - visible to all
@@ -29,8 +31,6 @@ const AppSidebar = (function() {
                 { id: 'campaigns', icon: 'send', href: '/app/outgoing.html', labelKey: 'nav.campaigns', label: 'Campaigns' },
                 // Customers - visible to all
                 { id: 'customers', icon: 'users', href: '/app/customers.html', labelKey: 'nav.customers', label: 'Customers' },
-                // Rewards - manage loyalty rewards
-                { id: 'rewards', icon: 'gift', href: '/app/rewards.html', labelKey: 'nav.rewards', label: 'Rewards' },
             ]
         },
         {
@@ -201,6 +201,7 @@ const AppSidebar = (function() {
         if (path.includes('apps.html')) return 'apps';
         if (path.includes('app-builder.html')) return 'apps';
         if (path.includes('customers')) return 'customers';
+        if (path.includes('rewards')) return 'rewards';
         if (path.includes('outgoing')) return 'campaigns';
         if (path.includes('roadmap')) return 'roadmap';
         if (path.includes('settings')) return 'settings';

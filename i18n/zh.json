@@ -74,7 +74,7 @@
         "loadingStep2": "正在识别您的行业...",
         "loadingStep3": "正在构建您的忠诚度计划...",
         "loadingStep4": "正在计算增长潜力...",
-        "loadingSubtext": "通常需要大约10秒钟"
+        "loadingSubtext": "分析您的数据可能需要10到20秒"
     },
     "preview": {
         "title": "Royalty 仪表板",
@@ -1886,9 +1886,9 @@
         "appTitle": "您的新应用",
         "appDesc": "{name} Rewards 已准备好进行自定义。添加您的品牌，设置积分值，并在与客户分享之前配置奖励。",
         "appLink": "自定义应用",
-        "aiTitle": "AI智能",
-        "aiDesc": "Royal AI 正在监控您的计划。它将了解您的业务，建议改进，并可以代表您运行活动。在手动审核和自动驾驶模式之间选择。",
-        "aiLink": "探索AI学习",
+        "aiTitle": "教导 Royal AI",
+        "aiDesc": "回答几个问题，让 Royal AI 为您的自动化、奖励和增长策略提供个性化服务。",
+        "aiLink": "开始",
         "hidePanel": "隐藏面板",
         "showPanel": "显示面板",
         "confirmDismissTitle": "关闭欢迎指南？",

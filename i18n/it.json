@@ -74,7 +74,7 @@
         "loadingStep2": "Identificazione del settore...",
         "loadingStep3": "Creazione del programma fedeltà...",
         "loadingStep4": "Calcolo del potenziale di crescita...",
-        "loadingSubtext": "Di solito ci vogliono circa 10 secondi"
+        "loadingSubtext": "L'analisi dei tuoi dati può richiedere da 10 a 20 secondi"
     },
     "preview": {
         "title": "Dashboard Royalty",
@@ -1884,9 +1884,9 @@
         "appTitle": "La tua nuova applicazione",
         "appDesc": "{name} Rewards è pronta da personalizzare. Aggiungi il tuo branding, imposta i valori dei punti e configura le ricompense prima di condividere con i clienti.",
         "appLink": "Personalizza app",
-        "aiTitle": "Intelligenza IA",
-        "aiDesc": "Royal AI sta monitorando il tuo programma. Imparerà la tua attività, suggerirà miglioramenti e potrà eseguire campagne per tuo conto. Scegli tra revisione Manuale o modalità Auto-pilota.",
-        "aiLink": "Esplora apprendimenti IA",
+        "aiTitle": "Insegna a Royal AI",
+        "aiDesc": "Rispondi a qualche domanda per permettere a Royal AI di personalizzare le tue automazioni, premi e strategia di crescita.",
+        "aiLink": "Inizia",
         "hidePanel": "Nascondi pannello",
         "showPanel": "Mostra pannello",
         "confirmDismissTitle": "Chiudere la guida di benvenuto?",

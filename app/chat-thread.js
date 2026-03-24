@@ -213,6 +213,32 @@ const ChatThread = (function() {
             });
         }
 
+        // Panel expand button (modal view)
+        var panelExpandBtn = document.getElementById('panel-expand-btn');
+        var panelBackdrop = document.getElementById('panel-expand-backdrop');
+        var cardsPanel = document.querySelector('.crown-cards-panel');
+
+        function togglePanelExpand() {
+            if (!cardsPanel) return;
+            var isExpanded = cardsPanel.classList.toggle('panel-expanded');
+            if (panelBackdrop) panelBackdrop.classList.toggle('active', isExpanded);
+            document.body.style.overflow = isExpanded ? 'hidden' : '';
+        }
+
+        if (panelExpandBtn) {
+            panelExpandBtn.addEventListener('click', togglePanelExpand);
+        }
+        if (panelBackdrop) {
+            panelBackdrop.addEventListener('click', togglePanelExpand);
+        }
+
+        // ESC to close expanded panel
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && cardsPanel && cardsPanel.classList.contains('panel-expanded')) {
+                togglePanelExpand();
+            }
+        });
+
         // Hide HISTORY by default (Actions tab is active on page load)
         if (threadSectionHeader) threadSectionHeader.style.display = 'none';
         if (threadSelector) threadSelector.style.display = 'none';

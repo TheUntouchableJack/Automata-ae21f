@@ -119,6 +119,7 @@ interface ActionIntelligence {
   recentFailures: number
   recentSuccesses: number
   relevantLearnings: string[]
+  knowledgeIds: string[]
   recommendation: 'proceed' | 'caution' | 'defer'
 }
 
@@ -135,6 +136,7 @@ async function getActionIntelligence(
     recentFailures: 0,
     recentSuccesses: 0,
     relevantLearnings: [],
+    knowledgeIds: [],
     recommendation: 'proceed'
   }
 
@@ -166,7 +168,7 @@ async function getActionIntelligence(
 
     const { data: knowledge } = await supabase
       .from('business_knowledge')
-      .select('fact, confidence, importance')
+      .select('id, fact, confidence, importance')
       .eq('organization_id', orgId)
       .eq('status', 'active')
       .eq('layer', layer)
@@ -176,6 +178,7 @@ async function getActionIntelligence(
       .limit(5)
 
     intel.relevantLearnings = (knowledge || []).map(k => k.fact)
+    intel.knowledgeIds = (knowledge || []).map(k => k.id)
 
     // 3. Determine recommendation
     if (intel.recentFailures >= 3 && intel.recentSuccesses === 0) {
@@ -1400,7 +1403,7 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
       result = { success: false, error: (err as Error).message }
     }
 
-    // Update action status
+    // Update action status + store which knowledge facts informed the decision
     await supabase
       .from('ai_action_queue')
       .update({
@@ -1408,6 +1411,7 @@ async function processActionQueue(supabase: SupabaseClient): Promise<{
         executed_at: new Date().toISOString(),
         execution_result: result.data || {},
         error_message: result.error,
+        knowledge_refs: intel.knowledgeIds.length > 0 ? JSON.stringify(intel.knowledgeIds) : '[]',
         updated_at: new Date().toISOString()
       })
       .eq('id', actionId)

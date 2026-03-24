@@ -74,7 +74,7 @@
         "loadingStep2": "Identifiziere Ihre Branche...",
         "loadingStep3": "Erstelle Ihr Treueprogramm...",
         "loadingStep4": "Berechne Wachstumspotenzial...",
-        "loadingSubtext": "Das dauert normalerweise etwa 10 Sekunden"
+        "loadingSubtext": "Die Analyse Ihrer Daten kann 10 bis 20 Sekunden dauern"
     },
     "preview": {
         "title": "Royalty Dashboard",
@@ -1883,9 +1883,9 @@
         "appTitle": "Ihre neue Anwendung",
         "appDesc": "{name} Rewards ist bereit zur Anpassung. Fügen Sie Ihr Branding hinzu, legen Sie Punktwerte fest und konfigurieren Sie Prämien, bevor Sie es mit Kunden teilen.",
         "appLink": "App anpassen",
-        "aiTitle": "KI-Intelligenz",
-        "aiDesc": "Royal AI überwacht jetzt Ihr Programm. Es lernt Ihr Geschäft kennen, schlägt Verbesserungen vor und kann Kampagnen in Ihrem Namen durchführen. Wählen Sie zwischen manueller Überprüfung oder Auto-Pilot-Modus.",
-        "aiLink": "KI-Erkenntnisse erkunden",
+        "aiTitle": "Royal AI beibringen",
+        "aiDesc": "Beantworten Sie einige Fragen, damit Royal AI Ihre Automatisierungen, Belohnungen und Wachstumsstrategie personalisieren kann.",
+        "aiLink": "Loslegen",
         "hidePanel": "Panel ausblenden",
         "showPanel": "Panel einblenden",
         "confirmDismissTitle": "Willkommensleitfaden schließen?",

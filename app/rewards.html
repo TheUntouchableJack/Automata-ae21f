@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="sidebar.css?v=4">
+    <link rel="stylesheet" href="sidebar.css?v=5">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <style>
@@ -286,7 +286,18 @@
         .suggestion-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .suggestion-date { font-size: 12px; color: var(--color-text-muted); }
         .suggestion-member { font-size: 12px; color: var(--color-text-muted); margin: 8px 0 16px; }
-        .suggestion-actions { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--color-border-light); }
+        .suggestion-actions { display: flex; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid var(--color-border-light); }
+        .suggestion-app-name {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text, #1e293b);
+            margin-top: 8px;
+            padding: 4px 10px;
+            background: var(--color-bg-secondary, #f8fafc);
+            border: 1px solid var(--color-border-light, #e2e8f0);
+            border-radius: var(--radius-sm, 6px);
+        }
         .btn-sm { padding: 8px 16px; font-size: 13px; border-radius: var(--radius-md); }
         .badge-new { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
         .badge-reviewed { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
@@ -307,6 +318,55 @@
         .ai-proposal-detail { font-size: 14px; font-weight: 500; color: var(--color-text); }
         .ai-proposal-reasoning { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
         .ai-proposal.analyzing { font-size: 12px; color: var(--color-text-muted); font-style: italic; }
+
+        /* AI-Proactive Proposal Cards */
+        .ai-proactive-card { border-left: 3px solid #8b5cf6; }
+        .suggestion-ai-source {
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 600; color: #8b5cf6;
+        }
+        .ai-source-icon { font-size: 16px; }
+        .ai-proactive-proposal {
+            background: rgba(139, 92, 246, 0.06);
+            border-left: 2px solid #8b5cf6;
+        }
+        [data-theme="dark"] .suggestion-ai-source { color: #c4b5fd; }
+        [data-theme="dark"] .ai-proactive-card { border-left-color: #a78bfa; }
+        [data-theme="dark"] .ai-proactive-proposal {
+            background: rgba(139, 92, 246, 0.12);
+            border-left-color: #a78bfa;
+        }
+
+        /* Onboarding Reward Banner */
+        .onboarding-reward-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: var(--radius-lg, 12px);
+        }
+        .onboarding-reward-banner-icon { font-size: 24px; flex-shrink: 0; }
+        .onboarding-reward-banner-content { flex: 1; }
+        .onboarding-reward-banner-title {
+            font-weight: 600; font-size: 15px;
+            color: var(--color-text); margin-bottom: 4px;
+        }
+        .onboarding-reward-banner-text {
+            font-size: 13px; color: var(--color-text-muted); line-height: 1.4;
+        }
+        .onboarding-reward-banner-close {
+            background: none; border: none; cursor: pointer;
+            font-size: 20px; color: var(--color-text-muted);
+            padding: 0 4px; line-height: 1;
+        }
+        .onboarding-reward-banner-close:hover { color: var(--color-text); }
+        [data-theme="dark"] .onboarding-reward-banner {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.25);
+        }
 
         /* Empty State */
         .empty-state {
@@ -596,15 +656,26 @@
 
                 <!-- Empty State -->
                 <div class="empty-state" id="empty-state" style="display: none;">
-                    <div class="empty-state-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/>
-                            <path d="M12 2l4 4h4v4l-8 8-8-8V6h4l4-4z"/>
+                    <div class="empty-state-icon" style="background: rgba(139, 92, 246, 0.1);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
+                            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                            <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                            <path d="M12 5v13"/>
                         </svg>
                     </div>
-                    <h3>No rewards yet</h3>
-                    <p>Create your first reward to give your loyalty members something to work toward.</p>
-                    <button class="btn btn-primary" onclick="openRewardModal()">Create First Reward</button>
+                    <h3>Let AI create your rewards</h3>
+                    <p>Royal AI will generate reward suggestions tailored to your business. Review, edit, or approve them to get started.</p>
+                    <button class="btn btn-primary" id="ai-generate-rewards-btn" onclick="generateAiRewards()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                            <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                            <path d="M12 5v13"/>
+                        </svg>
+                        Generate AI Rewards
+                    </button>
+                    <div style="margin-top: 12px;">
+                        <button class="btn btn-secondary btn-sm" onclick="openRewardModal()">Or create manually</button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -715,7 +786,7 @@
     <script src="danger-modal.js?v=1"></script>
     <script src="soft-delete.js?v=1"></script>
     <script src="undo-toast.js?v=1"></script>
-    <script src="sidebar.js?v=21"></script>
-    <script src="rewards.js?v=1"></script>
+    <script src="sidebar.js?v=23"></script>
+    <script src="rewards.js?v=5"></script>
 </body>
 </html>

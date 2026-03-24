@@ -840,6 +840,36 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
     }
   },
   {
+    name: 'create_reward_proposal',
+    description: 'Propose a new loyalty reward for the business. Use when you identify a reward opportunity based on business knowledge, customer behavior, or industry benchmarks. The owner will review and approve before it goes live.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reward_name: {
+          type: 'string',
+          description: 'Name of the proposed reward'
+        },
+        description: {
+          type: 'string',
+          description: 'What the customer gets'
+        },
+        points_cost: {
+          type: 'number',
+          description: 'Points required to redeem'
+        },
+        category: {
+          type: 'string',
+          description: 'Category: food, drink, discount, experience, merchandise'
+        },
+        reasoning: {
+          type: 'string',
+          description: 'Why this reward would help the business (shown to owner)'
+        }
+      },
+      required: ['reward_name', 'points_cost', 'reasoning']
+    }
+  },
+  {
     name: 'save_knowledge',
     description: 'Save a learned fact to the business knowledge store. Use when you learn important business information that should be remembered.',
     input_schema: {
@@ -2397,6 +2427,66 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     }
   },
 
+  // ── create_reward_proposal ──────────────────────────────────────────
+  create_reward_proposal: async (input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
+    const { supabase, organizationId, appId } = ctx
+    const rewardName = (input.reward_name as string || '').slice(0, 200)
+    const description = (input.description as string || '').slice(0, 500)
+    const pointsCost = input.points_cost as number
+    const category = (input.category as string) || null
+    const reasoning = (input.reasoning as string || '').slice(0, 500)
+
+    if (!rewardName || !pointsCost || !reasoning) {
+      return { success: false, error: 'reward_name, points_cost, and reasoning are required' }
+    }
+
+    if (pointsCost < 1 || pointsCost > 10000) {
+      return { success: false, error: 'points_cost must be between 1 and 10,000' }
+    }
+
+    const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
+    if (!targetAppId) {
+      return { success: false, error: 'No loyalty app found for this organization' }
+    }
+
+    const { data, error } = await supabase
+      .from('reward_suggestions')
+      .insert({
+        app_id: targetAppId,
+        organization_id: organizationId,
+        member_id: null,
+        reward_name: rewardName,
+        description: description || null,
+        suggested_points: pointsCost,
+        category: category,
+        source_type: 'ai_proactive',
+        ai_proposal: {
+          reward_name: rewardName,
+          description: description || '',
+          points_cost: pointsCost,
+          category: category || '',
+          reasoning: reasoning
+        },
+        status: 'new'
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: {
+        suggestion_id: data?.id,
+        reward_name: rewardName,
+        points_cost: pointsCost,
+        message: 'Reward proposal created. The owner will see it in the Suggestions tab for review.'
+      }
+    }
+  },
+
   // ── CEO: read_own_revenue ────────────────────────────────────────────
   read_own_revenue: async (_input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> => {
     const { supabase } = ctx
@@ -3931,6 +4021,7 @@ You have access to tools to query AND act on real business data.
 - award_bonus_points: Award bonus points to members
 - enable_automation: Enable/disable loyalty automations
 - save_knowledge: Store learned facts about the business
+- create_reward_proposal: Propose a new reward based on business knowledge (owner reviews in Suggestions tab)
 
 When using write tools:
 1. Explain what you're doing and why
@@ -3995,6 +4086,7 @@ You have access to tools to query AND act on real business data.
 - award_bonus_points: Award points to members
 - enable_automation: Toggle automations
 - save_knowledge: Store learned business facts
+- create_reward_proposal: Propose rewards based on business insights
 
 Write tools queue actions for approval unless:
 1. Auto-execute is enabled for the organization
@@ -4049,7 +4141,8 @@ When a similar automation exists, respond like:
 4. Include 2-4 follow-up questions to continue the conversation
 5. Be specific and actionable - general advice is not helpful
 6. For new businesses (0 customers), focus on acquisition and onboarding
-7. For established businesses, focus on retention and optimization${discoveryPrompt}`
+7. For established businesses, focus on retention and optimization
+8. When the business has fewer than 3 rewards, proactively call create_reward_proposal to suggest 2-3 rewards tailored to their industry and business knowledge${discoveryPrompt}`
 }
 
 // Parse response based on mode

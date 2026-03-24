@@ -1440,6 +1440,16 @@ const CrownDashboard = (function() {
                         }
                     }
                 });
+
+                // Update countdown on insight cards
+                document.querySelectorAll('.card-countdown').forEach(el => {
+                    const action = autonomousState.queued.find(a => a.id === el.dataset.recId);
+                    if (action) {
+                        el.textContent = `Sending in ${action.countdown}s`;
+                    } else {
+                        el.remove();
+                    }
+                });
             }
         }, 1000);
     }
@@ -1538,15 +1548,55 @@ const CrownDashboard = (function() {
             <span class="toast-icon">${icons[type] || '🔔'}</span>
             <span class="toast-message">${escapeHtml(message)}</span>
             <span class="toast-time">Just now</span>
+            <button class="toast-dismiss" aria-label="Dismiss">&times;</button>
         `;
 
         container.appendChild(toast);
 
-        // Auto-dismiss after 4 seconds
-        setTimeout(() => {
+        function dismissToast() {
             toast.classList.add('dismissing');
             setTimeout(() => toast.remove(), 300);
-        }, 4000);
+        }
+
+        // Auto-dismiss after 4 seconds
+        const autoTimer = setTimeout(dismissToast, 4000);
+
+        // X button dismiss
+        toast.querySelector('.toast-dismiss').addEventListener('click', () => {
+            clearTimeout(autoTimer);
+            dismissToast();
+        });
+
+        // Swipe-to-dismiss
+        let startX = 0, currentX = 0, isDragging = false;
+        toast.addEventListener('pointerdown', (e) => {
+            startX = e.clientX;
+            currentX = 0;
+            isDragging = true;
+            toast.style.transition = 'none';
+            toast.setPointerCapture(e.pointerId);
+        });
+        toast.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            currentX = e.clientX - startX;
+            toast.style.transform = `translateX(${currentX}px)`;
+            toast.style.opacity = String(1 - Math.abs(currentX) / 200);
+        });
+        toast.addEventListener('pointerup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            if (Math.abs(currentX) > 80) {
+                clearTimeout(autoTimer);
+                toast.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                toast.style.transform = `translateX(${currentX > 0 ? 300 : -300}px)`;
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 200);
+            } else {
+                toast.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                toast.style.transform = 'translateX(0)';
+                toast.style.opacity = '1';
+            }
+        });
     }
 
     // Activity card types for live activity feed
@@ -1680,8 +1730,16 @@ const CrownDashboard = (function() {
             if (isDismissed) return; // dismissed cards keep their Re-accept button
 
             if (mode === 'autonomous') {
+                const action = autonomousState.queued.find(a => a.id === recId);
+                const countdownHtml = action
+                    ? `<span class="card-countdown" data-rec-id="${recId}">Sending in ${action.countdown}s</span>`
+                    : '';
                 actions.innerHTML = `
                     <button class="card-action-btn ghost detail-toggle" data-action="view" data-rec-id="${recId}">View Details</button>
+                    <div class="insight-card-actions-right">
+                        ${countdownHtml}
+                        <button class="card-action-btn secondary" data-action="skip" data-rec-id="${recId}">Skip</button>
+                    </div>
                 `;
             } else {
                 actions.innerHTML = `
@@ -2028,6 +2086,81 @@ const CrownDashboard = (function() {
 
             if (empty) empty.style.display = 'none';
 
+            // Fetch knowledge usage data (which facts are used by actions)
+            let usageMap = {};
+            try {
+                const { data: usage } = await supabase.rpc('get_knowledge_usage', {
+                    p_org_id: orgResult.organization.id
+                });
+                if (usage) {
+                    for (const row of usage) {
+                        usageMap[row.knowledge_id] = {
+                            count: row.action_count,
+                            types: row.action_types || []
+                        };
+                    }
+                }
+            } catch (err) {
+                // Non-critical — show learnings without badges if RPC not yet deployed
+                console.warn('Knowledge usage fetch failed (RPC may not be deployed yet):', err.message);
+            }
+
+            // Fetch knowledge score for the AI Understanding widget
+            let scoreHtml = '';
+            try {
+                const { data: scoreData } = await supabase.rpc('get_knowledge_score', {
+                    p_org_id: orgResult.organization.id
+                });
+                if (scoreData && scoreData.length > 0) {
+                    const scoreLayers = {
+                        operational: 'Operations', customer: 'Customers', financial: 'Financial',
+                        market: 'Market', growth: 'Growth', regulatory: 'Compliance'
+                    };
+                    const overallScore = Math.round(scoreData.reduce((sum, s) => sum + s.layer_score, 0) / scoreData.length);
+                    scoreHtml = `
+                        <div class="knowledge-score-widget">
+                            <div class="knowledge-score-header">
+                                <span class="knowledge-score-icon">&#x1F9E0;</span>
+                                <span class="knowledge-score-title">AI Understanding</span>
+                                <span class="knowledge-score-value">${overallScore}%</span>
+                                <button class="knowledge-score-toggle" aria-label="Toggle details" aria-expanded="true">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.427 5.427a.75.75 0 011.06-.013L8 7.782l2.513-2.368a.75.75 0 111.028 1.092l-3 2.824a.75.75 0 01-1.028 0l-3-2.824a.75.75 0 01-.086-1.079z"/></svg>
+                                </button>
+                            </div>
+                            <div class="knowledge-score-bar">
+                                <div class="knowledge-score-fill" style="width: ${overallScore}%"></div>
+                            </div>
+                            <div class="knowledge-score-layers">
+                                ${scoreData.map(s => {
+                                    const icon = s.layer_score >= 60 ? '&#x2705;' : s.layer_score > 0 ? '&#x26A0;&#xFE0F;' : '&#x274C;';
+                                    const label = scoreLayers[s.layer] || s.layer;
+                                    const tellAi = s.layer_score < 60
+                                        ? `<button class="knowledge-tell-ai-btn" data-layer="${AppUtils.escapeHtml(s.layer)}">Tell AI</button>`
+                                        : '';
+                                    return `<div class="knowledge-score-layer">
+                                        <span class="knowledge-score-layer-icon">${icon}</span>
+                                        <span class="knowledge-score-layer-name">${label}</span>
+                                        <span class="knowledge-score-layer-count">${s.fact_count} facts</span>
+                                        ${tellAi}
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
+                }
+            } catch (err) {
+                console.warn('Knowledge score fetch failed (RPC may not be deployed yet):', err.message);
+            }
+
+            // Action type display labels
+            const actionTypeLabels = {
+                create_automation: 'Automation',
+                create_announcement: 'Announcement',
+                send_message: 'Message',
+                create_promotion: 'Promotion',
+                award_points: 'Points Award',
+                create_reward: 'Reward'
+            };
+
             // Group by layer
             const groups = {};
             const layerLabels = {
@@ -2044,7 +2177,7 @@ const CrownDashboard = (function() {
                 groups[k.layer].push(k);
             }
 
-            feed.innerHTML = Object.entries(groups).map(([layer, facts]) => `
+            feed.innerHTML = scoreHtml + Object.entries(groups).map(([layer, facts]) => `
                 <div class="knowledge-group">
                     <div class="knowledge-group-header">
                         <span class="knowledge-group-icon">${layerIcons[layer] || '\uD83D\uDCDD'}</span>
@@ -2052,8 +2185,16 @@ const CrownDashboard = (function() {
                         <span class="knowledge-group-count">${facts.length}</span>
                     </div>
                     <div class="knowledge-group-facts">
-                        ${facts.map(f => `
-                            <div class="knowledge-fact ${AppUtils.escapeHtml(f.importance)}" data-fact-id="${AppUtils.escapeHtml(f.id)}">
+                        ${facts.map(f => {
+                            const usage = usageMap[f.id];
+                            const usageBadge = usage
+                                ? `<div class="knowledge-usage-badge">
+                                    <span class="knowledge-usage-icon">&#x1F517;</span>
+                                    <span class="knowledge-usage-label">Used by: ${usage.types.map(t => AppUtils.escapeHtml(actionTypeLabels[t] || t)).join(', ')}</span>
+                                   </div>`
+                                : '';
+                            return `
+                            <div class="knowledge-fact ${AppUtils.escapeHtml(f.importance)}${usage ? ' has-usage' : ''}" data-fact-id="${AppUtils.escapeHtml(f.id)}">
                                 <button class="knowledge-dismiss" data-id="${AppUtils.escapeHtml(f.id)}" title="Dismiss">&times;</button>
                                 <div class="knowledge-fact-text">${AppUtils.escapeHtml(f.fact)}</div>
                                 <div class="knowledge-fact-meta">
@@ -2061,8 +2202,9 @@ const CrownDashboard = (function() {
                                     <span class="knowledge-source">${AppUtils.escapeHtml(f.source_type)}</span>
                                     <span class="knowledge-date">${new Date(f.created_at).toLocaleDateString()}</span>
                                 </div>
-                            </div>
-                        `).join('')}
+                                ${usageBadge}
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
             `).join('');
@@ -2102,6 +2244,68 @@ const CrownDashboard = (function() {
                 }
             });
 
+            // Toggle collapse on AI Understanding widget
+            feed.addEventListener('click', function(e) {
+                const toggle = e.target.closest('.knowledge-score-toggle');
+                if (!toggle) return;
+                const widget = toggle.closest('.knowledge-score-widget');
+                if (!widget) return;
+                widget.classList.toggle('collapsed');
+                toggle.setAttribute('aria-expanded', String(!widget.classList.contains('collapsed')));
+            });
+
+            // "Tell AI" button handler
+            feed.addEventListener('click', function(e) {
+                const tellBtn = e.target.closest('.knowledge-tell-ai-btn');
+                if (!tellBtn) return;
+
+                const layer = tellBtn.dataset.layer;
+
+                // In onboarding mode: show a targeted discovery question for this layer
+                if (onboardingActive) {
+                    const categories = LAYER_TO_CATEGORIES[layer] || [];
+                    if (categories.length === 0) return;
+
+                    const targetQ = INFO_REQUEST_QUESTIONS.find(q =>
+                        categories.includes(q.category) && !infoRequestState.asked.has(q.id)
+                    );
+
+                    if (targetQ) {
+                        const existing = feed.querySelector('.info-request-card');
+                        if (existing) existing.remove();
+                        infoRequestState.pending = null;
+                        showLearningsDiscoveryCard(feed, targetQ);
+                    } else {
+                        tellBtn.textContent = 'Done';
+                        tellBtn.disabled = true;
+                        setTimeout(() => { tellBtn.textContent = 'Tell AI'; tellBtn.disabled = false; }, 1500);
+                    }
+                    return;
+                }
+
+                // Normal mode: open Chat tab with pre-filled prompt
+                const layerPrompts = {
+                    operational: 'Tell me about your operations — hours, staffing, daily workflow, and key processes.',
+                    customer: 'Tell me about your customers — who are they, what do they like, how often do they visit?',
+                    financial: 'Tell me about your financials — average ticket size, margins, pricing strategy.',
+                    market: 'Tell me about your market — main competitors, your positioning, local trends.',
+                    growth: 'Tell me about your growth goals — what are you working toward this quarter?',
+                    regulatory: 'Tell me about any regulations or compliance requirements for your business.'
+                };
+                const prompt = layerPrompts[layer] || 'Tell me more about your business.';
+
+                const chatTab = document.querySelector('[data-tab="chat"]');
+                if (chatTab) chatTab.click();
+
+                setTimeout(() => {
+                    const chatInput = document.getElementById('prompt-input') || document.querySelector('.chat-input textarea');
+                    if (chatInput) {
+                        chatInput.value = prompt;
+                        chatInput.focus();
+                    }
+                }, 100);
+            });
+
             knowledgeLoaded = true;
 
             // Show a discovery question at the top of the Learnings feed
@@ -2111,24 +2315,79 @@ const CrownDashboard = (function() {
         }
     }
 
+    async function refreshKnowledgeScore() {
+        const feed = document.getElementById('knowledge-feed');
+        if (!feed) return;
+        const widget = feed.querySelector('.knowledge-score-widget');
+        if (!widget) return;
+
+        try {
+            const user = await getCurrentUser();
+            if (!user) return;
+            const orgResult = await AppUtils.loadOrganization(supabase, user.id);
+            if (!orgResult?.organization) return;
+
+            const { data: scoreData } = await supabase.rpc('get_knowledge_score', {
+                p_org_id: orgResult.organization.id
+            });
+            if (!scoreData || scoreData.length === 0) return;
+
+            const scoreLayers = {
+                operational: 'Operations', customer: 'Customers', financial: 'Financial',
+                market: 'Market', growth: 'Growth', regulatory: 'Compliance'
+            };
+            const overallScore = Math.round(scoreData.reduce((sum, s) => sum + s.layer_score, 0) / scoreData.length);
+
+            const valueEl = widget.querySelector('.knowledge-score-value');
+            if (valueEl) valueEl.textContent = overallScore + '%';
+
+            const fillEl = widget.querySelector('.knowledge-score-fill');
+            if (fillEl) fillEl.style.width = overallScore + '%';
+
+            const layersEl = widget.querySelector('.knowledge-score-layers');
+            if (layersEl) {
+                layersEl.innerHTML = scoreData.map(s => {
+                    const icon = s.layer_score >= 60 ? '&#x2705;' : s.layer_score > 0 ? '&#x26A0;&#xFE0F;' : '&#x274C;';
+                    const label = scoreLayers[s.layer] || s.layer;
+                    const tellAi = s.layer_score < 60
+                        ? `<button class="knowledge-tell-ai-btn" data-layer="${AppUtils.escapeHtml(s.layer)}">Tell AI</button>`
+                        : '';
+                    return `<div class="knowledge-score-layer">
+                        <span class="knowledge-score-layer-icon">${icon}</span>
+                        <span class="knowledge-score-layer-name">${label}</span>
+                        <span class="knowledge-score-layer-count">${s.fact_count} facts</span>
+                        ${tellAi}
+                    </div>`;
+                }).join('');
+            }
+        } catch (err) {
+            console.warn('Score refresh failed:', err.message);
+        }
+    }
+
     /**
      * Show a discovery input card at the top of the Learnings tab feed.
      * Reuses the existing createInfoRequestCard() system but targets the knowledge feed.
      */
-    function showLearningsDiscoveryCard(feedEl) {
+    function showLearningsDiscoveryCard(feedEl, forceQuestion) {
         if (!feedEl) return;
-        // Don't show if one is already pending
-        if (infoRequestState.pending) return;
+        // Don't show if one is already pending (unless forcing a specific question)
+        if (infoRequestState.pending && !forceQuestion) return;
 
-        const question = getNextInfoQuestion();
+        const question = forceQuestion || getNextInfoQuestion();
         if (!question) return;
 
         infoRequestState.pending = question;
         const card = createInfoRequestCard(question);
         card.classList.add('learnings-discovery-card');
 
-        // Insert at top of feed
-        if (feedEl.firstChild) {
+        // Insert AFTER the knowledge score widget (so widget stays on top)
+        const scoreWidget = feedEl.querySelector('.knowledge-score-widget');
+        if (scoreWidget && scoreWidget.nextSibling) {
+            feedEl.insertBefore(card, scoreWidget.nextSibling);
+        } else if (scoreWidget) {
+            feedEl.appendChild(card);
+        } else if (feedEl.firstChild) {
             feedEl.insertBefore(card, feedEl.firstChild);
         } else {
             feedEl.appendChild(card);
@@ -2353,6 +2612,11 @@ const CrownDashboard = (function() {
             // Success pulse
             if (typeof CrownScene !== 'undefined' && CrownScene.pulseOnce) {
                 CrownScene.pulseOnce();
+            }
+
+            // Mark welcome banner AI card as complete after first successful chat
+            if (typeof WelcomeBanner !== 'undefined' && WelcomeBanner.markAiComplete) {
+                WelcomeBanner.markAiComplete();
             }
 
         } catch (e) {
@@ -2643,6 +2907,26 @@ const CrownDashboard = (function() {
     // =============================================
     // INFO REQUEST CARDS (Proactive Data Gathering)
     // =============================================
+
+    // Map discovery question categories to knowledge layers (for business_knowledge inserts)
+    const CATEGORY_TO_LAYER = {
+        revenue: 'financial',
+        operations: 'operational',
+        customer: 'customer',
+        competition: 'market',
+        seasonality: 'growth',
+        goals: 'growth'
+    };
+
+    // Map score widget layers to discovery question categories
+    const LAYER_TO_CATEGORIES = {
+        operational: ['operations'],
+        customer: ['customer'],
+        financial: ['revenue'],
+        market: ['competition'],
+        growth: ['goals', 'seasonality'],
+        regulatory: []
+    };
 
     // Question pool for gathering missing business data
     const INFO_REQUEST_QUESTIONS = [
@@ -2978,6 +3262,25 @@ const CrownDashboard = (function() {
                 if (error) throw error;
             }
 
+            // Bridge: insert into business_knowledge so score widget updates
+            const knowledgeLayer = CATEGORY_TO_LAYER[question.category] || 'operational';
+            const factText = Array.isArray(value)
+                ? `${question.title}: ${value.join(', ')}`
+                : `${question.title}: ${value}`;
+            supabase.from('business_knowledge').insert({
+                organization_id: orgId,
+                layer: knowledgeLayer,
+                category: question.category,
+                fact: factText,
+                confidence: 1.0,
+                importance: question.priority === 'high' ? 'high' : 'medium',
+                source_type: 'conversation',
+                status: 'active'
+            }).then(() => {}).catch(() => {}); // fire-and-forget
+
+            // Refresh score widget live
+            setTimeout(() => refreshKnowledgeScore(), 600);
+
             // Mark question as answered
             infoRequestState.asked.add(question.id);
             infoRequestState.pending = null;
@@ -2991,11 +3294,25 @@ const CrownDashboard = (function() {
             }
 
             // Show success and remove card
-            actions.innerHTML = '<span style="font-size:12px;color:#10b981">✓ Thanks! Generating new ideas...</span>';
+            const successMsg = onboardingActive
+                ? '✓ Nice! The more Royal knows, the smarter your recommendations get.'
+                : '✓ Thanks! Generating new ideas...';
+            actions.innerHTML = `<span style="font-size:12px;color:#10b981">${successMsg}</span>`;
             cardEl.dataset.status = 'completed';
 
             // Show toast
             showActivityToast('ai-accepted', 'Business profile updated');
+
+            // Mark welcome banner AI card complete after first question
+            if (typeof WelcomeBanner !== 'undefined' && WelcomeBanner.markAiComplete) {
+                WelcomeBanner.markAiComplete();
+            }
+
+            // Update onboarding progress counter
+            if (onboardingActive) {
+                onboardingAnswered++;
+                updateOnboardingProgress();
+            }
 
             // Fade out card
             setTimeout(() => {
@@ -3008,6 +3325,8 @@ const CrownDashboard = (function() {
                     updateIntelBadge();
                     // Trigger new suggestion generation with updated context
                     regenerateSuggestions();
+                    // In onboarding mode, auto-chain to next question
+                    showNextOnboardingQuestion();
                 }, 300);
             }, 1500);
 
@@ -3038,6 +3357,8 @@ const CrownDashboard = (function() {
             updateIntelBadge();
             // Check if we should show another question or generate content
             checkAndShowInfoRequest();
+            // In onboarding mode, auto-chain to next question
+            showNextOnboardingQuestion();
         }, 300);
     }
 
@@ -3363,7 +3684,113 @@ const CrownDashboard = (function() {
         submitPrompt();
     }
 
-    return { init, setMode, applyTheme, initPrompt, addActivityCard, showActivityToast, handleChatSubmit, loadKnowledge };
+    // ── Onboarding Mode (focused Learnings experience) ──
+    let onboardingActive = false;
+    let onboardingAnswered = 0;
+
+    function enterOnboardingMode() {
+        const panel = document.querySelector('.crown-cards-panel');
+        if (!panel) return;
+        onboardingActive = true;
+        onboardingAnswered = 0;
+        panel.classList.add('onboarding-mode');
+
+        const totalQuestions = INFO_REQUEST_QUESTIONS.length;
+
+        // Inject onboarding header if not already present
+        if (!panel.querySelector('.onboarding-header')) {
+            const header = document.createElement('div');
+            header.className = 'onboarding-header';
+            header.innerHTML = `
+                <div class="onboarding-header-text">
+                    <h2>Help Royal AI Learn Your Business</h2>
+                    <p>Answer these questions so Royal can give you smarter recommendations.</p>
+                </div>
+                <div class="onboarding-progress">
+                    <div class="onboarding-progress-text">
+                        <span id="onboarding-answered">0</span> of ${totalQuestions} questions answered
+                    </div>
+                    <div class="onboarding-progress-bar">
+                        <div class="onboarding-progress-fill" id="onboarding-progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            `;
+            // Insert after the cards-panel-header (tab bar), before tab content
+            const panelHeader = panel.querySelector('.cards-panel-header');
+            if (panelHeader && panelHeader.nextSibling) {
+                panel.insertBefore(header, panelHeader.nextSibling);
+            } else {
+                panel.appendChild(header);
+            }
+        }
+
+        // Auto-collapse AI Understanding widget in onboarding mode
+        const scoreWidget = document.querySelector('.knowledge-score-widget');
+        if (scoreWidget && !scoreWidget.classList.contains('collapsed')) {
+            scoreWidget.classList.add('collapsed');
+            const toggle = scoreWidget.querySelector('.knowledge-score-toggle');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        }
+
+        // Inject onboarding footer if not already present
+        if (!panel.querySelector('.onboarding-footer')) {
+            const footer = document.createElement('div');
+            footer.className = 'onboarding-footer';
+            footer.innerHTML = `
+                <button class="btn btn-ghost btn-sm" id="onboarding-close-btn">Close</button>
+                <button class="btn btn-success btn-sm" id="onboarding-save-btn" disabled>Save</button>
+            `;
+            panel.appendChild(footer);
+            footer.querySelector('#onboarding-close-btn').addEventListener('click', exitOnboardingMode);
+            footer.querySelector('#onboarding-save-btn').addEventListener('click', exitOnboardingMode);
+        }
+    }
+
+    function updateOnboardingProgress() {
+        if (!onboardingActive) return;
+        const countEl = document.getElementById('onboarding-answered');
+        const fillEl = document.getElementById('onboarding-progress-fill');
+        const saveBtn = document.getElementById('onboarding-save-btn');
+        if (countEl) countEl.textContent = onboardingAnswered;
+        if (fillEl) {
+            const pct = Math.min(100, Math.round((onboardingAnswered / INFO_REQUEST_QUESTIONS.length) * 100));
+            fillEl.style.width = pct + '%';
+        }
+        if (saveBtn) {
+            saveBtn.disabled = onboardingAnswered < 3;
+        }
+    }
+
+    function exitOnboardingMode() {
+        const panel = document.querySelector('.crown-cards-panel');
+        if (!panel) return;
+        onboardingActive = false;
+        panel.classList.remove('onboarding-mode');
+
+        // Remove onboarding header and footer
+        const header = panel.querySelector('.onboarding-header');
+        if (header) header.remove();
+        const footer = panel.querySelector('.onboarding-footer');
+        if (footer) footer.remove();
+
+        // Collapse the expanded panel
+        if (panel.classList.contains('panel-expanded')) {
+            document.getElementById('panel-expand-btn')?.click();
+        }
+    }
+
+    function showNextOnboardingQuestion() {
+        if (!onboardingActive) return;
+        const feed = document.getElementById('knowledge-feed');
+        if (!feed) return;
+
+        // Small delay for smooth transition
+        setTimeout(() => {
+            showLearningsDiscoveryCard(feed);
+        }, 400);
+    }
+
+    return { init, setMode, applyTheme, initPrompt, addActivityCard, showActivityToast, handleChatSubmit, loadKnowledge, enterOnboardingMode, exitOnboardingMode };
 })();
 
 window.CrownDashboard = CrownDashboard;

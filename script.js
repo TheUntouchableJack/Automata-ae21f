@@ -676,7 +676,7 @@ function startLoadingSteps() {
     _initStepTexts();
 
     let currentStep = 0;
-    const durations = [2500, 3000, 3500, 5000];
+    const durations = [1200, 1500, 1800, 2500];
     const widths = ['20%', '45%', '70%', '88%'];
 
     // First step is already active via HTML class
@@ -734,7 +734,7 @@ function completeLoadingSteps(callback) {
     if (progressFill) progressFill.style.width = '100%';
     _updatePct('100%');
     _showOrb(false);
-    setTimeout(callback, 400);
+    setTimeout(callback, 200);
 }
 
 function clearLoadingSteps() {

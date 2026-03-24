@@ -74,7 +74,7 @@
         "loadingStep2": "Identifying your industry...",
         "loadingStep3": "Building your loyalty program...",
         "loadingStep4": "Calculating growth potential...",
-        "loadingSubtext": "This usually takes about 10 seconds"
+        "loadingSubtext": "This can take from 10 - 20 seconds to analyze your data"
     },
     "preview": {
         "title": "Royalty Dashboard",
@@ -1876,9 +1876,9 @@
         "appTitle": "Your New Application",
         "appDesc": "{name} Rewards is ready to customize. Add your branding, set point values, and configure rewards before sharing with customers.",
         "appLink": "Customize App",
-        "aiTitle": "AI Intelligence",
-        "aiDesc": "Royal AI is now monitoring your program. It will learn your business, suggest improvements, and can run campaigns on your behalf. Choose between Manual review or Auto-pilot mode.",
-        "aiLink": "Explore AI Learnings",
+        "aiTitle": "Teach Royal AI",
+        "aiDesc": "Answer a few questions so Royal AI can personalize your automations, rewards, and growth strategy.",
+        "aiLink": "Get Started",
         "hidePanel": "Hide Panel",
         "showPanel": "Show Panel",
         "confirmDismissTitle": "Dismiss welcome guide?",
