@@ -16,6 +16,10 @@ const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN')
 const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER')
 const twilioWebhookUrl = `${supabaseUrl}/functions/v1/twilio-webhook`
 
+// Firebase (FCM) configuration
+const firebaseServiceAccount = Deno.env.get('FIREBASE_SERVICE_ACCOUNT')
+const firebaseProjectId = Deno.env.get('FIREBASE_PROJECT_ID')
+
 const ALLOWED_ORIGINS = [
   'https://royaltyapp.ai',
   'https://www.royaltyapp.ai',
@@ -71,6 +75,7 @@ interface Member {
   id: string
   email: string | null
   phone: string | null
+  fcm_token: string | null
   first_name: string | null
   last_name: string | null
   locale: string
@@ -133,8 +138,55 @@ async function sendEmail(
 }
 
 // ============================================================================
-// PUSH NOTIFICATION (FCM - stubbed)
+// PUSH NOTIFICATION (FCM HTTP v1 API)
 // ============================================================================
+
+let cachedFcmAccessToken: string | null = null
+let fcmTokenExpiresAt = 0
+
+async function getFcmAccessToken(): Promise<string> {
+  if (cachedFcmAccessToken && Date.now() < fcmTokenExpiresAt - 300_000) {
+    return cachedFcmAccessToken
+  }
+
+  if (!firebaseServiceAccount) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT not configured')
+  }
+
+  const sa = JSON.parse(firebaseServiceAccount)
+  const { importPKCS8, SignJWT } = await import('https://deno.land/x/jose@v5.2.0/index.ts')
+  const privateKey = await importPKCS8(sa.private_key, 'RS256')
+
+  const now = Math.floor(Date.now() / 1000)
+  const jwt = await new SignJWT({
+    scope: 'https://www.googleapis.com/auth/firebase.messaging'
+  })
+    .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
+    .setIssuer(sa.client_email)
+    .setSubject(sa.client_email)
+    .setAudience('https://oauth2.googleapis.com/token')
+    .setIssuedAt(now)
+    .setExpirationTime(now + 3600)
+    .sign(privateKey)
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant_type:jwt-bearer',
+      assertion: jwt
+    })
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(`OAuth2 token error: ${data.error_description || data.error}`)
+  }
+
+  cachedFcmAccessToken = data.access_token
+  fcmTokenExpiresAt = Date.now() + (data.expires_in * 1000)
+  return cachedFcmAccessToken!
+}
 
 async function sendPush(
   fcmToken: string | null,
@@ -146,9 +198,59 @@ async function sendPush(
     return { success: false, error: 'No FCM token' }
   }
 
-  // Stubbed - would use Firebase Admin SDK
-  console.log('[STUB] Would send push:', { fcmToken: fcmToken.slice(0, 20) + '...', title, body })
-  return { success: true, message_id: `stub_push_${Date.now()}` }
+  if (!firebaseServiceAccount || !firebaseProjectId) {
+    console.log('[STUB] Would send push:', { fcmToken: fcmToken.slice(0, 20) + '...', title, body })
+    return { success: true, message_id: `stub_push_${Date.now()}` }
+  }
+
+  try {
+    const accessToken = await getFcmAccessToken()
+
+    const message: Record<string, unknown> = {
+      message: {
+        token: fcmToken,
+        notification: { title, body },
+        webpush: {
+          notification: {
+            icon: '/icons/icon-192.png',
+            badge: '/icons/badge-72.png',
+            tag: data?.tag || 'royalty-notification'
+          },
+          fcm_options: {
+            link: data?.url || '/customer-app/app.html'
+          }
+        },
+        ...(data ? { data } : {})
+      }
+    }
+
+    const response = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${firebaseProjectId}/messages:send`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(message)
+      }
+    )
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      const errorCode = result.error?.details?.[0]?.errorCode || result.error?.status
+      if (errorCode === 'UNREGISTERED' || errorCode === 'NOT_FOUND') {
+        return { success: false, error: 'TOKEN_EXPIRED' }
+      }
+      return { success: false, error: result.error?.message || 'FCM API error' }
+    }
+
+    return { success: true, message_id: result.name }
+  } catch (error) {
+    console.error('FCM send failed:', error)
+    return { success: false, error: (error as Error).message }
+  }
 }
 
 // ============================================================================
@@ -382,7 +484,7 @@ async function processBatch(
   // Get member details
   const { data: members } = await supabase
     .from('app_members')
-    .select('id, email, phone, first_name, last_name, locale, timezone, communication_preferences, quiet_hours')
+    .select('id, email, phone, fcm_token, first_name, last_name, locale, timezone, communication_preferences, quiet_hours')
     .in('id', memberIds.slice(0, 1000))
 
   const results: DeliveryResult[] = []
@@ -466,7 +568,10 @@ async function processBatch(
         break
 
       case 'push':
-        result = await sendPush(null, subject || '', body)  // FCM token would come from member record
+        result = await sendPush(member.fcm_token, subject || '', body)
+        if (!result.success && result.error === 'TOKEN_EXPIRED') {
+          await supabase.from('app_members').update({ fcm_token: null }).eq('id', member.id)
+        }
         break
 
       case 'in_app':
@@ -567,7 +672,7 @@ Deno.serve(async (req) => {
 
       const { data: member } = await supabase
         .from('app_members')
-        .select('id, email, phone, first_name, last_name, locale, timezone, communication_preferences, quiet_hours')
+        .select('id, email, phone, fcm_token, first_name, last_name, locale, timezone, communication_preferences, quiet_hours')
         .eq('id', member_id)
         .single()
 
@@ -585,7 +690,10 @@ Deno.serve(async (req) => {
           sendResult = await sendEmail(member.email, subject, messageBody)
           break
         case 'push':
-          sendResult = await sendPush(null, subject, messageBody)
+          sendResult = await sendPush(member.fcm_token, subject, messageBody)
+          if (!sendResult.success && sendResult.error === 'TOKEN_EXPIRED') {
+            await supabase.from('app_members').update({ fcm_token: null }).eq('id', member.id)
+          }
           break
         case 'in_app':
           sendResult = await sendInApp(supabase, member.id, member.app_id, subject, messageBody)
@@ -638,7 +746,7 @@ Deno.serve(async (req) => {
       result.skipped = totalSkipped
       result.api_configured = {
         resend: !!resendApiKey,
-        fcm: false,  // Deferred to post-launch
+        fcm: !!firebaseServiceAccount && !!firebaseProjectId,
         twilio: !!twilioAccountSid && !!twilioAuthToken && !!twilioPhoneNumber
       }
     }

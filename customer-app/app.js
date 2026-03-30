@@ -88,6 +88,131 @@ async function registerServiceWorker() {
     }
 }
 
+// ===== Push Notifications (Firebase Cloud Messaging) =====
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCtCO-WrPRsNhHA_YHrlZB5yUhH41FRwwo",
+    authDomain: "royalty-rewards-23f4f.firebaseapp.com",
+    projectId: "royalty-rewards-23f4f",
+    storageBucket: "royalty-rewards-23f4f.firebasestorage.app",
+    messagingSenderId: "238839427409",
+    appId: "1:238839427409:web:a69d43d4a404f814872370"
+};
+const FIREBASE_VAPID_KEY = "BElUSltThf638hk-OpezAXQyrKq9leCSfNYwI1DnJYB5UOklTBRNxzn2EqQxhe6YVe6v_7ZhQrSWj316te-dUR8";
+
+let firebaseMessaging = null;
+
+function initFirebaseMessaging() {
+    if (!('Notification' in window) || typeof firebase === 'undefined' || !firebase?.messaging) return null;
+    try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(FIREBASE_CONFIG);
+        }
+        firebaseMessaging = firebase.messaging();
+        return firebaseMessaging;
+    } catch (err) {
+        console.error('Firebase init failed:', err);
+        return null;
+    }
+}
+
+async function requestPushPermission() {
+    if (!('Notification' in window)) return false;
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return false;
+    return await registerPushToken();
+}
+
+async function registerPushToken() {
+    const messaging = initFirebaseMessaging();
+    if (!messaging) return false;
+    try {
+        const swReg = await navigator.serviceWorker.getRegistration('/customer-app/');
+        const token = await messaging.getToken({
+            vapidKey: FIREBASE_VAPID_KEY,
+            serviceWorkerRegistration: swReg
+        });
+        if (!token) return false;
+        console.log('FCM token obtained');
+        await saveFcmToken(token);
+
+        messaging.onMessage((payload) => {
+            if (payload.notification && typeof showToast === 'function') {
+                showToast(payload.notification.body || 'New notification', 'info');
+            }
+        });
+        return true;
+    } catch (err) {
+        console.error('Failed to get FCM token:', err);
+        return false;
+    }
+}
+
+async function saveFcmToken(token) {
+    if (!currentMember) return;
+    const { error } = await supabaseClient.rpc('save_fcm_token', {
+        p_member_id: currentMember.id,
+        p_fcm_token: token
+    });
+    if (error) console.error('Failed to save FCM token:', error);
+}
+
+async function clearFcmToken() {
+    if (!currentMember) return;
+    await supabaseClient.rpc('clear_fcm_token', { p_member_id: currentMember.id });
+}
+
+async function syncPushToken() {
+    if ('Notification' in window && Notification.permission === 'granted' && currentMember) {
+        await registerPushToken();
+    }
+}
+
+function shouldShowPushPrompt() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission !== 'default') return false;
+    if (localStorage.getItem('royalty_push_dismissed')) return false;
+    if (!currentMember) return false;
+    return true;
+}
+
+function showPushPromptBanner() {
+    if (!shouldShowPushPrompt()) return;
+    const banner = document.createElement('div');
+    banner.id = 'push-prompt-banner';
+    banner.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--app-primary, #7c3aed);color:white;border-radius:12px;margin:12px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+            <span style="font-size:24px;">🔔</span>
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:14px;">Never miss a reward!</div>
+                <div style="font-size:12px;opacity:0.9;">Get notified about points, deals & tier upgrades</div>
+            </div>
+            <button onclick="handlePushEnable()" style="background:white;color:var(--app-primary, #7c3aed);border:none;border-radius:8px;padding:8px 16px;font-weight:600;font-size:13px;cursor:pointer;">Enable</button>
+            <button onclick="dismissPushPrompt()" style="background:none;border:none;color:white;opacity:0.7;font-size:18px;cursor:pointer;padding:4px;">&times;</button>
+        </div>
+    `;
+    const header = document.querySelector('.app-header');
+    if (header) {
+        header.insertAdjacentElement('afterend', banner);
+    }
+}
+
+async function handlePushEnable() {
+    const banner = document.getElementById('push-prompt-banner');
+    const success = await requestPushPermission();
+    if (success) {
+        if (typeof showToast === 'function') showToast('Notifications enabled!', 'success');
+    } else {
+        if (typeof showToast === 'function') showToast('Could not enable notifications', 'error');
+    }
+    if (banner) banner.remove();
+}
+
+function dismissPushPrompt() {
+    localStorage.setItem('royalty_push_dismissed', '1');
+    const banner = document.getElementById('push-prompt-banner');
+    if (banner) banner.remove();
+}
+
 // ===== URL Helpers =====
 function getAppSlug() {
     // URL format: /a/{slug} or /a/{slug}/app
@@ -312,6 +437,10 @@ async function loadMemberData(memberId) {
 
     currentMember = member;
     updateMemberUI();
+
+    // Push notifications: sync token if already granted, show prompt if eligible
+    syncPushToken();
+    showPushPromptBanner();
 }
 
 function updateMemberUI() {
@@ -1061,7 +1190,8 @@ function setupEventListeners() {
     // Logout
     const logoutBtn = document.querySelector('.logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.addEventListener('click', async () => {
+            await clearFcmToken();
             localStorage.removeItem(`royalty_member_${getAppSlug()}`);
             window.location.href = `/a/${getAppSlug()}`;
         });

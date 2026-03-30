@@ -1,11 +1,40 @@
+// Firebase Cloud Messaging — must be first in service worker
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+    apiKey: "AIzaSyCtCO-WrPRsNhHA_YHrlZB5yUhH41FRwwo",
+    projectId: "royalty-rewards-23f4f",
+    messagingSenderId: "238839427409",
+    appId: "1:238839427409:web:a69d43d4a404f814872370"
+});
+
+const fcmMessaging = firebase.messaging();
+
+// Handle background push notifications (app not in foreground)
+fcmMessaging.onBackgroundMessage((payload) => {
+    console.log('[SW] Background message:', payload);
+    if (payload.data && !payload.notification) {
+        const title = payload.data.title || 'Royalty Rewards';
+        const options = {
+            body: payload.data.body || '',
+            icon: '/icons/icon-192.png',
+            badge: '/icons/badge-72.png',
+            tag: payload.data.tag || 'royalty-notification',
+            data: { url: payload.data.url || '/customer-app/app.html' }
+        };
+        self.registration.showNotification(title, options);
+    }
+});
+
 /**
  * Royalty Customer App Service Worker
  * Provides offline support and caching for the PWA
  */
 
-const CACHE_NAME = 'royalty-rewards-v2';
-const STATIC_CACHE = 'royalty-static-v2';
-const DYNAMIC_CACHE = 'royalty-dynamic-v2';
+const CACHE_NAME = 'royalty-rewards-v3';
+const STATIC_CACHE = 'royalty-static-v3';
+const DYNAMIC_CACHE = 'royalty-dynamic-v3';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
