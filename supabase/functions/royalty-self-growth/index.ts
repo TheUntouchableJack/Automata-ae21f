@@ -800,6 +800,215 @@ async function logPausedBriefing(
 }
 
 // ============================================================================
+// ONBOARDING SEQUENCE PROCESSOR
+// ============================================================================
+
+interface SequenceStep {
+  step: number
+  template_key: string
+  delay_hours: number
+  skip_condition: string | null
+}
+
+async function processOnboardingSequences(supabase: SupabaseClient, isPaused: boolean): Promise<number> {
+  let emailsSent = 0
+
+  // Get active sequences
+  const { data: sequences } = await supabase
+    .from('smb_email_sequences')
+    .select('sequence_key, steps')
+    .eq('is_active', true)
+
+  if (!sequences || sequences.length === 0) return 0
+
+  for (const seq of sequences) {
+    const steps = seq.steps as SequenceStep[]
+
+    // Get orgs enrolled in this sequence that haven't completed it
+    const { data: states } = await supabase
+      .from('smb_email_sequence_state')
+      .select('id, organization_id, current_step, started_at, last_sent_at')
+      .eq('sequence_key', seq.sequence_key)
+      .is('completed_at', null)
+      .limit(50)
+
+    if (!states || states.length === 0) continue
+
+    for (const state of states) {
+      const nextStepNum = state.current_step + 1
+      const nextStep = steps.find(s => s.step === nextStepNum)
+
+      if (!nextStep) {
+        // Sequence complete
+        await supabase.from('smb_email_sequence_state')
+          .update({ completed_at: new Date().toISOString() })
+          .eq('id', state.id)
+        continue
+      }
+
+      // Check if enough time has passed since sequence started
+      const startedAt = new Date(state.started_at)
+      const hoursElapsed = (Date.now() - startedAt.getTime()) / (1000 * 60 * 60)
+      if (hoursElapsed < nextStep.delay_hours) continue
+
+      // Rate limit: max 1 email per org per day
+      if (state.last_sent_at) {
+        const lastSent = new Date(state.last_sent_at)
+        const hoursSinceLast = (Date.now() - lastSent.getTime()) / (1000 * 60 * 60)
+        if (hoursSinceLast < 20) continue  // ~20h buffer
+      }
+
+      // Get org owner details
+      const { data: membership } = await supabase
+        .from('organization_members')
+        .select('user_id, profiles(email, first_name)')
+        .eq('organization_id', state.organization_id)
+        .eq('role', 'owner')
+        .single()
+
+      if (!membership?.profiles) continue
+
+      const profile = Array.isArray(membership.profiles) ? membership.profiles[0] : membership.profiles
+      const ownerEmail = (profile as { email: string }).email
+      const firstName = (profile as { first_name: string | null }).first_name || ''
+
+      // Check skip condition
+      let shouldSkip = false
+      if (nextStep.skip_condition) {
+        shouldSkip = await checkSkipCondition(supabase, state.organization_id, nextStep.skip_condition)
+      }
+
+      if (shouldSkip) {
+        // Skip this step, advance to next
+        log('info', `Skipping onboarding step ${nextStepNum} for org ${state.organization_id}: ${nextStep.skip_condition}`)
+        await supabase.from('smb_email_sequence_state')
+          .update({
+            current_step: nextStepNum,
+            skipped_steps: supabase.rpc ? undefined : undefined // handled below
+          })
+          .eq('id', state.id)
+
+        // Append to skipped_steps array
+        await supabase.rpc('array_append_int', {
+          p_table: 'smb_email_sequence_state',
+          p_id: state.id,
+          p_column: 'skipped_steps',
+          p_value: nextStepNum
+        }).then(() => {}).catch(() => {
+          // Fallback: just update current_step if RPC doesn't exist
+        })
+
+        continue
+      }
+
+      if (isPaused) {
+        await supabase.from('self_growth_log').insert({
+          action_type: 'sequence_step_planned',
+          description: `Would send onboarding step ${nextStepNum} (${nextStep.template_key}) to ${ownerEmail}`,
+          status: 'pending_approval',
+          metadata: { org_id: state.organization_id, step: nextStepNum, template: nextStep.template_key }
+        })
+        continue
+      }
+
+      // Send the email via smb-lifecycle-email
+      const fnUrl = Deno.env.get('SUPABASE_URL')!
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+      try {
+        const response = await fetch(`${fnUrl}/functions/v1/smb-lifecycle-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            type: nextStep.template_key,
+            email: ownerEmail,
+            first_name: firstName,
+            user_id: membership.user_id,
+          }),
+        })
+
+        const result = await response.json()
+
+        if (result.success && !result.skipped) {
+          // Advance step
+          await supabase.from('smb_email_sequence_state')
+            .update({
+              current_step: nextStepNum,
+              last_sent_at: new Date().toISOString()
+            })
+            .eq('id', state.id)
+
+          emailsSent++
+          log('info', `Sent onboarding step ${nextStepNum} to ${ownerEmail}`, { template: nextStep.template_key })
+        } else if (result.skipped) {
+          log('info', `Onboarding step ${nextStepNum} skipped for ${ownerEmail}: ${result.reason}`)
+          await supabase.from('smb_email_sequence_state')
+            .update({ current_step: nextStepNum })
+            .eq('id', state.id)
+        }
+      } catch (err) {
+        log('error', `Failed to send onboarding step ${nextStepNum}`, { error: String(err), org: state.organization_id })
+      }
+    }
+  }
+
+  return emailsSent
+}
+
+async function checkSkipCondition(supabase: SupabaseClient, orgId: string, condition: string): Promise<boolean> {
+  switch (condition) {
+    case 'has_customer_app': {
+      const { count } = await supabase
+        .from('customer_apps')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+      return (count || 0) > 0
+    }
+    case 'has_used_ai': {
+      const { count } = await supabase
+        .from('ai_prompts')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+      return (count || 0) > 0
+    }
+    case 'has_customers': {
+      // Check if any customer app has members
+      const { data: apps } = await supabase
+        .from('customer_apps')
+        .select('id')
+        .eq('organization_id', orgId)
+        .limit(1)
+      if (!apps || apps.length === 0) return false
+      const { count } = await supabase
+        .from('app_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('app_id', apps[0].id)
+        .is('deleted_at', null)
+      return (count || 0) > 0
+    }
+    case 'has_ten_members': {
+      const { data: apps } = await supabase
+        .from('customer_apps')
+        .select('id')
+        .eq('organization_id', orgId)
+        .limit(1)
+      if (!apps || apps.length === 0) return false
+      const { count } = await supabase
+        .from('app_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('app_id', apps[0].id)
+        .is('deleted_at', null)
+      return (count || 0) >= 10
+    }
+    default:
+      return false
+  }
+}
+
+// ============================================================================
 // MAIN HANDLER
 // ============================================================================
 
@@ -903,6 +1112,17 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // ── STEP 5b: Onboarding sequences ───────────────────────────────────────
+  let onboardingEmailsSent = 0
+  try {
+    onboardingEmailsSent = await processOnboardingSequences(supabase, isPaused)
+    if (onboardingEmailsSent > 0) {
+      log('info', `Onboarding sequences: ${onboardingEmailsSent} emails sent`)
+    }
+  } catch (err) {
+    log('error', 'Onboarding sequence processing failed', { error: String(err) })
+  }
+
   // ── STEP 6: Jay report ────────────────────────────────────────────────────
   const summary: GrowthSummary = {
     revenue,
@@ -938,6 +1158,7 @@ Deno.serve(async (req: Request) => {
         days_since_publish: content.days_since_last_publish,
         drafts_ready: content.drafts_awaiting_review,
         outreach_drafted: outreachDrafted,
+        onboarding_emails_sent: onboardingEmailsSent,
         article_generated: articleGenerated,
         publish_gap_urgent: content.publish_gap_urgent,
       }

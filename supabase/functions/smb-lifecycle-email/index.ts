@@ -57,6 +57,134 @@ function getEmailTemplate(type: string, data: TemplateData): { subject: string; 
         `
       }
 
+    case 'onboarding_create_app':
+      return {
+        subject: `${name}, your loyalty app is one click away`,
+        preheader: 'Create your branded loyalty program in 60 seconds',
+        html: `
+          <h1 style="font-size:22px;font-weight:700;color:#18181b;margin:0 0 12px;letter-spacing:-0.3px;">Ready to launch your loyalty program?</h1>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 8px;">
+            Hey ${name} — most owners create their loyalty app within the first day. Here's how simple it is:
+          </p>
+          <ol style="font-size:15px;color:#52525b;line-height:1.8;margin:0 0 24px;padding-left:20px;">
+            <li>Open the App Builder</li>
+            <li>Describe your business in a sentence</li>
+            <li>Royal creates your branded loyalty program — rewards, tiers, and all</li>
+          </ol>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 24px;">
+            It takes about 60 seconds. Your customers get a QR code to start earning points immediately.
+          </p>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a href="https://royaltyapp.ai/app/apps.html"
+               style="display:inline-block;background:#7c3aed;color:#ffffff;padding:14px 36px;
+                      border-radius:10px;font-size:15px;font-weight:600;
+                      text-decoration:none;box-shadow:0 2px 8px rgba(124,58,237,0.3);">
+              Create Your Loyalty App
+            </a>
+          </div>
+        `
+      }
+
+    case 'onboarding_meet_royal':
+      return {
+        subject: `Meet Royal — your AI loyalty assistant`,
+        preheader: 'Royal can run your loyalty program while you run your business',
+        html: `
+          <h1 style="font-size:22px;font-weight:700;color:#18181b;margin:0 0 12px;letter-spacing:-0.3px;">You have an AI assistant. Have you met?</h1>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 8px;">
+            Hey ${name} — Royal is your AI loyalty assistant. It lives in the Intelligence tab of your dashboard and can:
+          </p>
+          <ul style="font-size:15px;color:#52525b;line-height:1.8;margin:0 0 24px;padding-left:20px;">
+            <li>Suggest the best automations for your business</li>
+            <li>Draft customer messages and campaigns</li>
+            <li>Spot at-risk customers before they churn</li>
+            <li>Answer any question about your loyalty program</li>
+          </ul>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 24px;">
+            Try asking: <em>"What automations should I turn on first?"</em>
+          </p>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a href="https://royaltyapp.ai/app/intelligence.html"
+               style="display:inline-block;background:#7c3aed;color:#ffffff;padding:14px 36px;
+                      border-radius:10px;font-size:15px;font-weight:600;
+                      text-decoration:none;box-shadow:0 2px 8px rgba(124,58,237,0.3);">
+              Chat with Royal
+            </a>
+          </div>
+        `
+      }
+
+    case 'onboarding_add_customers':
+      return {
+        subject: `Time to get your first customers earning points`,
+        preheader: 'Share your QR code or link — customers sign up in seconds',
+        html: `
+          <h1 style="font-size:22px;font-weight:700;color:#18181b;margin:0 0 12px;letter-spacing:-0.3px;">Your loyalty program needs customers!</h1>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 8px;">
+            Hey ${name} — your loyalty app is ready, now let's get people in. Here are 3 ways:
+          </p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:16px 0 24px;">
+            <tr>
+              <td style="padding:12px 16px;background:#f8f5ff;border-radius:8px;margin-bottom:8px;">
+                <strong style="color:#7c3aed;">1. QR Code at checkout</strong><br>
+                <span style="font-size:14px;color:#52525b;">Print it, stick it by the register. Customers scan to join.</span>
+              </td>
+            </tr>
+            <tr><td style="height:8px;"></td></tr>
+            <tr>
+              <td style="padding:12px 16px;background:#f8f5ff;border-radius:8px;">
+                <strong style="color:#7c3aed;">2. Share your link</strong><br>
+                <span style="font-size:14px;color:#52525b;">Text or email your signup link to existing customers.</span>
+              </td>
+            </tr>
+            <tr><td style="height:8px;"></td></tr>
+            <tr>
+              <td style="padding:12px 16px;background:#f8f5ff;border-radius:8px;">
+                <strong style="color:#7c3aed;">3. Import a list</strong><br>
+                <span style="font-size:14px;color:#52525b;">Have a customer list? Import them from the Customers page.</span>
+              </td>
+            </tr>
+          </table>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a href="https://royaltyapp.ai/app/customers.html"
+               style="display:inline-block;background:#7c3aed;color:#ffffff;padding:14px 36px;
+                      border-radius:10px;font-size:15px;font-weight:600;
+                      text-decoration:none;box-shadow:0 2px 8px rgba(124,58,237,0.3);">
+              Add Your First Customers
+            </a>
+          </div>
+        `
+      }
+
+    case 'onboarding_checkin':
+      return {
+        subject: `How's your loyalty program going, ${name}?`,
+        preheader: 'Quick check-in from Royal — anything we can help with?',
+        html: `
+          <h1 style="font-size:22px;font-weight:700;color:#18181b;margin:0 0 12px;letter-spacing:-0.3px;">Two weeks in — how's it going?</h1>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 8px;">
+            Hey ${name} — it's been about two weeks since you joined Royalty. Just checking in.
+          </p>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 24px;">
+            Whether you're fully set up or still exploring, Royal is here to help. You can ask it anything — from "how do I set up birthday rewards?" to "what's working for businesses like mine?"
+          </p>
+          <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 24px;">
+            If something's not working or you need a hand, just reply to this email. A real human (Jay, our founder) reads every reply.
+          </p>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a href="https://royaltyapp.ai/app/intelligence.html"
+               style="display:inline-block;background:#7c3aed;color:#ffffff;padding:14px 36px;
+                      border-radius:10px;font-size:15px;font-weight:600;
+                      text-decoration:none;box-shadow:0 2px 8px rgba(124,58,237,0.3);">
+              Open Your Dashboard
+            </a>
+          </div>
+          <p style="font-size:13px;color:#a1a1aa;line-height:1.5;margin:0;">
+            P.S. — If you have ideas for how Royalty could work better for your business, we'd love to hear them on our <a href="https://royaltyapp.ai/app/roadmap.html" style="color:#7c3aed;text-decoration:none;">roadmap page</a>.
+          </p>
+        `
+      }
+
     default:
       return {
         subject: 'A message from Royalty',
