@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
 
         // Enroll in win-back email sequence
         await supabase
-          .from('smb_email_sequence_state')
+          .from('automation_sequence_state')
           .insert({
             organization_id: org.id,
             sequence_key: 'win_back',

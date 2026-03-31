@@ -18,9 +18,12 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const FROM_EMAIL = 'Royal <royal@royaltyapp.ai>'
 
-const ALLOWED_ORIGINS = [
+const PROD_ORIGINS = [
   'https://royaltyapp.ai',
   'https://www.royaltyapp.ai',
+]
+
+const DEV_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
@@ -30,6 +33,10 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:5175',
   'http://127.0.0.1:5176',
 ]
+
+const ALLOWED_ORIGINS = Deno.env.get('ENVIRONMENT') === 'production'
+  ? PROD_ORIGINS
+  : [...PROD_ORIGINS, ...DEV_ORIGINS]
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('Origin') || ''

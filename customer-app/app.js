@@ -127,6 +127,10 @@ async function registerPushToken() {
     if (!messaging) return false;
     try {
         const swReg = await navigator.serviceWorker.getRegistration('/customer-app/');
+        if (!swReg) {
+            console.error('Service worker not registered — cannot get FCM token');
+            return false;
+        }
         const token = await messaging.getToken({
             vapidKey: FIREBASE_VAPID_KEY,
             serviceWorkerRegistration: swReg

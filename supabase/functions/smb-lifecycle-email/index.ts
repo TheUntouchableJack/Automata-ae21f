@@ -280,11 +280,11 @@ function getEmailTemplate(type: string, data: TemplateData): { subject: string; 
     case 'upgrade_nudge_members':
       return {
         subject: `You're growing fast — time to level up?`,
-        preheader: `You've used ${data.usagePercent || 80}% of your member limit`,
+        preheader: `You've used ${data.usagePercent ? data.usagePercent + '%' : 'most'} of your member limit`,
         html: `
           <h1 style="font-size:22px;font-weight:700;color:#18181b;margin:0 0 12px;">Your program is growing!</h1>
           <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 8px;">
-            Hey ${name} — you've used <strong>${data.usagePercent || 80}%</strong> of your member limit on your current plan. That's a good problem to have.
+            Hey ${name} — you've used <strong>${data.usagePercent ? data.usagePercent + '%' : 'most'}</strong> of your member limit on your current plan. That's a good problem to have.
           </p>
           <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 24px;">
             Upgrading unlocks more members, more email sends, and advanced features like autonomous AI mode and visit attribution.
@@ -303,11 +303,11 @@ function getEmailTemplate(type: string, data: TemplateData): { subject: string; 
     case 'upgrade_nudge_emails':
       return {
         subject: `Running low on email sends this month`,
-        preheader: `You've used ${data.usagePercent || 80}% of your monthly email limit`,
+        preheader: `You've used ${data.usagePercent ? data.usagePercent + '%' : 'most'} of your monthly email limit`,
         html: `
           <h1 style="font-size:22px;font-weight:700;color:#18181b;margin:0 0 12px;">Email limit heads-up</h1>
           <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 8px;">
-            Hey ${name} — you've used <strong>${data.usagePercent || 80}%</strong> of your monthly email sends. Your automations and campaigns are doing their job!
+            Hey ${name} — you've used <strong>${data.usagePercent ? data.usagePercent + '%' : 'most'}</strong> of your monthly email sends. Your automations and campaigns are doing their job!
           </p>
           <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 24px;">
             To keep your emails flowing, consider upgrading your plan or adding an email bundle.
@@ -419,7 +419,7 @@ function getEmailTemplate(type: string, data: TemplateData): { subject: string; 
         html: `
           <h1 style="font-size:22px;font-weight:700;color:#18181b;margin:0 0 12px;">You've built something impressive</h1>
           <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 8px;">
-            Hey ${name} — your loyalty program has crossed <strong>${data.memberCount || '100'}+ customers</strong>. That puts you in the top tier of businesses on Royalty.
+            Hey ${name} — your loyalty program has crossed <strong>${data.memberCount || 'many'} customers</strong>. That puts you in the top tier of businesses on Royalty.
           </p>
           <p style="font-size:15px;color:#52525b;line-height:1.6;margin:0 0 24px;">
             We'd love to feature your story. A quick quote about how Royalty has helped your business would mean a lot — and it helps other local businesses discover what's possible.
@@ -499,6 +499,15 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Fix 6: Service-role only — reject browser calls
+    const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace('Bearer ', '')
+    if (token !== supabaseServiceKey) {
+      return new Response(JSON.stringify({ error: 'Service role only' }), {
+        status: 403, headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     const body = await req.json()
     const { type, email, first_name, org_name, user_id } = body as {
       type: string
@@ -514,7 +523,21 @@ Deno.serve(async (req: Request) => {
       })
     }
 
+    // Fix 3: Rate limiting — max 3 emails per type per email per 24h
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const { data: rateCheck } = await supabase.rpc('check_and_record_rate_limit', {
+      p_identifier: `lifecycle:${email}:${type}`,
+      p_action_type: 'lifecycle_email',
+      p_max_count: 3,
+      p_window_seconds: 86400
+    })
+
+    if (rateCheck && !rateCheck.allowed) {
+      console.log(`Rate limited: ${type} email to ${email}`)
+      return new Response(JSON.stringify({ success: false, error: 'Rate limited', skipped: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
 
     // Check unsubscribe preferences
     if (user_id) {

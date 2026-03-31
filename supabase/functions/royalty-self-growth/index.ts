@@ -844,10 +844,21 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
     }
 
     // Get orgs enrolled in this sequence that haven't completed it
+    // Claim unclaimed states to prevent duplicate processing from concurrent runs
+    const claimId = INSTANCE_ID
+    await supabase
+      .from('automation_sequence_state')
+      .update({ processing_instance: claimId, processing_started_at: new Date().toISOString() })
+      .eq('sequence_key', seq.sequence_key)
+      .is('completed_at', null)
+      .is('processing_instance', null)
+      .limit(50)
+
     const { data: states } = await supabase
       .from('automation_sequence_state')
       .select('id, organization_id, current_step, started_at, last_sent_at')
       .eq('sequence_key', seq.sequence_key)
+      .eq('processing_instance', claimId)
       .is('completed_at', null)
       .limit(50)
 
@@ -858,9 +869,9 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
       const nextStep = steps.find(s => s.step === nextStepNum)
 
       if (!nextStep) {
-        // Sequence complete
+        // Sequence complete — release claim
         await supabase.from('automation_sequence_state')
-          .update({ completed_at: new Date().toISOString() })
+          .update({ completed_at: new Date().toISOString(), processing_instance: null, processing_started_at: null })
           .eq('id', state.id)
         continue
       }
@@ -903,7 +914,7 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
         await supabase.from('automation_sequence_state')
           .update({
             current_step: nextStepNum,
-            skipped_steps: supabase.rpc ? undefined : undefined // handled below
+            processing_instance: null, processing_started_at: null
           })
           .eq('id', state.id)
 
@@ -956,7 +967,8 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
           await supabase.from('automation_sequence_state')
             .update({
               current_step: nextStepNum,
-              last_sent_at: new Date().toISOString()
+              last_sent_at: new Date().toISOString(),
+              processing_instance: null, processing_started_at: null
             })
             .eq('id', state.id)
 
@@ -965,11 +977,15 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
         } else if (result.skipped) {
           log('info', `Onboarding step ${nextStepNum} skipped for ${ownerEmail}: ${result.reason}`)
           await supabase.from('automation_sequence_state')
-            .update({ current_step: nextStepNum })
+            .update({ current_step: nextStepNum, processing_instance: null, processing_started_at: null })
             .eq('id', state.id)
         }
       } catch (err) {
         log('error', `Failed to send onboarding step ${nextStepNum}`, { error: String(err), org: state.organization_id })
+        // Release claim on error so it retries next run
+        await supabase.from('automation_sequence_state')
+          .update({ processing_instance: null, processing_started_at: null })
+          .eq('id', state.id)
       }
     }
   }
