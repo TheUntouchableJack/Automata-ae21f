@@ -429,7 +429,7 @@ function renderLifecycleAutomations() {
         const categoryIcon = getCategoryIcon(automation.category);
 
         return `
-            <div class="automation-card lifecycle-card ${isEnabled ? '' : 'disabled'}" data-id="${automation.id}">
+            <div class="automation-card lifecycle-card ${isEnabled ? '' : 'disabled'}" data-id="${automation.id}" ${automation.sequence_key ? `onclick="showSequencePipeline('${escapeHtml(automation.sequence_key)}')" style="cursor:pointer;"` : ''}>
                 <div class="automation-card-icon">
                     ${categoryIcon}
                 </div>
@@ -1230,6 +1230,105 @@ async function handleCreateFromTemplate(e) {
 // ===== Utility Functions =====
 // Use shared utilities
 const escapeHtml = AppUtils.escapeHtml;
+
+// ===== Sequence Pipeline Detail =====
+async function showSequencePipeline(sequenceKey) {
+    // Get all orgs in this sequence
+    const { data: states, error } = await supabase
+        .from('automation_sequence_state')
+        .select('organization_id, current_step, started_at, last_sent_at, completed_at, skipped_steps')
+        .eq('sequence_key', sequenceKey)
+        .order('started_at', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        console.error('Error loading sequence pipeline:', error);
+        return;
+    }
+
+    // Get org names
+    const orgIds = (states || []).map(s => s.organization_id);
+    const { data: orgs } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .in('id', orgIds);
+
+    const orgMap = new Map((orgs || []).map(o => [o.id, o.name]));
+
+    // Get step definitions
+    const { data: steps } = await supabase
+        .from('automation_definitions')
+        .select('sequence_step, name, template_key')
+        .eq('sequence_key', sequenceKey)
+        .not('sequence_step', 'is', null)
+        .order('sequence_step');
+
+    const stepNames = new Map((steps || []).map(s => [s.sequence_step, s.name]));
+    const totalSteps = steps?.length || 5;
+
+    // Build pipeline counts
+    const stepCounts = {};
+    let completedCount = 0;
+    for (const state of (states || [])) {
+        if (state.completed_at) {
+            completedCount++;
+        } else {
+            stepCounts[state.current_step] = (stepCounts[state.current_step] || 0) + 1;
+        }
+    }
+
+    // Build modal content
+    const pipelineHtml = `
+        <div style="padding:24px;">
+            <h2 style="margin:0 0 4px;font-size:20px;font-weight:700;color:var(--color-text);">${escapeHtml(sequenceKey.replace(/_/g, ' '))} Pipeline</h2>
+            <p style="margin:0 0 20px;font-size:14px;color:var(--color-text-secondary);">${states?.length || 0} organizations enrolled</p>
+
+            <!-- Funnel -->
+            <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
+                ${Array.from({ length: totalSteps }, (_, i) => {
+                    const step = i + 1;
+                    const count = stepCounts[step] || 0;
+                    const name = stepNames.get(step) || `Step ${step}`;
+                    return `<div style="flex:1;min-width:80px;text-align:center;padding:12px 8px;background:var(--color-bg-secondary);border-radius:8px;border:1px solid var(--color-border-light);">
+                        <div style="font-size:24px;font-weight:700;color:var(--color-primary);">${count}</div>
+                        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">${escapeHtml(name.replace('Onboarding: ', '').replace('Win-Back: ', ''))}</div>
+                    </div>`;
+                }).join('')}
+                <div style="flex:1;min-width:80px;text-align:center;padding:12px 8px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
+                    <div style="font-size:24px;font-weight:700;color:#16a34a;">${completedCount}</div>
+                    <div style="font-size:11px;color:#16a34a;margin-top:4px;">Completed</div>
+                </div>
+            </div>
+
+            <!-- Org list -->
+            <div style="max-height:300px;overflow-y:auto;">
+                ${(states || []).map(state => {
+                    const orgName = orgMap.get(state.organization_id) || 'Unknown';
+                    const stepLabel = state.completed_at ? 'Completed' : (stepNames.get(state.current_step) || `Step ${state.current_step}`);
+                    const statusColor = state.completed_at ? '#16a34a' : 'var(--color-primary)';
+                    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--color-border-light);">
+                        <span style="font-size:14px;font-weight:500;">${escapeHtml(orgName)}</span>
+                        <span style="font-size:12px;color:${statusColor};font-weight:500;">${escapeHtml(stepLabel.replace('Onboarding: ', '').replace('Win-Back: ', ''))}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+
+            <div style="text-align:right;margin-top:16px;">
+                <button onclick="this.closest('.modal-overlay')?.remove()" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    `;
+
+    // Show modal
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
+    overlay.innerHTML = `<div style="background:var(--color-bg);border-radius:16px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,0.2);">${pipelineHtml}</div>`;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+}
+
+window.showSequencePipeline = showSequencePipeline;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initAutomations);

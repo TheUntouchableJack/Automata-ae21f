@@ -388,6 +388,11 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
           type: 'number',
           description: 'Number of days to calculate performance metrics. Default: 30',
           default: 30
+        },
+        target_type: {
+          type: 'string',
+          enum: ['app_members', 'organizations', 'all'],
+          description: 'Filter by target type. app_members = customer automations, organizations = business-targeting automations, all = both. Default: all'
         }
       },
       required: []
@@ -1438,10 +1443,11 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const type = input.type as string
     const includePerformance = input.include_performance !== false
     const days = (input.days as number) || 30
+    const targetTypeFilter = (input.target_type as string) || 'all'
 
     const targetAppId = appId || await getAppIdForOrg(supabase, organizationId)
 
-    // Query automations table (legacy)
+    // Query legacy automations table
     let query = supabase
       .from('automations')
       .select('id, name, automation_type, is_active, trigger_config, action_config, template_id, created_at')
@@ -1468,12 +1474,30 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       return { success: false, error: error.message }
     }
 
-    // Get performance metrics from automation_definitions if enabled
+    // Also query automation_definitions (lifecycle automations)
+    let defQuery = supabase
+      .from('automation_definitions')
+      .select('id, name, description, category, trigger_type, trigger_event, action_type, action_config, target_type, sequence_key, sequence_step, is_enabled, is_archived, trigger_count, success_count, failure_count, created_at')
+      .or(`organization_id.eq.${organizationId},organization_id.is.null`)
+      .eq('is_archived', false)
+
+    if (status === 'active') {
+      defQuery = defQuery.eq('is_enabled', true)
+    } else if (status === 'inactive') {
+      defQuery = defQuery.eq('is_enabled', false)
+    }
+
+    if (targetTypeFilter !== 'all') {
+      defQuery = defQuery.eq('target_type', targetTypeFilter)
+    }
+
+    const { data: definitions } = await defQuery
+
+    // Get performance metrics if enabled
     let performanceData: Record<string, unknown>[] = []
     let rankings: Record<string, unknown> | null = null
 
     if (includePerformance) {
-      // Get performance with correlation from automation_definitions table
       const { data: perfData } = await supabase.rpc('get_automation_performance_with_correlation', {
         p_organization_id: organizationId,
         p_app_id: targetAppId || null,
@@ -1481,7 +1505,6 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       })
       performanceData = perfData || []
 
-      // Get rankings (top/bottom performers)
       const { data: rankData } = await supabase.rpc('get_automation_rankings', {
         p_organization_id: organizationId,
         p_days: days
@@ -1489,16 +1512,17 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       rankings = rankData || null
     }
 
-    // Create a map of automation_id -> performance for quick lookup
     const perfMap = new Map(performanceData.map((p: Record<string, unknown>) =>
       [p.automation_id as string, p]
     ))
 
-    // Enhance automations with performance and correlation data if available
+    // Enhance legacy automations
     const enhancedAutomations = (automations || []).map(a => {
       const perf = perfMap.get(a.id)
       return {
         ...a,
+        source: 'legacy',
+        target_type: 'app_members',
         performance: perf ? {
           trigger_count: perf.trigger_count,
           success_rate_pct: perf.success_rate_pct,
@@ -1516,12 +1540,31 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       }
     })
 
+    // Enhance lifecycle automations
+    const enhancedDefinitions = (definitions || []).map(d => ({
+      ...d,
+      source: 'lifecycle',
+      is_active: d.is_enabled,
+      performance: perfMap.get(d.id) ? {
+        trigger_count: (perfMap.get(d.id) as Record<string, unknown>).trigger_count,
+        success_rate_pct: (perfMap.get(d.id) as Record<string, unknown>).success_rate_pct,
+      } : { trigger_count: d.trigger_count, success_rate_pct: d.trigger_count > 0 ? Math.round((d.success_count / d.trigger_count) * 100) : 0 }
+    }))
+
+    // Filter legacy automations by target_type if needed
+    const filteredLegacy = targetTypeFilter === 'organizations' ? [] : enhancedAutomations
+
+    const allAutomations = [...filteredLegacy, ...enhancedDefinitions]
+
     const summary = {
-      total_automations: automations?.length || 0,
-      active: (automations || []).filter(a => a.is_active).length,
-      by_type: (automations || []).reduce((acc, a) => {
-        const aType = a.automation_type || 'unknown'
-        acc[aType] = (acc[aType] || 0) + 1
+      total_automations: allAutomations.length,
+      active: allAutomations.filter(a => a.is_active || a.is_enabled).length,
+      by_target: {
+        app_members: allAutomations.filter(a => (a.target_type || 'app_members') === 'app_members').length,
+        organizations: allAutomations.filter(a => a.target_type === 'organizations').length,
+      },
+      by_category: (definitions || []).reduce((acc, d) => {
+        acc[d.category] = (acc[d.category] || 0) + 1
         return acc
       }, {} as Record<string, number>),
       ...(rankings ? {
@@ -1535,10 +1578,10 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       success: true,
       data: {
         summary,
-        automations: enhancedAutomations,
+        automations: allAutomations,
         performance_period_days: days
       },
-      metadata: { rowCount: automations?.length || 0 }
+      metadata: { rowCount: allAutomations.length }
     }
   },
 

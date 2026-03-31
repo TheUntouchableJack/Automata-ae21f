@@ -189,6 +189,26 @@ const CrownDashboard = (function() {
         setupEventListeners();
         initPrompt();
 
+        // Check for pre-filled prompt from URL (e.g., "Ask Royal" button on Automations page)
+        const urlParams = new URLSearchParams(window.location.search);
+        const prefillPrompt = urlParams.get('prompt');
+        if (prefillPrompt) {
+            // Switch to chat tab
+            const chatTab = document.querySelector('[data-tab="chat"]');
+            if (chatTab) chatTab.click();
+            // Fill the prompt input after a short delay (let tab switch complete)
+            setTimeout(() => {
+                const promptInput = document.getElementById('crown-prompt-input');
+                const textarea = promptInput?.querySelector('textarea');
+                if (textarea) {
+                    textarea.value = decodeURIComponent(prefillPrompt);
+                    textarea.focus();
+                }
+            }, 300);
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+
         // Event delegation for autonomous feed (prevents memory leaks from repeated bindings)
         const feedContainer = document.getElementById('cards-feed');
         if (feedContainer && !feedContainer._delegatedHandlerAdded) {

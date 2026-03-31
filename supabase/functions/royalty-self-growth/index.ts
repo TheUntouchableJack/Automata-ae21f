@@ -813,20 +813,39 @@ interface SequenceStep {
 async function processOnboardingSequences(supabase: SupabaseClient, isPaused: boolean): Promise<number> {
   let emailsSent = 0
 
-  // Get active sequences
+  // Get active sequences from automation_sequences (renamed from smb_email_sequences)
   const { data: sequences } = await supabase
-    .from('smb_email_sequences')
+    .from('automation_sequences')
     .select('sequence_key, steps')
     .eq('is_active', true)
 
   if (!sequences || sequences.length === 0) return 0
 
   for (const seq of sequences) {
-    const steps = seq.steps as SequenceStep[]
+    // Try to get step definitions from automation_definitions first (unified system)
+    const { data: defSteps } = await supabase
+      .from('automation_definitions')
+      .select('sequence_step, template_key, delay_minutes, target_filter, is_enabled')
+      .eq('sequence_key', seq.sequence_key)
+      .not('sequence_step', 'is', null)
+      .order('sequence_step')
+
+    // Build steps from automation_definitions if available, otherwise fall back to sequence JSON
+    let steps: SequenceStep[]
+    if (defSteps && defSteps.length > 0) {
+      steps = defSteps.map(d => ({
+        step: d.sequence_step,
+        template_key: d.template_key,
+        delay_hours: Math.round((d.delay_minutes || 0) / 60) || ((d.target_filter as Record<string, unknown>)?.delay_hours as number) || 0,
+        skip_condition: (d.target_filter as Record<string, unknown>)?.skip_condition as string || null,
+      }))
+    } else {
+      steps = seq.steps as SequenceStep[]
+    }
 
     // Get orgs enrolled in this sequence that haven't completed it
     const { data: states } = await supabase
-      .from('smb_email_sequence_state')
+      .from('automation_sequence_state')
       .select('id, organization_id, current_step, started_at, last_sent_at')
       .eq('sequence_key', seq.sequence_key)
       .is('completed_at', null)
@@ -840,7 +859,7 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
 
       if (!nextStep) {
         // Sequence complete
-        await supabase.from('smb_email_sequence_state')
+        await supabase.from('automation_sequence_state')
           .update({ completed_at: new Date().toISOString() })
           .eq('id', state.id)
         continue
@@ -881,7 +900,7 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
       if (shouldSkip) {
         // Skip this step, advance to next
         log('info', `Skipping onboarding step ${nextStepNum} for org ${state.organization_id}: ${nextStep.skip_condition}`)
-        await supabase.from('smb_email_sequence_state')
+        await supabase.from('automation_sequence_state')
           .update({
             current_step: nextStepNum,
             skipped_steps: supabase.rpc ? undefined : undefined // handled below
@@ -890,7 +909,7 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
 
         // Append to skipped_steps array
         await supabase.rpc('array_append_int', {
-          p_table: 'smb_email_sequence_state',
+          p_table: 'automation_sequence_state',
           p_id: state.id,
           p_column: 'skipped_steps',
           p_value: nextStepNum
@@ -934,7 +953,7 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
 
         if (result.success && !result.skipped) {
           // Advance step
-          await supabase.from('smb_email_sequence_state')
+          await supabase.from('automation_sequence_state')
             .update({
               current_step: nextStepNum,
               last_sent_at: new Date().toISOString()
@@ -945,7 +964,7 @@ async function processOnboardingSequences(supabase: SupabaseClient, isPaused: bo
           log('info', `Sent onboarding step ${nextStepNum} to ${ownerEmail}`, { template: nextStep.template_key })
         } else if (result.skipped) {
           log('info', `Onboarding step ${nextStepNum} skipped for ${ownerEmail}: ${result.reason}`)
-          await supabase.from('smb_email_sequence_state')
+          await supabase.from('automation_sequence_state')
             .update({ current_step: nextStepNum })
             .eq('id', state.id)
         }
