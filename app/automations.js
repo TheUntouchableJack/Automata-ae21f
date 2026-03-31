@@ -434,6 +434,8 @@ function renderLifecycleAutomations() {
                     ${categoryIcon}
                 </div>
                 ${aiEnabled ? '<span class="ai-badge" title="AI can manage this automation">AI</span>' : ''}
+                ${automation.target_type === 'organizations' ? '<span class="target-badge" title="Targets businesses" style="position:absolute;top:12px;left:12px;background:#10b981;color:white;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;">Businesses</span>' : ''}
+                ${automation.sequence_key ? `<span class="sequence-badge" title="Part of ${escapeHtml(automation.sequence_key)} sequence" style="position:absolute;top:${automation.target_type === 'organizations' ? '32' : '12'}px;left:12px;background:#6366f1;color:white;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;">Step ${automation.sequence_step || ''}</span>` : ''}
                 <span class="automation-card-badge ${statusClass}">${statusText}</span>
                 <h3 class="automation-card-title">${escapeHtml(automation.name)}</h3>
                 <p class="automation-card-desc">${escapeHtml(automation.description || `${category} automation`)}</p>

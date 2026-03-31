@@ -491,6 +491,11 @@ const ROYAL_AI_TOOLS: ClaudeTool[] = [
         auto_enable: {
           type: 'boolean',
           description: 'Enable immediately if confidence is high enough (autonomous mode)'
+        },
+        target_type: {
+          type: 'string',
+          enum: ['app_members', 'organizations'],
+          description: 'Who this automation targets. app_members = loyalty customers (default). organizations = business accounts (for platform-level automations like onboarding drips, win-back sequences).'
         }
       },
       required: ['name', 'category', 'trigger', 'action']
@@ -1585,6 +1590,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const action = input.action as Record<string, unknown>
     const limits = input.limits as Record<string, unknown> || {}
     const autoEnable = input.auto_enable as boolean || false
+    const targetType = (input.target_type as string) || 'app_members'
 
     if (!name || !category || !trigger || !action) {
       return { success: false, error: 'Missing required fields: name, category, trigger, action' }
@@ -1615,16 +1621,17 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       p_org_id: organizationId,
       p_action_type: 'create_automation',
       p_action_payload: {
-        app_id: targetAppId,
+        app_id: targetType === 'organizations' ? null : targetAppId,
         name,
         description,
         category,
         trigger,
         action,
         limits,
-        auto_enable: autoEnable
+        auto_enable: autoEnable,
+        target_type: targetType
       },
-      p_reasoning: `Create custom automation: "${name}" — ${description || category}`,
+      p_reasoning: `Create custom automation: "${name}" — ${description || category} (targets: ${targetType})`,
       p_confidence: confidence
     })
 

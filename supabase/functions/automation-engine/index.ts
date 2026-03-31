@@ -171,6 +171,7 @@ async function findMatchingAutomations(
     .select('id, organization_id, app_id, name, category, trigger_type, trigger_event, trigger_condition, action_type, action_config, delay_minutes, max_frequency_days, daily_limit, cooldown_hours, is_enabled, confidence_threshold, trigger_count, success_count, failure_count')
     .eq('is_enabled', true)
     .eq('is_archived', false)
+    .or('target_type.eq.app_members,target_type.is.null')  // Only process member-targeting automations
 
   if (trigger.type === 'event' && event_name) {
     query = query
