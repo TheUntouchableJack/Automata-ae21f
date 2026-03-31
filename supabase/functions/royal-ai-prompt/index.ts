@@ -4479,6 +4479,9 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
 
     const organizationId = membership.organization_id
 
+    // Track activity for churn scoring (fire-and-forget, no await needed)
+    supabase.from('organizations').update({ last_active_at: new Date().toISOString() }).eq('id', organizationId).then(() => {})
+
     // Check per-hour rate limit (60 requests/hour/org via shared module)
     const rateCheck = await checkRateLimit(supabase, organizationId, 'ai_prompt')
     if (!rateCheck.allowed) {

@@ -227,10 +227,25 @@ Deno.serve(async (req) => {
             subscription_tier: null,
             stripe_subscription_id: null,
             subscription_status: 'canceled',
-            subscription_cancel_at: null, // Clear cancellation date
+            subscription_cancel_at: null,
+            cancelled_at: new Date().toISOString(),
             plan_changed_at: new Date().toISOString(),
           })
           .eq('id', org.id)
+
+        // Enroll in win-back email sequence
+        await supabase
+          .from('smb_email_sequence_state')
+          .insert({
+            organization_id: org.id,
+            sequence_key: 'win_back',
+            current_step: 0,
+            started_at: new Date().toISOString(),
+          })
+          .then(({ error }) => {
+            if (error) console.warn('Win-back enrollment failed (may already exist):', error.message)
+            else console.log(`Organization ${org.id} enrolled in win-back sequence`)
+          })
 
         console.log(`Organization ${org.id} downgraded to free (subscription ended)`)
         break

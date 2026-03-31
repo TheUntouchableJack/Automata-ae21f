@@ -32,6 +32,11 @@ async function initDashboard() {
     currentOrganization = orgData.organization;
     orgLimits = orgData.limits;
 
+    // Track activity for churn scoring
+    if (currentOrganization?.id) {
+        supabase.rpc('update_org_activity', { p_org_id: currentOrganization.id }).then(() => {});
+    }
+
     // Initialize sidebar with user data (including role for admin features)
     if (typeof AppSidebar !== 'undefined') {
         AppSidebar.init({

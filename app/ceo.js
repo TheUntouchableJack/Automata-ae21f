@@ -42,6 +42,8 @@
         taskCount:      () => document.getElementById('ceo-task-count'),
         outreachSection:() => document.getElementById('ceo-outreach-section'),
         outreachList:   () => document.getElementById('ceo-outreach-list'),
+        churnSection:   () => document.getElementById('ceo-churn-section'),
+        churnList:      () => document.getElementById('ceo-churn-list'),
         chatThread:     () => document.getElementById('ceo-chat-thread'),
         chatEmpty:      () => document.getElementById('ceo-chat-empty'),
         chatInput:      () => document.getElementById('ceo-chat-input'),
@@ -101,6 +103,7 @@
             loadPendingTasks(),
             loadRoyalTasks(),
             loadOutreachQueue(),
+            loadChurnAlerts(),
             loadRecentLog(),
         ]);
     }
@@ -657,6 +660,55 @@
                     <div class="ceo-outreach-item-actions">
                         <button class="ceo-task-btn ceo-task-btn--approve" onclick="ceoDashboard.approveOutreach('${item.id}', this)">Approve & Send</button>
                         <button class="ceo-task-btn" onclick="ceoDashboard.rejectOutreach('${item.id}', this)">Reject</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ── Churn Risk Alerts ─────────────────────────────────────────────
+    async function loadChurnAlerts() {
+        try {
+            const { data, error } = await window.supabase
+                .from('organizations')
+                .select('id, name, slug, plan_type, churn_risk_score, last_active_at, churn_risk_updated_at')
+                .gte('churn_risk_score', 40)
+                .order('churn_risk_score', { ascending: false })
+                .limit(20);
+
+            if (error) throw error;
+            renderChurnAlerts(data || []);
+        } catch (e) {
+            console.error('[ceo] loadChurnAlerts error:', e);
+        }
+    }
+
+    function renderChurnAlerts(orgs) {
+        const section = els.churnSection();
+        const list = els.churnList();
+        if (!section || !list) return;
+
+        if (orgs.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        list.innerHTML = orgs.map(org => {
+            const riskLevel = org.churn_risk_score >= 70 ? 'high' : 'medium';
+            const riskColor = riskLevel === 'high' ? '#ef4444' : '#f59e0b';
+            const lastActive = org.last_active_at
+                ? formatRelativeTime(org.last_active_at)
+                : 'Never';
+
+            return `
+                <div class="ceo-outreach-item" style="border-left:3px solid ${riskColor};">
+                    <div class="ceo-outreach-item-header">
+                        <span class="ceo-outreach-item-to">${escapeHtml(org.name)}</span>
+                        <span class="ceo-outreach-item-channel" style="background:${riskColor};color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${org.churn_risk_score}/100 ${riskLevel}</span>
+                    </div>
+                    <div class="ceo-outreach-item-preview" style="font-size:13px;color:#71717a;">
+                        Plan: ${escapeHtml(org.plan_type || 'free')} · Last active: ${lastActive}
                     </div>
                 </div>
             `;
