@@ -17,6 +17,115 @@
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <style>
+        /* Target & Sequence Badges */
+        .target-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: #10b981;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .sequence-badge {
+            position: absolute;
+            left: 12px;
+            background: #6366f1;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .sequence-badge.with-target { top: 32px; }
+        .sequence-badge:not(.with-target) { top: 12px; }
+
+        /* Sequence Pipeline Modal */
+        .pipeline-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .pipeline-modal {
+            background: var(--color-bg);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+            padding: 24px;
+        }
+        .pipeline-title {
+            margin: 0 0 4px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+        .pipeline-subtitle {
+            margin: 0 0 20px;
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+        .pipeline-funnel {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .pipeline-step {
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+            padding: 12px 8px;
+            background: var(--color-bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--color-border-light);
+        }
+        .pipeline-step-count {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .pipeline-step-label {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+        .pipeline-step--completed {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        .pipeline-step--completed .pipeline-step-count { color: #16a34a; }
+        .pipeline-step--completed .pipeline-step-label { color: #16a34a; }
+        .pipeline-org-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .pipeline-org-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--color-border-light);
+        }
+        .pipeline-org-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .pipeline-org-step {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-primary);
+        }
+        .pipeline-org-step--completed { color: #16a34a; }
+
         /* Automations Page Specific Styles */
         .page-header .container {
             display: flex;

@@ -434,8 +434,8 @@ function renderLifecycleAutomations() {
                     ${categoryIcon}
                 </div>
                 ${aiEnabled ? '<span class="ai-badge" title="AI can manage this automation">AI</span>' : ''}
-                ${automation.target_type === 'organizations' ? '<span class="target-badge" title="Targets businesses" style="position:absolute;top:12px;left:12px;background:#10b981;color:white;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;">Businesses</span>' : ''}
-                ${automation.sequence_key ? `<span class="sequence-badge" title="Part of ${escapeHtml(automation.sequence_key)} sequence" style="position:absolute;top:${automation.target_type === 'organizations' ? '32' : '12'}px;left:12px;background:#6366f1;color:white;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;">Step ${automation.sequence_step || ''}</span>` : ''}
+                ${automation.target_type === 'organizations' ? '<span class="target-badge" title="Targets businesses">Businesses</span>' : ''}
+                ${automation.sequence_key ? `<span class="sequence-badge ${automation.target_type === 'organizations' ? 'with-target' : ''}" title="Part of ${escapeHtml(automation.sequence_key)} sequence">Step ${automation.sequence_step || ''}</span>` : ''}
                 <span class="automation-card-badge ${statusClass}">${statusText}</span>
                 <h3 class="automation-card-title">${escapeHtml(automation.name)}</h3>
                 <p class="automation-card-desc">${escapeHtml(automation.description || `${category} automation`)}</p>
@@ -1279,51 +1279,46 @@ async function showSequencePipeline(sequenceKey) {
 
     // Build modal content
     const pipelineHtml = `
-        <div style="padding:24px;">
-            <h2 style="margin:0 0 4px;font-size:20px;font-weight:700;color:var(--color-text);">${escapeHtml(sequenceKey.replace(/_/g, ' '))} Pipeline</h2>
-            <p style="margin:0 0 20px;font-size:14px;color:var(--color-text-secondary);">${states?.length || 0} organizations enrolled</p>
+            <h2 class="pipeline-title">${escapeHtml(sequenceKey.replace(/_/g, ' '))} Pipeline</h2>
+            <p class="pipeline-subtitle">${states?.length || 0} organizations enrolled</p>
 
-            <!-- Funnel -->
-            <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
+            <div class="pipeline-funnel">
                 ${Array.from({ length: totalSteps }, (_, i) => {
                     const step = i + 1;
                     const count = stepCounts[step] || 0;
                     const name = stepNames.get(step) || `Step ${step}`;
-                    return `<div style="flex:1;min-width:80px;text-align:center;padding:12px 8px;background:var(--color-bg-secondary);border-radius:8px;border:1px solid var(--color-border-light);">
-                        <div style="font-size:24px;font-weight:700;color:var(--color-primary);">${count}</div>
-                        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">${escapeHtml(name.replace('Onboarding: ', '').replace('Win-Back: ', ''))}</div>
+                    return `<div class="pipeline-step">
+                        <div class="pipeline-step-count">${count}</div>
+                        <div class="pipeline-step-label">${escapeHtml(name.replace('Onboarding: ', '').replace('Win-Back: ', ''))}</div>
                     </div>`;
                 }).join('')}
-                <div style="flex:1;min-width:80px;text-align:center;padding:12px 8px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
-                    <div style="font-size:24px;font-weight:700;color:#16a34a;">${completedCount}</div>
-                    <div style="font-size:11px;color:#16a34a;margin-top:4px;">Completed</div>
+                <div class="pipeline-step pipeline-step--completed">
+                    <div class="pipeline-step-count">${completedCount}</div>
+                    <div class="pipeline-step-label">Completed</div>
                 </div>
             </div>
 
-            <!-- Org list -->
-            <div style="max-height:300px;overflow-y:auto;">
+            <div class="pipeline-org-list">
                 ${(states || []).map(state => {
                     const orgName = orgMap.get(state.organization_id) || 'Unknown';
                     const stepLabel = state.completed_at ? 'Completed' : (stepNames.get(state.current_step) || `Step ${state.current_step}`);
-                    const statusColor = state.completed_at ? '#16a34a' : 'var(--color-primary)';
-                    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--color-border-light);">
-                        <span style="font-size:14px;font-weight:500;">${escapeHtml(orgName)}</span>
-                        <span style="font-size:12px;color:${statusColor};font-weight:500;">${escapeHtml(stepLabel.replace('Onboarding: ', '').replace('Win-Back: ', ''))}</span>
+                    const isCompleted = !!state.completed_at;
+                    return `<div class="pipeline-org-item">
+                        <span class="pipeline-org-name">${escapeHtml(orgName)}</span>
+                        <span class="pipeline-org-step ${isCompleted ? 'pipeline-org-step--completed' : ''}">${escapeHtml(stepLabel.replace('Onboarding: ', '').replace('Win-Back: ', ''))}</span>
                     </div>`;
                 }).join('')}
             </div>
 
             <div style="text-align:right;margin-top:16px;">
-                <button onclick="this.closest('.modal-overlay')?.remove()" class="btn btn-secondary">Close</button>
+                <button onclick="this.closest('.pipeline-overlay')?.remove()" class="btn btn-secondary">Close</button>
             </div>
-        </div>
     `;
 
     // Show modal
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
-    overlay.innerHTML = `<div style="background:var(--color-bg);border-radius:16px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,0.2);">${pipelineHtml}</div>`;
+    overlay.className = 'pipeline-overlay';
+    overlay.innerHTML = `<div class="pipeline-modal">${pipelineHtml}</div>`;
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
 }

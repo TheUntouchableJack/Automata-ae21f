@@ -15,6 +15,8 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { checkMilestones } from '../_shared/milestone-checker.ts'
+import { computeChurnScores } from '../_shared/churn-scorer.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -1051,269 +1053,9 @@ async function checkSkipCondition(supabase: SupabaseClient, orgId: string, condi
   }
 }
 
-// ============================================================================
-// CHURN SCORING
-// ============================================================================
-
-async function computeChurnScores(supabase: SupabaseClient): Promise<{ scored: number; highRisk: number }> {
-  const stats = { scored: 0, highRisk: 0 }
-
-  // Get all non-admin orgs
-  const { data: orgs } = await supabase
-    .from('organizations')
-    .select('id, plan_type, last_active_at, subscription_cancel_at, payment_failure_count')
-    .limit(500)
-
-  if (!orgs || orgs.length === 0) return stats
-
-  // Batch-fetch related data
-  const orgIds = orgs.map(o => o.id)
-
-  // Customer apps per org
-  const { data: appCounts } = await supabase
-    .from('customer_apps')
-    .select('organization_id')
-    .in('organization_id', orgIds)
-
-  const orgHasApp = new Set((appCounts || []).map(a => a.organization_id))
-
-  // Active automations per org
-  const { data: automationCounts } = await supabase
-    .from('automation_definitions')
-    .select('organization_id')
-    .in('organization_id', orgIds)
-    .eq('is_enabled', true)
-
-  const orgHasAutomation = new Set((automationCounts || []).map(a => a.organization_id))
-
-  // App members per org (via customer_apps)
-  const { data: memberCounts } = await supabase
-    .from('customer_apps')
-    .select('organization_id, app_members(id)')
-    .in('organization_id', orgIds)
-
-  const orgHasCustomers = new Set<string>()
-  for (const app of (memberCounts || [])) {
-    if (app.app_members && app.app_members.length > 0) {
-      orgHasCustomers.add(app.organization_id)
-    }
-  }
-
-  const updates: Array<{ id: string; score: number }> = []
-
-  for (const org of orgs) {
-    let score = 0
-
-    // Days since last active (30% weight, max 30 points)
-    if (org.last_active_at) {
-      const daysSince = Math.floor((Date.now() - new Date(org.last_active_at).getTime()) / (1000 * 60 * 60 * 24))
-      if (daysSince >= 14) score += 30
-      else if (daysSince >= 7) score += 20
-      else if (daysSince >= 3) score += 10
-    } else {
-      // Never active — use created_at as proxy (handled by auth, not stored here)
-      score += 15
-    }
-
-    // No customer app (20%)
-    if (!orgHasApp.has(org.id)) score += 20
-
-    // Zero customers (15%)
-    if (!orgHasCustomers.has(org.id)) score += 15
-
-    // No active automations (15%)
-    if (!orgHasAutomation.has(org.id)) score += 15
-
-    // Payment failure (10%)
-    if ((org.payment_failure_count || 0) > 0) score += 10
-
-    // Scheduled cancellation (10%)
-    if (org.subscription_cancel_at) score += 10
-
-    updates.push({ id: org.id, score })
-    stats.scored++
-    if (score >= 70) stats.highRisk++
-  }
-
-  // Batch update scores
-  for (const u of updates) {
-    await supabase
-      .from('organizations')
-      .update({
-        churn_risk_score: u.score,
-        churn_risk_updated_at: new Date().toISOString()
-      })
-      .eq('id', u.id)
-  }
-
-  log('info', 'Churn scoring complete', { scored: stats.scored, highRisk: stats.highRisk })
-  return stats
-}
-
-// ============================================================================
-// MILESTONE CHECKER
-// ============================================================================
-
-interface MilestoneCheck {
-  key: string
-  template: string
-  check: (orgId: string, supabase: SupabaseClient) => Promise<{ hit: boolean; metadata?: Record<string, unknown> }>
-}
-
-const MILESTONES: MilestoneCheck[] = [
-  {
-    key: 'testimonial_100',
-    template: 'testimonial_request',
-    check: async (orgId, supabase) => {
-      const { data: apps } = await supabase.from('customer_apps').select('id').eq('organization_id', orgId).limit(1)
-      if (!apps?.length) return { hit: false }
-      const { count } = await supabase.from('app_members').select('id', { count: 'exact', head: true })
-        .eq('app_id', apps[0].id).is('deleted_at', null)
-      if ((count || 0) < 100) return { hit: false }
-      // Also create a testimonial request record
-      await supabase.from('smb_testimonials').insert({
-        organization_id: orgId,
-        business_name: null, // filled when they reply
-        metrics: { member_count: count },
-        status: 'requested'
-      }).then(() => {}).catch(() => {})
-      return { hit: true, metadata: { memberCount: count } }
-    }
-  },
-  {
-    key: 'first_customer',
-    template: 'milestone_first_customer',
-    check: async (orgId, supabase) => {
-      const { data: apps } = await supabase.from('customer_apps').select('id').eq('organization_id', orgId).limit(1)
-      if (!apps?.length) return { hit: false }
-      const { count } = await supabase.from('app_members').select('id', { count: 'exact', head: true })
-        .eq('app_id', apps[0].id).is('deleted_at', null)
-      return { hit: (count || 0) >= 1, metadata: { count } }
-    }
-  },
-  {
-    key: '10_customers',
-    template: 'milestone_10_customers',
-    check: async (orgId, supabase) => {
-      const { data: apps } = await supabase.from('customer_apps').select('id').eq('organization_id', orgId).limit(1)
-      if (!apps?.length) return { hit: false }
-      const { count } = await supabase.from('app_members').select('id', { count: 'exact', head: true })
-        .eq('app_id', apps[0].id).is('deleted_at', null)
-      return { hit: (count || 0) >= 10, metadata: { count } }
-    }
-  },
-  {
-    key: '50_customers',
-    template: 'milestone_50_customers',
-    check: async (orgId, supabase) => {
-      const { data: apps } = await supabase.from('customer_apps').select('id').eq('organization_id', orgId).limit(1)
-      if (!apps?.length) return { hit: false }
-      const { count } = await supabase.from('app_members').select('id', { count: 'exact', head: true })
-        .eq('app_id', apps[0].id).is('deleted_at', null)
-      return { hit: (count || 0) >= 50, metadata: { count } }
-    }
-  },
-  {
-    key: 'first_redemption',
-    template: 'milestone_first_redemption',
-    check: async (orgId, supabase) => {
-      const { data: apps } = await supabase.from('customer_apps').select('id').eq('organization_id', orgId).limit(1)
-      if (!apps?.length) return { hit: false }
-      const { count } = await supabase.from('reward_redemptions').select('id', { count: 'exact', head: true })
-        .eq('app_id', apps[0].id)
-      return { hit: (count || 0) >= 1, metadata: { count } }
-    }
-  },
-]
-
-async function checkMilestones(supabase: SupabaseClient, isPaused: boolean): Promise<number> {
-  let notified = 0
-
-  // Get all non-admin orgs
-  const { data: orgs } = await supabase
-    .from('organizations')
-    .select('id')
-    .limit(500)
-
-  if (!orgs || orgs.length === 0) return 0
-
-  // Get already-notified milestones in bulk
-  const orgIds = orgs.map(o => o.id)
-  const { data: existing } = await supabase
-    .from('smb_milestones')
-    .select('organization_id, milestone_key')
-    .in('organization_id', orgIds)
-
-  const notifiedSet = new Set((existing || []).map(e => `${e.organization_id}::${e.milestone_key}`))
-
-  for (const org of orgs) {
-    for (const milestone of MILESTONES) {
-      const cacheKey = `${org.id}::${milestone.key}`
-      if (notifiedSet.has(cacheKey)) continue
-
-      const result = await milestone.check(org.id, supabase)
-      if (!result.hit) continue
-
-      // Milestone hit — record it
-      const { error: insertError } = await supabase.from('smb_milestones').insert({
-        organization_id: org.id,
-        milestone_key: milestone.key,
-        metadata: result.metadata || {}
-      })
-
-      if (insertError) continue  // likely UNIQUE violation (race condition safe)
-
-      // Get owner email
-      const { data: membership } = await supabase
-        .from('organization_members')
-        .select('user_id, profiles(email, first_name)')
-        .eq('organization_id', org.id)
-        .eq('role', 'owner')
-        .single()
-
-      if (!membership?.profiles) continue
-      const profile = Array.isArray(membership.profiles) ? membership.profiles[0] : membership.profiles
-      const ownerEmail = (profile as { email: string }).email
-      const firstName = (profile as { first_name: string | null }).first_name || ''
-
-      if (isPaused) {
-        await supabase.from('self_growth_log').insert({
-          action_type: 'milestone_planned',
-          description: `Would notify ${ownerEmail}: milestone "${milestone.key}"`,
-          status: 'pending_approval',
-          metadata: { org_id: org.id, milestone: milestone.key }
-        })
-        continue
-      }
-
-      // Send celebration email
-      const fnUrl = Deno.env.get('SUPABASE_URL')!
-      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
-      try {
-        await fetch(`${fnUrl}/functions/v1/smb-lifecycle-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${serviceKey}`,
-          },
-          body: JSON.stringify({
-            type: milestone.template,
-            email: ownerEmail,
-            first_name: firstName,
-            user_id: membership.user_id,
-          }),
-        })
-        notified++
-        log('info', `Milestone "${milestone.key}" notified for org ${org.id}`)
-      } catch (err) {
-        log('error', `Milestone notification failed`, { error: String(err), org: org.id, milestone: milestone.key })
-      }
-    }
-  }
-
-  return notified
-}
+// Churn scoring + milestone checker extracted to shared modules:
+// - ../_ shared/churn-scorer.ts
+// - ../_shared/milestone-checker.ts
 
 // ============================================================================
 // MAIN HANDLER
@@ -1433,7 +1175,7 @@ Deno.serve(async (req: Request) => {
   // ── STEP 5c: Churn scoring ──────────────────────────────────────────────
   let churnStats = { scored: 0, highRisk: 0 }
   try {
-    churnStats = await computeChurnScores(supabase)
+    churnStats = await computeChurnScores(supabase, log)
   } catch (err) {
     log('error', 'Churn scoring failed', { error: String(err) })
   }
@@ -1441,7 +1183,7 @@ Deno.serve(async (req: Request) => {
   // ── STEP 5d: Milestone notifications ────────────────────────────────────
   let milestonesNotified = 0
   try {
-    milestonesNotified = await checkMilestones(supabase, isPaused)
+    milestonesNotified = await checkMilestones(supabase, isPaused, log)
     if (milestonesNotified > 0) {
       log('info', `Milestones: ${milestonesNotified} notifications sent`)
     }
