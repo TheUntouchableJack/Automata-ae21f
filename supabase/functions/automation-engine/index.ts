@@ -13,6 +13,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function log(level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>): void {
+  const entry = { level, message, timestamp: new Date().toISOString(), service: 'automation-engine', ...context }
+  if (level === 'error') console.error(JSON.stringify(entry))
+  else console.log(JSON.stringify(entry))
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -194,7 +200,7 @@ async function findMatchingAutomations(
   const { data, error } = await query
 
   if (error) {
-    console.error('Error finding automations:', error)
+    log('error', 'Error finding automations', { error: error.message })
     return []
   }
 
@@ -298,7 +304,7 @@ async function executeAutomation(
     .single()
 
   if (execError) {
-    console.error('Error creating execution:', execError)
+    log('error', 'Error creating execution', { error: execError.message })
     throw execError
   }
 
@@ -475,7 +481,7 @@ async function executeSendMessage(
     .single()
 
   if (error) {
-    console.log('Message batch creation (stub):', { channel, subject, to: member.email })
+    log('info', 'Message batch creation (stub)', { channel, subject, to: member.email })
   }
 
   return {
@@ -553,7 +559,7 @@ async function executeCreatePromo(
     .single()
 
   if (error) {
-    console.log('Promo creation (stub):', { multiplier, member: member.id })
+    log('info', 'Promo creation (stub)', { multiplier, member: member.id })
   }
 
   return { promo_created: true, promo_id: data?.id, multiplier, duration_hours: durationHours }
@@ -853,7 +859,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Automation engine error:', error)
+    log('error', 'Automation engine error', { error: (error as Error).message })
     return new Response(
       JSON.stringify({ success: false, error: 'Automation processing failed' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }

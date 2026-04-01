@@ -16,6 +16,12 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const FROM_EMAIL = 'Royal <royal@royaltyapp.ai>'
 
+function log(level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>): void {
+  const entry = { level, message, timestamp: new Date().toISOString(), service: 'smb-lifecycle-email', ...context }
+  if (level === 'error') console.error(JSON.stringify(entry))
+  else console.log(JSON.stringify(entry))
+}
+
 // ============================================================================
 // EMAIL TEMPLATES
 // ============================================================================
@@ -459,7 +465,7 @@ async function sendEmail(
   html: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!RESEND_API_KEY) {
-    console.log('[stub] Would send lifecycle email to', to, '—', subject)
+    log('info', 'Stub: would send lifecycle email', { to, subject })
     return { success: true, messageId: 'stub-' + Date.now() }
   }
 
@@ -533,7 +539,7 @@ Deno.serve(async (req: Request) => {
     })
 
     if (rateCheck && !rateCheck.allowed) {
-      console.log(`Rate limited: ${type} email to ${email}`)
+      log('info', 'Rate limited', { type, email })
       return new Response(JSON.stringify({ success: false, error: 'Rate limited', skipped: true }), {
         headers: { 'Content-Type': 'application/json' }
       })
@@ -548,7 +554,7 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (prefs?.unsubscribed_all) {
-        console.log(`Skipping ${type} email for ${email} — unsubscribed`)
+        log('info', 'Skipped: unsubscribed', { type, email })
         return new Response(JSON.stringify({ success: true, skipped: true, reason: 'unsubscribed' }), {
           headers: { 'Content-Type': 'application/json' }
         })
@@ -557,7 +563,7 @@ Deno.serve(async (req: Request) => {
       // Check category-level unsubscribe
       const category = type === 'welcome' ? 'onboarding' : type
       if (prefs?.unsubscribed_categories?.includes(category)) {
-        console.log(`Skipping ${type} email for ${email} — unsubscribed from ${category}`)
+        log('info', 'Skipped: category unsubscribed', { type, email, category })
         return new Response(JSON.stringify({ success: true, skipped: true, reason: `unsubscribed:${category}` }), {
           headers: { 'Content-Type': 'application/json' }
         })
@@ -596,7 +602,7 @@ Deno.serve(async (req: Request) => {
     })
 
     if (!result.success) {
-      console.error(`Failed to send ${type} email to ${email}:`, result.error)
+      log('error', 'Failed to send lifecycle email', { type, email, error: result.error })
     }
 
     return new Response(JSON.stringify({
@@ -608,7 +614,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err) {
-    console.error('smb-lifecycle-email error:', err)
+    log('error', 'Handler error', { error: (err as Error).message })
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500, headers: { 'Content-Type': 'application/json' }
     })

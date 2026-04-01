@@ -18,6 +18,12 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const FROM_EMAIL = 'Royal <royal@royaltyapp.ai>'
 
+function log(level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>): void {
+  const entry = { level, message, timestamp: new Date().toISOString(), service: 'send-approved-outreach', ...context }
+  if (level === 'error') console.error(JSON.stringify(entry))
+  else console.log(JSON.stringify(entry))
+}
+
 const PROD_ORIGINS = [
   'https://royaltyapp.ai',
   'https://www.royaltyapp.ai',
@@ -65,7 +71,7 @@ async function sendEmail(
   text: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!RESEND_API_KEY) {
-    console.log('[stub] Would send email to', to, '— no RESEND_API_KEY')
+    log('info', 'Stub: would send email', { to })
     return { success: true, messageId: 'stub-' + Date.now() }
   }
 
@@ -129,7 +135,7 @@ async function sendItem(
       .eq('id', item.id)
 
     if (error) {
-      console.error('[send-approved-outreach] DB update failed after send:', error.message)
+      log('error', 'DB update failed after send', { error: error.message })
     }
 
     await supabase.from('self_growth_log').insert({
@@ -272,7 +278,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`[send-approved-outreach] Batch complete: ${sent} sent, ${failed} failed`)
+    log('info', 'Batch complete', { sent, failed })
 
     return new Response(
       JSON.stringify({ success: true, sent, failed, errors: errors.slice(0, 5) }),

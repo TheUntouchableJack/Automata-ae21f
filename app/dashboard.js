@@ -11,6 +11,7 @@ let tierDistributionChart = null;
 let currentPeriodDays = 7; // Default chart period (matches 7D active button)
 let isAutoCreating = false; // Guard against double auto-creation
 
+/** Initialize dashboard — auth, load org data, setup sidebar, track activity, process onboarding. */
 async function initDashboard() {
     // Require authentication
     currentUser = await requireAuth();

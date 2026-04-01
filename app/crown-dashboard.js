@@ -142,6 +142,7 @@ const CrownDashboard = (function() {
         }
     ];
 
+    /** Initialize the Intelligence dashboard — 3D scene, mode toggle, prompt input, URL params. */
     async function init(options) {
         if (options && options.organization) {
             currentOrg = options.organization;

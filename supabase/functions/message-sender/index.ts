@@ -6,6 +6,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { wrapEmail } from '../_shared/email-template.ts'
 
+function log(level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>): void {
+  const entry = { level, message, timestamp: new Date().toISOString(), service: 'message-sender', ...context }
+  if (level === 'error') console.error(JSON.stringify(entry))
+  else console.log(JSON.stringify(entry))
+}
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const resendApiKey = Deno.env.get('RESEND_API_KEY')
@@ -111,7 +117,7 @@ async function sendEmail(
   fromName?: string
 ): Promise<{ success: boolean; message_id?: string; error?: string }> {
   if (!resendApiKey) {
-    console.log('[STUB] Would send email:', { to, subject, bodyPreview: body.slice(0, 100) })
+    log('info', 'Stub: would send email', { to, subject })
     return { success: true, message_id: `stub_${Date.now()}` }
   }
 
@@ -206,7 +212,7 @@ async function sendPush(
   }
 
   if (!firebaseServiceAccount || !firebaseProjectId) {
-    console.log('[STUB] Would send push:', { fcmToken: fcmToken.slice(0, 20) + '...', title, body })
+    log('info', 'Stub: would send push', { title })
     return { success: true, message_id: `stub_push_${Date.now()}` }
   }
 
@@ -255,7 +261,7 @@ async function sendPush(
 
     return { success: true, message_id: result.name }
   } catch (error) {
-    console.error('FCM send failed:', error)
+    log('error', 'FCM send failed', { error: (error as Error).message })
     return { success: false, error: (error as Error).message }
   }
 }
@@ -289,7 +295,7 @@ async function sendInApp(
 
   if (error) {
     // Table might not exist yet
-    console.log('[STUB] Would create in-app notification:', { memberId, title, body })
+    log('info', 'Stub: would create in-app notification', { memberId, title })
     return { success: true, notification_id: `stub_inapp_${Date.now()}` }
   }
 
@@ -310,7 +316,7 @@ async function sendSms(
 
   // Check if Twilio is configured
   if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-    console.log('[STUB] Would send SMS:', { phone: phone.slice(0, 6) + '***', body: body.slice(0, 50) })
+    log('info', 'Stub: would send SMS', { phone: phone?.slice(0, 6) + '***' })
     return { success: true, message_id: `stub_sms_${Date.now()}` }
   }
 
@@ -336,7 +342,7 @@ async function sendSms(
     const data = await response.json()
 
     if (!response.ok || data.error_code) {
-      console.error('Twilio API error:', data)
+      log('error', 'Twilio API error', { error: data.message || data.error_message })
       return {
         success: false,
         error: data.message || data.error_message || 'Twilio API error'
@@ -345,7 +351,7 @@ async function sendSms(
 
     return { success: true, message_id: data.sid }
   } catch (error) {
-    console.error('Twilio request failed:', error)
+    log('error', 'Twilio request failed', { error: (error as Error).message })
     return { success: false, error: (error as Error).message }
   }
 }
@@ -406,7 +412,7 @@ async function checkAndIncrementQuota(
     })
 
     if (error) {
-      console.error(`Quota check error for ${channel}:`, error)
+      log('error', 'Quota check error', { channel, error: error.message })
       // On error, allow sending (fail open) but log it
       return { allowed: true, remaining: -1, limit: -1, error: error.message }
     }
@@ -430,7 +436,7 @@ async function checkAndIncrementQuota(
       limit: monthlyLimit
     }
   } catch (err) {
-    console.error(`Quota check exception for ${channel}:`, err)
+    log('error', 'Quota check exception', { channel, error: (err as Error).message })
     // Fail open on exceptions
     return { allowed: true, remaining: -1, limit: -1, error: (err as Error).message }
   }
@@ -560,7 +566,7 @@ async function processBatch(
         stats.skipped++
         stats.quota_exceeded = true
         // Stop processing this batch if quota is exceeded
-        console.log(`Quota exceeded for org ${batch.organization_id}, stopping batch processing`)
+        log('warn', 'Quota exceeded, stopping batch', { org_id: batch.organization_id })
         break
       }
     }
@@ -736,7 +742,7 @@ Deno.serve(async (req) => {
       for (const batch of (pendingBatches || []) as MessageBatch[]) {
         // Execution time guard: defer remaining batches if running long
         if (Date.now() - executionStart > MAX_EXECUTION_MS) {
-          console.warn(`Execution time limit reached (${Date.now() - executionStart}ms), deferring remaining batches`)
+          log('warn', 'Execution time limit reached, deferring', { elapsed_ms: Date.now() - executionStart })
           break
         }
 
@@ -764,7 +770,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Message sender error:', error)
+    log('error', 'Message sender error', { error: (error as Error).message })
     return new Response(
       JSON.stringify({ success: false, error: 'Message sending failed' }),
       { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 500 }

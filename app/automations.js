@@ -15,6 +15,7 @@ let isSubmitting = false;  // Guard against double-submit
 let currentPage = 1;
 const ITEMS_PER_PAGE = 12;
 
+/** Initialize the automations page — auth, load data, setup events. */
 async function initAutomations() {
     // Require authentication
     currentUser = await requireAuth();
@@ -101,6 +102,7 @@ function populateProjectDropdowns() {
 // See: /app/utils.js
 
 // ===== Load Automations =====
+/** Load project-based automations from the automations table for the current org. */
 async function loadAutomations() {
     const loading = document.getElementById('loading');
     const grid = document.getElementById('automations-grid');
@@ -145,6 +147,7 @@ async function loadAutomations() {
 }
 
 // ===== Load Lifecycle Automations =====
+/** Load lifecycle automations from automation_definitions with 7-day execution stats. */
 async function loadLifecycleAutomations() {
     if (!currentOrganization) return;
 
@@ -193,6 +196,7 @@ async function loadLifecycleAutomations() {
 }
 
 // ===== Toggle Lifecycle Automation =====
+/** Toggle a lifecycle automation on/off by updating is_enabled in automation_definitions. */
 async function toggleLifecycleAutomation(id, enable) {
     try {
         const { error } = await supabase
@@ -257,6 +261,7 @@ function updateCounts() {
 }
 
 // ===== Render Automations =====
+/** Render automations grid — dispatches to lifecycle or project view based on currentView. */
 function renderAutomations() {
     const grid = document.getElementById('automations-grid');
     const emptyState = document.getElementById('empty-state');
@@ -362,6 +367,7 @@ function renderAutomations() {
 }
 
 // ===== Render Lifecycle Automations =====
+/** Render lifecycle automation cards with target badges, sequence indicators, and stats. */
 function renderLifecycleAutomations() {
     const grid = document.getElementById('automations-grid');
     const emptyState = document.getElementById('empty-state');
@@ -1232,6 +1238,7 @@ async function handleCreateFromTemplate(e) {
 const escapeHtml = AppUtils.escapeHtml;
 
 // ===== Sequence Pipeline Detail =====
+/** Show pipeline modal for a sequence — displays funnel of orgs at each step. */
 async function showSequencePipeline(sequenceKey) {
     // Get all orgs in this sequence
     const { data: states, error } = await supabase
