@@ -2303,22 +2303,69 @@ blockquote {
     50% { opacity: 0; }
 }
 .ai-orb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #7c3aed;
-    box-shadow: 0 0 16px rgba(124, 58, 237, 0.5), 0 0 32px rgba(124, 58, 237, 0.2);
-    margin: 0 auto 16px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50% 50% / 50% 50%;
+    background: radial-gradient(circle at 35% 30%, #c4b5fd 0%, #a78bfa 25%, #7c3aed 55%, #5b21b6 100%);
+    box-shadow:
+        0 0 32px rgba(124, 58, 237, 0.55),
+        0 0 64px rgba(124, 58, 237, 0.25),
+        inset -10px -10px 20px rgba(0, 0, 0, 0.18),
+        inset 8px 8px 18px rgba(255, 255, 255, 0.25);
+    margin: 0 auto 12px;
     transition: opacity 0.3s ease;
-    animation: orbFloat 2s ease-in-out infinite;
+    animation: orbMorph 8s ease-in-out infinite;
     opacity: 0;
 }
 .ai-orb.visible {
     opacity: 1;
 }
-@keyframes orbFloat {
-    0%, 100% { transform: translateY(-3px); }
-    50% { transform: translateY(3px); }
+/* Smaller variant used inline with the extraction status in the confirm step */
+.ai-orb--inline {
+    width: 28px;
+    height: 28px;
+    margin: 0 10px 0 0;
+    display: inline-block;
+    vertical-align: middle;
+    box-shadow:
+        0 0 16px rgba(124, 58, 237, 0.45),
+        0 0 32px rgba(124, 58, 237, 0.2),
+        inset -5px -5px 10px rgba(0, 0, 0, 0.15),
+        inset 4px 4px 9px rgba(255, 255, 255, 0.25);
+}
+@keyframes orbMorph {
+    0%   { border-radius: 50% 50% / 50% 50%; transform: rotate(0deg)   scale(1)    translateY(0); }
+    20%  { border-radius: 60% 40% / 30% 70%; transform: rotate(72deg)  scale(1.05) translateY(-3px); }
+    40%  { border-radius: 30% 60% / 70% 40%; transform: rotate(144deg) scale(0.97) translateY(2px); }
+    60%  { border-radius: 55% 45% / 45% 55%; transform: rotate(216deg) scale(1.03) translateY(-2px); }
+    80%  { border-radius: 40% 60% / 60% 40%; transform: rotate(288deg) scale(1)    translateY(3px); }
+    100% { border-radius: 50% 50% / 50% 50%; transform: rotate(360deg) scale(1)    translateY(0); }
+}
+
+/* Cycling word label next to the orb */
+.orb-status-word {
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text-secondary, #64748b);
+    letter-spacing: 0.01em;
+    transition: opacity 0.35s ease;
+}
+.orb-status-word.fade-out {
+    opacity: 0;
+}
+
+/* Extraction status row (inline orb + word in the confirm step) */
+.extraction-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 12px 0 4px;
+    min-height: 32px;
+}
+.extraction-status-row.hidden {
+    display: none;
 }
 .extraction-subtext {
     font-size: 0.8rem;
@@ -3044,6 +3091,18 @@ input.discovery-input {
 
 .skip-link:hover {
     color: var(--color-primary);
+}
+
+/* Scoped override for landing-page "Start Over" button (item 4) */
+#retry-prompt-btn {
+    display: block;
+    margin: 21px auto 0;
+    text-align: center;
+    color: #dc2626;
+    font-weight: 500;
+}
+#retry-prompt-btn:hover {
+    color: #991b1b;
 }
 
 .form-row {

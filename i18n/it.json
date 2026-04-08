@@ -68,13 +68,21 @@
         "confirmTitle": "Abbiamo capito la tua attività",
         "editHint": "Modifica i campi sopra se necessario, poi continua.",
         "confirmButton": "Tutto OK — Crea il Mio Account",
-        "retryButton": "Ricomincia con una descrizione diversa",
+        "retryButton": "Ricomincia",
         "extractedLocation": "Posizione",
         "loadingStep1": "Lettura della descrizione...",
         "loadingStep2": "Identificazione del settore...",
         "loadingStep3": "Creazione del programma fedeltà...",
         "loadingStep4": "Calcolo del potenziale di crescita...",
         "loadingSubtext": "L'analisi dei tuoi dati può richiedere da 10 a 20 secondi"
+    },
+    "orbStatus": {
+        "thinking": "Sto pensando",
+        "ruminating": "Riflettendo",
+        "analyzing": "Analizzando",
+        "building": "Costruendo",
+        "refining": "Affinando i dettagli",
+        "almostThere": "Quasi pronto"
     },
     "preview": {
         "title": "Dashboard Royalty",
@@ -1363,6 +1371,7 @@
         "platformHighlights": "Punti di Forza della Piattaforma",
         "expandHint": "Clicca per vedere il piano",
         "loading": "Analisi della tua attività...",
+        "changingLanguage": "Stiamo cambiando lingua, attendi 30-60 secondi mentre rivediamo il tuo report",
         "fallbackTitle": "La Tua Piattaforma Royalty",
         "growthPotential": "Il Tuo Potenziale di Crescita",
         "opportunities": "Opportunità",

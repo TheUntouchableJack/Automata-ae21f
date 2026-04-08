@@ -68,13 +68,21 @@
         "confirmTitle": "فهمنا عملك",
         "editHint": "عدّل أي حقل أعلاه إذا لزم الأمر، ثم تابع.",
         "confirmButton": "يبدو جيداً — أنشئ حسابي",
-        "retryButton": "ابدأ من جديد بوصف مختلف",
+        "retryButton": "ابدأ من جديد",
         "extractedLocation": "الموقع",
         "loadingStep1": "جارٍ قراءة وصفك...",
         "loadingStep2": "جارٍ تحديد مجال عملك...",
         "loadingStep3": "جارٍ بناء برنامج الولاء...",
         "loadingStep4": "جارٍ حساب إمكانات النمو...",
         "loadingSubtext": "قد يستغرق تحليل بياناتك من 10 إلى 20 ثانية"
+    },
+    "orbStatus": {
+        "thinking": "أفكّر",
+        "ruminating": "أتأمل",
+        "analyzing": "أحلل",
+        "building": "أبني",
+        "refining": "أحسّن التفاصيل",
+        "almostThere": "قرابة الانتهاء"
     },
     "preview": {
         "title": "لوحة تحكم أوتوماتا",
@@ -1362,6 +1370,7 @@
         "platformHighlights": "أبرز ميزات المنصة",
         "expandHint": "انقر لرؤية الخطة",
         "loading": "جاري تحليل عملك...",
+        "changingLanguage": "نحن نغيّر اللغة، يرجى الانتظار 30-60 ثانية بينما نراجع تقريرك",
         "fallbackTitle": "منصة Royalty الخاصة بك",
         "growthPotential": "إمكانات النمو الخاصة بك",
         "opportunities": "الفرص",

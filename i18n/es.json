@@ -68,13 +68,21 @@
         "confirmTitle": "Entendimos tu negocio",
         "editHint": "Edita cualquier campo si es necesario, luego continúa.",
         "confirmButton": "Todo Bien — Crear Mi Cuenta",
-        "retryButton": "Empezar de nuevo con otra descripción",
+        "retryButton": "Empezar de Nuevo",
         "extractedLocation": "Ubicación",
         "loadingStep1": "Leyendo tu descripción...",
         "loadingStep2": "Identificando tu industria...",
         "loadingStep3": "Construyendo tu programa de fidelización...",
         "loadingStep4": "Calculando el potencial de crecimiento...",
         "loadingSubtext": "Esto puede tardar de 10 a 20 segundos en analizar tus datos"
+    },
+    "orbStatus": {
+        "thinking": "Pensando",
+        "ruminating": "Reflexionando",
+        "analyzing": "Analizando",
+        "building": "Construyendo",
+        "refining": "Afinando detalles",
+        "almostThere": "Casi listo"
     },
     "preview": {
         "title": "Panel de Royalty",
@@ -1362,6 +1370,7 @@
         "platformHighlights": "Aspectos Destacados de la Plataforma",
         "expandHint": "Haz clic para ver el plan",
         "loading": "Analizando tu negocio...",
+        "changingLanguage": "Estamos cambiando el idioma, espera 30-60 segundos mientras revisamos tu informe",
         "fallbackTitle": "Tu Plataforma Royalty",
         "growthPotential": "Tu Potencial de Crecimiento",
         "opportunities": "Oportunidades",

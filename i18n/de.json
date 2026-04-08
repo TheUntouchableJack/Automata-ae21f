@@ -68,13 +68,21 @@
         "confirmTitle": "Wir haben Ihr Unternehmen verstanden",
         "editHint": "Bearbeiten Sie bei Bedarf die Felder oben, dann fahren Sie fort.",
         "confirmButton": "Sieht Gut Aus — Mein Konto Erstellen",
-        "retryButton": "Mit einer anderen Beschreibung neu starten",
+        "retryButton": "Neu Starten",
         "extractedLocation": "Standort",
         "loadingStep1": "Lese Ihre Beschreibung...",
         "loadingStep2": "Identifiziere Ihre Branche...",
         "loadingStep3": "Erstelle Ihr Treueprogramm...",
         "loadingStep4": "Berechne Wachstumspotenzial...",
         "loadingSubtext": "Die Analyse Ihrer Daten kann 10 bis 20 Sekunden dauern"
+    },
+    "orbStatus": {
+        "thinking": "Denke nach",
+        "ruminating": "Überlege",
+        "analyzing": "Analysiere",
+        "building": "Baue auf",
+        "refining": "Details werden verfeinert",
+        "almostThere": "Fast fertig"
     },
     "preview": {
         "title": "Royalty Dashboard",
@@ -1362,6 +1370,7 @@
         "platformHighlights": "Plattform-Highlights",
         "expandHint": "Klicken Sie, um den Plan zu sehen",
         "loading": "Ihr Unternehmen wird analysiert...",
+        "changingLanguage": "Wir wechseln die Sprache, bitte warten Sie 30-60 Sekunden, während wir Ihren Bericht überarbeiten",
         "fallbackTitle": "Ihre Royalty-Plattform",
         "growthPotential": "Ihr Wachstumspotenzial",
         "opportunities": "Möglichkeiten",

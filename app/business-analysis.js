@@ -171,18 +171,21 @@ const BusinessAnalysis = (function() {
         if (!results) return;
 
         // Business name in heading (use i18n if available)
+        // Always wrap the name in a highlight span, regardless of i18n path,
+        // so the business name stands out visually.
         const headingEl = results.querySelector('.analysis-heading');
         const name = businessName || 'your business';
         if (headingEl) {
+            const nameSpan = `<span class="biz-name-highlight">${escapeHtml(name)}</span>`;
             let headingText = '';
             if (window.I18n) {
-                const translated = I18n.t('analysis.heading', { businessName: name });
+                const translated = I18n.t('analysis.heading', { businessName: nameSpan });
                 // If i18n returns raw key (not yet loaded), use English fallback
                 headingText = (translated && !translated.startsWith('analysis.'))
                     ? translated
-                    : `Here's what we see for <span>${name}</span>`;
+                    : `Here's what we see for ${nameSpan}`;
             } else {
-                headingText = `Here's what we see for <span>${name}</span>`;
+                headingText = `Here's what we see for ${nameSpan}`;
             }
             headingEl.innerHTML = headingText;
             headingEl.dataset.bizName = name; // store for language switch re-render
@@ -380,13 +383,25 @@ const BusinessAnalysis = (function() {
         }
         if (skeleton) skeleton.style.display = 'block';
 
+        // Contextual message for language changes (item 7)
+        const progressEl = document.getElementById('skeleton-progress');
+        const defaultProgressHtml = progressEl ? progressEl.innerHTML : '';
+        if (progressEl) {
+            const msg = (window.I18n && I18n.t('analysis.changingLanguage'));
+            progressEl.textContent = (msg && !msg.startsWith('analysis.'))
+                ? msg
+                : "We're changing language, please wait 30-60 seconds while we revise your report";
+        }
+
         try {
             const analysis = await fetchAnalysis(data, currentLang);
             setCache(analysis, currentLang);
             render(analysis, businessName);
+            if (progressEl) progressEl.innerHTML = defaultProgressHtml;
             return true;
         } catch (e) {
             console.error('Business analysis refresh failed:', e);
+            if (progressEl) progressEl.innerHTML = defaultProgressHtml;
             // Try to re-show previous results
             if (results && results.innerHTML.trim()) {
                 results.style.display = 'block';
@@ -401,9 +416,12 @@ const BusinessAnalysis = (function() {
     window.addEventListener('i18n:changed', (e) => {
         const headingEl = document.querySelector('#analysis-results .analysis-heading');
         if (headingEl && headingEl.dataset.bizName && window.I18n) {
-            const translated = I18n.t('analysis.heading', { businessName: headingEl.dataset.bizName });
+            const nameSpan = `<span class="biz-name-highlight">${escapeHtml(headingEl.dataset.bizName)}</span>`;
+            const translated = I18n.t('analysis.heading', { businessName: nameSpan });
             if (translated && !translated.startsWith('analysis.')) {
                 headingEl.innerHTML = translated;
+            } else {
+                headingEl.innerHTML = `Here's what we see for ${nameSpan}`;
             }
         }
     });

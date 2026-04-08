@@ -68,13 +68,21 @@
         "confirmTitle": "我们理解了您的生意",
         "editHint": "如需修改，请编辑上方字段，然后继续。",
         "confirmButton": "没问题——创建我的账户",
-        "retryButton": "用不同的描述重新开始",
+        "retryButton": "重新开始",
         "extractedLocation": "位置",
         "loadingStep1": "正在阅读您的描述...",
         "loadingStep2": "正在识别您的行业...",
         "loadingStep3": "正在构建您的忠诚度计划...",
         "loadingStep4": "正在计算增长潜力...",
         "loadingSubtext": "分析您的数据可能需要10到20秒"
+    },
+    "orbStatus": {
+        "thinking": "思考中",
+        "ruminating": "推敲中",
+        "analyzing": "分析中",
+        "building": "构建中",
+        "refining": "优化细节",
+        "almostThere": "即将完成"
     },
     "preview": {
         "title": "Royalty 仪表板",
@@ -1365,6 +1373,7 @@
         "platformHighlights": "平台亮点",
         "expandHint": "点击查看计划",
         "loading": "正在分析您的业务...",
+        "changingLanguage": "我们正在切换语言,请等待30-60秒,我们正在修订您的报告",
         "fallbackTitle": "您的 Royalty 平台",
         "growthPotential": "您的增长潜力",
         "opportunities": "发展机会",

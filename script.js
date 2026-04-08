@@ -776,6 +776,18 @@ if (heroCTABtn) {
     });
 }
 
+// Nav "Get Started Free" → mirror hero CTA behavior (smooth scroll + transition)
+const navCTABtn = document.getElementById('nav-cta-btn');
+if (navCTABtn) {
+    navCTABtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const card = document.getElementById('discovery-card');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Fire the same transition as the hero CTA
+        heroCTABtn?.click();
+    });
+}
+
 // Analyze button → call edge function → show confirmation
 const analyzeBtn = document.getElementById('analyze-business-btn');
 if (analyzeBtn) {
@@ -793,6 +805,13 @@ const retryBtn = document.getElementById('retry-prompt-btn');
 if (retryBtn) {
     retryBtn.addEventListener('click', () => {
         _analysisResult = null;
+        _analysisToken++;  // invalidate any in-flight analysis so its results don't land
+        stopOrbWordCycle();
+        const statusRow = document.getElementById('confirm-status-row');
+        if (statusRow) statusRow.classList.add('hidden');
+        // Clear the confirm-state fields so the next analysis starts clean
+        ['extracted-name','extracted-industry','extracted-customers','extracted-location','extracted-website']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         showHeroState('hero-prompt-state');
         document.getElementById('hero-business-prompt')?.focus();
     });
@@ -833,7 +852,73 @@ function applyOnboardingData(data) {
 
 restoreOnboardingData();
 
-// Main analysis handler
+// ─── Word-cycling utility for the AI orb (item 3) ──────────────────
+const ORB_WORD_KEYS = [
+    'orbStatus.thinking',
+    'orbStatus.ruminating',
+    'orbStatus.analyzing',
+    'orbStatus.building',
+    'orbStatus.refining',
+    'orbStatus.almostThere'
+];
+const ORB_WORD_FALLBACKS = {
+    'orbStatus.thinking': 'Thinking',
+    'orbStatus.ruminating': 'Ruminating',
+    'orbStatus.analyzing': 'Analyzing',
+    'orbStatus.building': 'Building',
+    'orbStatus.refining': 'Refining',
+    'orbStatus.almostThere': 'Almost there'
+};
+let _orbWordTimers = [];
+let _analysisToken = 0;  // increments per analyze call; stale fetches are ignored
+function _translateOrbWord(key) {
+    if (window.I18n) {
+        const t = I18n.t(key);
+        if (t && !t.startsWith('orbStatus.')) return t;
+    }
+    return ORB_WORD_FALLBACKS[key] || 'Thinking';
+}
+function startOrbWordCycle(spanId) {
+    const span = document.getElementById(spanId);
+    if (!span) return;
+    let idx = 0;
+    span.textContent = _translateOrbWord(ORB_WORD_KEYS[idx]);
+    const tick = setInterval(() => {
+        idx = (idx + 1) % ORB_WORD_KEYS.length;
+        span.classList.add('fade-out');
+        const swap = setTimeout(() => {
+            span.textContent = _translateOrbWord(ORB_WORD_KEYS[idx]);
+            span.classList.remove('fade-out');
+        }, 350);
+        _orbWordTimers.push(swap);
+    }, 1800);
+    _orbWordTimers.push(tick);
+}
+function stopOrbWordCycle() {
+    _orbWordTimers.forEach(t => { clearInterval(t); clearTimeout(t); });
+    _orbWordTimers = [];
+}
+
+// ─── Smart business name guess from prompt text ────────────────────
+function guessBusinessNameFromPrompt(prompt) {
+    if (!prompt) return '';
+    const trimmed = prompt.trim();
+    // Look for patterns like "I own X", "my shop X", "X is a ramen shop"
+    const patterns = [
+        /(?:own|run|operate|have)\s+(?:a\s+|an\s+|the\s+)?([A-Z][\w'&.\- ]{1,40}?)(?:\s+(?:which|that|is|in|where|shop|store|restaurant|business|cafe|company))/i,
+        /(?:called|named)\s+["']?([A-Z][\w'&.\- ]{1,40}?)["']?(?:\s|$|\.|,)/i,
+        /^([A-Z][\w'&.\- ]{1,40}?)\s+(?:is|was)\s+(?:a|an|the)\s+/i,
+    ];
+    for (const re of patterns) {
+        const m = trimmed.match(re);
+        if (m && m[1]) return m[1].trim();
+    }
+    // Fallback: first 2-3 capitalized words
+    const caps = trimmed.match(/\b[A-Z][\w'&.\-]*(?:\s+[A-Z][\w'&.\-]*){0,2}/);
+    return caps ? caps[0] : '';
+}
+
+// Main analysis handler — skips loader, streams AI into editable fields (item 2)
 async function handleAnalyzeBusiness() {
     const promptEl = document.getElementById('hero-business-prompt');
     const prompt = promptEl?.value?.trim() || '';
@@ -845,9 +930,43 @@ async function handleAnalyzeBusiness() {
         return;
     }
 
-    // Show loading with step progress
-    showHeroState('hero-loading-state');
-    startLoadingSteps();
+    // Bump the analysis token so any prior in-flight fetch gets ignored
+    const myToken = ++_analysisToken;
+
+    // Save prompt immediately
+    if (typeof OnboardingStorage !== 'undefined') {
+        OnboardingStorage.setBusinessPrompt(prompt);
+    }
+
+    // Pre-fill the name field with a smart guess so the user has something
+    // to look at instantly instead of a blank form.
+    const nameEl = document.getElementById('extracted-name');
+    const industryEl = document.getElementById('extracted-industry');
+    const customersEl = document.getElementById('extracted-customers');
+    const locationEl = document.getElementById('extracted-location');
+    const websiteEl = document.getElementById('extracted-website');
+    const summaryEl = document.getElementById('hero-business-summary');
+
+    const guess = guessBusinessNameFromPrompt(prompt);
+    if (nameEl) nameEl.value = guess;
+
+    // Track which fields the user has touched so we don't overwrite their edits
+    const fieldsToTrack = [nameEl, industryEl, customersEl, locationEl, websiteEl].filter(Boolean);
+    const touched = new Set();
+    // Pre-mark the name as "touched by user" only if they actually edit it
+    fieldsToTrack.forEach(el => {
+        const onDirty = () => touched.add(el.id);
+        el.addEventListener('input', onDirty, { once: true });
+        el.addEventListener('change', onDirty, { once: true });
+    });
+
+    // Jump straight to the confirm state — no loader
+    showHeroState('hero-confirm-state');
+
+    // Show the inline "Refining your details" status row with orb + cycling words
+    const statusRow = document.getElementById('confirm-status-row');
+    if (statusRow) statusRow.classList.remove('hidden');
+    startOrbWordCycle('confirm-status-word');
 
     // Detect language
     const lang = document.documentElement.lang || 'en';
@@ -864,53 +983,50 @@ async function handleAnalyzeBusiness() {
 
         const data = await response.json();
 
+        // If the user hit Start Over or triggered a new analyze, this fetch is stale
+        if (myToken !== _analysisToken) return;
+
         if (!data.success || !data.analysis) {
             throw new Error(data.error || 'Analysis failed');
         }
 
         _analysisResult = data.analysis;
 
-        // Populate confirmation fields
+        // Stream AI results into fields the user hasn't touched
         const extracted = data.analysis.extractedDetails || {};
-        const nameEl = document.getElementById('extracted-name');
-        const industryEl = document.getElementById('extracted-industry');
-        const customersEl = document.getElementById('extracted-customers');
-        const locationEl = document.getElementById('extracted-location');
-        const websiteEl = document.getElementById('extracted-website');
-        const summaryEl = document.getElementById('hero-business-summary');
-
-        if (nameEl) nameEl.value = extracted.businessName || '';
-        if (industryEl) industryEl.value = extracted.industry || '';
-        if (customersEl) customersEl.value = extracted.customerCount || '';
-        if (locationEl) locationEl.value = extracted.location || '';
-        if (websiteEl) websiteEl.value = extracted.websiteUrl || '';
-        if (summaryEl) summaryEl.textContent = data.analysis.businessSummary || '';
-
-        // Save prompt immediately
-        if (typeof OnboardingStorage !== 'undefined') {
-            OnboardingStorage.setBusinessPrompt(prompt);
+        const maybeFill = (el, value) => {
+            if (!el || !value) return;
+            if (touched.has(el.id)) return;  // user has edited — don't overwrite
+            el.value = value;
+        };
+        maybeFill(nameEl, extracted.businessName);
+        maybeFill(industryEl, extracted.industry);
+        maybeFill(customersEl, extracted.customerCount);
+        maybeFill(locationEl, extracted.location);
+        maybeFill(websiteEl, extracted.websiteUrl);
+        if (summaryEl && !summaryEl.textContent.trim()) {
+            summaryEl.textContent = data.analysis.businessSummary || '';
         }
 
-        // Complete all steps, brief pause, then show confirmation
-        completeLoadingSteps(() => {
-            showHeroState('hero-confirm-state');
-            clearLoadingSteps(); // Reset for potential retry
-        });
+        // Hide the status row — analysis complete
+        stopOrbWordCycle();
+        if (statusRow) statusRow.classList.add('hidden');
     } catch (err) {
+        if (myToken !== _analysisToken) return;  // stale — user has moved on
         console.error('Analysis error:', err);
-        clearLoadingSteps();
-        // Fall back to prompt state with an error message
-        showHeroState('hero-prompt-state');
-        const promptState = document.getElementById('hero-prompt-state');
-        // Remove any existing error
-        promptState?.querySelector('.extraction-error-msg')?.remove();
-        if (promptState) {
+        stopOrbWordCycle();
+        if (statusRow) statusRow.classList.add('hidden');
+        // User is already in confirm state with their smart-guess name — leave them
+        // there so they can edit and proceed even if AI failed. Show a subtle retry hint.
+        const confirmState = document.getElementById('hero-confirm-state');
+        confirmState?.querySelector('.extraction-error-msg')?.remove();
+        if (confirmState) {
             const errMsg = document.createElement('p');
             errMsg.className = 'extraction-error-msg';
-            errMsg.style.cssText = 'color: #ef4444; font-size: 0.85rem; text-align: center; margin-top: 8px;';
-            errMsg.textContent = 'Something went wrong analyzing your business. Please try again.';
-            promptState.querySelector('.discovery-field')?.after(errMsg);
-            setTimeout(() => errMsg.remove(), 5000);
+            errMsg.style.cssText = 'color: #dc2626; font-size: 0.8rem; text-align: center; margin-top: 4px;';
+            errMsg.textContent = 'Couldn\u2019t auto-fill your details \u2014 please review and edit the fields above.';
+            confirmState.querySelector('.extracted-edit-hint')?.after(errMsg);
+            setTimeout(() => errMsg.remove(), 8000);
         }
     }
 }

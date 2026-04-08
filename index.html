@@ -75,7 +75,7 @@
             </div>
             <div class="nav-cta">
                 <a href="/app/login.html" class="btn btn-secondary" data-i18n="nav.login">Log In</a>
-                <a href="#discovery-card" class="btn btn-primary" data-i18n="nav.getStarted">Get Started Free</a>
+                <a href="#discovery-card" id="nav-cta-btn" class="btn btn-primary" data-i18n="nav.getStarted">Get Started Free</a>
                 <!-- Language Selector -->
                 <div class="lang-selector">
                     <button class="lang-selector-btn" type="button" aria-label="Change language">
@@ -212,6 +212,9 @@
                     <div id="hero-loading-state" style="display: none;">
                         <div class="extraction-loading">
                             <div class="ai-orb" id="ai-thinking-orb"></div>
+                            <div class="extraction-status-row">
+                                <span class="orb-status-word" id="orb-status-word" data-i18n="orbStatus.thinking">Thinking</span>
+                            </div>
                             <div class="extraction-progress-row">
                                 <div class="extraction-progress-bar">
                                     <div class="extraction-progress-fill" id="extraction-progress-fill"></div>
@@ -257,6 +260,12 @@
                         <div class="discovery-step-badge" data-i18n="onboarding.step2of2">Step 2 of 2</div>
                         <h2 class="discovery-title" data-i18n="hero.confirmTitle">We understood your business</h2>
                         <p class="discovery-subtitle" id="hero-business-summary"></p>
+
+                        <!-- Inline AI status (visible while streaming in results) -->
+                        <div class="extraction-status-row hidden" id="confirm-status-row">
+                            <div class="ai-orb ai-orb--inline visible" id="confirm-orb"></div>
+                            <span class="orb-status-word" id="confirm-status-word" data-i18n="orbStatus.refining">Refining your details</span>
+                        </div>
 
                         <div class="extracted-fields" id="extracted-fields">
                             <div class="extracted-field">
@@ -1243,7 +1252,7 @@
     <script src="app/templates-library.js"></script>
     <script src="app/ai-recommendations.js"></script>
     <script src="app/rate-limiter.js?v=1"></script>
-    <script src="script.js?v=17"></script>
+    <script src="script.js?v=18"></script>
     <script src="network-bg.js?v=7"></script>
     <script src="js/section-nav.js?v=1"></script>
     <script>

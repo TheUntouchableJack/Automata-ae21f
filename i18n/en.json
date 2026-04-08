@@ -68,13 +68,21 @@
         "confirmTitle": "We understood your business",
         "editHint": "Edit any field above if needed, then continue.",
         "confirmButton": "Looks Good — Create My Account",
-        "retryButton": "Start over with a different description",
+        "retryButton": "Start Over",
         "extractedLocation": "Location",
         "loadingStep1": "Reading your description...",
         "loadingStep2": "Identifying your industry...",
         "loadingStep3": "Building your loyalty program...",
         "loadingStep4": "Calculating growth potential...",
         "loadingSubtext": "This can take from 10 - 20 seconds to analyze your data"
+    },
+    "orbStatus": {
+        "thinking": "Thinking",
+        "ruminating": "Ruminating",
+        "analyzing": "Analyzing",
+        "building": "Building",
+        "refining": "Refining your details",
+        "almostThere": "Almost there"
     },
     "preview": {
         "title": "Royalty Dashboard",
@@ -1662,6 +1670,7 @@
         "platformHighlights": "Platform Highlights",
         "expandHint": "Click to see the plan",
         "loading": "Analyzing your business...",
+        "changingLanguage": "We're changing language, please wait 30-60 seconds while we revise your report",
         "fallbackTitle": "Your Royalty Platform",
         "growthPotential": "Your Growth Potential",
         "opportunities": "Opportunities",

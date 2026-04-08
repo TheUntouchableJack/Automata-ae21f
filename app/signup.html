@@ -90,6 +90,14 @@
 
         .analysis-heading span { color: #7c3aed; }
 
+        /* Business name highlight in analysis heading (item 6) */
+        .biz-name-highlight {
+            color: #7c3aed;
+            font-weight: 700;
+            background: linear-gradient(180deg, transparent 62%, rgba(124, 58, 237, 0.14) 62%);
+            padding: 0 2px;
+        }
+
         .analysis-summary {
             font-size: 16px;
             line-height: 1.6;
@@ -1319,7 +1327,7 @@
     <script src="auth.js?v=10"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="onboarding-transition.js?v=1"></script>
-    <script src="business-analysis.js?v=2"></script>
+    <script src="business-analysis.js?v=3"></script>
     <script>
         // Page-level language
         const currentLang = localStorage.getItem('royalty_language') || document.documentElement.lang || 'en';

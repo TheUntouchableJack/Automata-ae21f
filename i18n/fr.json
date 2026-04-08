@@ -68,13 +68,21 @@
         "confirmTitle": "Nous avons compris votre entreprise",
         "editHint": "Modifiez les champs ci-dessus si nécessaire, puis continuez.",
         "confirmButton": "C'est Bon — Créer Mon Compte",
-        "retryButton": "Recommencer avec une autre description",
+        "retryButton": "Recommencer",
         "extractedLocation": "Emplacement",
         "loadingStep1": "Lecture de votre description...",
         "loadingStep2": "Identification de votre secteur...",
         "loadingStep3": "Construction de votre programme de fidélité...",
         "loadingStep4": "Calcul du potentiel de croissance...",
         "loadingSubtext": "L'analyse de vos données peut prendre de 10 à 20 secondes"
+    },
+    "orbStatus": {
+        "thinking": "Réflexion",
+        "ruminating": "Analyse",
+        "analyzing": "Examen",
+        "building": "Construction",
+        "refining": "Affinage des détails",
+        "almostThere": "Presque prêt"
     },
     "preview": {
         "title": "Tableau de Bord Royalty",
@@ -1375,6 +1383,7 @@
         "platformHighlights": "Points Forts de la Plateforme",
         "expandHint": "Cliquez pour voir le plan",
         "loading": "Analyse de votre entreprise...",
+        "changingLanguage": "Nous changeons de langue, patientez 30 à 60 secondes pendant que nous révisons votre rapport",
         "fallbackTitle": "Votre Plateforme Royalty",
         "growthPotential": "Votre Potentiel de Croissance",
         "opportunities": "Opportunités",
