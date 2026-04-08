@@ -199,13 +199,13 @@
 }
 
 .sidebar-item.active {
-    background: var(--sidebar-active-bg);
-    color: var(--color-primary);
+    background: var(--color-primary);
+    color: #ffffff;
 }
 
 .sidebar-item.active .sidebar-item-icon,
 .sidebar-item.active .sidebar-item-text {
-    color: var(--color-primary);
+    color: #ffffff;
 }
 
 /* Active indicator bar */
@@ -233,9 +233,6 @@
 .sidebar-item--highlight .sidebar-item-icon,
 .sidebar-item--highlight .sidebar-item-text {
     color: white;
-}
-.sidebar-item--highlight.active::before {
-    display: none;
 }
 
 /* Subtle hint when a highlight item is not active — just a colored icon */

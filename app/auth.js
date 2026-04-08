@@ -21,7 +21,12 @@ async function getCurrentUser() {
 
     const { data: { user }, error } = await db.auth.getUser();
     if (error) {
-        console.error('Error getting user:', error);
+        // "Auth session missing" is the expected state for an unauthenticated
+        // visitor (e.g. on the signup/login/reset-password pages) — don't log
+        // it as an error. All other auth errors still surface.
+        if (error.name !== 'AuthSessionMissingError') {
+            console.error('Error getting user:', error);
+        }
         return null;
     }
     return user;
@@ -233,7 +238,12 @@ async function requireAuth() {
  * If onboarding data exists, sign out first so user can complete fresh signup.
  */
 async function redirectIfAuthenticated() {
-    const user = await getCurrentUser();
+    // Fast path: if there's no session at all, skip getUser() entirely to
+    // avoid a spurious AuthSessionMissingError log on unauthenticated pages.
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return;
+
+    const user = session.user;
     if (user) {
         const hasOnboarding = localStorage.getItem('royalty_onboarding');
         if (hasOnboarding) {
