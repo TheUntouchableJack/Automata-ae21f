@@ -490,8 +490,18 @@
         "confidence": "置信度"
     },
     "intelligence": {
-        "title": "AI智能分析",
-        "subtitle": "为您的业务提供AI驱动的洞察和建议",
+        "title": "AI\u667a\u80fd\u5206\u6790",
+        "subtitle": "\u4e3a\u60a8\u7684\u4e1a\u52a1\u63d0\u4f9bAI\u9a71\u52a8\u7684\u6d1e\u5bdf\u548c\u5efa\u8bae",
+        "freePlanBadge": "\u514d\u8d39\u8ba1\u5212 \u2014 \u968f\u4fbf\u95ee Royal",
+        "emptyCaption": "Royal \u662f\u60a8\u7684 AI \u5927\u8111\u3002\u63d0\u95ee\u3001\u83b7\u53d6\u5efa\u8bae\uff0c\u5f53\u60a8\u51c6\u5907\u597d\u8ba9 Royal \u81ea\u4e3b\u884c\u52a8\u65f6\u518d\u5347\u7ea7\u3002",
+        "seeProLink": "\u4e86\u89e3 Pro \u89e3\u9501\u7684\u529f\u80fd \u2192",
+        "starterLabel": "\u4e0d\u786e\u5b9a\u4ece\u54ea\u91cc\u5f00\u59cb\uff1f\u8bd5\u8bd5\u8fd9\u4e9b\uff1a",
+        "starters": {
+            "automations": "\u6211\u5e94\u8be5\u4e3a\u6211\u7684\u4e1a\u52a1\u8bbe\u7f6e\u54ea\u4e9b\u81ea\u52a8\u5316\uff1f",
+            "loyaltyPrograms": "\u5fe0\u8bda\u5ea6\u8ba1\u5212\u5982\u4f55\u63a8\u52a8\u56de\u5934\u5ba2\uff1f",
+            "birthdayRewards": "\u6211\u5e94\u8be5\u8bbe\u7f6e\u751f\u65e5\u5956\u52b1\u5417\uff1f",
+            "firstRewards": "\u6211\u5e94\u8be5\u4e3a\u6211\u7684\u7b2c\u4e00\u6279\u5ba2\u6237\u63d0\u4f9b\u4ec0\u4e48\u5956\u52b1\uff1f"
+        },
         "analyze": "分析我的业务",
         "analyzeNow": "立即分析",
         "pending": "待处理操作",

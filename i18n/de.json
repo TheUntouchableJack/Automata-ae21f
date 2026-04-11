@@ -491,7 +491,17 @@
     },
     "intelligence": {
         "title": "KI-Intelligenz",
-        "subtitle": "KI-gestützte Einblicke und Empfehlungen für Ihr Unternehmen",
+        "subtitle": "KI-gest\u00fctzte Einblicke und Empfehlungen f\u00fcr Ihr Unternehmen",
+        "freePlanBadge": "Kostenloser Plan \u2014 Fragen Sie Royal alles",
+        "emptyCaption": "Royal ist Ihr KI-Gehirn. Stellen Sie Fragen, erhalten Sie Vorschl\u00e4ge und upgraden Sie, wenn Sie bereit sind, Royal eigenst\u00e4ndig handeln zu lassen.",
+        "seeProLink": "Entdecken Sie, was Pro freischaltet \u2192",
+        "starterLabel": "Nicht sicher, wo Sie anfangen sollen? Probieren Sie eine davon:",
+        "starters": {
+            "automations": "Welche Automatisierungen sollte ich f\u00fcr mein Unternehmen einrichten?",
+            "loyaltyPrograms": "Wie f\u00f6rdern Treueprogramme wiederholte Besuche?",
+            "birthdayRewards": "Sollte ich Geburtstagsbelohnungen einrichten?",
+            "firstRewards": "Was sollte ich meinen ersten Kunden als Belohnungen anbieten?"
+        },
         "analyze": "Mein Geschäft Analysieren",
         "analyzeNow": "Jetzt Analysieren",
         "pending": "Ausstehende Aktionen",

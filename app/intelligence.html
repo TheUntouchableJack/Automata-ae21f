@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
     <link rel="stylesheet" href="intelligence.css?v=27">
-    <link rel="stylesheet" href="crown-dashboard.css?v=26">
+    <link rel="stylesheet" href="crown-dashboard.css?v=27">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <style>
     /* ── Welcome Banner (V2 — full-width top row) ── */
@@ -171,9 +171,20 @@
 
                     <!-- AI Prompt Input (bottom center) -->
                     <div class="crown-prompt-container" id="crown-prompt-container">
-                        <!-- Usage badge (shows when limited) -->
-                        <div class="prompt-usage-badge" id="prompt-usage-badge" style="display: none;">
-                            <span id="prompt-usage-count">28/30</span> this month
+                        <!-- Capability badge (plan context, replaces misleading 0/0 counter) -->
+                        <div class="prompt-capability-badge" id="prompt-capability-badge" style="display: none;">
+                            <span id="prompt-badge-text" data-i18n="intelligence.freePlanBadge">Free plan — Ask Royal anything</span>
+                        </div>
+
+                        <!-- Empty-state caption for new free users (Part C) -->
+                        <p class="crown-empty-caption" id="crown-empty-caption" style="display: none;">
+                            <span data-i18n="intelligence.emptyCaption">Royal is your AI brain. Ask questions, get suggestions, and upgrade when you're ready for Royal to take action on its own.</span>
+                            <a href="/app/upgrade.html" class="caption-upgrade-link" data-i18n="intelligence.seeProLink">See what Pro unlocks →</a>
+                        </p>
+
+                        <!-- Starter prompts label (visible for zero-data accounts) -->
+                        <div class="crown-suggestions-label" id="crown-suggestions-label" style="display: none;">
+                            <span data-i18n="intelligence.starterLabel">Not sure where to start? Try one of these:</span>
                         </div>
 
                         <!-- Suggested questions -->
@@ -600,7 +611,7 @@
     <script src="crown-materials.js?v=11"></script>
     <script type="module" src="crown-scene.js?v=14"></script>
     <script src="shared/ai-templates.js?v=1"></script>
-    <script src="crown-dashboard.js?v=40"></script>
+    <script src="crown-dashboard.js?v=41"></script>
     <script src="chat-thread.js?v=9"></script>
     <script src="welcome-banner.js?v=15"></script>
     <script src="intelligence.js?v=10"></script>

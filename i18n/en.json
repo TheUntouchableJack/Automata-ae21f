@@ -808,6 +808,16 @@
     "intelligence": {
         "title": "AI Intelligence",
         "subtitle": "AI-powered insights and recommendations for your business",
+        "freePlanBadge": "Free plan \u2014 Ask Royal anything",
+        "emptyCaption": "Royal is your AI brain. Ask questions, get suggestions, and upgrade when you're ready for Royal to take action on its own.",
+        "seeProLink": "See what Pro unlocks \u2192",
+        "starterLabel": "Not sure where to start? Try one of these:",
+        "starters": {
+            "automations": "What automations should I set up for my business?",
+            "loyaltyPrograms": "How do loyalty programs drive repeat visits?",
+            "birthdayRewards": "Should I set up birthday rewards?",
+            "firstRewards": "What should I offer my first customers as rewards?"
+        },
         "analyze": "Analyze My Business",
         "analyzeNow": "Analyze Now",
         "pending": "Pending Actions",

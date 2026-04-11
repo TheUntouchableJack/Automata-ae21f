@@ -505,6 +505,16 @@
     "intelligence": {
         "title": "Intelligence IA",
         "subtitle": "Insights et recommandations alimentés par l'IA pour votre entreprise",
+        "freePlanBadge": "Plan gratuit \u2014 Demandez n'importe quoi \u00e0 Royal",
+        "emptyCaption": "Royal est votre cerveau IA. Posez des questions, obtenez des suggestions et passez au niveau sup\u00e9rieur quand vous serez pr\u00eat \u00e0 ce que Royal agisse seul.",
+        "seeProLink": "D\u00e9couvrez ce que Pro d\u00e9bloque \u2192",
+        "starterLabel": "Pas s\u00fbr par o\u00f9 commencer ? Essayez l'une de ces suggestions :",
+        "starters": {
+            "automations": "Quelles automatisations devrais-je configurer pour mon entreprise ?",
+            "loyaltyPrograms": "Comment les programmes de fid\u00e9lit\u00e9 g\u00e9n\u00e8rent-ils des visites r\u00e9p\u00e9t\u00e9es ?",
+            "birthdayRewards": "Devrais-je mettre en place des r\u00e9compenses d'anniversaire ?",
+            "firstRewards": "Que devrais-je offrir \u00e0 mes premiers clients comme r\u00e9compenses ?"
+        },
         "analyze": "Analyser Mon Entreprise",
         "analyzeNow": "Analyser Maintenant",
         "pending": "Actions en Attente",

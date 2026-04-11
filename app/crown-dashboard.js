@@ -1957,8 +1957,9 @@ const CrownDashboard = (function() {
 
     function updatePromptUI() {
         const overlay = document.getElementById('prompt-upgrade-overlay');
-        const usageBadge = document.getElementById('prompt-usage-badge');
-        const usageCount = document.getElementById('prompt-usage-count');
+        const capBadge = document.getElementById('prompt-capability-badge');
+        const badgeText = document.getElementById('prompt-badge-text');
+        const emptyCaption = document.getElementById('crown-empty-caption');
         const textarea = document.getElementById('prompt-textarea');
         const sendBtn = document.getElementById('prompt-send-btn');
 
@@ -1967,24 +1968,26 @@ const CrownDashboard = (function() {
             overlay.style.display = promptState.usage.allowed === false ? 'flex' : 'none';
         }
 
-        // Show usage badge (except for unlimited)
-        if (usageBadge && usageCount && !promptState.usage.unlimited) {
-            const remaining = promptState.usage.limit - promptState.usage.used;
-            usageBadge.style.display = 'block';
-            usageCount.textContent = `${promptState.usage.used}/${promptState.usage.limit}`;
-
-            usageBadge.classList.remove('warning', 'critical');
-            if (remaining <= 5) usageBadge.classList.add('warning');
-            if (remaining <= 0) usageBadge.classList.add('critical');
-
-            // Disable input if at limit
-            if (remaining <= 0 && textarea && sendBtn) {
-                textarea.disabled = true;
-                sendBtn.disabled = true;
-                textarea.placeholder = 'Monthly limit reached. Upgrade for more.';
+        // Capability badge: show contextual plan pill for free users, hide for paid
+        if (capBadge) {
+            if (promptState.usage.unlimited || promptState.usage.limit > 0) {
+                // Pro/Max or paid tier with a real limit — no badge needed
+                capBadge.style.display = 'none';
+            } else {
+                // Free plan (limit === 0, not unlimited) — show capability pill
+                capBadge.style.display = 'block';
+                if (badgeText) {
+                    const t = window.I18n && I18n.t('intelligence.freePlanBadge');
+                    badgeText.textContent = (t && !t.startsWith('intelligence.'))
+                        ? t : 'Free plan \u2014 Ask Royal anything';
+                }
             }
-        } else if (usageBadge) {
-            usageBadge.style.display = 'none';
+        }
+
+        // Empty-state caption: visible for free users only
+        if (emptyCaption) {
+            emptyCaption.style.display = (promptState.usage.limit === 0 && !promptState.usage.unlimited)
+                ? 'block' : 'none';
         }
     }
 
@@ -2415,15 +2418,27 @@ const CrownDashboard = (function() {
         }
     }
 
+    // i18n helper for suggestion strings
+    function _suggestText(key, fallback) {
+        if (window.I18n) {
+            const result = I18n.t(key);
+            if (result && !result.startsWith('intelligence.')) return result;
+        }
+        return fallback;
+    }
+
     function generateSuggestedQuestions() {
         const questions = [];
 
-        if (!promptState.orgData) {
-            // Default suggestions when no data
+        // Zero-data state: brand-new user with no customers and no automations.
+        // Show inviting starter prompts regardless of how long they've had the account.
+        const data = promptState.orgData;
+        if (!data || (data.customerCount === 0 && data.activeAutomationCount === 0)) {
             return [
-                'What automations should I set up?',
-                'How can I increase repeat visits?',
-                'What loyalty programs work best?'
+                _suggestText('intelligence.starters.automations', 'What automations should I set up for my business?'),
+                _suggestText('intelligence.starters.loyaltyPrograms', 'How do loyalty programs drive repeat visits?'),
+                _suggestText('intelligence.starters.birthdayRewards', 'Should I set up birthday rewards?'),
+                _suggestText('intelligence.starters.firstRewards', 'What should I offer my first customers as rewards?')
             ];
         }
 
@@ -2513,9 +2528,16 @@ const CrownDashboard = (function() {
 
     function renderSuggestedQuestions() {
         const container = document.getElementById('crown-suggestions');
+        const label = document.getElementById('crown-suggestions-label');
         if (!container) return;
 
         const questions = generateSuggestedQuestions();
+
+        // Show the "Not sure where to start?" label for zero-data accounts
+        const data = promptState.orgData;
+        const isZeroData = !data || (data.customerCount === 0 && data.activeAutomationCount === 0);
+        if (label) label.style.display = isZeroData ? 'block' : 'none';
+
         container.innerHTML = questions.map(q =>
             `<button class="suggestion-pill" aria-label="Suggested question: ${escapeHtml(q)}">${escapeHtml(q)}</button>`
         ).join('');

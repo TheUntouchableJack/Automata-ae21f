@@ -492,7 +492,17 @@
     },
     "intelligence": {
         "title": "Intelligenza AI",
-        "subtitle": "Insights e raccomandazioni basate sull'IA per la tua attività",
+        "subtitle": "Insights e raccomandazioni basate sull'IA per la tua attivit\u00e0",
+        "freePlanBadge": "Piano gratuito \u2014 Chiedi a Royal qualsiasi cosa",
+        "emptyCaption": "Royal \u00e8 il tuo cervello AI. Fai domande, ricevi suggerimenti e passa a un piano superiore quando sei pronto per far agire Royal in autonomia.",
+        "seeProLink": "Scopri cosa sblocca Pro \u2192",
+        "starterLabel": "Non sai da dove iniziare? Prova una di queste:",
+        "starters": {
+            "automations": "Quali automatizzazioni dovrei impostare per la mia attivit\u00e0?",
+            "loyaltyPrograms": "Come i programmi fedelt\u00e0 aumentano le visite ricorrenti?",
+            "birthdayRewards": "Dovrei impostare premi di compleanno?",
+            "firstRewards": "Cosa dovrei offrire ai miei primi clienti come premi?"
+        },
         "analyze": "Analizza la Mia Attività",
         "analyzeNow": "Analizza Ora",
         "pending": "Azioni in Attesa",
