@@ -381,9 +381,9 @@
                 // Fire confetti!
                 celebrate();
 
-                // Redirect after celebration - always go to dashboard
+                // Redirect after celebration - go to Intelligence (welcome banner + onboarding)
                 setTimeout(() => {
-                    window.location.href = '/app/dashboard.html';
+                    window.location.href = '/app/intelligence.html';
                 }, 1000);
 
             } catch (error) {
@@ -477,7 +477,7 @@
                             onBuild: async () => {
                                 await saveOnboardingDataAfterLogin(user.id);
                             },
-                            redirectUrl: '/app/dashboard.html'
+                            redirectUrl: '/app/intelligence.html'
                         });
                     } else {
                         // No onboarding data — simple confirmation message
@@ -496,19 +496,19 @@
                             <div style="text-align: center;">
                                 <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
                                 <h3 style="color: var(--color-accent); margin-bottom: 8px;">Welcome to Royalty!</h3>
-                                <p>Taking you to your dashboard...</p>
+                                <p>Taking you to your workspace...</p>
                             </div>
                         `;
 
                         window.history.replaceState({}, '', window.location.pathname);
 
                         setTimeout(() => {
-                            window.location.href = '/app/dashboard.html';
+                            window.location.href = '/app/intelligence.html';
                         }, 1000);
                     }
                 } else {
                     // Already logged in (not from email confirmation)
-                    window.location.href = '/app/dashboard.html';
+                    window.location.href = '/app/intelligence.html';
                 }
             } else if (hasAuthParams) {
                 // Had auth params but no user - something went wrong
