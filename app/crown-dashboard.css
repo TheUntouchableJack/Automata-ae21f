@@ -822,6 +822,12 @@
 }
 
 /* Onboarding card (white opaque container, dismissable) */
+/* Hide the onboarding card while the welcome banner is expanded (also prevents
+   the card from overlapping the banner's dismiss-confirmation modal) */
+#crown-dashboard:has(#welcome-banner.expanded) .crown-onboarding-card {
+    display: none !important;
+}
+
 .crown-onboarding-card {
     position: relative;
     background: rgba(255, 255, 255, 0.95);
@@ -833,7 +839,12 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease;
+    animation: cardFloat 4s ease-in-out infinite;
+}
+@keyframes cardFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
 }
 .crown-onboarding-card.dismissing {
     opacity: 0;
