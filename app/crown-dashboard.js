@@ -1957,9 +1957,8 @@ const CrownDashboard = (function() {
 
     function updatePromptUI() {
         const overlay = document.getElementById('prompt-upgrade-overlay');
-        const capBadge = document.getElementById('prompt-capability-badge');
+        const onboardingCard = document.getElementById('crown-onboarding-card');
         const badgeText = document.getElementById('prompt-badge-text');
-        const emptyCaption = document.getElementById('crown-empty-caption');
         const textarea = document.getElementById('prompt-textarea');
         const sendBtn = document.getElementById('prompt-send-btn');
 
@@ -1968,28 +1967,35 @@ const CrownDashboard = (function() {
             overlay.style.display = promptState.usage.allowed === false ? 'flex' : 'none';
         }
 
-        // Capability badge: show contextual plan pill for free users, hide for paid
-        if (capBadge) {
-            if (promptState.usage.unlimited || promptState.usage.limit > 0) {
-                // Pro/Max or paid tier with a real limit — no badge needed
-                capBadge.style.display = 'none';
-            } else {
-                // Free plan (limit === 0, not unlimited) — show capability pill
-                capBadge.style.display = 'block';
+        // Onboarding card: show for free users unless previously dismissed
+        if (onboardingCard) {
+            const dismissed = localStorage.getItem('royalty_onboarding_card_dismissed');
+            const isFree = promptState.usage.limit === 0 && !promptState.usage.unlimited;
+
+            if (isFree && !dismissed) {
+                onboardingCard.style.display = 'block';
                 if (badgeText) {
                     const t = window.I18n && I18n.t('intelligence.freePlanBadge');
                     badgeText.textContent = (t && !t.startsWith('intelligence.'))
                         ? t : 'Free plan \u2014 Ask Royal anything';
                 }
+            } else {
+                onboardingCard.style.display = 'none';
             }
         }
-
-        // Empty-state caption: visible for free users only
-        if (emptyCaption) {
-            emptyCaption.style.display = (promptState.usage.limit === 0 && !promptState.usage.unlimited)
-                ? 'block' : 'none';
-        }
     }
+
+    // Dismiss handler for the onboarding card
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'crown-onboarding-dismiss' || e.target.closest('#crown-onboarding-dismiss')) {
+            const card = document.getElementById('crown-onboarding-card');
+            if (card) {
+                card.classList.add('dismissing');
+                localStorage.setItem('royalty_onboarding_card_dismissed', '1');
+                setTimeout(() => { card.style.display = 'none'; }, 300);
+            }
+        }
+    });
 
     async function loadOrgDataForSuggestions() {
         if (typeof supabase === 'undefined' || typeof AppUtils === 'undefined' || typeof getCurrentUser !== 'function') return;
