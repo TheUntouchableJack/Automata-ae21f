@@ -1082,6 +1082,7 @@
 
 .notifications-dropdown {
     position: relative;
+    z-index: 101;
 }
 
 .notifications-toggle {
