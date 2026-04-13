@@ -759,25 +759,37 @@ function setupEventListeners() {
         }
     });
 
-    // Notifications dropdown
+    // Notifications side panel
     const notificationsToggle = document.getElementById('notifications-toggle');
     const notificationsPanel = document.getElementById('notifications-panel');
+    const notificationsBackdrop = document.getElementById('notifications-backdrop');
+    const notificationsClose = document.getElementById('notifications-close');
 
-    if (notificationsToggle && notificationsPanel) {
+    function openNotifications() {
+        if (notificationsPanel) notificationsPanel.classList.add('open');
+        if (notificationsBackdrop) notificationsBackdrop.classList.add('open');
+        loadNotifications();
+    }
+
+    function closeNotifications() {
+        if (notificationsPanel) notificationsPanel.classList.remove('open');
+        if (notificationsBackdrop) notificationsBackdrop.classList.remove('open');
+    }
+
+    if (notificationsToggle) {
         notificationsToggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isOpen = notificationsPanel.classList.toggle('open');
-            if (isOpen) {
-                loadNotifications();
-            }
+            const isOpen = notificationsPanel?.classList.contains('open');
+            isOpen ? closeNotifications() : openNotifications();
         });
+    }
 
-        // Close when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!notificationsPanel.contains(e.target) && e.target !== notificationsToggle) {
-                notificationsPanel.classList.remove('open');
-            }
-        });
+    if (notificationsBackdrop) {
+        notificationsBackdrop.addEventListener('click', closeNotifications);
+    }
+
+    if (notificationsClose) {
+        notificationsClose.addEventListener('click', closeNotifications);
     }
 
     // Mark all as read button

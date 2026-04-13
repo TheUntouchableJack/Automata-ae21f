@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
-    <link rel="stylesheet" href="support.css?v=3">
+    <link rel="stylesheet" href="support.css?v=4">
     <link rel="stylesheet" href="../i18n/i18n.css">
 </head>
 <body>
@@ -31,26 +31,6 @@
                         <p class="page-subtitle" data-i18n="support.subtitle">Manage customer tickets and AI support</p>
                     </div>
                     <div class="page-header-actions">
-                        <!-- Notifications Bell -->
-                        <div class="notifications-dropdown" id="notifications-dropdown">
-                            <button class="btn btn-icon notifications-toggle" id="notifications-toggle" title="Notifications">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                    <path d="M10 18C11.1046 18 12 17.1046 12 16H8C8 17.1046 8.89543 18 10 18Z" fill="currentColor"/>
-                                    <path d="M16 13V9C16 5.68629 13.3137 3 10 3C6.68629 3 4 5.68629 4 9V13L2 15V16H18V15L16 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                <span class="notifications-badge" id="notifications-badge" style="display: none;">0</span>
-                            </button>
-                            <div class="notifications-panel" id="notifications-panel">
-                                <div class="notifications-header">
-                                    <h3 data-i18n="support.notifications">Notifications</h3>
-                                    <button class="btn btn-text btn-sm" id="mark-all-read" data-i18n="support.markAllRead">Mark all read</button>
-                                </div>
-                                <div class="notifications-list" id="notifications-list">
-                                    <div class="notifications-empty" data-i18n="support.noNotifications">No new notifications</div>
-                                </div>
-                            </div>
-                        </div>
-
                         <a href="faqs.html" class="btn btn-secondary">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                                 <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="2"/>
@@ -73,6 +53,32 @@
                             </svg>
                             <span data-i18n="support.settings">Settings</span>
                         </a>
+
+                        <!-- Notifications Bell (far right) -->
+                        <div class="notifications-dropdown" id="notifications-dropdown">
+                            <button class="btn btn-icon notifications-toggle" id="notifications-toggle" title="Notifications">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 18C11.1046 18 12 17.1046 12 16H8C8 17.1046 8.89543 18 10 18Z" fill="currentColor"/>
+                                    <path d="M16 13V9C16 5.68629 13.3137 3 10 3C6.68629 3 4 5.68629 4 9V13L2 15V16H18V15L16 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notifications-badge" id="notifications-badge" style="display: none;">0</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notification side panel (slides in from right) -->
+                    <div class="notifications-backdrop" id="notifications-backdrop"></div>
+                    <div class="notifications-panel" id="notifications-panel">
+                        <div class="notifications-header">
+                            <h3 data-i18n="support.notifications">Notifications</h3>
+                            <div class="notifications-header-actions">
+                                <button class="btn btn-text btn-sm" id="mark-all-read" data-i18n="support.markAllRead">Mark all read</button>
+                                <button class="btn btn-icon btn-sm" id="notifications-close" title="Close">&times;</button>
+                            </div>
+                        </div>
+                        <div class="notifications-list" id="notifications-list">
+                            <div class="notifications-empty" data-i18n="support.noNotifications">No new notifications</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -320,6 +326,6 @@
     <script src="auth.js?v=11"></script>
     <script src="utils.js?v=5"></script>
     <script src="sidebar.js?v=23"></script>
-    <script src="support.js?v=3"></script>
+    <script src="support.js?v=4"></script>
 </body>
 </html>
