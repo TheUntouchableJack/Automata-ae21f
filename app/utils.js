@@ -108,13 +108,16 @@ const AppUtils = (function() {
                 limits = getOrgLimits(org);
             }
 
-            // Set admin bypass for rate limits and plan limits
+            // Set admin bypass for rate limits (org owners/admins shouldn't be throttled)
             const isAdminRole = memberships[0].role === 'admin' || memberships[0].role === 'owner';
             if (typeof RateLimiter !== 'undefined' && typeof RateLimiter.setAdminStatus === 'function') {
                 RateLimiter.setAdminStatus(isAdminRole);
             }
+            // Plan limit bypass: only for the super admin (profiles.is_admin),
+            // NOT for regular org owners — otherwise every user gets full access.
+            const isSuperAdmin = typeof isAdmin === 'function' ? await isAdmin() : false;
             if (typeof setPlanAdminStatus === 'function') {
-                setPlanAdminStatus(isAdminRole);
+                setPlanAdminStatus(isSuperAdmin);
             }
 
             return {

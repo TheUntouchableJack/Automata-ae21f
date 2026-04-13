@@ -204,10 +204,13 @@ const AppSidebar = (function() {
         if (path.includes('rewards')) return 'rewards';
         if (path.includes('outgoing')) return 'campaigns';
         if (path.includes('roadmap')) return 'roadmap';
+        if (path.includes('support')) return 'support';
+        if (path.includes('faqs')) return 'support';
         if (path.includes('settings')) return 'settings';
         if (path.includes('launch-plan')) return 'launch-plan';
         if (path.includes('content-generator')) return 'content-generator';
         if (path.includes('admin.html')) return 'admin-panel';
+        if (path.includes('upgrade')) return 'upgrade';
         return 'dashboard';
     }
 
