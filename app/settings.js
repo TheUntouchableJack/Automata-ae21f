@@ -1156,6 +1156,20 @@ function capitalizeFirst(str) {
 async function loadAISettings() {
     if (!currentOrganization || aiSettingsLoaded) return;
 
+    // Gate: if plan doesn't support autonomous mode, show upgrade overlay
+    const upgradeOverlay = document.getElementById('ai-settings-upgrade');
+    if (upgradeOverlay) {
+        const canUseAutonomous = typeof hasCapability === 'function'
+            ? hasCapability(currentOrganization, 'autonomous_mode')
+            : true; // default to allowing if function missing
+        if (!canUseAutonomous) {
+            upgradeOverlay.style.display = 'flex';
+            aiSettingsLoaded = true;
+            return;
+        }
+        upgradeOverlay.style.display = 'none';
+    }
+
     try {
         // Set form values from organization data
         const autoExecuteToggle = document.getElementById('ai-auto-execute-toggle');

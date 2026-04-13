@@ -555,6 +555,18 @@
 
                             <!-- AI Settings Tab -->
                             <div class="tab-content" id="ai-tab" style="display: none;">
+                                <!-- Upgrade overlay for free users (no autonomous capability) -->
+                                <div class="ai-settings-upgrade-overlay" id="ai-settings-upgrade" style="display: none;">
+                                    <div style="text-align: center; padding: 48px 24px;">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" style="margin-bottom: 16px;">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                        </svg>
+                                        <h3 style="font-size: 20px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Autonomous Mode is a Pro Feature</h3>
+                                        <p style="color: #64748b; font-size: 14px; line-height: 1.6; max-width: 400px; margin: 0 auto 24px;">Upgrade to Pro to let Royal take actions on its own — send campaigns, create automations, and optimize your loyalty program automatically.</p>
+                                        <a href="/app/upgrade.html" class="btn btn-primary">Upgrade to Pro</a>
+                                    </div>
+                                </div>
+
                                 <div class="settings-card">
                                     <h3 data-i18n="settings.ai.title">Royal AI Settings</h3>
                                     <p class="settings-card-subtitle" data-i18n="settings.ai.subtitle">Configure how Royal helps you autonomously</p>
@@ -781,7 +793,7 @@
     <script src="audit-log.js?v=1"></script>
     <script src="sidebar.js?v=23"></script>
     <script src="coaching.js?v=2"></script>
-    <script src="settings.js?v=8"></script>
+    <script src="settings.js?v=9"></script>
     <script>
         // Populate MFA status badge on security tab open
         (async function initMfaBadge() {

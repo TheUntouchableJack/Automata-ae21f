@@ -218,14 +218,26 @@ const CrownDashboard = (function() {
         }
         setupActionDetailModal();
 
-        // Restore persisted mode from localStorage
+        // Restore persisted mode from localStorage (with capability check)
         const savedMode = localStorage.getItem(MODE_STORAGE_KEY);
         if (savedMode && (savedMode === 'review' || savedMode === 'autonomous')) {
-            // Skip confirmation modal if restoring autonomous (user already confirmed)
             if (savedMode === 'autonomous') {
-                localStorage.setItem(STORAGE_KEYS.AUTONOMOUS_CONFIRMED, 'true');
+                // Don't restore autonomous if the user's plan doesn't support it.
+                // localStorage is per-origin, not per-account — a previous session
+                // in autonomous mode would incorrectly activate it for a free user.
+                const canUse = typeof hasCapability === 'function' && currentOrg
+                    ? hasCapability(currentOrg, 'autonomous_mode')
+                    : false;
+                if (!canUse) {
+                    setMode('review');
+                    localStorage.setItem(MODE_STORAGE_KEY, 'review');
+                } else {
+                    localStorage.setItem(STORAGE_KEYS.AUTONOMOUS_CONFIRMED, 'true');
+                    setMode(savedMode);
+                }
+            } else {
+                setMode(savedMode);
             }
-            setMode(savedMode);
         }
 
         // Cleanup on page unload to prevent memory leaks (only add once)
@@ -1982,6 +1994,15 @@ const CrownDashboard = (function() {
             } else {
                 onboardingCard.style.display = 'none';
             }
+        }
+
+        // Show/hide the "Pro" badge on the Autonomous mode button
+        const proBadge = document.getElementById('mode-pro-badge');
+        if (proBadge) {
+            const canUseAutonomous = typeof hasCapability === 'function' && currentOrg
+                ? hasCapability(currentOrg, 'autonomous_mode')
+                : true;
+            proBadge.style.display = canUseAutonomous ? 'none' : 'inline';
         }
     }
 

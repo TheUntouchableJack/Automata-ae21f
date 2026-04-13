@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
     <link rel="stylesheet" href="intelligence.css?v=27">
-    <link rel="stylesheet" href="crown-dashboard.css?v=31">
+    <link rel="stylesheet" href="crown-dashboard.css?v=32">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <style>
     /* ── Welcome Banner (V2 — full-width top row) ── */
@@ -150,7 +150,7 @@
                     <!-- Mode toggle (top-left) -->
                     <div class="crown-mode-toggle" id="crown-mode-toggle">
                         <button class="mode-btn active" data-mode="review" aria-pressed="true" data-i18n="intelligence.modes.manual">Manual</button>
-                        <button class="mode-btn" data-mode="autonomous" aria-pressed="false" data-i18n="intelligence.modes.autonomous">Autonomous</button>
+                        <button class="mode-btn" data-mode="autonomous" aria-pressed="false"><span data-i18n="intelligence.modes.autonomous">Autonomous</span><span class="mode-pro-badge" id="mode-pro-badge" style="display: none;">Pro</span></button>
                     </div>
 
                     <!-- LLM Model Badge (bottom-left, above status) -->
@@ -616,7 +616,7 @@
     <script src="crown-materials.js?v=11"></script>
     <script type="module" src="crown-scene.js?v=14"></script>
     <script src="shared/ai-templates.js?v=1"></script>
-    <script src="crown-dashboard.js?v=42"></script>
+    <script src="crown-dashboard.js?v=43"></script>
     <script src="chat-thread.js?v=9"></script>
     <script src="welcome-banner.js?v=15"></script>
     <script src="intelligence.js?v=10"></script>

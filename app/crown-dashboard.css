@@ -118,6 +118,20 @@
     background: var(--color-primary, #7c3aed);
 }
 
+/* Pro badge on Autonomous button (visible for free users) */
+.mode-pro-badge {
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-primary, #7c3aed);
+    background: rgba(124, 58, 237, 0.12);
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
 /* Theme toggle (top-right) — prominent in both modes */
 .theme-toggle-btn {
     position: absolute;
