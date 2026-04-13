@@ -2,14 +2,51 @@
    SUPPORT PAGE STYLES
    ===================================================== */
 
-/* Stats Bar Enhancements */
-.stat-item.stat-warning .stat-value {
-    color: var(--color-warning);
+/* Header actions — flex row, vertically centered */
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.stat-item.stat-warning {
-    border-left: 3px solid var(--color-warning);
-    padding-left: 1rem;
+/* Support metric icon color variants */
+.metric-icon.tickets {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--color-primary);
+}
+.metric-icon.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+.metric-icon.escalated {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+.metric-icon.resolution {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+.metric-icon.satisfaction {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+/* 5-column grid for support metrics */
+.support-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    padding: 20px 0;
+}
+@media (max-width: 1024px) {
+    .support-metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+@media (max-width: 640px) {
+    .support-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* App Selector */

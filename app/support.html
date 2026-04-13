@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
-    <link rel="stylesheet" href="support.css?v=4">
+    <link rel="stylesheet" href="support.css?v=5">
     <link rel="stylesheet" href="../i18n/i18n.css">
 </head>
 <body>
@@ -83,28 +83,72 @@
                 </div>
             </div>
 
-            <!-- Stats Bar -->
-            <div class="stats-bar">
-                <div class="container">
-                    <div class="stat-item">
-                        <span class="stat-value" id="open-tickets">0</span>
-                        <span class="stat-label" data-i18n="support.openTickets">Open Tickets</span>
+            <!-- Support Metrics Cards -->
+            <div class="container">
+                <div class="support-metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon tickets">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="open-tickets">0</span>
+                            <span class="metric-label" data-i18n="support.openTickets">Open Tickets</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="pending-response">0</span>
-                        <span class="stat-label" data-i18n="support.pendingResponse">Pending Response</span>
+
+                    <div class="metric-card">
+                        <div class="metric-icon pending">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="pending-response">0</span>
+                            <span class="metric-label" data-i18n="support.pendingResponse">Pending Response</span>
+                        </div>
                     </div>
-                    <div class="stat-item stat-warning" id="escalated-stat">
-                        <span class="stat-value" id="escalated-tickets">0</span>
-                        <span class="stat-label" data-i18n="support.escalated">Escalated</span>
+
+                    <div class="metric-card">
+                        <div class="metric-icon escalated">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="escalated-tickets">0</span>
+                            <span class="metric-label" data-i18n="support.escalated">Escalated</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="ai-resolution-rate">--</span>
-                        <span class="stat-label" data-i18n="support.aiResolutionRate">AI Resolution Rate</span>
+
+                    <div class="metric-card">
+                        <div class="metric-icon resolution">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="ai-resolution-rate">--</span>
+                            <span class="metric-label" data-i18n="support.aiResolutionRate">AI Resolution Rate</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="satisfaction-rating">--</span>
-                        <span class="stat-label" data-i18n="support.satisfaction">Satisfaction</span>
+
+                    <div class="metric-card">
+                        <div class="metric-icon satisfaction">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="satisfaction-rating">--</span>
+                            <span class="metric-label" data-i18n="support.satisfaction">Satisfaction</span>
+                        </div>
                     </div>
                 </div>
             </div>
