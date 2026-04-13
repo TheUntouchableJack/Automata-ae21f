@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
     // Base session config
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
-      customer_update: { address: 'auto' },
+      customer_update: { address: 'auto', name: 'auto' },
       mode: isBundle ? 'payment' : 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
