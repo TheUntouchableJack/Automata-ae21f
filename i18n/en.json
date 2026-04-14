@@ -1193,13 +1193,18 @@
     },
     "roadmap": {
         "title": "Product Roadmap",
-        "subtitle": "See what we're building and suggest new features",
+        "subtitle": "See what we're building and share your ideas. Your feedback shapes Royalty's future.",
         "ideas": "Ideas",
         "inProgress": "In Progress",
         "recentlyDeployed": "Recently Deployed",
         "suggestFeature": "Suggest a Feature",
         "upvote": "Upvote",
         "upvoted": "Upvoted",
+        "emptyIdeas": "No ideas yet — suggest one below!",
+        "emptyProgress": "Nothing in progress right now",
+        "emptyDeployed": "Nothing deployed yet",
+        "deployed": "Deployed",
+        "selectCategory": "Select category",
         "categories": {
             "feature": "Feature",
             "improvement": "Improvement",
@@ -1210,15 +1215,22 @@
             "title": "Suggest a Feature",
             "subtitle": "Help us build what you need most",
             "titleLabel": "Feature Title",
-            "titlePlaceholder": "e.g., Integration with Shopify",
+            "titlePlaceholder": "Feature title",
             "descLabel": "Description",
-            "descPlaceholder": "Describe the feature and how it would help your business...",
+            "descPlaceholder": "Describe your idea in detail...",
             "categoryLabel": "Category",
             "emailLabel": "Email (optional)",
-            "emailPlaceholder": "your@email.com",
+            "emailPlaceholder": "Your email (optional, for updates)",
             "submit": "Submit Suggestion",
+            "submitting": "Submitting...",
             "cancel": "Cancel",
-            "success": "Thank you! Your suggestion has been submitted for review."
+            "success": "Thank you!",
+            "successDetail": "Your suggestion has been submitted for review. We'll keep you posted."
+        },
+        "cta": {
+            "title": "Ready to grow your business?",
+            "subtitle": "Build your AI loyalty program in 60 seconds. No credit card required.",
+            "button": "Get Started Free"
         }
     },
     "support": {

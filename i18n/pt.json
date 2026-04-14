@@ -892,13 +892,18 @@
     },
     "roadmap": {
         "title": "Roteiro do Produto",
-        "subtitle": "Veja o que estamos construindo e sugira novos recursos",
+        "subtitle": "Veja o que estamos construindo e compartilhe suas ideias. Seu feedback molda o futuro da Royalty.",
         "ideas": "Ideias",
         "inProgress": "Em Progresso",
         "recentlyDeployed": "Recentemente Implementado",
         "suggestFeature": "Sugerir um Recurso",
         "upvote": "Votar",
         "upvoted": "Votado",
+        "emptyIdeas": "Nenhuma ideia ainda — sugira uma abaixo!",
+        "emptyProgress": "Nada em progresso no momento",
+        "emptyDeployed": "Nada implementado ainda",
+        "deployed": "Implementado",
+        "selectCategory": "Selecionar categoria",
         "categories": {
             "feature": "Recurso",
             "improvement": "Melhoria",
@@ -909,15 +914,22 @@
             "title": "Sugerir um Recurso",
             "subtitle": "Ajude-nos a construir o que você mais precisa",
             "titleLabel": "Título do Recurso",
-            "titlePlaceholder": "ex., Integração com Shopify",
+            "titlePlaceholder": "Título do recurso",
             "descLabel": "Descrição",
-            "descPlaceholder": "Descreva o recurso e como ele ajudaria seu negócio...",
+            "descPlaceholder": "Descreva sua ideia em detalhes...",
             "categoryLabel": "Categoria",
             "emailLabel": "Email (opcional)",
-            "emailPlaceholder": "seu@email.com",
+            "emailPlaceholder": "Seu email (opcional, para atualizações)",
             "submit": "Enviar Sugestão",
+            "submitting": "Enviando...",
             "cancel": "Cancelar",
-            "success": "Obrigado! Sua sugestão foi enviada para revisão."
+            "success": "Obrigado!",
+            "successDetail": "Sua sugestão foi enviada para revisão. Manteremos você informado."
+        },
+        "cta": {
+            "title": "Pronto para fazer seu negócio crescer?",
+            "subtitle": "Crie seu programa de fidelidade com IA em 60 segundos. Sem cartão de crédito.",
+            "button": "Começar Grátis"
         }
     },
     "support": {

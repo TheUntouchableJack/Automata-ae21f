@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap — Royalty</title>
+    <meta name="description" content="See what we're building next at Royalty. Vote on features, track progress, and suggest ideas for our AI loyalty platform.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Roadmap — Royalty">
+    <meta property="og:description" content="See what we're building next. Vote on features and shape the future of Royalty.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://royaltyapp.ai/roadmap">
+    <meta property="og:image" content="https://royaltyapp.ai/og-image.png">
+
+    <link rel="canonical" href="https://royaltyapp.ai/roadmap">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=14">
+    <link rel="stylesheet" href="i18n/i18n.css">
+
+    <style>
+        /* Roadmap Page Styles */
+        .roadmap-hero {
+            text-align: center;
+            padding: 140px 24px 48px;
+        }
+
+        .roadmap-hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--color-text);
+            margin-bottom: 12px;
+        }
+
+        .roadmap-hero p {
+            font-size: 18px;
+            color: var(--color-text-secondary);
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        /* Board */
+        .roadmap-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            padding: 0 24px 64px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1024px) {
+            .roadmap-board {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+            }
+        }
+
+        .roadmap-column {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .column-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--color-text);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.ideas { background: var(--color-primary); }
+        .status-dot.in-progress { background: #f59e0b; }
+        .status-dot.deployed { background: var(--color-accent); }
+
+        .column-count {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 100px;
+        }
+
+        .column-content {
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .column-empty {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--color-text-muted);
+            font-size: 14px;
+        }
+
+        /* Cards */
+        .roadmap-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .roadmap-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+        }
+
+        .roadmap-card:last-child { margin-bottom: 0; }
+
+        .roadmap-card.deployed {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .card-category {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .card-category.feature { background: rgba(124, 58, 237, 0.1); color: var(--color-primary); }
+        .card-category.improvement { background: rgba(16, 185, 129, 0.1); color: var(--color-accent); }
+        .card-category.integration { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+        .card-category.bug { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .card-description {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* Vote Button */
+        .vote-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .vote-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: rgba(124, 58, 237, 0.05);
+        }
+
+        .vote-btn.voted {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .vote-btn svg { width: 14px; height: 14px; }
+
+        /* Deployed Badge */
+        .deployed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-accent);
+        }
+
+        .deployed-badge svg { width: 14px; height: 14px; }
+
+        /* Loading */
+        .column-loading {
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Suggest Feature Section */
+        .suggest-section {
+            max-width: 600px;
+            margin: 0 auto 80px;
+            padding: 0 24px;
+        }
+
+        .suggest-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .suggest-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .suggest-card > p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin-bottom: 24px;
+        }
+
+        .suggest-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-align: left;
+        }
+
+        .suggest-form input,
+        .suggest-form textarea,
+        .suggest-form select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Outfit', sans-serif;
+            background: var(--color-bg-secondary);
+            color: var(--color-text);
+            transition: border-color 0.2s ease;
+        }
+
+        .suggest-form input::placeholder,
+        .suggest-form textarea::placeholder {
+            color: var(--color-text-muted);
+        }
+
+        .suggest-form select {
+            color: var(--color-text-muted);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        .suggest-form select.has-value {
+            color: var(--color-text);
+        }
+
+        .suggest-form input:focus,
+        .suggest-form textarea:focus,
+        .suggest-form select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .suggest-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .suggest-submit {
+            align-self: center;
+            min-width: 200px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: var(--color-primary);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .suggest-submit:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .suggest-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .suggest-submit svg { width: 18px; height: 18px; }
+
+        .submit-success {
+            display: none;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .submit-success.visible { display: block; }
+
+        .submit-success svg {
+            width: 48px;
+            height: 48px;
+            color: var(--color-accent);
+            margin-bottom: 16px;
+        }
+
+        .submit-success h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .submit-success p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        /* CTA Banner */
+        .roadmap-cta {
+            text-align: center;
+            padding: 64px 24px 80px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .roadmap-cta h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 12px;
+        }
+
+        .roadmap-cta p {
+            font-size: 16px;
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .roadmap-hero h1 { font-size: 32px; }
+            .roadmap-hero p { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">
+                <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                <span class="logo-text">Royalty</span>
+            </a>
+            <div class="nav-links">
+                <a href="/#features" data-i18n="nav.features">Features</a>
+                <a href="/pricing.html" data-i18n="nav.pricing">Pricing</a>
+                <a href="/estimate.html" data-i18n="nav.customBuilds">Custom Apps</a>
+                <a href="/roadmap" class="active" data-i18n="nav.roadmap">Roadmap</a>
+                <a href="/blog/" data-i18n="nav.blog">Blog</a>
+            </div>
+            <div class="nav-cta">
+                <a href="/app/login.html" class="btn btn-secondary" data-i18n="nav.login">Log In</a>
+                <a href="/app/signup.html" class="btn btn-primary" data-i18n="nav.getStarted">Get Started Free</a>
+                <!-- Language Selector -->
+                <div class="lang-selector">
+                    <button class="lang-selector-btn" type="button" aria-label="Change language">
+                        <span class="lang-selector-current">EN</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-option active" data-lang="en">EN</a>
+                        <a href="#" class="lang-option" data-lang="es">ES</a>
+                        <a href="#" class="lang-option" data-lang="fr">FR</a>
+                        <a href="#" class="lang-option" data-lang="de">DE</a>
+                        <a href="#" class="lang-option" data-lang="it">IT</a>
+                        <a href="#" class="lang-option" data-lang="pt">PT</a>
+                        <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                        <a href="#" class="lang-option" data-lang="ar">AR</a>
+                    </div>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay" aria-hidden="true"></div>
+    <div class="mobile-menu-drawer" id="mobile-menu-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu" aria-hidden="true">
+        <div class="mobile-menu-header">
+            <a href="/" class="logo">
+                <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                <span class="logo-text">Royalty</span>
+            </a>
+            <button class="mobile-menu-close" aria-label="Close menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="/" class="mobile-menu-link" data-i18n="nav.home">Home</a>
+            <a href="/#features" class="mobile-menu-link" data-i18n="nav.features">Features</a>
+            <a href="/pricing.html" class="mobile-menu-link" data-i18n="nav.pricing">Pricing</a>
+            <a href="/estimate.html" class="mobile-menu-link" data-i18n="nav.customBuilds">Custom Apps</a>
+            <a href="/roadmap" class="mobile-menu-link" data-i18n="nav.roadmap">Roadmap</a>
+            <a href="/blog/" class="mobile-menu-link" data-i18n="nav.blog">Blog</a>
+        </nav>
+        <div class="mobile-menu-cta">
+            <a href="/app/login.html" class="btn btn-secondary btn-block" data-i18n="nav.login">Log In</a>
+            <a href="/app/signup.html" class="btn btn-primary btn-block" data-i18n="nav.getStarted">Get Started Free</a>
+        </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="roadmap-hero">
+        <h1 data-i18n="roadmap.title">Product Roadmap</h1>
+        <p data-i18n="roadmap.subtitle">See what we're building and share your ideas. Your feedback shapes Royalty's future.</p>
+    </section>
+
+    <!-- Roadmap Board -->
+    <div class="roadmap-board">
+        <!-- Ideas Column -->
+        <div class="roadmap-column">
+            <div class="column-header">
+                <div class="column-title">
+                    <span class="status-dot ideas"></span>
+                    <span data-i18n="roadmap.ideas">Ideas</span>
+                </div>
+                <span class="column-count" id="ideas-count">0</span>
+            </div>
+            <div class="column-content" id="ideas-column">
+                <div class="column-loading"><div class="loading-spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="roadmap-column">
+            <div class="column-header">
+                <div class="column-title">
+                    <span class="status-dot in-progress"></span>
+                    <span data-i18n="roadmap.inProgress">In Progress</span>
+                </div>
+                <span class="column-count" id="progress-count">0</span>
+            </div>
+            <div class="column-content" id="progress-column">
+                <div class="column-loading"><div class="loading-spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Deployed Column -->
+        <div class="roadmap-column">
+            <div class="column-header">
+                <div class="column-title">
+                    <span class="status-dot deployed"></span>
+                    <span data-i18n="roadmap.recentlyDeployed">Recently Deployed</span>
+                </div>
+                <span class="column-count" id="deployed-count">0</span>
+            </div>
+            <div class="column-content" id="deployed-column">
+                <div class="column-loading"><div class="loading-spinner"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suggest Feature -->
+    <div class="suggest-section" id="suggest">
+        <div class="suggest-card">
+            <div id="suggest-form-container">
+                <h3 data-i18n="roadmap.suggestForm.title">Suggest a Feature</h3>
+                <p data-i18n="roadmap.suggestForm.subtitle">Help us build what you need most</p>
+                <form class="suggest-form" id="feature-request-form">
+                    <input type="text" id="request-title" placeholder="Feature title" data-i18n-placeholder="roadmap.suggestForm.titlePlaceholder" required>
+                    <select id="request-category" required>
+                        <option value="" data-i18n="roadmap.selectCategory">Select category</option>
+                        <option value="feature" data-i18n="roadmap.categories.feature">Feature</option>
+                        <option value="improvement" data-i18n="roadmap.categories.improvement">Improvement</option>
+                        <option value="integration" data-i18n="roadmap.categories.integration">Integration</option>
+                        <option value="bug" data-i18n="roadmap.categories.bug">Bug Fix</option>
+                    </select>
+                    <textarea id="request-description" placeholder="Describe your idea in detail..." data-i18n-placeholder="roadmap.suggestForm.descPlaceholder" required></textarea>
+                    <input type="email" id="request-email" placeholder="Your email (optional, for updates)" data-i18n-placeholder="roadmap.suggestForm.emailPlaceholder">
+                    <button type="submit" class="suggest-submit" id="submit-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                        </svg>
+                        <span data-i18n="roadmap.suggestForm.submit">Submit Suggestion</span>
+                    </button>
+                </form>
+            </div>
+            <div class="submit-success" id="submit-success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <h4 data-i18n="roadmap.suggestForm.success">Thank you!</h4>
+                <p data-i18n="roadmap.suggestForm.successDetail">Your suggestion has been submitted for review. We'll keep you posted.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <section class="roadmap-cta">
+        <h2 data-i18n="roadmap.cta.title">Ready to grow your business?</h2>
+        <p data-i18n="roadmap.cta.subtitle">Build your AI loyalty program in 60 seconds. No credit card required.</p>
+        <a href="/app/signup.html" class="btn btn-primary btn-lg" data-i18n="roadmap.cta.button">Get Started Free</a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                        <span class="logo-text">Royalty</span>
+                    </a>
+                    <p data-i18n="footer.tagline">AI that builds and runs your loyalty program.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.product">Product</h4>
+                        <a href="/#features" data-i18n="footer.features">Features</a>
+                        <a href="/#how-it-works" data-i18n="footer.howItWorks">How It Works</a>
+                        <a href="/pricing.html" data-i18n="nav.pricing">Pricing</a>
+                        <a href="/roadmap" data-i18n="nav.roadmap">Roadmap</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.company">Company</h4>
+                        <a href="/about.html" data-i18n="footer.about">About</a>
+                        <a href="/contact" data-i18n="footer.contact">Contact</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.legal">Legal</h4>
+                        <a href="/privacy" data-i18n="footer.privacy">Privacy</a>
+                        <a href="/terms" data-i18n="footer.terms">Terms</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p data-i18n="footer.copyright">&copy; 2026 Royalty. All rights reserved.</p>
+                <!-- Footer Language Selector -->
+                <div class="lang-selector compact">
+                    <button class="lang-selector-btn" type="button" aria-label="Change language">
+                        <span class="lang-selector-current">EN</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-option active" data-lang="en">EN</a>
+                        <a href="#" class="lang-option" data-lang="es">ES</a>
+                        <a href="#" class="lang-option" data-lang="fr">FR</a>
+                        <a href="#" class="lang-option" data-lang="de">DE</a>
+                        <a href="#" class="lang-option" data-lang="it">IT</a>
+                        <a href="#" class="lang-option" data-lang="pt">PT</a>
+                        <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                        <a href="#" class="lang-option" data-lang="ar">AR</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="i18n/i18n.js?v=1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ===== Supabase (anonymous, no auth required) =====
+        const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocG1tZmhmd25wbWF2eXRvb21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTgyMDYsImV4cCI6MjA4NTE3NDIwNn0.6JmfnTTR8onr3ZgFpzdZa4BbVBraUyePVEUHOJgxmuk';
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Session ID for anonymous voting
+        function getSessionId() {
+            let id = localStorage.getItem('roadmap_session_id');
+            if (!id) {
+                id = crypto.randomUUID();
+                localStorage.setItem('roadmap_session_id', id);
+            }
+            return id;
+        }
+
+        let roadmapItems = [];
+
+        // ===== Escape HTML =====
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== Load Roadmap Items =====
+        async function loadRoadmapItems() {
+            try {
+                const { data, error } = await db
+                    .from('roadmap_items')
+                    .select('*')
+                    .eq('is_public', true)
+                    .order('display_order', { ascending: true });
+
+                if (error) throw error;
+                roadmapItems = data || [];
+            } catch (err) {
+                console.error('Error loading roadmap:', err);
+                roadmapItems = [];
+            }
+            renderBoard();
+        }
+
+        // ===== Render =====
+        function renderBoard() {
+            const ideas = roadmapItems.filter(i => i.status === 'ideas');
+            const progress = roadmapItems.filter(i => i.status === 'in_progress');
+            const deployed = roadmapItems.filter(i => i.status === 'deployed');
+
+            document.getElementById('ideas-count').textContent = ideas.length;
+            document.getElementById('progress-count').textContent = progress.length;
+            document.getElementById('deployed-count').textContent = deployed.length;
+
+            const t = (typeof I18n !== 'undefined') ? I18n.t.bind(I18n) : (k, fallback) => fallback || k;
+
+            document.getElementById('ideas-column').innerHTML = ideas.length
+                ? ideas.map(item => renderCard(item, true)).join('')
+                : `<div class="column-empty">${escapeHtml(t('roadmap.emptyIdeas', 'No ideas yet — suggest one below!'))}</div>`;
+
+            document.getElementById('progress-column').innerHTML = progress.length
+                ? progress.map(item => renderCard(item, false)).join('')
+                : `<div class="column-empty">${escapeHtml(t('roadmap.emptyProgress', 'Nothing in progress right now'))}</div>`;
+
+            document.getElementById('deployed-column').innerHTML = deployed.length
+                ? deployed.map(item => renderDeployedCard(item)).join('')
+                : `<div class="column-empty">${escapeHtml(t('roadmap.emptyDeployed', 'Nothing deployed yet'))}</div>`;
+
+            loadUserVotes();
+        }
+
+        function renderCard(item, showVotes) {
+            const safeId = escapeHtml(item.id);
+            return `
+                <div class="roadmap-card" data-id="${safeId}">
+                    <span class="card-category ${escapeHtml(item.category)}">${escapeHtml(item.category)}</span>
+                    <h4 class="card-title">${escapeHtml(item.title)}</h4>
+                    <p class="card-description">${escapeHtml(item.description)}</p>
+                    <div class="card-footer">
+                        ${showVotes ? `
+                            <button class="vote-btn" data-action="vote" data-id="${safeId}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                                </svg>
+                                <span>${item.votes || 0}</span>
+                            </button>
+                        ` : '<span></span>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDeployedCard(item) {
+            const t = (typeof I18n !== 'undefined') ? I18n.t.bind(I18n) : (k) => k.split('.').pop();
+            const lang = (typeof I18n !== 'undefined') ? I18n.getCurrentLanguage() : 'en';
+            const deployedDate = item.deployed_at
+                ? new Date(item.deployed_at).toLocaleDateString(lang, { month: 'short', day: 'numeric' })
+                : '';
+            const deployedLabel = t('roadmap.deployed');
+            return `
+                <div class="roadmap-card deployed" data-id="${escapeHtml(item.id)}">
+                    <span class="card-category ${escapeHtml(item.category)}">${escapeHtml(item.category)}</span>
+                    <h4 class="card-title">${escapeHtml(item.title)}</h4>
+                    <p class="card-description">${escapeHtml(item.description)}</p>
+                    <div class="card-footer">
+                        <div class="deployed-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            ${deployedDate ? `${deployedLabel} ${deployedDate}` : deployedLabel}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== Voting =====
+        function loadUserVotes() {
+            const votes = JSON.parse(localStorage.getItem('roadmap_votes') || '[]');
+            votes.forEach(id => {
+                const btn = document.querySelector(`.roadmap-card[data-id="${id}"] .vote-btn`);
+                if (btn) btn.classList.add('voted');
+            });
+        }
+
+        async function toggleVote(btn, itemId) {
+            const countSpan = btn.querySelector('span');
+            let count = parseInt(countSpan.textContent);
+            let votes = JSON.parse(localStorage.getItem('roadmap_votes') || '[]');
+            const sessionId = getSessionId();
+
+            if (btn.classList.contains('voted')) {
+                btn.classList.remove('voted');
+                count--;
+                votes = votes.filter(v => v !== itemId);
+
+                // Remove vote from DB
+                try {
+                    await db.from('roadmap_votes').delete().match({ roadmap_item_id: itemId, session_id: sessionId });
+                    await db.from('roadmap_items').update({ votes: count }).eq('id', itemId);
+                } catch (e) { console.log('Could not sync vote removal'); }
+            } else {
+                btn.classList.add('voted');
+                count++;
+                votes.push(itemId);
+
+                // Insert vote to DB
+                try {
+                    await db.from('roadmap_votes').insert({ roadmap_item_id: itemId, session_id: sessionId });
+                    await db.from('roadmap_items').update({ votes: count }).eq('id', itemId);
+                } catch (e) { console.log('Could not sync vote'); }
+            }
+
+            countSpan.textContent = count;
+            localStorage.setItem('roadmap_votes', JSON.stringify(votes));
+        }
+
+        // ===== Feature Request =====
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submit-btn');
+
+            const title = document.getElementById('request-title').value.trim();
+            const category = document.getElementById('request-category').value;
+            const description = document.getElementById('request-description').value.trim();
+            const email = document.getElementById('request-email').value.trim();
+
+            // Validate
+            if (!title || title.length < 3) { alert('Title must be at least 3 characters'); return; }
+            if (!category) { alert('Please select a category'); return; }
+            if (!description || description.length < 10) { alert('Description must be at least 10 characters'); return; }
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Please enter a valid email'); return; }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const { error } = await db.from('feature_requests').insert({
+                    title,
+                    category,
+                    description,
+                    email: email || null,
+                    submitted_by: null,
+                    status: 'pending'
+                });
+
+                if (error) throw error;
+
+                document.getElementById('suggest-form-container').style.display = 'none';
+                document.getElementById('submit-success').classList.add('visible');
+
+                setTimeout(() => {
+                    document.getElementById('feature-request-form').reset();
+                    document.getElementById('suggest-form-container').style.display = 'block';
+                    document.getElementById('submit-success').classList.remove('visible');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Submit Suggestion';
+                }, 5000);
+            } catch (err) {
+                console.error('Error submitting:', err);
+                alert('Failed to submit. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Submit Suggestion';
+            }
+        }
+
+        // ===== Mobile Menu =====
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+        const mobileMenuDrawer = document.getElementById('mobile-menu-drawer');
+        const mobileMenuClose = document.querySelector('.mobile-menu-close');
+
+        function openMobileMenu() {
+            mobileMenuOverlay.classList.add('active');
+            mobileMenuDrawer.classList.add('active');
+            mobileMenuOverlay.setAttribute('aria-hidden', 'false');
+            mobileMenuDrawer.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileMenu() {
+            mobileMenuOverlay.classList.remove('active');
+            mobileMenuDrawer.classList.remove('active');
+            mobileMenuOverlay.setAttribute('aria-hidden', 'true');
+            mobileMenuDrawer.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileMenu);
+        if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMobileMenu);
+        if (mobileMenuOverlay) mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+
+        document.querySelectorAll('.mobile-menu-link').forEach(link => {
+            link.addEventListener('click', closeMobileMenu);
+        });
+
+        // ===== Select styling =====
+        const categorySelect = document.getElementById('request-category');
+        if (categorySelect) {
+            categorySelect.addEventListener('change', function() {
+                this.classList.toggle('has-value', this.value !== '');
+            });
+        }
+
+        // ===== Event Delegation =====
+        document.querySelector('.roadmap-board').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action="vote"]');
+            if (btn) toggleVote(btn, btn.dataset.id);
+        });
+
+        document.getElementById('feature-request-form').addEventListener('submit', handleSubmit);
+
+        // Scroll to suggest if hash
+        if (window.location.hash === '#suggest') {
+            setTimeout(() => {
+                document.getElementById('suggest').scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        }
+
+        // ===== Init =====
+        loadRoadmapItems();
+    </script>
+</body>
+</html>

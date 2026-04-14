@@ -892,13 +892,18 @@
     },
     "roadmap": {
         "title": "خارطة طريق المنتج",
-        "subtitle": "شاهد ما نبنيه واقترح ميزات جديدة",
+        "subtitle": "شاهد ما نبنيه وشارك أفكارك. ملاحظاتك تشكّل مستقبل Royalty.",
         "ideas": "أفكار",
         "inProgress": "قيد التنفيذ",
         "recentlyDeployed": "تم نشره مؤخراً",
         "suggestFeature": "اقترح ميزة",
         "upvote": "صوّت",
         "upvoted": "تم التصويت",
+        "emptyIdeas": "لا توجد أفكار بعد — اقترح واحدة أدناه!",
+        "emptyProgress": "لا شيء قيد التنفيذ حالياً",
+        "emptyDeployed": "لم يتم نشر أي شيء بعد",
+        "deployed": "تم النشر",
+        "selectCategory": "اختر الفئة",
         "categories": {
             "feature": "ميزة",
             "improvement": "تحسين",
@@ -909,15 +914,22 @@
             "title": "اقترح ميزة",
             "subtitle": "ساعدنا في بناء ما تحتاجه أكثر",
             "titleLabel": "عنوان الميزة",
-            "titlePlaceholder": "مثال، تكامل مع Shopify",
+            "titlePlaceholder": "عنوان الميزة",
             "descLabel": "الوصف",
-            "descPlaceholder": "صف الميزة وكيف ستساعد عملك...",
+            "descPlaceholder": "صف فكرتك بالتفصيل...",
             "categoryLabel": "الفئة",
             "emailLabel": "البريد الإلكتروني (اختياري)",
-            "emailPlaceholder": "your@email.com",
+            "emailPlaceholder": "بريدك الإلكتروني (اختياري، للتحديثات)",
             "submit": "إرسال الاقتراح",
+            "submitting": "جارٍ الإرسال...",
             "cancel": "إلغاء",
-            "success": "شكراً! تم إرسال اقتراحك للمراجعة."
+            "success": "شكراً!",
+            "successDetail": "تم إرسال اقتراحك للمراجعة. سنبقيك على اطلاع."
+        },
+        "cta": {
+            "title": "هل أنت مستعد لتنمية عملك؟",
+            "subtitle": "أنشئ برنامج ولاء بالذكاء الاصطناعي في 60 ثانية. لا حاجة لبطاقة ائتمان.",
+            "button": "ابدأ مجاناً"
         }
     },
     "support": {

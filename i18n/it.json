@@ -893,13 +893,18 @@
     },
     "roadmap": {
         "title": "Roadmap del Prodotto",
-        "subtitle": "Scopri cosa stiamo costruendo e suggerisci nuove funzionalità",
+        "subtitle": "Scopri cosa stiamo costruendo e condividi le tue idee. Il tuo feedback plasma il futuro di Royalty.",
         "ideas": "Idee",
         "inProgress": "In Corso",
         "recentlyDeployed": "Recentemente Implementato",
         "suggestFeature": "Suggerisci una Funzionalità",
         "upvote": "Vota",
         "upvoted": "Votato",
+        "emptyIdeas": "Nessuna idea ancora — suggeriscine una qui sotto!",
+        "emptyProgress": "Niente in corso al momento",
+        "emptyDeployed": "Niente ancora implementato",
+        "deployed": "Implementato",
+        "selectCategory": "Seleziona categoria",
         "categories": {
             "feature": "Funzionalità",
             "improvement": "Miglioramento",
@@ -910,15 +915,22 @@
             "title": "Suggerisci una Funzionalità",
             "subtitle": "Aiutaci a costruire ciò di cui hai più bisogno",
             "titleLabel": "Titolo della Funzionalità",
-            "titlePlaceholder": "es., Integrazione con Shopify",
+            "titlePlaceholder": "Titolo della funzionalità",
             "descLabel": "Descrizione",
-            "descPlaceholder": "Descrivi la funzionalità e come aiuterebbe la tua attività...",
+            "descPlaceholder": "Descrivi la tua idea in dettaglio...",
             "categoryLabel": "Categoria",
             "emailLabel": "Email (opzionale)",
-            "emailPlaceholder": "tua@email.com",
+            "emailPlaceholder": "La tua email (opzionale, per aggiornamenti)",
             "submit": "Invia Suggerimento",
+            "submitting": "Invio in corso...",
             "cancel": "Annulla",
-            "success": "Grazie! Il tuo suggerimento è stato inviato per la revisione."
+            "success": "Grazie!",
+            "successDetail": "Il tuo suggerimento è stato inviato per la revisione. Ti terremo aggiornato."
+        },
+        "cta": {
+            "title": "Pronto a far crescere la tua attività?",
+            "subtitle": "Crea il tuo programma fedeltà IA in 60 secondi. Nessuna carta di credito richiesta.",
+            "button": "Inizia Gratis"
         }
     },
     "support": {

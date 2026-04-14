@@ -892,13 +892,18 @@
     },
     "roadmap": {
         "title": "Hoja de Ruta del Producto",
-        "subtitle": "Mira lo que estamos construyendo y sugiere nuevas funciones",
+        "subtitle": "Mira lo que estamos construyendo y comparte tus ideas. Tus comentarios dan forma al futuro de Royalty.",
         "ideas": "Ideas",
         "inProgress": "En Progreso",
         "recentlyDeployed": "Recientemente Implementado",
         "suggestFeature": "Sugerir una Función",
         "upvote": "Votar",
         "upvoted": "Votado",
+        "emptyIdeas": "Aún no hay ideas — ¡sugiere una abajo!",
+        "emptyProgress": "Nada en progreso en este momento",
+        "emptyDeployed": "Nada implementado aún",
+        "deployed": "Implementado",
+        "selectCategory": "Seleccionar categoría",
         "categories": {
             "feature": "Función",
             "improvement": "Mejora",
@@ -909,15 +914,22 @@
             "title": "Sugerir una Función",
             "subtitle": "Ayúdanos a construir lo que más necesitas",
             "titleLabel": "Título de la Función",
-            "titlePlaceholder": "ej., Integración con Shopify",
+            "titlePlaceholder": "Título de la función",
             "descLabel": "Descripción",
-            "descPlaceholder": "Describe la función y cómo ayudaría a tu negocio...",
+            "descPlaceholder": "Describe tu idea en detalle...",
             "categoryLabel": "Categoría",
             "emailLabel": "Email (opcional)",
-            "emailPlaceholder": "tu@email.com",
+            "emailPlaceholder": "Tu email (opcional, para actualizaciones)",
             "submit": "Enviar Sugerencia",
+            "submitting": "Enviando...",
             "cancel": "Cancelar",
-            "success": "¡Gracias! Tu sugerencia ha sido enviada para revisión."
+            "success": "¡Gracias!",
+            "successDetail": "Tu sugerencia ha sido enviada para revisión. Te mantendremos informado."
+        },
+        "cta": {
+            "title": "¿Listo para hacer crecer tu negocio?",
+            "subtitle": "Crea tu programa de fidelización con IA en 60 segundos. Sin tarjeta de crédito.",
+            "button": "Empezar Gratis"
         }
     },
     "support": {

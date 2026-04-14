@@ -892,13 +892,18 @@
     },
     "roadmap": {
         "title": "Produkt-Roadmap",
-        "subtitle": "Sehen Sie, was wir entwickeln und schlagen Sie neue Funktionen vor",
+        "subtitle": "Sehen Sie, was wir entwickeln, und teilen Sie Ihre Ideen. Ihr Feedback gestaltet die Zukunft von Royalty.",
         "ideas": "Ideen",
         "inProgress": "In Bearbeitung",
         "recentlyDeployed": "Kürzlich Bereitgestellt",
         "suggestFeature": "Funktion Vorschlagen",
         "upvote": "Abstimmen",
         "upvoted": "Abgestimmt",
+        "emptyIdeas": "Noch keine Ideen — schlagen Sie unten eine vor!",
+        "emptyProgress": "Derzeit nichts in Bearbeitung",
+        "emptyDeployed": "Noch nichts bereitgestellt",
+        "deployed": "Bereitgestellt",
+        "selectCategory": "Kategorie auswählen",
         "categories": {
             "feature": "Funktion",
             "improvement": "Verbesserung",
@@ -909,15 +914,22 @@
             "title": "Funktion Vorschlagen",
             "subtitle": "Helfen Sie uns, das zu bauen, was Sie am meisten brauchen",
             "titleLabel": "Funktionstitel",
-            "titlePlaceholder": "z.B., Integration mit Shopify",
+            "titlePlaceholder": "Funktionstitel",
             "descLabel": "Beschreibung",
-            "descPlaceholder": "Beschreiben Sie die Funktion und wie sie Ihrem Unternehmen helfen würde...",
+            "descPlaceholder": "Beschreiben Sie Ihre Idee im Detail...",
             "categoryLabel": "Kategorie",
             "emailLabel": "E-Mail (optional)",
-            "emailPlaceholder": "ihre@email.com",
+            "emailPlaceholder": "Ihre E-Mail (optional, für Updates)",
             "submit": "Vorschlag Einreichen",
+            "submitting": "Wird gesendet...",
             "cancel": "Abbrechen",
-            "success": "Danke! Ihr Vorschlag wurde zur Überprüfung eingereicht."
+            "success": "Danke!",
+            "successDetail": "Ihr Vorschlag wurde zur Überprüfung eingereicht. Wir halten Sie auf dem Laufenden."
+        },
+        "cta": {
+            "title": "Bereit, Ihr Geschäft auszubauen?",
+            "subtitle": "Erstellen Sie Ihr KI-Treueprogramm in 60 Sekunden. Keine Kreditkarte erforderlich.",
+            "button": "Kostenlos Starten"
         }
     },
     "support": {

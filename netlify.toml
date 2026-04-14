@@ -65,6 +65,12 @@
   to = "/blog/post.html"
   status = 200
 
+# Public roadmap clean URL
+[[redirects]]
+  from = "/roadmap"
+  to = "/roadmap.html"
+  status = 200
+
 # Clean URLs for legal/contact pages
 [[redirects]]
   from = "/contact"

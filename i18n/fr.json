@@ -905,13 +905,18 @@
     },
     "roadmap": {
         "title": "Feuille de Route Produit",
-        "subtitle": "Découvrez ce que nous construisons et suggérez de nouvelles fonctionnalités",
+        "subtitle": "Découvrez ce que nous construisons et partagez vos idées. Vos retours façonnent l'avenir de Royalty.",
         "ideas": "Idées",
         "inProgress": "En Cours",
         "recentlyDeployed": "Récemment Déployé",
         "suggestFeature": "Suggérer une Fonctionnalité",
         "upvote": "Voter",
         "upvoted": "Voté",
+        "emptyIdeas": "Pas encore d'idées — suggérez-en une ci-dessous !",
+        "emptyProgress": "Rien en cours pour le moment",
+        "emptyDeployed": "Rien encore déployé",
+        "deployed": "Déployé",
+        "selectCategory": "Sélectionner une catégorie",
         "categories": {
             "feature": "Fonctionnalité",
             "improvement": "Amélioration",
@@ -922,15 +927,22 @@
             "title": "Suggérer une Fonctionnalité",
             "subtitle": "Aidez-nous à construire ce dont vous avez le plus besoin",
             "titleLabel": "Titre de la Fonctionnalité",
-            "titlePlaceholder": "ex., Intégration avec Shopify",
+            "titlePlaceholder": "Titre de la fonctionnalité",
             "descLabel": "Description",
-            "descPlaceholder": "Décrivez la fonctionnalité et comment elle aiderait votre entreprise...",
+            "descPlaceholder": "Décrivez votre idée en détail...",
             "categoryLabel": "Catégorie",
             "emailLabel": "Email (optionnel)",
-            "emailPlaceholder": "votre@email.com",
+            "emailPlaceholder": "Votre email (optionnel, pour les mises à jour)",
             "submit": "Soumettre la Suggestion",
+            "submitting": "Envoi en cours...",
             "cancel": "Annuler",
-            "success": "Merci ! Votre suggestion a été soumise pour examen."
+            "success": "Merci !",
+            "successDetail": "Votre suggestion a été soumise pour examen. Nous vous tiendrons informé."
+        },
+        "cta": {
+            "title": "Prêt à développer votre entreprise ?",
+            "subtitle": "Créez votre programme de fidélité IA en 60 secondes. Sans carte bancaire.",
+            "button": "Commencer Gratuitement"
         }
     },
     "support": {

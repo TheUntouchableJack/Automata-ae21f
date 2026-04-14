@@ -892,13 +892,18 @@
     },
     "roadmap": {
         "title": "产品路线图",
-        "subtitle": "查看我们正在构建的功能并提交建议",
+        "subtitle": "查看我们正在构建的功能并分享您的想法。您的反馈塑造Royalty的未来。",
         "ideas": "想法",
         "inProgress": "进行中",
         "recentlyDeployed": "最近上线",
         "suggestFeature": "建议功能",
         "upvote": "投票",
         "upvoted": "已投票",
+        "emptyIdeas": "还没有想法 — 在下方提出一个！",
+        "emptyProgress": "目前没有进行中的项目",
+        "emptyDeployed": "尚未部署任何内容",
+        "deployed": "已部署",
+        "selectCategory": "选择类别",
         "categories": {
             "feature": "新功能",
             "improvement": "改进",
@@ -909,15 +914,22 @@
             "title": "建议功能",
             "subtitle": "帮助我们构建您最需要的功能",
             "titleLabel": "功能标题",
-            "titlePlaceholder": "例如，与Shopify集成",
+            "titlePlaceholder": "功能标题",
             "descLabel": "描述",
-            "descPlaceholder": "描述该功能以及它如何帮助您的业务...",
+            "descPlaceholder": "详细描述您的想法...",
             "categoryLabel": "类别",
             "emailLabel": "邮箱（可选）",
-            "emailPlaceholder": "your@email.com",
+            "emailPlaceholder": "您的邮箱（可选，用于接收更新）",
             "submit": "提交建议",
+            "submitting": "提交中...",
             "cancel": "取消",
-            "success": "谢谢！您的建议已提交审核。"
+            "success": "谢谢！",
+            "successDetail": "您的建议已提交审核。我们会及时通知您最新进展。"
+        },
+        "cta": {
+            "title": "准备好发展您的业务了吗？",
+            "subtitle": "60秒内用AI创建您的忠诚度计划。无需信用卡。",
+            "button": "免费开始"
         }
     },
     "support": {
