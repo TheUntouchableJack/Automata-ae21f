@@ -77,6 +77,8 @@ async function mfaCheckTrustedDevice(userId) {
             .eq('user_id', userId)
             .eq('device_token_hash', hash)
             .gt('expires_at', new Date().toISOString())
+            .order('expires_at', { ascending: false })
+            .limit(1)
             .maybeSingle();
         if (error || !data) return false;
 

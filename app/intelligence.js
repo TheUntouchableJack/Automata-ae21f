@@ -139,11 +139,7 @@ const IntelligencePage = (function() {
                 .select('first_name, last_name, is_admin, welcome_progress')
                 .eq('id', user.id)
                 .single(),
-            supabase
-                .from('organization_members')
-                .select('organization_id, organizations(id, name)')
-                .eq('user_id', user.id)
-                .single()
+            AppUtils.loadOrganization(supabase, user.id)
         ]);
 
         const member = memberResult.data;
@@ -154,14 +150,14 @@ const IntelligencePage = (function() {
 
         organizationId = member.organization_id;
         const userInfo = userInfoResult.data;
-        const orgData = orgResult.data;
+        const fullOrg = orgResult?.organization || null;
 
         // Setup sidebar with proper data
         if (typeof AppSidebar !== 'undefined') {
             AppSidebar.init({
                 name: userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || user.email : user.email,
                 email: user.email,
-                organization: orgData?.organizations || { name: 'My Organization' },
+                organization: fullOrg || { name: 'My Organization' },
                 role: member.role,
                 isAdmin: (userInfo?.is_admin === true) || (userInfo?.profile?.is_admin === true)
             });
@@ -169,7 +165,7 @@ const IntelligencePage = (function() {
 
         // Show welcome banner for new users
         if (typeof WelcomeBanner !== 'undefined') {
-            WelcomeBanner.show(supabase, userInfo, orgData?.organizations?.name || 'Your');
+            WelcomeBanner.show(supabase, userInfo, fullOrg?.name || 'Your');
         }
 
         // Setup event listeners
@@ -207,7 +203,7 @@ const IntelligencePage = (function() {
         }
 
         // Initialize Crown 3D Dashboard (after auth + data loaded)
-        const crownOptions = { organization: orgData?.organizations };
+        const crownOptions = { organization: fullOrg };
         if (typeof CrownDashboard !== 'undefined') {
             CrownDashboard.init(crownOptions);
         } else {

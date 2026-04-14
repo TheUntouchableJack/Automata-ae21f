@@ -351,7 +351,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="auth.js?v=11"></script>
-    <script src="mfa.js?v=2"></script>
+    <script src="mfa.js?v=3"></script>
     <script>
         // ── State ──────────────────────────────────────────────────────────
         let activeMethod   = sessionStorage.getItem('royalty_mfa_method') || 'email';
@@ -382,6 +382,20 @@
             // Load TOTP factors
             const { totp } = await mfaListFactors();
             allFactors = totp;
+
+            // Always prefer email when user has it — email is the default method
+            const user = await getCurrentUser();
+            if (user) {
+                const hasEmail = await mfaHasEmailMfa(user.id);
+                if (hasEmail && activeMethod === 'totp') {
+                    activeMethod = 'email';
+                    sessionStorage.setItem('royalty_mfa_method', 'email');
+                }
+                // Send email code on page load (covers fresh redirect + refresh)
+                if (hasEmail && activeMethod === 'email') {
+                    await mfaSendEmailCode();
+                }
+            }
 
             if (activeMethod === 'totp' && allFactors.length > 0) {
                 activeFactor = allFactors.find(f => f.status === 'verified') || allFactors[0];
