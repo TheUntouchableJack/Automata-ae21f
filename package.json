@@ -20,7 +20,7 @@
     "reset-welcome": "bash scripts/reset-welcome.sh"
   },
   "devDependencies": {
-    "@playwright/test": "^1.41.0",
+    "@playwright/test": "^1.59.1",
     "@vitest/coverage-v8": "^1.2.0",
     "jsdom": "^23.0.0",
     "stripe": "^20.3.0",
