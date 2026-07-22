@@ -31,6 +31,8 @@ const PRICE_TO_TIER: Record<string, { tier: string; billing: string; isAddOn?: b
   'price_1SzijUGNy14i1og8bCVXvQdx': { tier: 'max', billing: 'annual' },
   // Royalty Pro add-on for LTD users ($79/mo)
   'price_1SyfQGGNy14i1og8jvmoWMxo': { tier: 'royalty_pro', billing: 'monthly', isAddOn: true },
+  // Custom Enterprise ($299.99/mo) -> legacy 'max' unlimited tier. Created 2026-07-22.
+  'price_1Tw2OiGNy14i1og8ArrFmgDF': { tier: 'max', billing: 'monthly' },
 }
 
 // Map bundle types to credit amounts
