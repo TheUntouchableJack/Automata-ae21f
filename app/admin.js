@@ -4,9 +4,12 @@ let organizations = [];
 let allOrganizations = []; // unfiltered
 let users = [];
 let allUsers = []; // unfiltered
+let apps = [];
+let allApps = []; // unfiltered
 let currentTab = 'orgs';
 let orgPage = 1;
 let userPage = 1;
+let appPage = 1;
 const PAGE_SIZE = 50;
 let planOverrideOrgId = null;
 
@@ -303,6 +306,154 @@ function updateUserPagination() {
     document.getElementById('users-pagination-info').textContent = `Page ${userPage} of ${totalPages}`;
     document.getElementById('users-prev-page').disabled = userPage === 1;
     document.getElementById('users-next-page').disabled = userPage === totalPages;
+}
+
+// ===== Load Apps =====
+async function loadApps() {
+    const loading = document.getElementById('apps-loading');
+
+    try {
+        const { data, error } = await supabase.rpc('admin_get_all_apps');
+        if (error) throw error;
+
+        allApps = data || [];
+        applyAppFilters();
+        loading.style.display = 'none';
+
+    } catch (error) {
+        console.error('Error loading apps:', error);
+        loading.innerHTML = '<p style="color: var(--color-error);">Error loading apps. Are you an admin?</p>';
+    }
+}
+
+function applyAppFilters() {
+    const search = (document.getElementById('app-search-input')?.value || '').trim().toLowerCase();
+    const typeFilter = document.getElementById('app-type-filter')?.value || '';
+
+    let filtered = allApps;
+
+    if (search) {
+        filtered = filtered.filter(app =>
+            (app.name || '').toLowerCase().includes(search) ||
+            (app.slug || '').toLowerCase().includes(search) ||
+            (app.org_name || '').toLowerCase().includes(search) ||
+            (app.org_slug || '').toLowerCase().includes(search)
+        );
+    }
+
+    if (typeFilter) {
+        filtered = filtered.filter(app => app.app_type === typeFilter);
+    }
+
+    apps = filtered;
+    appPage = 1;
+
+    const container = document.getElementById('apps-container');
+    const emptyState = document.getElementById('apps-empty-state');
+
+    if (apps.length === 0) {
+        container.style.display = 'none';
+        emptyState.style.display = 'block';
+    } else {
+        container.style.display = 'block';
+        emptyState.style.display = 'none';
+        renderApps();
+        updateAppPagination();
+    }
+
+    updateAppStats();
+}
+
+function updateAppStats() {
+    document.getElementById('stat-total-apps').textContent = allApps.length;
+    document.getElementById('stat-published-apps').textContent = allApps.filter(a => a.is_published).length;
+    document.getElementById('stat-social-apps').textContent = allApps.filter(a => a.app_type === 'social').length;
+}
+
+function renderApps() {
+    const tbody = document.getElementById('apps-table-body');
+    const start = (appPage - 1) * PAGE_SIZE;
+    const pageApps = apps.slice(start, start + PAGE_SIZE);
+
+    tbody.innerHTML = pageApps.map(app => {
+        const initial = (app.name || '?').charAt(0).toUpperCase();
+        const createdDate = formatRelativeDate(app.created_at);
+        const statusBadge = app.is_published
+            ? '<span class="plan-badge pro">Published</span>'
+            : (app.is_active ? '<span class="plan-badge free">Draft</span>' : '<span class="plan-badge">Inactive</span>');
+        const orgName = escapeHtml(app.org_name || 'Unknown');
+        const orgArg = orgName.replace(/'/g, "\\'");
+
+        return `
+            <tr data-app-id="${app.id}">
+                <td>
+                    <div class="org-name-cell">
+                        <div class="org-avatar">${initial}</div>
+                        <span class="org-name-text">${escapeHtml(app.name || 'Unnamed')}</span>
+                    </div>
+                </td>
+                <td><span class="text-muted">${orgName}</span></td>
+                <td><span class="text-muted">${escapeHtml(app.app_type || '-')}</span></td>
+                <td>${statusBadge}</td>
+                <td><span class="text-muted">${createdDate}</span></td>
+                <td>
+                    <div class="row-actions" style="opacity: 1;">
+                        <button class="action-btn view-as" onclick="openAppAsOrg('${app.id}', '${app.organization_id}', '${orgArg}')" title="Open in App Builder (as this org)">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M11.5 2.5L13.5 4.5L5 13H3V11L11.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        ${app.is_published ? `
+                            <a class="action-btn" href="/a/${escapeHtml(app.slug)}${app.app_type === 'social' ? '/social' : ''}" target="_blank" rel="noopener" title="View live app">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                            </a>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateAppPagination() {
+    const pagination = document.getElementById('apps-pagination');
+    const totalPages = Math.ceil(apps.length / PAGE_SIZE);
+
+    if (totalPages <= 1) {
+        pagination.style.display = 'none';
+        return;
+    }
+
+    pagination.style.display = 'flex';
+    document.getElementById('apps-pagination-info').textContent = `Page ${appPage} of ${totalPages}`;
+    document.getElementById('apps-prev-page').disabled = appPage === 1;
+    document.getElementById('apps-next-page').disabled = appPage === totalPages;
+}
+
+// ===== Open an org's app in the App Builder via impersonation =====
+async function openAppAsOrg(appId, orgId, orgName) {
+    if (!confirm(`Open this app as "${orgName}"? You'll manage it from their perspective.`)) return;
+
+    try {
+        const { data, error } = await supabase.rpc('admin_start_impersonation', { p_org_id: orgId });
+        if (error) throw error;
+
+        // Store in sessionStorage for the impersonation check in utils.js
+        sessionStorage.setItem('adminViewAsOrg', JSON.stringify({
+            orgId: orgId,
+            orgName: orgName
+        }));
+
+        // Redirect straight into the App Builder for this app
+        window.location.href = `/app/app-builder.html?id=${appId}`;
+
+    } catch (error) {
+        console.error('Error opening app as org:', error);
+        showToast('Error opening app', 'error');
+    }
 }
 
 // ===== Plan Badge Helper =====
@@ -714,6 +865,25 @@ function setupEventListeners() {
         if (orgPage < totalPages) { orgPage++; renderOrganizations(); updateOrgPagination(); }
     });
 
+    // App search (debounced)
+    let appSearchTimeout;
+    document.getElementById('app-search-input').addEventListener('input', () => {
+        clearTimeout(appSearchTimeout);
+        appSearchTimeout = setTimeout(applyAppFilters, 300);
+    });
+
+    // App type filter
+    document.getElementById('app-type-filter').addEventListener('change', applyAppFilters);
+
+    // App pagination
+    document.getElementById('apps-prev-page').addEventListener('click', () => {
+        if (appPage > 1) { appPage--; renderApps(); updateAppPagination(); }
+    });
+    document.getElementById('apps-next-page').addEventListener('click', () => {
+        const totalPages = Math.ceil(apps.length / PAGE_SIZE);
+        if (appPage < totalPages) { appPage++; renderApps(); updateAppPagination(); }
+    });
+
     // User search (debounced)
     let userSearchTimeout;
     document.getElementById('user-search-input').addEventListener('input', () => {
@@ -781,11 +951,17 @@ async function switchTab(tabId) {
     document.querySelector(`.admin-tab[data-tab="${tabId}"]`).classList.add('active');
 
     document.getElementById('tab-orgs').style.display = tabId === 'orgs' ? 'block' : 'none';
+    document.getElementById('tab-apps').style.display = tabId === 'apps' ? 'block' : 'none';
     document.getElementById('tab-users').style.display = tabId === 'users' ? 'block' : 'none';
 
     // Lazy-load users on first tab switch
     if (tabId === 'users' && allUsers.length === 0) {
         await loadUsers();
+    }
+
+    // Lazy-load apps on first tab switch
+    if (tabId === 'apps' && allApps.length === 0) {
+        await loadApps();
     }
 }
 
@@ -812,6 +988,7 @@ window.openOrgDetail = openOrgDetail;
 window.openPlanOverride = openPlanOverride;
 window.confirmDeleteOrg = confirmDeleteOrg;
 window.viewAsOrg = viewAsOrg;
+window.openAppAsOrg = openAppAsOrg;
 window.resetPassword = resetPassword;
 window.showRemoveUserOptions = showRemoveUserOptions;
 

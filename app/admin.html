@@ -43,6 +43,7 @@
             <div class="admin-tabs">
                 <div class="container">
                     <button class="admin-tab active" data-tab="orgs">Organizations</button>
+                    <button class="admin-tab" data-tab="apps">Apps</button>
                     <button class="admin-tab" data-tab="users">Users</button>
                 </div>
             </div>
@@ -146,6 +147,102 @@
                                 </svg>
                             </div>
                             <h3>No organizations found</h3>
+                            <p>Try adjusting your search or filters</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Apps Tab ===== -->
+            <section id="tab-apps" style="display: none;">
+                <div class="stats-bar">
+                    <div class="container">
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-total-apps">0</span>
+                            <span class="stat-label">Total Apps</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-published-apps">0</span>
+                            <span class="stat-label">Published</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-social-apps">0</span>
+                            <span class="stat-label">Social</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-content">
+                    <div class="container">
+                        <!-- Filter Bar -->
+                        <div class="filter-bar">
+                            <div class="search-box">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <input type="text" id="app-search-input" placeholder="Search apps or orgs...">
+                            </div>
+                            <div class="filter-actions">
+                                <select id="app-type-filter" class="filter-select">
+                                    <option value="">All Types</option>
+                                    <option value="loyalty">Loyalty</option>
+                                    <option value="rewards">Rewards</option>
+                                    <option value="membership">Membership</option>
+                                    <option value="social">Social</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div class="loading-container" id="apps-loading">
+                            <div class="loading-spinner"></div>
+                        </div>
+
+                        <!-- Apps Table -->
+                        <div class="admin-table-container" id="apps-container" style="display: none;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>App</th>
+                                        <th>Organization</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="apps-table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="pagination" id="apps-pagination" style="display: none;">
+                            <button class="pagination-btn" id="apps-prev-page" disabled>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Previous
+                            </button>
+                            <span class="pagination-info" id="apps-pagination-info">Page 1 of 1</span>
+                            <button class="pagination-btn" id="apps-next-page" disabled>
+                                Next
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div class="empty-state" id="apps-empty-state" style="display: none;">
+                            <div class="empty-state-icon">
+                                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                                    <rect x="6" y="4" width="28" height="32" rx="3" stroke="currentColor" stroke-width="2"/>
+                                    <line x1="6" y1="12" x2="34" y2="12" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <h3>No apps found</h3>
                             <p>Try adjusting your search or filters</p>
                         </div>
                     </div>
@@ -343,6 +440,6 @@
     <script src="audit-log.js?v=1"></script>
     <script src="plan-limits.js?v=1"></script>
     <script src="sidebar.js?v=23"></script>
-    <script src="admin.js?v=1"></script>
+    <script src="admin.js?v=2"></script>
 </body>
 </html>
