@@ -304,11 +304,12 @@
             "f4": "Métriques de performance et analyses",
             "cta": "Essai Gratuit"
         },
+        "getStartedCta": "Commencer maintenant →",
         "enterpriseLink": "Besoins plus grands ? Parlons d'Enterprise →"
     },
     "cta": {
         "title": "Prêt à laisser l'IA gérer votre programme de fidélité ?",
-        "subtitle": "Rejoignez notre Bêta. Lancement en février 2026.",
+        "subtitle": "Décrivez votre entreprise — l'IA crée et gère votre programme de fidélité.",
         "emailPlaceholder": "Entrez votre email",
         "joinWaitlist": "Rejoindre la Bêta",
         "note": "Obtenez un tarif d'accès anticipé lors du lancement.",
@@ -1965,6 +1966,24 @@
         "build1": "Créez votre programme gratuitement — prêt en 60 secondes",
         "build2": "Commencez gratuitement. L'IA fait le reste.",
         "build3": "Votre programme de fidélité, actif en 60 secondes",
-        "button": "Commencer gratuitement →"
+        "button": "Commencer gratuitement →",
+        "note": "Créez votre programme de fidélité en moins de 60 secondes — gratuit, sans carte bancaire"
+    },
+    "builder": {
+        "domain": {
+            "title": "Utilisez votre propre domaine",
+            "desc": "Diffusez votre app à votre propre adresse web (comme votreentreprise.com) avec votre marque — sans la marque Royalty, entièrement à vous.",
+            "upsell": "Les domaines personnalisés sont une fonctionnalité en marque blanche. Passez à Scale ou ajoutez Royalty Pro pour connecter votre propre domaine.",
+            "upsellCta": "Voir les offres",
+            "label": "Votre domaine",
+            "connect": "Connecter",
+            "helper": "Saisissez uniquement le domaine — sans https:// ni chemin.",
+            "statusLabel": "Statut :",
+            "verify": "Vérifier",
+            "dnsIntro": "Ajoutez ces enregistrements chez votre registraire de domaine, puis cliquez sur Vérifier :"
+        }
+    },
+    "faq": {
+        "tag": "FAQ"
     }
 }

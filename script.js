@@ -175,8 +175,23 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 top: targetPosition,
                 behavior: 'smooth'
             });
+
+            // One-click path to the AI: land the cursor in the textarea after scrolling
+            if (targetId === '#discovery-card') {
+                setTimeout(() => document.getElementById('hero-business-prompt')?.focus(), 400);
+            }
         }
     });
+});
+
+// ===== FAQ Accordion =====
+document.addEventListener('click', (e) => {
+    const q = e.target.closest('.faq-question');
+    if (!q) return;
+    const item = q.closest('.faq-item');
+    if (!item) return;
+    const isOpen = item.classList.toggle('open');
+    q.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 });
 
 // ===== Navbar Background on Scroll =====
@@ -799,8 +814,8 @@ if (navCTABtn) {
         e.preventDefault();
         const card = document.getElementById('discovery-card');
         if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Fire the same transition as the hero CTA
-        heroCTABtn?.click();
+        // Textarea is shown by default — just focus it (no reveal needed)
+        document.getElementById('hero-business-prompt')?.focus();
     });
 }
 

@@ -304,11 +304,12 @@
             "f4": "Marca blanca + soporte dedicado",
             "cta": "Iniciar Prueba"
         },
+        "getStartedCta": "Empieza ahora →",
         "enterpriseLink": "¿Necesidades mayores? Hablemos de Enterprise →"
     },
     "cta": {
         "title": "¿Listo para que la IA gestione tu programa de fidelización?",
-        "subtitle": "Únete a nuestra Beta. Lanzamiento en febrero 2026.",
+        "subtitle": "Describe tu negocio: la IA crea y gestiona tu programa de fidelización.",
         "emailPlaceholder": "Ingresa tu correo",
         "joinWaitlist": "Únete a la Beta",
         "note": "Obtén precio de acceso anticipado cuando lancemos.",
@@ -1961,6 +1962,24 @@
         "build1": "Crea tu programa gratis — listo en 60 segundos",
         "build2": "Empieza gratis. La IA hace el resto.",
         "build3": "Tu programa de fidelización, activo en 60 segundos",
-        "button": "Empezar Gratis →"
+        "button": "Empezar Gratis →",
+        "note": "Crea tu programa de fidelización en menos de 60 segundos — gratis, sin tarjeta de crédito"
+    },
+    "builder": {
+        "domain": {
+            "title": "Usa tu propio dominio",
+            "desc": "Ofrece tu app en tu propia dirección web (como tunegocio.com) con tu marca — sin la marca de Royalty, totalmente tuya.",
+            "upsell": "Los dominios personalizados son una función de marca blanca. Cambia a Scale o añade Royalty Pro para conectar tu propio dominio.",
+            "upsellCta": "Ver planes",
+            "label": "Tu dominio",
+            "connect": "Conectar",
+            "helper": "Introduce solo el dominio — sin https:// ni ruta.",
+            "statusLabel": "Estado:",
+            "verify": "Verificar",
+            "dnsIntro": "Añade estos registros en tu proveedor de dominios y luego pulsa Verificar:"
+        }
+    },
+    "faq": {
+        "tag": "FAQ"
     }
 }

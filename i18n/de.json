@@ -304,11 +304,12 @@
             "f4": "White-Label + dedizierter Support",
             "cta": "Testversion Starten"
         },
+        "getStartedCta": "Jetzt loslegen →",
         "enterpriseLink": "Größerer Bedarf? Sprechen Sie mit uns über Enterprise →"
     },
     "cta": {
         "title": "Bereit, KI Ihr Treueprogramm betreiben zu lassen?",
-        "subtitle": "Treten Sie unserer Beta bei. Start Februar 2026.",
+        "subtitle": "Beschreibe dein Unternehmen — die KI erstellt und betreibt dein Treueprogramm.",
         "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
         "joinWaitlist": "Beta beitreten",
         "note": "Erhalten Sie frühzeitige Zugangspreise zum Start.",
@@ -1961,6 +1962,24 @@
         "build1": "Erstellen Sie Ihr Programm kostenlos — in 60 Sekunden bereit",
         "build2": "Kostenlos starten. Die KI erledigt den Rest.",
         "build3": "Ihr Treueprogramm, live in 60 Sekunden",
-        "button": "Kostenlos starten →"
+        "button": "Kostenlos starten →",
+        "note": "Erstelle dein Treueprogramm in unter 60 Sekunden — kostenlos, keine Kreditkarte nötig"
+    },
+    "builder": {
+        "domain": {
+            "title": "Eigene Domain verwenden",
+            "desc": "Stelle deine App unter deiner eigenen Webadresse (wie deinunternehmen.de) mit deinem Branding bereit — ohne Royalty-Branding, ganz deine.",
+            "upsell": "Eigene Domains sind eine White-Label-Funktion. Wechsle zu Scale oder füge Royalty Pro hinzu, um deine eigene Domain zu verbinden.",
+            "upsellCta": "Tarife ansehen",
+            "label": "Deine Domain",
+            "connect": "Verbinden",
+            "helper": "Nur die Domain eingeben — ohne https:// und ohne Pfad.",
+            "statusLabel": "Status:",
+            "verify": "Überprüfen",
+            "dnsIntro": "Füge diese Einträge bei deinem Domain-Registrar hinzu und klicke dann auf Überprüfen:"
+        }
+    },
+    "faq": {
+        "tag": "FAQ"
     }
 }

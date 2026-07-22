@@ -61,7 +61,7 @@ const I18n = (function() {
     }
 
     // Translation file version - increment when translations change
-    const TRANSLATION_VERSION = 8;
+    const TRANSLATION_VERSION = 11;
 
     // Load translation file
     async function loadTranslations(lang) {

@@ -304,11 +304,12 @@
             "f4": "White-label + dedicated support",
             "cta": "Start Trial"
         },
+        "getStartedCta": "Get Started Now →",
         "enterpriseLink": "Bigger needs? Talk to us about Enterprise →"
     },
     "cta": {
         "title": "Ready to scale your business with AI?",
-        "subtitle": "Join our Beta. Launch February 2026.",
+        "subtitle": "Describe your business — AI builds and runs your loyalty program.",
         "emailPlaceholder": "Enter your email",
         "joinWaitlist": "Join our Beta",
         "note": "Get early access pricing when we launch.",
@@ -1954,6 +1955,24 @@
         "build1": "Build your program free — ready in 60 seconds",
         "build2": "Start free. AI does the rest.",
         "build3": "Your loyalty program, live in 60 seconds",
-        "button": "Get Started Free →"
+        "button": "Get Started Free →",
+        "note": "Create your loyalty program in under 60 seconds — free, no credit card required"
+    },
+    "builder": {
+        "domain": {
+            "title": "Use your own domain",
+            "desc": "Serve your app at your own web address (like yourbusiness.com) with your branding — no Royalty branding, fully yours.",
+            "upsell": "Custom domains are a white-label feature. Upgrade to Scale, or add Royalty Pro, to connect your own domain.",
+            "upsellCta": "View plans",
+            "label": "Your domain",
+            "connect": "Connect",
+            "helper": "Enter the domain only — no https:// and no path.",
+            "statusLabel": "Status:",
+            "verify": "Verify",
+            "dnsIntro": "Add these records at your domain registrar, then click Verify:"
+        }
+    },
+    "faq": {
+        "tag": "FAQ"
     }
 }

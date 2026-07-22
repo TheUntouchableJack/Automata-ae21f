@@ -304,11 +304,12 @@
             "f4": "White-label + suporte dedicado",
             "cta": "Iniciar Teste"
         },
+        "getStartedCta": "Comece agora →",
         "enterpriseLink": "Necessidades maiores? Fale conosco sobre Enterprise →"
     },
     "cta": {
         "title": "Pronto para deixar a IA gerenciar seu programa de fidelidade?",
-        "subtitle": "Entre na nossa Beta. Lançamento em fevereiro de 2026.",
+        "subtitle": "Descreva o seu negócio — a IA cria e gere o seu programa de fidelidade.",
         "emailPlaceholder": "Digite seu email",
         "joinWaitlist": "Entrar na Beta",
         "note": "Garanta preço de acesso antecipado no lançamento.",
@@ -1961,6 +1962,24 @@
         "build1": "Crie seu programa grátis — pronto em 60 segundos",
         "build2": "Comece grátis. A IA faz o resto.",
         "build3": "Seu programa de fidelidade, no ar em 60 segundos",
-        "button": "Começar Grátis →"
+        "button": "Começar Grátis →",
+        "note": "Crie seu programa de fidelidade em menos de 60 segundos — grátis, sem cartão de crédito"
+    },
+    "builder": {
+        "domain": {
+            "title": "Use o seu próprio domínio",
+            "desc": "Sirva a sua app no seu próprio endereço web (como oseunegocio.com) com a sua marca — sem a marca Royalty, totalmente sua.",
+            "upsell": "Domínios personalizados são um recurso white-label. Mude para o Scale ou adicione o Royalty Pro para ligar o seu próprio domínio.",
+            "upsellCta": "Ver planos",
+            "label": "O seu domínio",
+            "connect": "Ligar",
+            "helper": "Introduza apenas o domínio — sem https:// e sem caminho.",
+            "statusLabel": "Estado:",
+            "verify": "Verificar",
+            "dnsIntro": "Adicione estes registos no seu registador de domínios e depois clique em Verificar:"
+        }
+    },
+    "faq": {
+        "tag": "FAQ"
     }
 }

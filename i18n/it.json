@@ -304,11 +304,12 @@
             "f4": "White-label + supporto dedicato",
             "cta": "Inizia Prova"
         },
+        "getStartedCta": "Inizia ora →",
         "enterpriseLink": "Esigenze più grandi? Parliamo di Enterprise →"
     },
     "cta": {
         "title": "Pronto a far gestire all'IA il tuo programma fedeltà?",
-        "subtitle": "Unisciti alla nostra Beta. Lancio febbraio 2026.",
+        "subtitle": "Descrivi la tua attività: l'IA crea e gestisce il tuo programma fedeltà.",
         "emailPlaceholder": "Inserisci la tua email",
         "joinWaitlist": "Iscriviti alla Beta",
         "note": "Ottieni prezzi di accesso anticipato al lancio.",
@@ -1962,6 +1963,24 @@
         "build1": "Crea il tuo programma gratis — pronto in 60 secondi",
         "build2": "Inizia gratis. L'IA fa il resto.",
         "build3": "Il tuo programma fedeltà, attivo in 60 secondi",
-        "button": "Inizia gratis →"
+        "button": "Inizia gratis →",
+        "note": "Crea il tuo programma fedeltà in meno di 60 secondi — gratis, nessuna carta di credito"
+    },
+    "builder": {
+        "domain": {
+            "title": "Usa il tuo dominio",
+            "desc": "Pubblica la tua app al tuo indirizzo web (come iltuobusiness.com) con il tuo brand — senza il marchio Royalty, completamente tua.",
+            "upsell": "I domini personalizzati sono una funzione white-label. Passa a Scale o aggiungi Royalty Pro per collegare il tuo dominio.",
+            "upsellCta": "Vedi i piani",
+            "label": "Il tuo dominio",
+            "connect": "Collega",
+            "helper": "Inserisci solo il dominio — senza https:// e senza percorso.",
+            "statusLabel": "Stato:",
+            "verify": "Verifica",
+            "dnsIntro": "Aggiungi questi record presso il tuo registrar del dominio, poi clicca su Verifica:"
+        }
+    },
+    "faq": {
+        "tag": "FAQ"
     }
 }

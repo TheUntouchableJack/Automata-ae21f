@@ -1394,6 +1394,84 @@ blockquote {
     font-size: 13px;
 }
 
+/* ===== FAQ Section (homepage) ===== */
+.faq {
+    padding: 100px 0;
+    /* Positioned above the fixed constellation canvas (z-index:0), same as the other
+       sections — otherwise the canvas paints over the FAQ content. Transparent bg so
+       the constellation still shows in the section's gaps (the items are solid). */
+    position: relative;
+    z-index: 1;
+    background: transparent;
+}
+
+.faq-list {
+    max-width: 760px;
+    margin: 48px auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.faq-item {
+    background: #ffffff;
+    border: 1px solid rgba(124, 58, 237, 0.12);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+    overflow: hidden;
+}
+
+.faq-question {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: left;
+}
+
+.faq-chevron {
+    flex-shrink: 0;
+    color: var(--color-primary);
+    transition: transform 0.25s ease;
+}
+
+.faq-item.open .faq-chevron {
+    transform: rotate(180deg);
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.faq-item.open .faq-answer {
+    max-height: 500px;
+}
+
+.faq-answer p {
+    margin: 0;
+    padding: 0 24px 22px;
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    line-height: 1.65;
+}
+
+@media (max-width: 768px) {
+    .faq {
+        padding: 64px 0;
+    }
+}
+
 .pricing-footer-link {
     text-align: center;
     margin-top: 32px;
@@ -1978,32 +2056,41 @@ blockquote {
 
 /* ===== Repeat CTA Band ===== */
 .cta-band {
-    padding: 56px 0;
+    /* Negative margins pull the band up into the surrounding sections' generous
+       padding so a bare button+note doesn't float in ~150px of dead space.
+       Safe against the min adjacent section padding (100px desktop / 64px mobile). */
+    margin: -72px 0 0;
+    padding: 24px 0;
+    /* Solid light bg (matches the section edge tones) so the note never sits on the
+       raw white body background — a transparent band showed a white "cut-off" strip
+       between the gradient sections. */
     background: var(--color-bg-secondary);
-    border-top: 1px solid var(--color-border-light);
-    border-bottom: 1px solid var(--color-border-light);
     text-align: center;
+    position: relative;
+    /* Sections all use z-index:1 (above the constellation bg); the band overlaps
+       into their padding via negative margins, so it must sit above them (z:2)
+       or the following section's background paints over the note. */
+    z-index: 2;
 }
 
 .cta-band .container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 10px;
 }
 
-.cta-band h2 {
-    font-size: 1.75rem;
+.cta-band-note {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
     margin: 0;
-    max-width: 640px;
+    max-width: 600px;
 }
 
 @media (max-width: 768px) {
     .cta-band {
-        padding: 40px 0;
-    }
-    .cta-band h2 {
-        font-size: 1.375rem;
+        margin: -36px 0 0;
+        padding: 20px 0;
     }
 }
 
@@ -2034,6 +2121,21 @@ blockquote {
 .cta-form {
     max-width: 440px;
     margin: 0 auto;
+}
+
+/* Final CTA converted to a Get Started button (was the beta signup form) */
+.cta-final {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.cta .cta-band-note {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin: 0;
 }
 
 .form-group {

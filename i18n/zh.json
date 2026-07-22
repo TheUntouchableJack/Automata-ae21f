@@ -304,11 +304,12 @@
             "f4": "白标 + 专属支持",
             "cta": "开始试用"
         },
+        "getStartedCta": "立即开始 →",
         "enterpriseLink": "需求更大？联系我们了解 Enterprise →"
     },
     "cta": {
         "title": "准备好让AI运营您的会员计划了吗？",
-        "subtitle": "加入我们的Beta。2026年2月发布。",
+        "subtitle": "描述你的业务——AI 为你创建并运营忠诚度计划。",
         "emailPlaceholder": "输入您的电子邮件",
         "joinWaitlist": "加入测试版",
         "note": "发布时享受早鸟价格。",
@@ -1964,6 +1965,24 @@
         "build1": "免费创建您的方案 — 60 秒内完成",
         "build2": "免费开始，其余交给 AI。",
         "build3": "您的忠诚度方案，60 秒内上线",
-        "button": "免费开始 →"
+        "button": "免费开始 →",
+        "note": "60 秒内创建你的忠诚度计划 — 免费，无需信用卡"
+    },
+    "builder": {
+        "domain": {
+            "title": "使用您自己的域名",
+            "desc": "在您自己的网址（如 yourbusiness.com）上提供您的应用，并使用您自己的品牌——没有 Royalty 品牌，完全属于您。",
+            "upsell": "自定义域名是白标功能。升级到 Scale 或添加 Royalty Pro 即可连接您自己的域名。",
+            "upsellCta": "查看套餐",
+            "label": "您的域名",
+            "connect": "连接",
+            "helper": "只需输入域名——不含 https:// 和路径。",
+            "statusLabel": "状态：",
+            "verify": "验证",
+            "dnsIntro": "在您的域名注册商处添加这些记录，然后点击“验证”："
+        }
+    },
+    "faq": {
+        "tag": "常见问题"
     }
 }
