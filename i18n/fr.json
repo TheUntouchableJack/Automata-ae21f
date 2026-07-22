@@ -263,7 +263,7 @@
             "desc": "Solutions personnalisées",
             "price": "Sur mesure",
             "period": "tarification",
-            "f1": "Tout dans Max",
+            "f1": "Tout dans Scale",
             "f2": "Support dédié et SLAs",
             "f3": "Accès API",
             "f4": "Intégrations personnalisées",
@@ -271,12 +271,12 @@
         },
         "scale": {
             "name": "Scale",
-            "desc": "Pour multi-établissements",
-            "f1": "Clients illimités",
-            "f2": "Insights IA illimités",
-            "f3": "Marque blanche",
-            "f4": "Support dédié",
-            "cta": "Rejoindre la Bêta"
+            "desc": "Royal prouve votre ROI",
+            "f1": "10 000 clients",
+            "f2": "15 000 emails + 750 SMS/mois",
+            "f3": "Attribution des visites (prouve ROI)",
+            "f4": "Marque blanche + support dédié",
+            "cta": "Essai Gratuit"
         },
         "royaltyPro": {
             "name": "Royalty Pro",
@@ -285,7 +285,26 @@
             "f2": "Marque blanche",
             "f3": "Annulez à tout moment",
             "cta": "Ajouter Royalty Pro"
-        }
+        },
+        "starter": {
+            "name": "Starter",
+            "desc": "Fidélité en pilote automatique",
+            "f1": "500 clients",
+            "f2": "Chat Royal AI + automatisations",
+            "f3": "1 000 emails + 100 SMS/mois",
+            "f4": "Automatisations en mode révision",
+            "cta": "Essai Gratuit"
+        },
+        "growth": {
+            "name": "Growth",
+            "desc": "Royal gère votre marketing",
+            "f1": "2 000 clients",
+            "f2": "5 000 emails + 300 SMS/mois",
+            "f3": "Mode Autonome + protection anti-fatigue",
+            "f4": "Métriques de performance et analyses",
+            "cta": "Essai Gratuit"
+        },
+        "enterpriseLink": "Besoins plus grands ? Parlons d'Enterprise →"
     },
     "cta": {
         "title": "Prêt à laisser l'IA gérer votre programme de fidélité ?",
@@ -424,7 +443,8 @@
         "contact": "Contact",
         "privacy": "Confidentialité",
         "terms": "Conditions",
-        "copyright": "© 2026 Royalty. Tous droits réservés."
+        "copyright": "© 2026 Royalty. Tous droits réservés.",
+        "customApps": "Apps sur mesure"
     },
     "contact": {
         "badge": "Nous contacter",
@@ -505,15 +525,15 @@
     "intelligence": {
         "title": "Intelligence IA",
         "subtitle": "Insights et recommandations alimentés par l'IA pour votre entreprise",
-        "freePlanBadge": "Plan gratuit \u2014 Demandez n'importe quoi \u00e0 Royal",
-        "emptyCaption": "Royal est votre cerveau IA. Posez des questions, obtenez des suggestions et passez au niveau sup\u00e9rieur quand vous serez pr\u00eat \u00e0 ce que Royal agisse seul.",
-        "seeProLink": "D\u00e9couvrez ce que Pro d\u00e9bloque \u2192",
-        "starterLabel": "Pas s\u00fbr par o\u00f9 commencer ? Essayez l'une de ces suggestions :",
+        "freePlanBadge": "Plan gratuit — Demandez n'importe quoi à Royal",
+        "emptyCaption": "Royal est votre cerveau IA. Posez des questions, obtenez des suggestions et passez au niveau supérieur quand vous serez prêt à ce que Royal agisse seul.",
+        "seeProLink": "Découvrez ce que Pro débloque →",
+        "starterLabel": "Pas sûr par où commencer ? Essayez l'une de ces suggestions :",
         "starters": {
             "automations": "Quelles automatisations devrais-je configurer pour mon entreprise ?",
-            "loyaltyPrograms": "Comment les programmes de fid\u00e9lit\u00e9 g\u00e9n\u00e8rent-ils des visites r\u00e9p\u00e9t\u00e9es ?",
-            "birthdayRewards": "Devrais-je mettre en place des r\u00e9compenses d'anniversaire ?",
-            "firstRewards": "Que devrais-je offrir \u00e0 mes premiers clients comme r\u00e9compenses ?"
+            "loyaltyPrograms": "Comment les programmes de fidélité génèrent-ils des visites répétées ?",
+            "birthdayRewards": "Devrais-je mettre en place des récompenses d'anniversaire ?",
+            "firstRewards": "Que devrais-je offrir à mes premiers clients comme récompenses ?"
         },
         "analyze": "Analyser Mon Entreprise",
         "analyzeNow": "Analyser Maintenant",
@@ -1542,7 +1562,8 @@
         "tag": "Custom Apps",
         "title": "Nous Créons Votre App",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
-        "cta": "Get a Free Estimate →"
+        "cta": "Get a Free Estimate →",
+        "homepageLink": "Besoin de sur-mesure ? Nous créons des apps complètes →"
     },
     "estimate": {
         "heroTitle": "Let's Build Your App",
@@ -1939,5 +1960,11 @@
         "rewardsTitle": "Programme de récompenses",
         "rewardsDesc": "Créez des récompenses que vos clients adoreront. Configurez des avantages par points, des exclusivités par niveau, ou laissez l'IA suggérer les meilleures récompenses.",
         "rewardsLink": "Voir les récompenses"
+    },
+    "ctaBand": {
+        "build1": "Créez votre programme gratuitement — prêt en 60 secondes",
+        "build2": "Commencez gratuitement. L'IA fait le reste.",
+        "build3": "Votre programme de fidélité, actif en 60 secondes",
+        "button": "Commencer gratuitement →"
     }
 }

@@ -268,7 +268,10 @@ function getStripe() {
 async function handleCheckout(plan) {
     const billingToggle = document.getElementById('billing-toggle');
     const isAnnual = billingToggle?.checked || false;
-    const priceKey = `${plan}_${isAnnual ? 'annual' : 'monthly'}`;
+    // Royalty Pro add-on is monthly-only — never build royalty_pro_annual (no such price → 400).
+    const priceKey = plan === 'royalty_pro'
+        ? 'royalty_pro_monthly'
+        : `${plan}_${isAnnual ? 'annual' : 'monthly'}`;
 
     const btn = document.querySelector(`.checkout-btn[data-plan="${plan}"]`);
     const originalText = btn.innerHTML;

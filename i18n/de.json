@@ -263,7 +263,7 @@
             "desc": "Individuelle Lösungen",
             "price": "Individuell",
             "period": "Preisgestaltung",
-            "f1": "Alles in Max",
+            "f1": "Alles in Scale",
             "f2": "Dedizierter Support & SLAs",
             "f3": "API-Zugang",
             "f4": "Individuelle Integrationen",
@@ -276,7 +276,35 @@
             "f2": "White-Label-Branding",
             "f3": "Jederzeit kündbar",
             "cta": "Royalty Pro Hinzufügen"
-        }
+        },
+        "starter": {
+            "name": "Starter",
+            "desc": "Loyalty auf Autopilot",
+            "f1": "500 Kunden",
+            "f2": "Royal-AI-Chat + Automatisierungen",
+            "f3": "1.000 E-Mails + 100 SMS/Monat",
+            "f4": "Automatisierungen im Prüfmodus",
+            "cta": "Testversion Starten"
+        },
+        "growth": {
+            "name": "Growth",
+            "desc": "Royal führt Ihr Marketing",
+            "f1": "2.000 Kunden",
+            "f2": "5.000 E-Mails + 300 SMS/Monat",
+            "f3": "Autonomer Modus + Ermüdungsschutz",
+            "f4": "Leistungsmetriken & Analysen",
+            "cta": "Testversion Starten"
+        },
+        "scale": {
+            "name": "Scale",
+            "desc": "Royal beweist Ihren ROI",
+            "f1": "10.000 Kunden",
+            "f2": "15.000 E-Mails + 750 SMS/Monat",
+            "f3": "Besuchs-Attribution (ROI beweisen)",
+            "f4": "White-Label + dedizierter Support",
+            "cta": "Testversion Starten"
+        },
+        "enterpriseLink": "Größerer Bedarf? Sprechen Sie mit uns über Enterprise →"
     },
     "cta": {
         "title": "Bereit, KI Ihr Treueprogramm betreiben zu lassen?",
@@ -411,7 +439,8 @@
         "contact": "Kontakt",
         "privacy": "Datenschutz",
         "terms": "AGB",
-        "copyright": "© 2026 Royalty. Alle Rechte vorbehalten."
+        "copyright": "© 2026 Royalty. Alle Rechte vorbehalten.",
+        "customApps": "Individuelle Apps"
     },
     "contact": {
         "badge": "Kontakt aufnehmen",
@@ -491,14 +520,14 @@
     },
     "intelligence": {
         "title": "KI-Intelligenz",
-        "subtitle": "KI-gest\u00fctzte Einblicke und Empfehlungen f\u00fcr Ihr Unternehmen",
-        "freePlanBadge": "Kostenloser Plan \u2014 Fragen Sie Royal alles",
-        "emptyCaption": "Royal ist Ihr KI-Gehirn. Stellen Sie Fragen, erhalten Sie Vorschl\u00e4ge und upgraden Sie, wenn Sie bereit sind, Royal eigenst\u00e4ndig handeln zu lassen.",
-        "seeProLink": "Entdecken Sie, was Pro freischaltet \u2192",
+        "subtitle": "KI-gestützte Einblicke und Empfehlungen für Ihr Unternehmen",
+        "freePlanBadge": "Kostenloser Plan — Fragen Sie Royal alles",
+        "emptyCaption": "Royal ist Ihr KI-Gehirn. Stellen Sie Fragen, erhalten Sie Vorschläge und upgraden Sie, wenn Sie bereit sind, Royal eigenständig handeln zu lassen.",
+        "seeProLink": "Entdecken Sie, was Pro freischaltet →",
         "starterLabel": "Nicht sicher, wo Sie anfangen sollen? Probieren Sie eine davon:",
         "starters": {
-            "automations": "Welche Automatisierungen sollte ich f\u00fcr mein Unternehmen einrichten?",
-            "loyaltyPrograms": "Wie f\u00f6rdern Treueprogramme wiederholte Besuche?",
+            "automations": "Welche Automatisierungen sollte ich für mein Unternehmen einrichten?",
+            "loyaltyPrograms": "Wie fördern Treueprogramme wiederholte Besuche?",
             "birthdayRewards": "Sollte ich Geburtstagsbelohnungen einrichten?",
             "firstRewards": "Was sollte ich meinen ersten Kunden als Belohnungen anbieten?"
         },
@@ -1529,7 +1558,8 @@
         "tag": "Custom Apps",
         "title": "Wir Bauen Ihre App",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
-        "cta": "Get a Free Estimate →"
+        "cta": "Get a Free Estimate →",
+        "homepageLink": "Etwas Individuelles nötig? Wir bauen komplette Apps →"
     },
     "estimate": {
         "heroTitle": "Let's Build Your App",
@@ -1926,5 +1956,11 @@
         "rewardsTitle": "Belohnungsprogramm",
         "rewardsDesc": "Richten Sie Belohnungen ein, die Ihre Kunden lieben werden. Erstellen Sie punktebasierte Vorteile, Stufen-Exklusives oder lassen Sie die KI die besten Belohnungen vorschlagen.",
         "rewardsLink": "Belohnungen ansehen"
+    },
+    "ctaBand": {
+        "build1": "Erstellen Sie Ihr Programm kostenlos — in 60 Sekunden bereit",
+        "build2": "Kostenlos starten. Die KI erledigt den Rest.",
+        "build3": "Ihr Treueprogramm, live in 60 Sekunden",
+        "button": "Kostenlos starten →"
     }
 }

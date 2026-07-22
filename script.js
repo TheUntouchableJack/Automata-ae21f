@@ -184,16 +184,32 @@ const navbar = document.querySelector('.navbar');
 
 // Throttled scroll handler (optimized - fires at most once per 50ms)
 let lastScrollTime = 0;
+let lastScrollY = window.pageYOffset;
 window.addEventListener('scroll', () => {
+    if (!navbar) return;
     const now = Date.now();
     if (now - lastScrollTime < 50) return;
     lastScrollTime = now;
 
-    if (window.pageYOffset > 100) {
+    const currentY = window.pageYOffset;
+
+    if (currentY > 100) {
         navbar.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
     } else {
         navbar.style.boxShadow = 'none';
     }
+
+    // Hide on scroll down, reveal on scroll up. Never hide at the very top
+    // or while the mobile menu is open.
+    if (!document.body.classList.contains('mobile-menu-open')) {
+        if (currentY > lastScrollY && currentY > 120) {
+            navbar.classList.add('navbar--hidden');
+        } else if (currentY < lastScrollY) {
+            navbar.classList.remove('navbar--hidden');
+        }
+    }
+
+    lastScrollY = currentY;
 });
 
 // ===== Rotating Word Animation =====

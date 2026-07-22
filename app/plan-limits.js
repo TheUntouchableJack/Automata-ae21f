@@ -47,8 +47,85 @@ const PLAN_LIMITS = {
         dedicated_support: false
     },
 
-    // Subscription tiers (matches Stripe products) - Free/Pro/Max
+    // Subscription tiers (matches Stripe products) - SMB ladder: Starter/Growth/Scale.
+    // pro/max are LEGACY tiers kept for grandfathered subscribers (hidden from UI).
     subscription: {
+        starter: {
+            name: 'Starter',
+            tagline: 'Loyalty on autopilot',
+            price_monthly: 19.99,
+            price_annual: 15.99, // $191.90/year = $15.99/month (20% off)
+            members: 500,
+            // Messaging limits
+            emails_monthly: 1000,
+            sms_monthly: 100,
+            // Royal AI capabilities - chat + review-mode automations (no autonomous)
+            royal_chat: true,
+            royal_queries_monthly: 100,
+            max_automations: -1, // review mode only (autonomous_mode false)
+            review_mode: true,
+            autonomous_mode: false,
+            business_learning: false,
+            fatigue_protection: false,
+            performance_metrics: false,
+            visit_attribution: false,
+            // Branding & support
+            white_label: false,
+            email_support: true,
+            priority_support: false,
+            dedicated_support: false
+        },
+        growth: {
+            name: 'Growth',
+            tagline: 'Royal runs your marketing',
+            price_monthly: 39.99,
+            price_annual: 31.99, // $383.90/year = $31.99/month (20% off)
+            members: 2000,
+            // Messaging limits
+            emails_monthly: 5000,
+            sms_monthly: 300,
+            // Royal AI capabilities - autonomous + fatigue + metrics
+            royal_chat: true,
+            royal_queries_monthly: 500,
+            max_automations: -1,
+            review_mode: true,
+            autonomous_mode: true,
+            business_learning: true,
+            fatigue_protection: true,
+            performance_metrics: true,
+            visit_attribution: false,
+            // Branding & support
+            white_label: false,
+            email_support: true,
+            priority_support: true,
+            dedicated_support: false
+        },
+        scale: {
+            name: 'Scale',
+            tagline: 'Royal proves your ROI',
+            price_monthly: 79.99,
+            price_annual: 63.99, // $767.90/year = $63.99/month (20% off)
+            members: 10000,
+            // Messaging limits
+            emails_monthly: 15000,
+            sms_monthly: 750,
+            // Royal AI capabilities - everything + attribution (high, COGS-safe cap)
+            royal_chat: true,
+            royal_queries_monthly: 2000,
+            max_automations: -1,
+            review_mode: true,
+            autonomous_mode: true,
+            business_learning: true,
+            fatigue_protection: true,
+            performance_metrics: true,
+            visit_attribution: true,
+            // Branding & support
+            white_label: true,
+            email_support: true,
+            priority_support: true,
+            dedicated_support: true
+        },
+        // ===== LEGACY tiers (grandfathered subscribers only, hidden from UI) =====
         pro: {
             name: 'Pro',
             tagline: 'Royal runs your marketing',
@@ -425,9 +502,9 @@ function getLimitMessage(limitType, limit, org) {
     // Automation limit
     if (limitType === 'max_automations') {
         if (planType === 'free') {
-            return 'Upgrade to Pro ($299/mo) to create AI automations.';
+            return 'Upgrade to Starter ($19.99/mo) to create AI automations.';
         }
-        return `You've reached your limit of ${limit} automations. Upgrade to Pro ($299/mo) for unlimited automations.`;
+        return `You've reached your limit of ${limit} automations. Upgrade to Growth ($39.99/mo) for autonomous automations.`;
     }
 
     // Member limit
@@ -449,16 +526,16 @@ function getFeatureUpgradeMessage(feature, org) {
         // Royal AI features
         royal_chat: org.plan_type === 'appsumo_lifetime'
             ? 'Royal AI chat requires Royalty Pro ($49/mo). Let Royal help run your marketing.'
-            : 'Upgrade to Pro ($299/mo) to chat with Royal and get AI recommendations.',
-        autonomous_mode: 'Autonomous Mode is available on Pro ($299/mo). Let Royal send campaigns without asking.',
-        business_learning: 'Business Learning is available on Pro ($299/mo). Royal learns your margins, busy times, and customer patterns.',
-        fatigue_protection: 'Fatigue Protection is available on Pro ($299/mo). Royal knows when to back off.',
-        performance_metrics: 'Performance Metrics are available on Pro ($299/mo). See which automations drive results.',
-        visit_attribution: 'Visit Attribution is available on Max ($749/mo). Link automations to actual store visits.',
+            : 'Upgrade to Starter ($19.99/mo) to chat with Royal and get AI recommendations.',
+        autonomous_mode: 'Autonomous Mode is available on Growth ($39.99/mo). Let Royal send campaigns without asking.',
+        business_learning: 'Business Learning is available on Growth ($39.99/mo). Royal learns your margins, busy times, and customer patterns.',
+        fatigue_protection: 'Fatigue Protection is available on Growth ($39.99/mo). Royal knows when to back off.',
+        performance_metrics: 'Performance Metrics are available on Growth ($39.99/mo). See which automations drive results.',
+        visit_attribution: 'Visit Attribution is available on Scale ($79.99/mo). Link automations to actual store visits.',
         // Other features
-        white_label: 'White-label branding is available on Max ($749/mo) or with Royalty Pro.',
-        priority_support: 'Priority support is available on Pro ($299/mo) and above.',
-        dedicated_support: 'Dedicated support is available on Max ($749/mo).'
+        white_label: 'White-label branding is available on Scale ($79.99/mo) or with Royalty Pro.',
+        priority_support: 'Priority support is available on Growth ($39.99/mo) and above.',
+        dedicated_support: 'Dedicated support is available on Scale ($79.99/mo).'
     };
     return messages[feature] || `This feature requires a plan upgrade.`;
 }
@@ -490,13 +567,19 @@ function getUpgradeOptions(org) {
             });
         }
     } else if (org.plan_type === 'subscription') {
-        // Subscription users can upgrade tiers (Pro → Max)
+        // Subscription users can upgrade tiers (Starter → Growth → Scale)
         const upgrades = {
-            pro: {
-                tier: 'max',
-                name: 'Max',
-                price: 749,
-                description: 'Visit Attribution + white-label + 50K emails'
+            starter: {
+                tier: 'growth',
+                name: 'Growth',
+                price: 39.99,
+                description: 'Autonomous Mode + fatigue protection + performance metrics'
+            },
+            growth: {
+                tier: 'scale',
+                name: 'Scale',
+                price: 79.99,
+                description: 'Visit Attribution + white-label + 15K emails'
             }
         };
         const upgrade = upgrades[org.subscription_tier];
@@ -513,10 +596,10 @@ function getUpgradeOptions(org) {
         // Free users
         options.push({
             type: 'subscription',
-            label: 'Upgrade to Pro',
-            description: '$299/month - Royal runs your marketing autonomously',
+            label: 'Upgrade to Starter',
+            description: '$19.99/month - Loyalty on autopilot with Royal AI',
             action: 'upgrade',
-            tier: 'pro',
+            tier: 'starter',
             featured: true
         });
         options.push({

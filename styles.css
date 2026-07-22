@@ -283,6 +283,11 @@ h4 {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--color-border-light);
+    transition: transform 0.3s ease;
+}
+
+.navbar--hidden {
+    transform: translateY(-100%);
 }
 
 .nav-container {
@@ -1375,6 +1380,20 @@ blockquote {
     font-size: 13px;
 }
 
+/* 5-tier pricing layout (full pricing page) */
+.pricing-cards-5 {
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 1200px;
+}
+
+.pricing-cards-5 .pricing-card {
+    padding: 20px;
+}
+
+.pricing-cards-5 .pricing-features li {
+    font-size: 13px;
+}
+
 .pricing-footer-link {
     text-align: center;
     margin-top: 32px;
@@ -1955,6 +1974,37 @@ blockquote {
     .app-screen-inner { border-radius: 24px; }
     .phone-frame { width: 198px; height: 350px; border-width: 2px; border-radius: 28px; }
     .phone-island { width: 44px; height: 12px; }
+}
+
+/* ===== Repeat CTA Band ===== */
+.cta-band {
+    padding: 56px 0;
+    background: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border-light);
+    border-bottom: 1px solid var(--color-border-light);
+    text-align: center;
+}
+
+.cta-band .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.cta-band h2 {
+    font-size: 1.75rem;
+    margin: 0;
+    max-width: 640px;
+}
+
+@media (max-width: 768px) {
+    .cta-band {
+        padding: 40px 0;
+    }
+    .cta-band h2 {
+        font-size: 1.375rem;
+    }
 }
 
 /* ===== CTA Section ===== */
@@ -3139,6 +3189,11 @@ input.discovery-input {
         grid-template-columns: repeat(2, 1fr);
         max-width: 700px;
     }
+
+    .pricing-cards-5 {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 760px;
+    }
 }
 
 @media (max-width: 900px) {
@@ -3153,6 +3208,11 @@ input.discovery-input {
     }
 
     .pricing-cards-4 {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+    }
+
+    .pricing-cards-5 {
         grid-template-columns: 1fr;
         max-width: 400px;
     }

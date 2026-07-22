@@ -15,11 +15,14 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // Price IDs (public, safe to include) - Updated Feb 11, 2026 (LIVE MODE)
 const PRICES: Record<string, string> = {
-  // Subscription tiers (matches plan-limits.js)
-  pro_monthly: 'price_1SziieGNy14i1og8BYi4vv84',      // $299/mo - Royal runs your marketing
-  pro_annual: 'price_1SziifGNy14i1og8tiGIwHdw',       // $2,868/yr ($239/mo) - 20% off
-  max_monthly: 'price_1SzijTGNy14i1og8hsd8qFiJ',      // $749/mo - Royal proves your ROI
-  max_annual: 'price_1SzijUGNy14i1og8bCVXvQdx',       // $7,188/yr ($599/mo) - 20% off
+  // SMB subscription tiers (matches plan-limits.js) - Starter/Growth/Scale. LIVE IDs created 2026-07-22.
+  // Old pro_*/max_* CHECKOUT keys intentionally removed to block NEW signups on the $299/$749 prices.
+  starter_monthly: 'price_1Tw1zTGNy14i1og8ph2ry11H', // $19.99/mo
+  starter_annual:  'price_1Tw1zUGNy14i1og8g2c0mYyd',  // $191.90/yr ($15.99/mo) - 20% off
+  growth_monthly:  'price_1Tw1zUGNy14i1og8Kvd7XmNy',  // $39.99/mo
+  growth_annual:   'price_1Tw1zVGNy14i1og8Nij2gkJW',   // $383.90/yr ($31.99/mo) - 20% off
+  scale_monthly:   'price_1Tw1zWGNy14i1og89Xtfieg1',   // $79.99/mo
+  scale_annual:    'price_1Tw1zWGNy14i1og8YbHmyYst',    // $767.90/yr ($63.99/mo) - 20% off
   // Royalty Pro add-on for LTD users
   royalty_pro_monthly: 'price_1SyfQGGNy14i1og8jvmoWMxo', // $79/mo (Note: plan-limits says $79, not $49)
   // Messaging bundles (one-time purchases) - LIVE MODE Feb 11, 2026

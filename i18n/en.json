@@ -263,7 +263,7 @@
             "desc": "Custom solutions",
             "price": "Custom",
             "period": "pricing",
-            "f1": "Everything in Max",
+            "f1": "Everything in Scale",
             "f2": "Dedicated support & SLAs",
             "f3": "API access",
             "f4": "Custom integrations",
@@ -276,7 +276,35 @@
             "f2": "10K emails + 500 SMS/mo",
             "f3": "White-label branding",
             "cta": "Add Royalty Pro"
-        }
+        },
+        "starter": {
+            "name": "Starter",
+            "desc": "Loyalty on autopilot",
+            "f1": "500 customers",
+            "f2": "Royal AI chat + automations",
+            "f3": "1,000 emails + 100 SMS/mo",
+            "f4": "Review-mode automations",
+            "cta": "Start Trial"
+        },
+        "growth": {
+            "name": "Growth",
+            "desc": "Royal runs your marketing",
+            "f1": "2,000 customers",
+            "f2": "5,000 emails + 300 SMS/mo",
+            "f3": "Autonomous Mode + fatigue protection",
+            "f4": "Performance metrics & analytics",
+            "cta": "Start Trial"
+        },
+        "scale": {
+            "name": "Scale",
+            "desc": "Royal proves your ROI",
+            "f1": "10,000 customers",
+            "f2": "15,000 emails + 750 SMS/mo",
+            "f3": "Visit attribution (prove ROI)",
+            "f4": "White-label + dedicated support",
+            "cta": "Start Trial"
+        },
+        "enterpriseLink": "Bigger needs? Talk to us about Enterprise →"
     },
     "cta": {
         "title": "Ready to scale your business with AI?",
@@ -413,7 +441,8 @@
         "tag": "Custom Apps",
         "title": "We Build Your App",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
-        "cta": "Get a Free Estimate →"
+        "cta": "Get a Free Estimate →",
+        "homepageLink": "Need something custom? We build full apps →"
     },
     "estimate": {
         "heroTitle": "Let's Build Your App",
@@ -727,7 +756,8 @@
         "contact": "Contact",
         "privacy": "Privacy",
         "terms": "Terms",
-        "copyright": "© 2026 Royalty. All rights reserved."
+        "copyright": "© 2026 Royalty. All rights reserved.",
+        "customApps": "Custom Apps"
     },
     "contact": {
         "badge": "Get in Touch",
@@ -808,9 +838,9 @@
     "intelligence": {
         "title": "AI Intelligence",
         "subtitle": "AI-powered insights and recommendations for your business",
-        "freePlanBadge": "Free plan \u2014 Ask Royal anything",
+        "freePlanBadge": "Free plan — Ask Royal anything",
         "emptyCaption": "Royal is your AI brain. Ask questions, get suggestions, and upgrade when you're ready for Royal to take action on its own.",
-        "seeProLink": "See what Pro unlocks \u2192",
+        "seeProLink": "See what Pro unlocks →",
         "starterLabel": "Not sure where to start? Try one of these:",
         "starters": {
             "automations": "What automations should I set up for my business?",
@@ -1919,5 +1949,11 @@
         "rewardsTitle": "Rewards Program",
         "rewardsDesc": "Set up rewards your customers will love. Create point-based perks, tier exclusives, or let AI suggest the best rewards for your business.",
         "rewardsLink": "Browse Rewards"
+    },
+    "ctaBand": {
+        "build1": "Build your program free — ready in 60 seconds",
+        "build2": "Start free. AI does the rest.",
+        "build3": "Your loyalty program, live in 60 seconds",
+        "button": "Get Started Free →"
     }
 }

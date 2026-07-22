@@ -16,10 +16,17 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // Map Stripe price IDs to plan tiers - LIVE MODE Feb 11, 2026
 const PRICE_TO_TIER: Record<string, { tier: string; billing: string; isAddOn?: boolean }> = {
-  // Pro tier ($299/mo or $239/mo annual)
+  // New SMB tiers - Starter/Growth/Scale. LIVE IDs created 2026-07-22.
+  'price_1Tw1zTGNy14i1og8ph2ry11H': { tier: 'starter', billing: 'monthly' },
+  'price_1Tw1zUGNy14i1og8g2c0mYyd':  { tier: 'starter', billing: 'annual' },
+  'price_1Tw1zUGNy14i1og8Kvd7XmNy':  { tier: 'growth', billing: 'monthly' },
+  'price_1Tw1zVGNy14i1og8Nij2gkJW':   { tier: 'growth', billing: 'annual' },
+  'price_1Tw1zWGNy14i1og89Xtfieg1':   { tier: 'scale', billing: 'monthly' },
+  'price_1Tw1zWGNy14i1og8YbHmyYst':    { tier: 'scale', billing: 'annual' },
+  // LEGACY $299/$749 IDs - KEEP mapped so grandfathered renewals / subscription.updated
+  // events don't null out an existing subscriber's tier.
   'price_1SziieGNy14i1og8BYi4vv84': { tier: 'pro', billing: 'monthly' },
   'price_1SziifGNy14i1og8tiGIwHdw': { tier: 'pro', billing: 'annual' },
-  // Max tier ($749/mo or $599/mo annual)
   'price_1SzijTGNy14i1og8hsd8qFiJ': { tier: 'max', billing: 'monthly' },
   'price_1SzijUGNy14i1og8bCVXvQdx': { tier: 'max', billing: 'annual' },
   // Royalty Pro add-on for LTD users ($79/mo)

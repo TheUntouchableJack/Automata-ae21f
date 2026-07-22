@@ -263,7 +263,7 @@
             "desc": "Soluciones personalizadas",
             "price": "Personalizado",
             "period": "precios",
-            "f1": "Todo en Max",
+            "f1": "Todo en Scale",
             "f2": "Soporte dedicado y SLAs",
             "f3": "Acceso API",
             "f4": "Integraciones personalizadas",
@@ -276,7 +276,35 @@
             "f2": "Modo Autónomo",
             "f3": "Cancela cuando quieras",
             "cta": "Agregar Royalty Pro"
-        }
+        },
+        "starter": {
+            "name": "Starter",
+            "desc": "Fidelización en piloto automático",
+            "f1": "500 clientes",
+            "f2": "Chat Royal AI + automatizaciones",
+            "f3": "1,000 emails + 100 SMS/mes",
+            "f4": "Automatizaciones en modo revisión",
+            "cta": "Iniciar Prueba"
+        },
+        "growth": {
+            "name": "Growth",
+            "desc": "Royal gestiona tu marketing",
+            "f1": "2,000 clientes",
+            "f2": "5,000 emails + 300 SMS/mes",
+            "f3": "Modo Autónomo + protección de fatiga",
+            "f4": "Métricas de rendimiento y analíticas",
+            "cta": "Iniciar Prueba"
+        },
+        "scale": {
+            "name": "Scale",
+            "desc": "Royal demuestra tu ROI",
+            "f1": "10,000 clientes",
+            "f2": "15,000 emails + 750 SMS/mes",
+            "f3": "Atribución de visitas (demuestra ROI)",
+            "f4": "Marca blanca + soporte dedicado",
+            "cta": "Iniciar Prueba"
+        },
+        "enterpriseLink": "¿Necesidades mayores? Hablemos de Enterprise →"
     },
     "cta": {
         "title": "¿Listo para que la IA gestione tu programa de fidelización?",
@@ -411,7 +439,8 @@
         "contact": "Contacto",
         "privacy": "Privacidad",
         "terms": "Términos",
-        "copyright": "© 2026 Royalty. Todos los derechos reservados."
+        "copyright": "© 2026 Royalty. Todos los derechos reservados.",
+        "customApps": "Apps a Medida"
     },
     "contact": {
         "badge": "Contáctanos",
@@ -492,15 +521,15 @@
     "intelligence": {
         "title": "Inteligencia AI",
         "subtitle": "Insights y recomendaciones impulsadas por IA para tu negocio",
-        "freePlanBadge": "Plan gratuito \u2014 Pregunta a Royal lo que quieras",
+        "freePlanBadge": "Plan gratuito — Pregunta a Royal lo que quieras",
         "emptyCaption": "Royal es tu cerebro de IA. Haz preguntas, recibe sugerencias y mejora cuando quieras que Royal actue por su cuenta.",
-        "seeProLink": "Descubre lo que Pro desbloquea \u2192",
-        "starterLabel": "\u00bfNo sabes por d\u00f3nde empezar? Prueba una de estas:",
+        "seeProLink": "Descubre lo que Pro desbloquea →",
+        "starterLabel": "¿No sabes por dónde empezar? Prueba una de estas:",
         "starters": {
-            "automations": "\u00bfQu\u00e9 automatizaciones deber\u00eda configurar para mi negocio?",
-            "loyaltyPrograms": "\u00bfC\u00f3mo los programas de fidelizaci\u00f3n impulsan las visitas repetidas?",
-            "birthdayRewards": "\u00bfDeber\u00eda configurar recompensas de cumplea\u00f1os?",
-            "firstRewards": "\u00bfQu\u00e9 deber\u00eda ofrecer a mis primeros clientes como recompensas?"
+            "automations": "¿Qué automatizaciones debería configurar para mi negocio?",
+            "loyaltyPrograms": "¿Cómo los programas de fidelización impulsan las visitas repetidas?",
+            "birthdayRewards": "¿Debería configurar recompensas de cumpleaños?",
+            "firstRewards": "¿Qué debería ofrecer a mis primeros clientes como recompensas?"
         },
         "analyze": "Analizar Mi Negocio",
         "analyzeNow": "Analizar Ahora",
@@ -1529,7 +1558,8 @@
         "tag": "Custom Apps",
         "title": "Construimos Tu App",
         "subtitle": "Don't need a loyalty program? We build custom apps and business intelligence tools that help you scale. Dashboards, automation, analytics — powered by AI, tailored to your business.",
-        "cta": "Get a Free Estimate →"
+        "cta": "Get a Free Estimate →",
+        "homepageLink": "¿Necesitas algo a medida? Creamos apps completas →"
     },
     "estimate": {
         "heroTitle": "Let's Build Your App",
@@ -1926,5 +1956,11 @@
         "rewardsTitle": "Programa de recompensas",
         "rewardsDesc": "Configura recompensas que encantarán a tus clientes. Crea beneficios por puntos, exclusivos por nivel, o deja que la IA sugiera las mejores recompensas.",
         "rewardsLink": "Ver recompensas"
+    },
+    "ctaBand": {
+        "build1": "Crea tu programa gratis — listo en 60 segundos",
+        "build2": "Empieza gratis. La IA hace el resto.",
+        "build3": "Tu programa de fidelización, activo en 60 segundos",
+        "button": "Empezar Gratis →"
     }
 }

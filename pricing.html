@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=6">
+    <link rel="stylesheet" href="styles.css?v=7">
     <link rel="stylesheet" href="i18n/i18n.css">
     <style>
         /* AppSumo Announcement Banner */
@@ -642,7 +642,7 @@
                 <span class="toggle-label" data-period="annual"><span data-i18n="pricingPage.annual">Annual</span> <span class="save-badge" data-i18n="pricingPage.saveBadge">Save 20%</span></span>
             </div>
 
-            <div class="pricing-cards pricing-cards-4">
+            <div class="pricing-cards pricing-cards-5">
                 <!-- Free -->
                 <div class="pricing-card">
                     <div class="pricing-header">
@@ -662,44 +662,64 @@
                     <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.free.cta">Start Free</a>
                 </div>
 
-                <!-- Pro - Most Popular -->
-                <div class="pricing-card featured">
-                    <div class="pricing-badge" data-i18n="pricing.popular">Most Popular</div>
+                <!-- Starter -->
+                <div class="pricing-card">
                     <div class="pricing-header">
-                        <h3 data-i18n="pricing.pro.name">Pro</h3>
-                        <p data-i18n="pricing.pro.desc">Royal runs your marketing</p>
+                        <h3 data-i18n="pricing.starter.name">Starter</h3>
+                        <p data-i18n="pricing.starter.desc">Loyalty on autopilot</p>
                     </div>
                     <div class="pricing-price">
-                        <span class="price" data-monthly="299" data-annual="239">$299</span>
+                        <span class="price" data-monthly="19.99" data-annual="15.99">$19.99</span>
                         <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.pro.f1">Unlimited customers</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.pro.f2">10,000 emails + 500 SMS/mo</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.pro.f3">Unlimited Royal AI + Autonomous</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.pro.f4">Business learning & analytics</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f1">500 customers</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f2">Royal AI chat + automations</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f3">1,000 emails + 100 SMS/mo</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f4">Review-mode automations</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-primary btn-block" data-i18n="pricing.pro.cta">Start Trial</a>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.starter.cta">Start Trial</a>
                     <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
 
-                <!-- Max -->
-                <div class="pricing-card">
+                <!-- Growth - Most Popular -->
+                <div class="pricing-card featured">
+                    <div class="pricing-badge" data-i18n="pricing.popular">Most Popular</div>
                     <div class="pricing-header">
-                        <h3 data-i18n="pricing.max.name">Max</h3>
-                        <p data-i18n="pricing.max.desc">Royal proves your ROI</p>
+                        <h3 data-i18n="pricing.growth.name">Growth</h3>
+                        <p data-i18n="pricing.growth.desc">Royal runs your marketing</p>
                     </div>
                     <div class="pricing-price">
-                        <span class="price" data-monthly="749" data-annual="599">$749</span>
+                        <span class="price" data-monthly="39.99" data-annual="31.99">$39.99</span>
                         <span class="period" data-i18n="pricing.perMonth">/month</span>
                     </div>
                     <ul class="pricing-features">
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.max.f1">Everything in Pro</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.max.f2">50,000 emails + 2,000 SMS/mo</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.max.f3">Visit attribution (prove ROI)</span></li>
-                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.max.f4">White-label + priority support</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f1">2,000 customers</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f2">5,000 emails + 300 SMS/mo</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f3">Autonomous Mode + fatigue protection</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f4">Performance metrics & analytics</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.max.cta">Start Trial</a>
+                    <a href="/app/signup.html" class="btn btn-primary btn-block" data-i18n="pricing.growth.cta">Start Trial</a>
+                    <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
+                </div>
+
+                <!-- Scale -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 data-i18n="pricing.scale.name">Scale</h3>
+                        <p data-i18n="pricing.scale.desc">Royal proves your ROI</p>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="price" data-monthly="79.99" data-annual="63.99">$79.99</span>
+                        <span class="period" data-i18n="pricing.perMonth">/month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f1">10,000 customers</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f2">15,000 emails + 750 SMS/mo</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f3">Visit attribution (prove ROI)</span></li>
+                        <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f4">White-label + dedicated support</span></li>
+                    </ul>
+                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.scale.cta">Start Trial</a>
                     <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
 
@@ -739,45 +759,50 @@
                         <tr>
                             <th data-i18n="pricingPage.comparison.features">Features</th>
                             <th data-i18n="pricing.free.name">Free</th>
-                            <th data-i18n="pricing.pro.name">Pro</th>
-                            <th data-i18n="pricing.max.name">Max</th>
+                            <th data-i18n="pricing.starter.name">Starter</th>
+                            <th data-i18n="pricing.growth.name">Growth</th>
+                            <th data-i18n="pricing.scale.name">Scale</th>
                         </tr>
                     </thead>
                     <tbody>
                         <!-- Core Limits -->
                         <tr class="feature-group">
-                            <td colspan="4" data-i18n="pricingPage.comparison.coreLimits">Core Limits</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.coreLimits">Core Limits</td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.customers">Customers</td>
                             <td>250</td>
-                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
-                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
+                            <td>500</td>
+                            <td>2,000</td>
+                            <td>10,000</td>
                         </tr>
 
                         <!-- Messaging -->
                         <tr class="feature-group">
-                            <td colspan="4" data-i18n="pricingPage.comparison.messaging">Messaging</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.messaging">Messaging</td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.emailsMonth">Emails per month</td>
                             <td><span class="dash-icon">—</span></td>
-                            <td>10,000</td>
-                            <td>50,000</td>
+                            <td>1,000</td>
+                            <td>5,000</td>
+                            <td>15,000</td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.smsMonth">SMS per month</td>
                             <td><span class="dash-icon">—</span></td>
-                            <td>500</td>
-                            <td>2,000</td>
+                            <td>100</td>
+                            <td>300</td>
+                            <td>750</td>
                         </tr>
 
                         <!-- Loyalty Features -->
                         <tr class="feature-group">
-                            <td colspan="4" data-i18n="pricingPage.comparison.loyaltyFeatures">Loyalty Features</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.loyaltyFeatures">Loyalty Features</td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.pointsRewards">Points & rewards</td>
+                            <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -787,9 +812,11 @@
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.tiersVip">Tiers & VIP levels</td>
+                            <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -799,9 +826,11 @@
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.leaderboard">Leaderboard</td>
+                            <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -809,22 +838,25 @@
 
                         <!-- Royal AI Features -->
                         <tr class="feature-group">
-                            <td colspan="4" data-i18n="pricingPage.comparison.royalAi">Royal AI</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.royalAi">Royal AI</td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.royalChat">Royal chat (Q&A)</td>
                             <td>20/mo</td>
-                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
-                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
+                            <td>100/mo</td>
+                            <td>500/mo</td>
+                            <td>2,000/mo</td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.aiAutomations">AI automations</td>
                             <td><span class="dash-icon">—</span></td>
-                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
-                            <td data-i18n="pricingPage.comparison.unlimited">Unlimited</td>
+                            <td><span class="check-icon">✓</span></td>
+                            <td><span data-i18n="pricingPage.comparison.unlimited">Unlimited</span></td>
+                            <td><span data-i18n="pricingPage.comparison.unlimited">Unlimited</span></td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.autonomousMode">Autonomous Mode</td>
+                            <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -832,17 +864,20 @@
                         <tr>
                             <td data-i18n="pricingPage.comparison.businessLearning">Business learning & discovery</td>
                             <td><span class="dash-icon">—</span></td>
+                            <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.fatigueProtection">Fatigue protection</td>
                             <td><span class="dash-icon">—</span></td>
+                            <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.performanceMetrics">Performance metrics</td>
+                            <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -851,15 +886,17 @@
                             <td data-i18n="pricingPage.comparison.visitAttribution">Visit attribution (prove ROI)</td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
+                            <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                         </tr>
 
                         <!-- Branding & Support -->
                         <tr class="feature-group">
-                            <td colspan="4" data-i18n="pricingPage.comparison.brandingSupport">Branding & Support</td>
+                            <td colspan="5" data-i18n="pricingPage.comparison.brandingSupport">Branding & Support</td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.whiteLabel">White-label branding</td>
+                            <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -869,9 +906,11 @@
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
+                            <td><span class="check-icon">✓</span></td>
                         </tr>
                         <tr>
                             <td data-i18n="pricingPage.comparison.prioritySupport">Priority support</td>
+                            <td><span class="dash-icon">—</span></td>
                             <td><span class="dash-icon">—</span></td>
                             <td><span class="check-icon">✓</span></td>
                             <td><span class="check-icon">✓</span></td>
@@ -1101,7 +1140,7 @@
     </footer>
 
     <script src="i18n/i18n.js"></script>
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
     <script>
         // Banner dismissal
         (function() {
