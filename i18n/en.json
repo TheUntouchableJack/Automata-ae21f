@@ -1,4 +1,11 @@
 {
+    "getStarted": {
+        "title": "Let's set up your loyalty program",
+        "subtitle": "Tell Royal AI about your business and it will build your automations, rewards, and growth plan in seconds.",
+        "buildButton": "Build My Loyalty Program",
+        "building": "Building your program...",
+        "skip": "Skip for now"
+    },
     "nav": {
         "home": "Home",
         "automations": "Automations",
@@ -8,7 +15,7 @@
         "pricing": "Pricing",
         "blog": "Blog",
         "login": "Log In",
-        "joinWaitlist": "Join our Beta",
+        "joinWaitlist": "Get Started",
         "getStarted": "Get Started Free",
         "projects": "Projects",
         "customers": "Customers",
@@ -46,7 +53,7 @@
         "titleHighlight": "60 seconds",
         "titleLine2": "Run it forever.",
         "subtitle": "Royalty is an AI that builds your loyalty program in 60 seconds—then runs it forever. Customers earn points, you see what's working, and AI tells you exactly how to grow.",
-        "joinWaitlist": "Join our Beta",
+        "joinWaitlist": "Get Started",
         "seeHowItWorks": "See How It Works",
         "discoveryTitle": "Describe your business",
         "discoverySubtitle": "Our AI will build you a custom loyalty program in 60 seconds.",
@@ -311,7 +318,7 @@
         "title": "Ready to scale your business with AI?",
         "subtitle": "Describe your business — AI builds and runs your loyalty program.",
         "emailPlaceholder": "Enter your email",
-        "joinWaitlist": "Join our Beta",
+        "joinWaitlist": "Get Started",
         "note": "Get early access pricing when we launch.",
         "captchaError": "Please complete the CAPTCHA verification.",
         "processing": "Processing...",
@@ -319,7 +326,7 @@
         "errorTryAgain": "Error. Try again."
     },
     "modal": {
-        "successTitle": "You're in the Beta!",
+        "successTitle": "You're in!",
         "successDesc": "We'll email you when Royalty launches with exclusive early access pricing.",
         "successBtn": "Got it",
         "createProject": "Create New Project",
@@ -1932,6 +1939,7 @@
         "skip": "Skip",
         "exploreOwn": "I'll explore on my own",
         "completed": "Completed",
+        "lockedHint": "Complete step 1 first",
         "automationsTitle": "Suggested Automations",
         "automationsDesc": "We've drafted 4 automations based on your business: Welcome Message, Visit Bonus, At-Risk Check-in, and Win-Back Offer. Review and activate the ones that fit your strategy.",
         "automationsLink": "Review Automations",

@@ -149,6 +149,8 @@ const WelcomeBanner = (function() {
 
     function renderCard(id, step, icon, progress) {
         const done = !!progress[id];
+        // Steps 2-4 stay locked until step 1 (ai) is completed.
+        const locked = id !== 'ai' && !done && !isStep1Complete();
 
         const icons = {
             zap: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',
@@ -180,8 +182,21 @@ const WelcomeBanner = (function() {
 
         const link = links[id];
 
+        const lockIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+        let actionsHtml;
+        if (done) {
+            actionsHtml = `<span class="welcome-completed-label">${t('welcome.completed', 'Completed')}</span>`;
+        } else if (locked) {
+            actionsHtml = `<button class="btn btn-secondary btn-sm welcome-locked" disabled>${lockIcon}${t('welcome.lockedHint', 'Complete step 1 first')}</button>`;
+        } else {
+            actionsHtml = `
+                    <a href="${link.href}" class="btn btn-primary btn-sm welcome-cta" data-card="${id}">${link.text} \u2192</a>
+                    <button class="btn btn-ghost btn-sm welcome-skip" data-card="${id}">${t('welcome.skip', 'Skip')}</button>`;
+        }
+
         return `
-        <div class="welcome-card ${done ? 'done' : ''}" data-card="${id}">
+        <div class="welcome-card ${done ? 'done' : ''} ${locked ? 'locked' : ''}" data-card="${id}">
             ${done ? '<div class="welcome-card-check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' : ''}
             <div class="welcome-card-step">${step}</div>
             <div class="welcome-card-icon">
@@ -190,12 +205,7 @@ const WelcomeBanner = (function() {
             <h4>${titles[id]}</h4>
             <p>${descs[id]}</p>
             <div class="welcome-card-actions">
-                ${!done ? `
-                    <a href="${link.href}" class="btn btn-primary btn-sm welcome-cta" data-card="${id}">${link.text} \u2192</a>
-                    <button class="btn btn-ghost btn-sm welcome-skip" data-card="${id}">${t('welcome.skip', 'Skip')}</button>
-                ` : `
-                    <span class="welcome-completed-label">${t('welcome.completed', 'Completed')}</span>
-                `}
+                ${actionsHtml}
             </div>
         </div>`;
     }
@@ -387,9 +397,33 @@ const WelcomeBanner = (function() {
         }
     }
 
+    // Step 1 (Teach Royal AI) counts as complete ONLY when the user saves their
+    // answers — skipping it does not unlock steps 2-4.
+    function isStep1Complete() {
+        return !!(currentProgress && currentProgress.ai === 'completed');
+    }
+
     function markAiComplete() {
-        if (currentProgress && !currentProgress.ai) {
-            markCard('ai', 'visited');
+        if (!currentProgress || currentProgress.ai === 'completed') return;
+        currentProgress.ai = 'completed';
+
+        // If step 1 was the last outstanding step, complete + remove the banner.
+        if (CARDS.every(c => currentProgress[c])) {
+            currentProgress.completed_at = new Date().toISOString();
+            updateProgress(currentProgress);
+            setTimeout(() => removeBanner(), 600);
+        } else {
+            updateProgress(currentProgress);
+            // Re-render the whole banner so steps 2-4 unlock now that step 1 is done,
+            // then keep it expanded so the user sees the newly-unlocked steps (render()
+            // would otherwise collapse it since this is no longer a first-time view).
+            render(currentProgress);
+            const banner = document.getElementById('welcome-banner');
+            if (banner) {
+                banner.classList.add('expanded');
+                banner.classList.remove('collapsed');
+                if (window.CrownScene) window.CrownScene.setOrbScale(0.75, 0.3);
+            }
         }
     }
 

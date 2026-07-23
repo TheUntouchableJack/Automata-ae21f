@@ -1,4 +1,11 @@
 {
+    "getStarted": {
+        "title": "Richten wir Ihr Treueprogramm ein",
+        "subtitle": "Erzählen Sie Royal AI von Ihrem Unternehmen und es erstellt in Sekunden Ihre Automatisierungen, Prämien und Ihren Wachstumsplan.",
+        "buildButton": "Mein Treueprogramm erstellen",
+        "building": "Ihr Programm wird erstellt...",
+        "skip": "Vorerst überspringen"
+    },
     "nav": {
         "home": "Startseite",
         "automations": "Automatisierungen",
@@ -8,7 +15,7 @@
         "pricing": "Preise",
         "blog": "Blog",
         "login": "Anmelden",
-        "joinWaitlist": "Beta beitreten",
+        "joinWaitlist": "Loslegen",
         "getStarted": "Kostenlos Starten",
         "projects": "Projekte",
         "customers": "Kunden",
@@ -46,7 +53,7 @@
         "titleHighlight": "60 Sekunden",
         "titleLine2": "Es läuft für immer.",
         "subtitle": "Royalty ist eine KI, die Ihr Treueprogramm in 60 Sekunden erstellt — und es dann für immer betreibt. Kunden sammeln Punkte, Sie sehen, was funktioniert, und KI sagt Ihnen genau, wie Sie wachsen können.",
-        "joinWaitlist": "Beta beitreten",
+        "joinWaitlist": "Loslegen",
         "seeHowItWorks": "So funktioniert's",
         "discoveryTitle": "Beschreiben Sie Ihr Unternehmen",
         "discoverySubtitle": "Unsere KI erstellt Ihnen ein maßgeschneidertes Treueprogramm in 60 Sekunden.",
@@ -311,7 +318,7 @@
         "title": "Bereit, KI Ihr Treueprogramm betreiben zu lassen?",
         "subtitle": "Beschreibe dein Unternehmen — die KI erstellt und betreibt dein Treueprogramm.",
         "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
-        "joinWaitlist": "Beta beitreten",
+        "joinWaitlist": "Loslegen",
         "note": "Erhalten Sie frühzeitige Zugangspreise zum Start.",
         "captchaError": "Bitte vervollständigen Sie die CAPTCHA-Verifizierung.",
         "processing": "Wird verarbeitet...",
@@ -705,7 +712,7 @@
         "whyThis": "Warum dies?"
     },
     "modal": {
-        "successTitle": "Sie sind in der Beta!",
+        "successTitle": "Sie sind dabei!",
         "successDesc": "Wir senden Ihnen eine E-Mail, wenn Royalty mit exklusiven Frühzugangspreisen startet.",
         "successBtn": "Verstanden",
         "createProject": "Neues Projekt erstellen",
@@ -1939,6 +1946,7 @@
         "skip": "Überspringen",
         "exploreOwn": "Ich erkunde selbst",
         "completed": "Abgeschlossen",
+        "lockedHint": "Zuerst Schritt 1 abschließen",
         "automationsTitle": "Vorgeschlagene Automatisierungen",
         "automationsDesc": "Wir haben 4 Automatisierungen basierend auf Ihrem Geschäft erstellt: Willkommensnachricht, Besuchsbonus, Risiko-Check und Rückgewinnungsangebot. Überprüfen und aktivieren Sie die passenden.",
         "automationsLink": "Automatisierungen prüfen",

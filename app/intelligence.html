@@ -63,6 +63,9 @@
     }
     .welcome-card:hover { border-color: rgba(124, 58, 237, 0.3); box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08); }
     .welcome-card.done { opacity: 0.5; }
+    .welcome-card.locked { opacity: 0.6; }
+    .welcome-card.locked:hover { border-color: #e2e8f0; box-shadow: none; }
+    .welcome-card .welcome-locked { color: #94a3b8; cursor: not-allowed; }
     .welcome-card-check { position: absolute; top: 12px; right: 12px; color: #22c55e; }
     .welcome-card-step {
         position: absolute; top: 12px; left: 14px; font-size: 11px; font-weight: 700;
@@ -616,9 +619,9 @@
     <script src="crown-materials.js?v=11"></script>
     <script type="module" src="crown-scene.js?v=14"></script>
     <script src="shared/ai-templates.js?v=1"></script>
-    <script src="crown-dashboard.js?v=43"></script>
+    <script src="crown-dashboard.js?v=44"></script>
     <script src="chat-thread.js?v=9"></script>
-    <script src="welcome-banner.js?v=15"></script>
+    <script src="welcome-banner.js?v=16"></script>
     <script src="intelligence.js?v=11"></script>
 </body>
 </html>

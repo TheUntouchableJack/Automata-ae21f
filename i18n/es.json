@@ -1,4 +1,11 @@
 {
+    "getStarted": {
+        "title": "Configuremos tu programa de fidelización",
+        "subtitle": "Cuéntale a Royal AI sobre tu negocio y creará tus automatizaciones, recompensas y plan de crecimiento en segundos.",
+        "buildButton": "Crear mi programa de fidelización",
+        "building": "Creando tu programa...",
+        "skip": "Omitir por ahora"
+    },
     "nav": {
         "home": "Inicio",
         "automations": "Automatizaciones",
@@ -8,7 +15,7 @@
         "pricing": "Precios",
         "blog": "Blog",
         "login": "Iniciar Sesión",
-        "joinWaitlist": "Únete a la Beta",
+        "joinWaitlist": "Comenzar",
         "getStarted": "Comenzar Gratis",
         "projects": "Proyectos",
         "customers": "Clientes",
@@ -46,7 +53,7 @@
         "titleHighlight": "60 segundos",
         "titleLine2": "Funciona para siempre.",
         "subtitle": "Royalty es una IA que construye tu programa de fidelización en 60 segundos y luego lo gestiona para siempre. Los clientes ganan puntos, tú ves qué funciona, y la IA te dice exactamente cómo crecer.",
-        "joinWaitlist": "Únete a la Beta",
+        "joinWaitlist": "Comenzar",
         "seeHowItWorks": "Ver Cómo Funciona",
         "discoveryTitle": "Describe tu negocio",
         "discoverySubtitle": "Nuestra IA creará un programa de fidelización personalizado en 60 segundos.",
@@ -311,7 +318,7 @@
         "title": "¿Listo para que la IA gestione tu programa de fidelización?",
         "subtitle": "Describe tu negocio: la IA crea y gestiona tu programa de fidelización.",
         "emailPlaceholder": "Ingresa tu correo",
-        "joinWaitlist": "Únete a la Beta",
+        "joinWaitlist": "Comenzar",
         "note": "Obtén precio de acceso anticipado cuando lancemos.",
         "captchaError": "Por favor completa la verificación CAPTCHA.",
         "processing": "Procesando...",
@@ -705,7 +712,7 @@
         "whyThis": "¿Por qué esto?"
     },
     "modal": {
-        "successTitle": "¡Estás en la Beta!",
+        "successTitle": "¡Ya estás dentro!",
         "successDesc": "Te enviaremos un correo cuando Royalty lance con precio exclusivo de acceso anticipado.",
         "successBtn": "Entendido",
         "createProject": "Crear Nuevo Proyecto",
@@ -1939,6 +1946,7 @@
         "skip": "Omitir",
         "exploreOwn": "Exploraré por mi cuenta",
         "completed": "Completado",
+        "lockedHint": "Completa el paso 1 primero",
         "automationsTitle": "Automatizaciones sugeridas",
         "automationsDesc": "Hemos preparado 4 automatizaciones basadas en tu negocio: Mensaje de bienvenida, Bono por visita, Control de riesgo y Oferta de recuperación. Revisa y activa las que se ajusten a tu estrategia.",
         "automationsLink": "Revisar automatizaciones",

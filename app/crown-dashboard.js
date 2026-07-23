@@ -3373,10 +3373,9 @@ const CrownDashboard = (function() {
             // Show toast
             showActivityToast('ai-accepted', 'Business profile updated');
 
-            // Mark welcome banner AI card complete after first question
-            if (typeof WelcomeBanner !== 'undefined' && WelcomeBanner.markAiComplete) {
-                WelcomeBanner.markAiComplete();
-            }
+            // NOTE: Step 1 is marked "completed" only when the user clicks Save in
+            // the onboarding footer (>=3 answers) — not per-question. See the Save
+            // handler in enterOnboardingMode().
 
             // Update onboarding progress counter
             if (onboardingActive) {
@@ -3812,8 +3811,23 @@ const CrownDashboard = (function() {
             `;
             panel.appendChild(footer);
             footer.querySelector('#onboarding-close-btn').addEventListener('click', exitOnboardingMode);
-            footer.querySelector('#onboarding-save-btn').addEventListener('click', exitOnboardingMode);
+            // Save = "step 1 completed" (enabled at >=3 answers). Mark the welcome
+            // banner's AI step complete so steps 2-4 unlock, then exit onboarding.
+            footer.querySelector('#onboarding-save-btn').addEventListener('click', () => {
+                if (typeof WelcomeBanner !== 'undefined' && WelcomeBanner.markAiComplete) {
+                    WelcomeBanner.markAiComplete();
+                }
+                exitOnboardingMode();
+            });
         }
+
+        // Render the first discovery question so the modal isn't empty.
+        // #knowledge-feed is static in intelligence.html; ensure the Learnings tab
+        // content is loaded (idempotent) so the card lands below the score widget,
+        // then render the first question.
+        Promise.resolve(loadKnowledge()).catch(() => {}).then(() => {
+            showNextOnboardingQuestion();
+        });
     }
 
     function updateOnboardingProgress() {

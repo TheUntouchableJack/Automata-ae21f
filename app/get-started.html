@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Started - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <style>
+        html, body { min-height: 100vh; margin: 0; background: var(--color-bg, #f8fafc); }
+        .gs-shell {
+            min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 40px 20px;
+        }
+        .gs-header { text-align: center; margin-bottom: 24px; }
+        .gs-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 20px; }
+        .gs-logo img { width: 32px; height: 32px; }
+        .gs-logo .logo-text { font-size: 20px; font-weight: 700; color: var(--color-text, #0f172a); }
+        .gs-intro-title { font-size: 26px; font-weight: 700; color: var(--color-text, #0f172a); margin: 0 0 8px; }
+        .gs-intro-sub { font-size: 15px; color: var(--color-text-muted, #64748b); margin: 0; max-width: 520px; }
+        .gs-card-wrap { width: 100%; max-width: 620px; }
+        .gs-skip-row { text-align: center; margin-top: 20px; }
+        .gs-skip-link {
+            background: none; border: none; color: var(--color-text-muted, #94a3b8);
+            font-size: 13px; cursor: pointer; text-decoration: underline; padding: 6px 10px;
+        }
+        .gs-skip-link:hover { color: var(--color-accent, #7c3aed); }
+        /* discovery-card styling comes from styles.css */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+        .shake { animation: shake 0.4s ease; }
+    </style>
+</head>
+<body>
+    <div class="gs-shell">
+        <div class="gs-header">
+            <a href="/app/intelligence.html" class="gs-logo">
+                <img src="/logo.svg" alt="Royalty">
+                <span class="logo-text">Royalty</span>
+            </a>
+            <h1 class="gs-intro-title" data-i18n="getStarted.title">Let's set up your loyalty program</h1>
+            <p class="gs-intro-sub" data-i18n="getStarted.subtitle">Tell Royal AI about your business and it will build your automations, rewards, and growth plan in seconds.</p>
+        </div>
+
+        <div class="gs-card-wrap">
+            <!-- Discovery Card (reuses the homepage discovery UI + styles.css) -->
+            <div class="discovery-card" id="discovery-card">
+                <!-- State: Prompt (textarea) -->
+                <div id="hero-prompt-state">
+                    <div class="discovery-step-badge" data-i18n="onboarding.step1of2">Step 1 of 2</div>
+                    <h2 class="discovery-title" data-i18n="hero.promptTitle">Describe your business</h2>
+                    <p class="discovery-subtitle" data-i18n="hero.promptSubtitle">Tell us about your business in a few sentences — our AI will extract the details and build your loyalty program.</p>
+
+                    <div class="discovery-field">
+                        <textarea
+                            id="hero-business-prompt"
+                            class="discovery-input discovery-textarea"
+                            data-i18n-placeholder="hero.promptPlaceholder"
+                            placeholder="e.g., I run a ramen shop in Brooklyn called Slurp Ramen. We have about 300 regulars and want to reward loyal customers and bring back people who haven't visited in a while..."
+                            rows="4"
+                        ></textarea>
+                    </div>
+
+                    <button id="analyze-business-btn" class="btn btn-primary btn-large discovery-btn">
+                        <span data-i18n="hero.analyzeButton">Analyze My Business</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- State: Confirmation (extracted details + analysis preview) -->
+                <div id="hero-confirm-state" style="display: none;">
+                    <div class="discovery-step-badge" data-i18n="onboarding.step2of2">Step 2 of 2</div>
+                    <h2 class="discovery-title" data-i18n="hero.confirmTitle">We understood your business</h2>
+                    <p class="discovery-subtitle" id="hero-business-summary"></p>
+
+                    <!-- Inline AI status (visible while streaming in results) -->
+                    <div class="extraction-status-row hidden" id="confirm-status-row">
+                        <div class="ai-orb ai-orb--inline visible" id="confirm-orb"></div>
+                        <span class="orb-status-word" id="confirm-status-word" data-i18n="orbStatus.refining">Refining your details</span>
+                    </div>
+
+                    <div class="extracted-fields" id="extracted-fields">
+                        <div class="extracted-field">
+                            <label data-i18n="onboarding.businessName">Business Name</label>
+                            <input type="text" id="extracted-name" class="discovery-input">
+                        </div>
+                        <div class="extracted-field-row">
+                            <div class="extracted-field">
+                                <label data-i18n="onboarding.industry">Industry</label>
+                                <select id="extracted-industry">
+                                    <option value="" data-i18n="onboarding.selectIndustry">Select your industry</option>
+                                    <option value="food" data-i18n="onboarding.industries.food">Food & Beverage</option>
+                                    <option value="retail" data-i18n="onboarding.industries.retail">Retail & E-commerce</option>
+                                    <option value="health" data-i18n="onboarding.industries.health">Health & Wellness</option>
+                                    <option value="service" data-i18n="onboarding.industries.service">Professional Services</option>
+                                    <option value="technology" data-i18n="onboarding.industries.technology">Technology</option>
+                                    <option value="education" data-i18n="onboarding.industries.education">Education</option>
+                                    <option value="other" data-i18n="onboarding.industries.other">Other</option>
+                                </select>
+                            </div>
+                            <div class="extracted-field">
+                                <label data-i18n="onboarding.customerCount">Approx. Customers</label>
+                                <select id="extracted-customers">
+                                    <option value="">—</option>
+                                    <option value="1-50">1 - 50</option>
+                                    <option value="51-200">51 - 200</option>
+                                    <option value="201-500">201 - 500</option>
+                                    <option value="501-1000">501 - 1,000</option>
+                                    <option value="1001+">1,000+</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="extracted-field-row">
+                            <div class="extracted-field">
+                                <label data-i18n="hero.extractedLocation">Location</label>
+                                <input type="text" id="extracted-location" class="discovery-input" placeholder="City or area">
+                            </div>
+                            <div class="extracted-field">
+                                <label data-i18n="onboarding.websiteUrl">Website (optional)</label>
+                                <input type="url" id="extracted-website" class="discovery-input" placeholder="https://yourbusiness.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="extracted-edit-hint" data-i18n="hero.editHint">Edit any field above if needed, then continue.</p>
+
+                    <button id="confirm-and-build-btn" class="btn btn-primary btn-large discovery-btn">
+                        <span data-i18n="getStarted.buildButton">Build My Loyalty Program</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button id="retry-prompt-btn" class="btn-link skip-link">
+                        <span data-i18n="hero.retryButton">Start over with a different description</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="gs-skip-row">
+                <button class="gs-skip-link" id="gs-skip-btn" data-i18n="getStarted.skip">Skip for now</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../i18n/i18n.js?v=1"></script>
+    <script src="onboarding-storage.js?v=2"></script>
+    <script src="auth.js?v=11"></script>
+    <script src="ai-recommendations.js?v=1"></script>
+    <script src="business-analysis.js?v=3"></script>
+    <script src="onboarding-transition.js?v=1"></script>
+    <script src="onboarding-save.js?v=1"></script>
+    <script>
+        // Cold-signup business-description page. The account already exists; this
+        // captures the business context the homepage form would have, commits it to
+        // the org (via the shared OnboardingSave module), then lands on the dashboard.
+
+        const EDGE_FUNCTION_URL = SUPABASE_URL + '/functions/v1/analyze-business-signup';
+        let currentUser = null;
+        let _analysisResult = null;
+        let _analysisToken = 0;
+
+        // ── Auth gate ──
+        (async function gate() {
+            currentUser = await requireAuth();  // redirects to login if unauthenticated
+            if (!currentUser) return;
+        })();
+
+        function showState(stateId) {
+            ['hero-prompt-state', 'hero-confirm-state'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = id === stateId ? 'block' : 'none';
+            });
+        }
+
+        // ── Orb word cycling ──
+        const ORB_WORD_KEYS = ['orbStatus.thinking','orbStatus.ruminating','orbStatus.analyzing','orbStatus.building','orbStatus.refining','orbStatus.almostThere'];
+        const ORB_WORD_FALLBACKS = {
+            'orbStatus.thinking': 'Thinking', 'orbStatus.ruminating': 'Ruminating',
+            'orbStatus.analyzing': 'Analyzing', 'orbStatus.building': 'Building',
+            'orbStatus.refining': 'Refining', 'orbStatus.almostThere': 'Almost there'
+        };
+        let _orbTimers = [];
+        function _orbWord(key) {
+            if (window.I18n) {
+                const t = I18n.t(key);
+                if (t && !t.startsWith('orbStatus.')) return t;
+            }
+            return ORB_WORD_FALLBACKS[key] || 'Thinking';
+        }
+        function startOrbWordCycle(spanId) {
+            const span = document.getElementById(spanId);
+            if (!span) return;
+            let idx = 0;
+            span.textContent = _orbWord(ORB_WORD_KEYS[idx]);
+            const tick = setInterval(() => {
+                idx = (idx + 1) % ORB_WORD_KEYS.length;
+                span.classList.add('fade-out');
+                const swap = setTimeout(() => {
+                    span.textContent = _orbWord(ORB_WORD_KEYS[idx]);
+                    span.classList.remove('fade-out');
+                }, 350);
+                _orbTimers.push(swap);
+            }, 1800);
+            _orbTimers.push(tick);
+        }
+        function stopOrbWordCycle() {
+            _orbTimers.forEach(t => { clearInterval(t); clearTimeout(t); });
+            _orbTimers = [];
+        }
+
+        // ── Smart business-name guess from the prompt ──
+        function guessBusinessNameFromPrompt(prompt) {
+            if (!prompt) return '';
+            const trimmed = prompt.trim();
+            const patterns = [
+                /(?:own|run|operate|have)\s+(?:a\s+|an\s+|the\s+)?([A-Z][\w'&.\- ]{1,40}?)(?:\s+(?:which|that|is|in|where|shop|store|restaurant|business|cafe|company))/i,
+                /(?:called|named)\s+["']?([A-Z][\w'&.\- ]{1,40}?)["']?(?:\s|$|\.|,)/i,
+                /^([A-Z][\w'&.\- ]{1,40}?)\s+(?:is|was)\s+(?:a|an|the)\s+/i,
+            ];
+            for (const re of patterns) {
+                const m = trimmed.match(re);
+                if (m && m[1]) return m[1].trim();
+            }
+            const caps = trimmed.match(/\b[A-Z][\w'&.\-]*(?:\s+[A-Z][\w'&.\-]*){0,2}/);
+            return caps ? caps[0] : '';
+        }
+
+        // ── Analyze: call the edge function, stream results into editable fields ──
+        async function handleAnalyze() {
+            const promptEl = document.getElementById('hero-business-prompt');
+            const prompt = promptEl?.value?.trim() || '';
+
+            if (prompt.length < 10) {
+                promptEl?.focus();
+                promptEl?.classList.add('shake');
+                setTimeout(() => promptEl?.classList.remove('shake'), 500);
+                return;
+            }
+
+            const myToken = ++_analysisToken;
+
+            if (typeof OnboardingStorage !== 'undefined') {
+                OnboardingStorage.setBusinessPrompt(prompt);
+            }
+
+            const nameEl = document.getElementById('extracted-name');
+            const industryEl = document.getElementById('extracted-industry');
+            const customersEl = document.getElementById('extracted-customers');
+            const locationEl = document.getElementById('extracted-location');
+            const websiteEl = document.getElementById('extracted-website');
+            const summaryEl = document.getElementById('hero-business-summary');
+
+            const guess = guessBusinessNameFromPrompt(prompt);
+            if (nameEl) nameEl.value = guess;
+
+            // Track fields the user edits so AI results don't clobber their input.
+            const fieldsToTrack = [nameEl, industryEl, customersEl, locationEl, websiteEl].filter(Boolean);
+            const touched = new Set();
+            fieldsToTrack.forEach(el => {
+                const onDirty = () => touched.add(el.id);
+                el.addEventListener('input', onDirty, { once: true });
+                el.addEventListener('change', onDirty, { once: true });
+            });
+
+            showState('hero-confirm-state');
+
+            const statusRow = document.getElementById('confirm-status-row');
+            if (statusRow) statusRow.classList.remove('hidden');
+            startOrbWordCycle('confirm-status-word');
+
+            const lang = document.documentElement.lang || 'en';
+
+            try {
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+                    body: JSON.stringify({ businessPrompt: prompt, language: lang })
+                });
+
+                const data = await response.json();
+                if (myToken !== _analysisToken) return;  // stale — user moved on
+
+                if (!data.success || !data.analysis) {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+                _analysisResult = data.analysis;
+
+                const extracted = data.analysis.extractedDetails || {};
+                const maybeFill = (el, value) => {
+                    if (!el || !value) return;
+                    if (touched.has(el.id)) return;
+                    el.value = value;
+                };
+                maybeFill(nameEl, extracted.businessName);
+                maybeFill(industryEl, extracted.industry);
+                maybeFill(customersEl, extracted.customerCount);
+                maybeFill(locationEl, extracted.location);
+                maybeFill(websiteEl, extracted.websiteUrl);
+                if (summaryEl && !summaryEl.textContent.trim()) {
+                    summaryEl.textContent = data.analysis.businessSummary || '';
+                }
+
+                stopOrbWordCycle();
+                if (statusRow) statusRow.classList.add('hidden');
+            } catch (err) {
+                if (myToken !== _analysisToken) return;
+                console.error('Analysis error:', err);
+                stopOrbWordCycle();
+                if (statusRow) statusRow.classList.add('hidden');
+                // Leave the user in the confirm state with their smart-guess name so
+                // they can edit and proceed even if AI failed.
+                const confirmState = document.getElementById('hero-confirm-state');
+                confirmState?.querySelector('.extraction-error-msg')?.remove();
+                if (confirmState) {
+                    const errMsg = document.createElement('p');
+                    errMsg.className = 'extraction-error-msg';
+                    errMsg.style.cssText = 'color: #dc2626; font-size: 0.8rem; text-align: center; margin-top: 4px;';
+                    errMsg.textContent = 'Couldn’t auto-fill your details — please review and edit the fields above.';
+                    confirmState.querySelector('.extracted-edit-hint')?.after(errMsg);
+                    setTimeout(() => errMsg.remove(), 8000);
+                }
+            }
+        }
+
+        // ── Confirm: persist the business context to the org, then dashboard ──
+        async function handleConfirm() {
+            const confirmBtn = document.getElementById('confirm-and-build-btn');
+            const businessName = document.getElementById('extracted-name')?.value?.trim() || '';
+            const industry = document.getElementById('extracted-industry')?.value || '';
+            const customerCount = document.getElementById('extracted-customers')?.value || '';
+            const location = document.getElementById('extracted-location')?.value?.trim() || '';
+            const websiteUrl = document.getElementById('extracted-website')?.value?.trim() || '';
+            const prompt = OnboardingStorage.get()?.businessPrompt || document.getElementById('hero-business-prompt')?.value?.trim() || '';
+
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                const label = confirmBtn.querySelector('span');
+                if (label) label.textContent = (window.I18n && I18n.t('getStarted.building')) || 'Building your program...';
+            }
+
+            if (typeof OnboardingStorage !== 'undefined') {
+                OnboardingStorage.setBusinessDetails({
+                    businessName, businessType: industry, customerCount, websiteUrl, location
+                });
+                OnboardingStorage.setBusinessContext({
+                    industry,
+                    goals: [],
+                    painPoints: [],
+                    location: location || null,
+                    description: (_analysisResult && _analysisResult.businessSummary) || prompt || null,
+                    targetMarket: null
+                });
+
+                // Local keyword recommendations → draft automations so onboarding
+                // step 2 ("Review Automations") has real content.
+                if (prompt && typeof AIRecommendations !== 'undefined') {
+                    const recommendations = AIRecommendations.getRecommendations(prompt, { industry });
+                    OnboardingStorage.setRecommendations(recommendations);
+                    recommendations.forEach(rec => OnboardingStorage.addTemplate(rec.id));
+                }
+            }
+
+            // Seed the BusinessAnalysis cache so OnboardingSave picks up the AI
+            // analysis (opportunities → ai_recommendations, summary → knowledge).
+            try {
+                const lang = document.documentElement.lang || 'en';
+                if (_analysisResult) {
+                    localStorage.setItem(`royalty_signup_analysis_${lang}`, JSON.stringify({
+                        status: 'complete', analysis: _analysisResult, timestamp: Date.now()
+                    }));
+                }
+            } catch (e) { /* ignore */ }
+
+            const commit = async () => {
+                if (typeof OnboardingSave !== 'undefined') {
+                    await OnboardingSave.commit(currentUser.id);
+                }
+            };
+
+            try {
+                if (typeof OnboardingTransition !== 'undefined') {
+                    await OnboardingTransition.show({
+                        onBuild: commit,
+                        redirectUrl: '/app/intelligence.html'
+                    });
+                } else {
+                    await commit();
+                    window.location.href = '/app/intelligence.html';
+                }
+            } catch (err) {
+                console.error('Build error:', err);
+                await commit();
+                window.location.href = '/app/intelligence.html';
+            }
+        }
+
+        // ── Wire up ──
+        document.getElementById('analyze-business-btn')?.addEventListener('click', handleAnalyze);
+        document.getElementById('confirm-and-build-btn')?.addEventListener('click', handleConfirm);
+        document.getElementById('retry-prompt-btn')?.addEventListener('click', () => {
+            _analysisResult = null;
+            _analysisToken++;
+            stopOrbWordCycle();
+            const statusRow = document.getElementById('confirm-status-row');
+            if (statusRow) statusRow.classList.add('hidden');
+            ['extracted-name','extracted-industry','extracted-customers','extracted-location','extracted-website']
+                .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            showState('hero-prompt-state');
+            document.getElementById('hero-business-prompt')?.focus();
+        });
+        document.getElementById('gs-skip-btn')?.addEventListener('click', () => {
+            window.location.href = '/app/intelligence.html';
+        });
+
+        // Submit on Ctrl/Cmd+Enter from the textarea
+        document.getElementById('hero-business-prompt')?.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleAnalyze();
+        });
+    </script>
+</body>
+</html>

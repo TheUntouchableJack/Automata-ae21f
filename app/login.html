@@ -381,9 +381,11 @@
                 // Fire confetti!
                 celebrate();
 
-                // Redirect after celebration - go to Intelligence (welcome banner + onboarding)
+                // Redirect after celebration — cold users (no project yet) go to the
+                // business-description page; everyone else to Intelligence.
+                const dest = await firstRunDestination(user.id);
                 setTimeout(() => {
-                    window.location.href = '/app/intelligence.html';
+                    window.location.href = dest;
                 }, 1000);
 
             } catch (error) {
@@ -502,13 +504,15 @@
 
                         window.history.replaceState({}, '', window.location.pathname);
 
+                        // Cold user (no project) → business-description page; else dashboard.
+                        const confirmDest = await firstRunDestination(user.id);
                         setTimeout(() => {
-                            window.location.href = '/app/intelligence.html';
+                            window.location.href = confirmDest;
                         }, 1000);
                     }
                 } else {
                     // Already logged in (not from email confirmation)
-                    window.location.href = '/app/intelligence.html';
+                    window.location.href = await firstRunDestination(user.id);
                 }
             } else if (hasAuthParams) {
                 // Had auth params but no user - something went wrong
@@ -540,6 +544,33 @@
             'seasonal-promo': 'Seasonal Promotions',
             'vip-program': 'VIP Program'
         };
+
+        // Decide where a just-authenticated user lands. Cold signups (account
+        // created without describing their business) have no project yet — route
+        // them to the business-description page so onboarding has real content.
+        async function firstRunDestination(userId) {
+            try {
+                const { data: membership } = await db
+                    .from('organization_members')
+                    .select('organization_id')
+                    .eq('user_id', userId)
+                    .single();
+                if (!membership) return '/app/intelligence.html';
+
+                const { data: projects } = await db
+                    .from('projects')
+                    .select('id')
+                    .eq('organization_id', membership.organization_id)
+                    .limit(1);
+
+                return (projects && projects.length > 0)
+                    ? '/app/intelligence.html'
+                    : '/app/get-started.html';
+            } catch (err) {
+                console.error('firstRunDestination error:', err);
+                return '/app/intelligence.html';
+            }
+        }
 
         // Save onboarding data to database after login (if any exists)
         async function saveOnboardingDataAfterLogin(userId) {

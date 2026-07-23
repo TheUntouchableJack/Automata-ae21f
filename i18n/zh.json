@@ -1,4 +1,11 @@
 {
+    "getStarted": {
+        "title": "让我们设置您的忠诚度计划",
+        "subtitle": "向 Royal AI 介绍您的业务，它将在几秒钟内构建您的自动化、奖励和增长计划。",
+        "buildButton": "构建我的忠诚度计划",
+        "building": "正在构建您的计划...",
+        "skip": "暂时跳过"
+    },
     "nav": {
         "home": "首页",
         "automations": "自动化",
@@ -8,7 +15,7 @@
         "pricing": "定价",
         "blog": "博客",
         "login": "登录",
-        "joinWaitlist": "加入测试版",
+        "joinWaitlist": "开始使用",
         "getStarted": "免费开始",
         "projects": "项目",
         "customers": "客户",
@@ -46,7 +53,7 @@
         "titleHighlight": "60秒",
         "titleLine2": "创建会员计划，永久运行。",
         "subtitle": "Royalty是一款AI，60秒为您创建会员计划——然后永久运营。顾客赚取积分，您了解运营状况，AI精准告诉您如何增长。",
-        "joinWaitlist": "加入测试版",
+        "joinWaitlist": "开始使用",
         "seeHowItWorks": "了解工作原理",
         "discoveryTitle": "描述您的生意",
         "discoverySubtitle": "我们的AI将在60秒内为您打造定制会员计划。",
@@ -311,7 +318,7 @@
         "title": "准备好让AI运营您的会员计划了吗？",
         "subtitle": "描述你的业务——AI 为你创建并运营忠诚度计划。",
         "emailPlaceholder": "输入您的电子邮件",
-        "joinWaitlist": "加入测试版",
+        "joinWaitlist": "开始使用",
         "note": "发布时享受早鸟价格。",
         "captchaError": "请完成验证码验证。",
         "processing": "处理中...",
@@ -705,7 +712,7 @@
         "whyThis": "为什么是这个？"
     },
     "modal": {
-        "successTitle": "您已加入Beta！",
+        "successTitle": "欢迎加入！",
         "successDesc": "Royalty发布时，我们会发邮件通知您，享受专属早鸟价格。",
         "successBtn": "知道了",
         "createProject": "创建新项目",
@@ -1942,6 +1949,7 @@
         "skip": "跳过",
         "exploreOwn": "我自己探索",
         "completed": "已完成",
+        "lockedHint": "请先完成第 1 步",
         "automationsTitle": "建议的自动化",
         "automationsDesc": "我们根据您的业务制定了4个自动化方案：欢迎消息、访问奖励、风险检查和挽回优惠。审查并激活适合您策略的方案。",
         "automationsLink": "查看自动化",
