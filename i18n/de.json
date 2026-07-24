@@ -625,6 +625,16 @@
             "dontShowAgain": "Don't show this again",
             "cancel": "Cancel",
             "enable": "Enable Autonomous"
+        },
+        "onboarding": {
+            "completeTitle": "Fertig — Royal kennt jetzt das Wichtigste über Ihr Unternehmen",
+            "completeSubline": "Ihre Empfehlungen sind gerade smarter geworden. Sie können jederzeit mehr hinzufügen.",
+            "completeCta": "Fertig",
+            "completeToast": "Unternehmensprofil vollständig"
+        },
+        "suggestions": {
+            "peakSeason": "Wie nutze ich meine Hochsaison im {month} optimal?",
+            "avgSpend": "Wie steigere ich den durchschnittlichen Kundenumsatz über {value} $?"
         }
     },
     "projects": {

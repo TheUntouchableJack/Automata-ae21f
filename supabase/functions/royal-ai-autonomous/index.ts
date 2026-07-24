@@ -4,6 +4,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { sortByImportance } from '../_shared/knowledge-sort.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -166,19 +167,21 @@ async function getActionIntelligence(
     // 2. Query relevant knowledge (matching action category)
     const { layer, category } = getKnowledgeContext(actionType)
 
-    const { data: knowledge } = await supabase
+    // importance is TEXT — over-fetch, sort by true rank in TS, slice.
+    // (See _shared/knowledge-sort.ts. Phase 2 broadens this to a two-tier fetch.)
+    const { data: knowledgeRaw } = await supabase
       .from('business_knowledge')
-      .select('id, fact, confidence, importance')
+      .select('id, fact, confidence, importance, created_at')
       .eq('organization_id', orgId)
       .eq('status', 'active')
       .eq('layer', layer)
       .eq('category', category)
-      .order('importance', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(5)
+      .limit(100)
 
-    intel.relevantLearnings = (knowledge || []).map(k => k.fact)
-    intel.knowledgeIds = (knowledge || []).map(k => k.id)
+    const knowledge = sortByImportance(knowledgeRaw || []).slice(0, 5)
+    intel.relevantLearnings = knowledge.map(k => k.fact)
+    intel.knowledgeIds = knowledge.map(k => k.id)
 
     // 3. Determine recommendation
     if (intel.recentFailures >= 3 && intel.recentSuccesses === 0) {

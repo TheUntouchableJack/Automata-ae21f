@@ -54,6 +54,14 @@ export interface PromptRequest {
     slowDays?: string[] | null
     monthlyRevenue?: number | null
     currentChallenge?: string | null
+    // Full survey context (from Intelligence onboarding)
+    revenueGoal?: number | null
+    avgTransactionValue?: number | null
+    peakMonths?: string[] | null
+    targetAgeRange?: string | null
+    retentionDriver?: string | null
+    competitors?: string | null
+    successVision?: string | null
     external?: ExternalContext | null
   }
 }

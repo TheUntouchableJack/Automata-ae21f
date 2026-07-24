@@ -8,6 +8,7 @@ import type {
   ExternalContext, PromptRequest, IdeaCard
 } from './types.ts'
 import { KNOWLEDGE_EXTRACTION_PATTERNS, sanitizeContextInput, sanitizeContextArray } from './types.ts'
+import { sortByImportance } from '../_shared/knowledge-sort.ts'
 
 // ============================================================================
 // KNOWLEDGE MANAGEMENT FUNCTIONS
@@ -19,19 +20,22 @@ export async function loadBusinessKnowledge(
   organizationId: string
 ): Promise<BusinessKnowledge[]> {
   try {
+    // NOTE: importance is a TEXT column — a SQL `ORDER BY importance` sorts
+    // alphabetically (medium > low > high > critical). Over-fetch, then sort
+    // by true rank in TS. See _shared/knowledge-sort.ts.
     const { data, error } = await supabase
       .from('business_knowledge')
-      .select('id, layer, category, fact, confidence, importance, source_type')
+      .select('id, layer, category, fact, confidence, importance, source_type, created_at')
       .eq('organization_id', organizationId)
       .eq('status', 'active')
-      .order('importance', { ascending: false })
-      .limit(30)
+      .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) {
       console.error('Failed to load business knowledge:', error)
       return []
     }
-    return data || []
+    return sortByImportance(data || []).slice(0, 30)
   } catch (e) {
     console.error('Error loading knowledge:', e)
     return []
@@ -682,6 +686,12 @@ export function buildSystemPrompt(
   const safeChallenge = sanitizeContextInput(context.currentChallenge, 300)
   const safeAutomations = sanitizeContextArray(context.activeAutomations)
   const safeSlowDays = sanitizeContextArray(context.slowDays)
+  // Full survey context (from Intelligence onboarding)
+  const safeTargetAge = sanitizeContextInput(context.targetAgeRange, 50)
+  const safeRetention = sanitizeContextInput(context.retentionDriver, 200)
+  const safeCompetitors = sanitizeContextInput(context.competitors, 200)
+  const safeVision = sanitizeContextInput(context.successVision, 300)
+  const safePeakMonths = sanitizeContextArray(context.peakMonths)
 
   const industryInfo = safeIndustry ? `\n**Industry:** ${safeIndustry}` : ''
   const locationInfo = safeCity ? `\n**Location:** ${safeCity}${safeState ? `, ${safeState}` : ''}` : ''
@@ -694,12 +704,21 @@ export function buildSystemPrompt(
   const revenueInfo = context.monthlyRevenue ? `\n**Monthly Revenue:** $${context.monthlyRevenue.toLocaleString()}` : ''
   const challengeInfo = safeChallenge ? `\n**Current Challenge:** ${safeChallenge}` : ''
 
+  // Full survey context (from Intelligence onboarding)
+  const revenueGoalInfo = context.revenueGoal ? `\n**Revenue Goal:** $${context.revenueGoal.toLocaleString()}` : ''
+  const avgSpendInfo = context.avgTransactionValue ? `\n**Avg Transaction Value:** $${context.avgTransactionValue.toLocaleString()}` : ''
+  const peakMonthsInfo = safePeakMonths.length ? `\n**Peak Months:** ${safePeakMonths.join(', ')}` : ''
+  const targetAgeInfo = safeTargetAge ? `\n**Target Age Range:** ${safeTargetAge}` : ''
+  const retentionInfo = safeRetention ? `\n**What Brings Customers Back:** ${safeRetention}` : ''
+  const competitorsInfo = safeCompetitors ? `\n**Main Competitors:** ${safeCompetitors}` : ''
+  const visionInfo = safeVision ? `\n**Success Vision (6mo):** ${safeVision}` : ''
+
   // External context (weather, time, holidays)
   const externalContext = buildExternalContextSection(context.external)
 
   const businessContext = `## Business Context
 **Business:** ${safeBusinessName || 'Local Business'}${industryInfo}${locationInfo}
-**Customer Count:** ${context.customerCount}${automationsInfo}${slowDaysInfo}${revenueInfo}${challengeInfo}${externalContext}${knowledgeContext}`
+**Customer Count:** ${context.customerCount}${automationsInfo}${slowDaysInfo}${revenueInfo}${revenueGoalInfo}${avgSpendInfo}${peakMonthsInfo}${targetAgeInfo}${retentionInfo}${competitorsInfo}${challengeInfo}${visionInfo}${externalContext}${knowledgeContext}`
 
   if (mode === 'chat') {
     // Chat mode: conversational, no forced card generation

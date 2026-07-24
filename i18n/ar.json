@@ -625,6 +625,16 @@
             "dontShowAgain": "Don't show this again",
             "cancel": "Cancel",
             "enable": "Enable Autonomous"
+        },
+        "onboarding": {
+            "completeTitle": "اكتمل كل شيء — أصبحت Royal تعرف الآن أساسيات نشاطك التجاري",
+            "completeSubline": "أصبحت توصياتك أكثر ذكاءً للتو. يمكنك دائمًا إضافة المزيد في أي وقت.",
+            "completeCta": "إنهاء",
+            "completeToast": "اكتمل ملف النشاط التجاري"
+        },
+        "suggestions": {
+            "peakSeason": "كيف أستفيد إلى أقصى حد من موسم الذروة في {month}؟",
+            "avgSpend": "كيف يمكنني رفع متوسط إنفاق العملاء فوق {value} دولار؟"
         }
     },
     "projects": {

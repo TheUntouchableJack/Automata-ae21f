@@ -3,6 +3,7 @@
 
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { webSearch, saveResearchFindings, extractInsights } from '../_shared/web-search.ts'
+import { sortByImportance, importanceRank } from '../_shared/knowledge-sort.ts'
 import type { ClaudeTool, ToolContext, ToolResult, ToolHandler } from './types.ts'
 import { TOOL_USE_CONFIG, log, sanitizeContextInput } from './types.ts'
 
@@ -1312,20 +1313,21 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
     let knowledge: unknown[] = []
     if (includeKnowledge) {
+      // importance is TEXT — over-fetch, sort by true rank in TS, slice.
       let knowledgeQuery = supabase
         .from('business_knowledge')
         .select('layer, category, fact, confidence, importance, source_type, created_at')
         .eq('organization_id', organizationId)
         .eq('status', 'active')
-        .order('importance', { ascending: false })
-        .limit(30)
+        .order('created_at', { ascending: false })
+        .limit(100)
 
       if (knowledgeLayers && knowledgeLayers.length > 0) {
         knowledgeQuery = knowledgeQuery.in('layer', knowledgeLayers)
       }
 
       const { data: knowledgeData } = await knowledgeQuery
-      knowledge = knowledgeData || []
+      knowledge = sortByImportance(knowledgeData || []).slice(0, 30)
     }
 
     return {
@@ -1359,14 +1361,31 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
     if (category) query = query.eq('category', category)
     if (importance) query = query.eq('importance', importance)
 
-    query = query.order('importance', { ascending: false })
-      .order('times_used', { ascending: false })
-      .limit(limit)
+    // importance is TEXT — over-fetch, then sort by true rank (desc), then
+    // times_used (desc), then created_at (desc) in TS, and slice to limit.
+    query = query.order('created_at', { ascending: false }).limit(100)
 
-    const { data: knowledge, error } = await query
+    const { data: raw, error } = await query
 
     if (error) {
       return { success: false, error: error.message }
+    }
+
+    const knowledge = (raw || []).sort((a, b) => {
+      const rankDiff = importanceRank(b.importance) - importanceRank(a.importance)
+      if (rankDiff !== 0) return rankDiff
+      const usedDiff = (b.times_used || 0) - (a.times_used || 0)
+      if (usedDiff !== 0) return usedDiff
+      return Date.parse(b.created_at || '') - Date.parse(a.created_at || '')
+    }).slice(0, limit)
+
+    // Fire-and-forget: bump usage counts for the facts we just surfaced (item 9).
+    const usedIds = knowledge.map((k) => k.id).filter(Boolean)
+    if (usedIds.length > 0) {
+      // Fire-and-forget; swallow errors via the rejection handler (the rpc
+      // builder is a PromiseLike, so use .then(onOk, onErr) not .catch).
+      supabase.rpc('increment_knowledge_usage', { p_ids: usedIds })
+        .then(() => {}, () => {})
     }
 
     const byLayer = (knowledge || []).reduce((acc, k) => {

@@ -948,6 +948,16 @@
             "dontShowAgain": "Don't show this again",
             "cancel": "Cancel",
             "enable": "Enable Autonomous"
+        },
+        "onboarding": {
+            "completeTitle": "All done — Royal now knows the essentials about your business",
+            "completeSubline": "Your recommendations just got smarter. You can always add more anytime.",
+            "completeCta": "Finish",
+            "completeToast": "Business profile complete"
+        },
+        "suggestions": {
+            "peakSeason": "How do I make the most of my {month} peak season?",
+            "avgSpend": "How can I raise my average customer spend above ${value}?"
         }
     },
     "projects": {

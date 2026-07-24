@@ -625,6 +625,16 @@
             "dontShowAgain": "Don't show this again",
             "cancel": "Cancel",
             "enable": "Enable Autonomous"
+        },
+        "onboarding": {
+            "completeTitle": "全部完成 — Royal 现已了解您业务的核心信息",
+            "completeSubline": "您的推荐变得更智能了。您随时可以补充更多信息。",
+            "completeCta": "完成",
+            "completeToast": "业务资料已完善"
+        },
+        "suggestions": {
+            "peakSeason": "我该如何充分利用{month}的旺季？",
+            "avgSpend": "我该如何将顾客的平均消费提高到 {value} 美元以上？"
         }
     },
     "projects": {

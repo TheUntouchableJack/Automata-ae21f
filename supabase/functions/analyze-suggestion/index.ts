@@ -5,6 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { sortByImportance } from '../_shared/knowledge-sort.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -43,19 +44,21 @@ async function loadBusinessKnowledge(
   organizationId: string
 ): Promise<BusinessKnowledge[]> {
   try {
+    // importance is TEXT — over-fetch and sort by true rank in TS (see
+    // _shared/knowledge-sort.ts) rather than a mis-ordering SQL ORDER BY.
     const { data, error } = await supabase
       .from('business_knowledge')
-      .select('fact, layer, category, importance')
+      .select('fact, layer, category, importance, confidence, created_at')
       .eq('organization_id', organizationId)
       .eq('status', 'active')
-      .order('importance', { ascending: false })
-      .limit(15)
+      .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) {
       console.error('Failed to load business knowledge:', error)
       return []
     }
-    return data || []
+    return sortByImportance(data || []).slice(0, 15)
   } catch (e) {
     console.error('Error loading knowledge:', e)
     return []

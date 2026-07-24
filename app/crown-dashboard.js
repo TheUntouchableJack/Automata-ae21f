@@ -2045,7 +2045,7 @@ const CrownDashboard = (function() {
             const [customersRes, automationsRes, projectsRes] = await Promise.all([
                 supabase.from('customers').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
                 supabase.from('automations').select('type, is_active').eq('organization_id', orgId),
-                supabase.from('projects').select('industry, city, state, pain_points, goals').eq('organization_id', orgId).limit(1)
+                supabase.from('projects').select('industry, city, state, pain_points, goals, target_age_range, retention_driver, competitors, current_challenge, success_vision').eq('organization_id', orgId).limit(1)
             ]);
 
             const project = projectsRes.data?.[0] || {};
@@ -2065,12 +2065,12 @@ const CrownDashboard = (function() {
                 // Business intel fields from projects table (queried separately if columns exist)
                 painPoints: project.pain_points || [],
                 goals: project.goals || [],
-                // These fields may not exist - set to null (will be populated when migration runs)
-                targetAgeRange: null,
-                retentionDriver: null,
-                competitors: null,
-                currentChallenge: null,
-                successVision: null,
+                // Survey-answer fields from projects table (written by the Intelligence onboarding flow)
+                targetAgeRange: project.target_age_range || null,
+                retentionDriver: project.retention_driver || null,
+                competitors: project.competitors || null,
+                currentChallenge: project.current_challenge || null,
+                successVision: project.success_vision || null,
                 // Org metadata
                 createdAt: org.created_at || null,
                 state: project.state || null
@@ -2445,6 +2445,63 @@ const CrownDashboard = (function() {
         }
     }
 
+    // Onboarding completion state — shown once every discovery question is
+    // answered so the panel never goes blank (getNextInfoQuestion() returns
+    // undefined at that point, which used to leave an empty feed).
+    function showOnboardingComplete(feedEl) {
+        if (!feedEl) return;
+        // Avoid stacking duplicate completion cards
+        if (feedEl.querySelector('.onboarding-complete-card')) return;
+
+        infoRequestState.pending = null;
+
+        const title = _suggestText('intelligence.onboarding.completeTitle', 'All done — Royal now knows the essentials about your business');
+        const subline = _suggestText('intelligence.onboarding.completeSubline', 'Your recommendations just got smarter. You can always add more anytime.');
+        const ctaLabel = _suggestText('intelligence.onboarding.completeCta', 'Finish');
+
+        const card = document.createElement('div');
+        card.className = 'insight-card type-info-request onboarding-complete-card';
+        card.dataset.status = 'completed';
+        card.innerHTML = `
+            <div class="insight-card-header">
+                <div class="insight-card-icon">🎉</div>
+                <div class="insight-card-title">${escapeHtml(title)}</div>
+            </div>
+            <div class="insight-card-body">
+                <p>${escapeHtml(subline)}</p>
+            </div>
+            <div class="insight-card-actions">
+                <button class="card-action-btn primary" data-action="finish">${escapeHtml(ctaLabel)}</button>
+            </div>
+        `;
+
+        // Finish mirrors the footer Save handler (mark AI step complete + exit)
+        card.querySelector('[data-action="finish"]').addEventListener('click', () => {
+            if (typeof WelcomeBanner !== 'undefined' && WelcomeBanner.markAiComplete) {
+                WelcomeBanner.markAiComplete();
+            }
+            exitOnboardingMode();
+        });
+
+        // Insert AFTER the knowledge score widget (mirrors showLearningsDiscoveryCard)
+        const scoreWidget = feedEl.querySelector('.knowledge-score-widget');
+        if (scoreWidget && scoreWidget.nextSibling) {
+            feedEl.insertBefore(card, scoreWidget.nextSibling);
+        } else if (scoreWidget) {
+            feedEl.appendChild(card);
+        } else if (feedEl.firstChild) {
+            feedEl.insertBefore(card, feedEl.firstChild);
+        } else {
+            feedEl.appendChild(card);
+        }
+
+        // Confirmation toast + a subtle confetti burst (celebrate.js is loaded on this page)
+        showActivityToast('ai-accepted', _suggestText('intelligence.onboarding.completeToast', 'Business profile complete'));
+        if (typeof celebrateSubtle === 'function') {
+            try { celebrateSubtle(); } catch (e) { /* confetti is best-effort */ }
+        }
+    }
+
     // i18n helper for suggestion strings
     function _suggestText(key, fallback) {
         if (window.I18n) {
@@ -2496,6 +2553,19 @@ const CrownDashboard = (function() {
         if (promptState.orgData.slowDays && promptState.orgData.slowDays.length > 0) {
             const slowDay = promptState.orgData.slowDays[0];
             questions.push(`How do I boost traffic on ${slowDay}s?`);
+        }
+
+        // PRIORITY 5b: Peak-season optimization (from Intel questionnaire)
+        if (promptState.orgData.peakMonths && promptState.orgData.peakMonths.length > 0) {
+            const peakMonth = promptState.orgData.peakMonths[0];
+            const tmpl = _suggestText('intelligence.suggestions.peakSeason', 'How do I make the most of my {month} peak season?');
+            questions.push(tmpl.replace('{month}', peakMonth));
+        }
+
+        // PRIORITY 5c: Average-spend growth (from Intel questionnaire)
+        if (promptState.orgData.avgTransactionValue) {
+            const tmpl = _suggestText('intelligence.suggestions.avgSpend', 'How can I raise my average customer spend above ${value}?');
+            questions.push(tmpl.replace('{value}', Number(promptState.orgData.avgTransactionValue).toLocaleString()));
         }
 
         // PRIORITY 6: Based on org lifecycle
@@ -2772,6 +2842,14 @@ const CrownDashboard = (function() {
             slowDays: promptState.orgData?.slowDays || null,
             monthlyRevenue: promptState.orgData?.monthlyRevenue || null,
             currentChallenge: promptState.orgData?.currentChallenge || null,
+            // Full survey context (from Intelligence onboarding)
+            revenueGoal: promptState.orgData?.revenueGoal || null,
+            avgTransactionValue: promptState.orgData?.avgTransactionValue || null,
+            peakMonths: promptState.orgData?.peakMonths || null,
+            targetAgeRange: promptState.orgData?.targetAgeRange || null,
+            retentionDriver: promptState.orgData?.retentionDriver || null,
+            competitors: promptState.orgData?.competitors || null,
+            successVision: promptState.orgData?.successVision || null,
             // External context (weather, time, holidays)
             external: externalContext
         };
@@ -3128,24 +3206,38 @@ const CrownDashboard = (function() {
         dryTimer: null
     };
 
+    // Is a given question's underlying field already answered in orgData?
+    // Keyed by question.field. Complete across all 10 discovery questions so a
+    // returning, fully-answered owner is never re-asked (orgData is fully
+    // populated by loadOrgDataForSuggestions).
+    const ANSWERED_CHECKS = {
+        monthly_revenue: (d) => d.monthlyRevenue != null && d.monthlyRevenue !== '',
+        revenue_goal: (d) => d.revenueGoal != null && d.revenueGoal !== '',
+        slow_days: (d) => Array.isArray(d.slowDays) && d.slowDays.length > 0,
+        avg_transaction_value: (d) => d.avgTransactionValue != null && d.avgTransactionValue !== '',
+        target_age_range: (d) => !!d.targetAgeRange,
+        retention_driver: (d) => !!d.retentionDriver,
+        competitors: (d) => !!d.competitors,
+        peak_months: (d) => Array.isArray(d.peakMonths) && d.peakMonths.length > 0,
+        current_challenge: (d) => !!d.currentChallenge,
+        success_vision: (d) => !!d.successVision
+    };
+
     function getNextInfoQuestion() {
-        // Get questions not yet asked, prioritized by importance
+        // Get questions not yet asked this session AND not already answered,
+        // prioritized by importance. Returns undefined when everything is
+        // covered — callers route that to the completion state (no fallback,
+        // which is what used to re-ask already-answered questions).
         const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+        const d = promptState.orgData;
         const available = INFO_REQUEST_QUESTIONS
             .filter(q => !infoRequestState.asked.has(q.id))
+            .filter(q => {
+                if (!d) return true;
+                const check = ANSWERED_CHECKS[q.field];
+                return check ? !check(d) : true;
+            })
             .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-
-        // Check what data we already have
-        if (promptState.orgData) {
-            // Skip questions we might already have answers to
-            return available.find(q => {
-                // Skip if we already have this data
-                if (q.field === 'monthly_revenue' && promptState.orgData.monthlyRevenue) return false;
-                if (q.field === 'slow_days' && promptState.orgData.slowDays?.length > 0) return false;
-                // etc.
-                return true;
-            }) || available[0];
-        }
 
         return available[0];
     }
@@ -3355,12 +3447,24 @@ const CrownDashboard = (function() {
             infoRequestState.asked.add(question.id);
             infoRequestState.pending = null;
 
-            // Update local promptState.orgData
+            // Update local promptState.orgData for all 10 discovery fields so
+            // getNextInfoQuestion() sees the answer immediately and never
+            // re-asks it within the session.
             if (promptState.orgData) {
-                if (question.field === 'slow_days') promptState.orgData.slowDays = value;
-                if (question.field === 'monthly_revenue') promptState.orgData.monthlyRevenue = value;
-                if (question.field === 'current_challenge') promptState.orgData.currentChallenge = value;
-                // etc.
+                const FIELD_TO_ORGDATA = {
+                    monthly_revenue: 'monthlyRevenue',
+                    revenue_goal: 'revenueGoal',
+                    slow_days: 'slowDays',
+                    avg_transaction_value: 'avgTransactionValue',
+                    target_age_range: 'targetAgeRange',
+                    retention_driver: 'retentionDriver',
+                    competitors: 'competitors',
+                    peak_months: 'peakMonths',
+                    current_challenge: 'currentChallenge',
+                    success_vision: 'successVision'
+                };
+                const key = FIELD_TO_ORGDATA[question.field];
+                if (key) promptState.orgData[key] = value;
             }
 
             // Show success and remove card
@@ -3870,7 +3974,13 @@ const CrownDashboard = (function() {
 
         // Small delay for smooth transition
         setTimeout(() => {
-            showLearningsDiscoveryCard(feed);
+            // Out of discovery questions → show the completion state instead of
+            // leaving the panel blank (was the "dead empty screen at 10/10" bug).
+            if (!getNextInfoQuestion()) {
+                showOnboardingComplete(feed);
+            } else {
+                showLearningsDiscoveryCard(feed);
+            }
         }, 400);
     }
 
