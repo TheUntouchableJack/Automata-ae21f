@@ -224,6 +224,16 @@ const AIFeed = (function() {
         const analyzeBtn = document.getElementById('analyze-business-btn');
         if (!analyzeBtn) return;
 
+        // Plan gate — mirror the Intelligence page: on-demand generation is a paid
+        // capability. (The daily cron intentionally runs for all eligible orgs.)
+        if (typeof canUseIntelligence === 'function') {
+            const canUse = await canUseIntelligence(organizationId);
+            if (!canUse || !canUse.allowed) {
+                alert(window.t ? window.t('errors.promptLimit') : "You've reached your monthly prompt limit. Upgrade your plan for more.");
+                return;
+            }
+        }
+
         isAnalyzing = true;
         const originalContent = analyzeBtn.innerHTML;
         analyzeBtn.innerHTML = '<span class="spinner"></span> Analyzing...';
