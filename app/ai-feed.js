@@ -232,22 +232,32 @@ const AIFeed = (function() {
         showLoading();
 
         try {
-            // Get organization data for analysis
-            const analysisData = await gatherAnalysisData();
-
-            // Generate recommendations
-            const recommendations = await generateRecommendations(analysisData);
-
-            // Save recommendations to database
-            if (recommendations.length > 0) {
-                await saveRecommendations(recommendations);
+            // Route to the server-side, knowledge-driven generator (royal-ai-recommend),
+            // retiring the client count-rule engine as the source of truth.
+            let session = null;
+            if (typeof getValidSession === 'function') {
+                session = await getValidSession();
+            } else {
+                const { data } = await supabase.auth.getSession();
+                session = data?.session || null;
             }
 
-            // Reload the feed
+            const invokeOpts = { body: { organization_id: organizationId } };
+            if (session?.access_token) {
+                invokeOpts.headers = { Authorization: `Bearer ${session.access_token}` };
+            }
+
+            const { data: genResult, error: genError } = await supabase.functions.invoke(
+                'royal-ai-recommend', invokeOpts
+            );
+            if (genError) throw genError;
+
+            // Reload the feed from the database (single source of truth).
             await loadRecommendations();
 
-            // Celebrate if we got recommendations
-            if (recommendations.length > 0 && typeof celebrate === 'function') {
+            // Celebrate if new recommendations were generated.
+            const generatedCount = genResult?.recommendations || 0;
+            if (generatedCount > 0 && typeof celebrate === 'function') {
                 celebrate();
             }
 
@@ -259,241 +269,6 @@ const AIFeed = (function() {
             isAnalyzing = false;
             analyzeBtn.innerHTML = originalContent;
             analyzeBtn.disabled = false;
-        }
-    }
-
-    // Gather organization data for analysis
-    async function gatherAnalysisData() {
-        const data = {
-            customers: { total: 0, recent: 0, bySource: {} },
-            projects: { total: 0, byIndustry: {}, list: [] },
-            automations: { total: 0, active: 0, byType: {}, byTemplate: {} }
-        };
-
-        try {
-            // Get customer stats
-            const { count: totalCustomers } = await supabase
-                .from('customers')
-                .select('*', { count: 'exact', head: true })
-                .eq('organization_id', organizationId)
-                .is('deleted_at', null);
-
-            data.customers.total = totalCustomers || 0;
-
-            // Get recent customers (last 30 days)
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-            const { count: recentCustomers } = await supabase
-                .from('customers')
-                .select('*', { count: 'exact', head: true })
-                .eq('organization_id', organizationId)
-                .is('deleted_at', null)
-                .gte('created_at', thirtyDaysAgo.toISOString());
-
-            data.customers.recent = recentCustomers || 0;
-
-            // Get project stats
-            const { data: projects } = await supabase
-                .from('projects')
-                .select('id, name, industry')
-                .eq('organization_id', organizationId)
-                .is('deleted_at', null);
-
-            data.projects.total = projects?.length || 0;
-            data.projects.list = projects || [];
-            if (projects) {
-                projects.forEach(p => {
-                    const industry = p.industry || 'unset';
-                    data.projects.byIndustry[industry] = (data.projects.byIndustry[industry] || 0) + 1;
-                });
-            }
-
-            // Get automation stats with template_id to know what's already built
-            if (projects && projects.length > 0) {
-                const projectIds = projects.map(p => p.id);
-                const { data: automations } = await supabase
-                    .from('automations')
-                    .select('id, type, is_active, template_id')
-                    .in('project_id', projectIds)
-                    .is('deleted_at', null);
-
-                data.automations.total = automations?.length || 0;
-                if (automations) {
-                    automations.forEach(a => {
-                        if (a.is_active) data.automations.active++;
-                        const type = a.type || 'other';
-                        data.automations.byType[type] = (data.automations.byType[type] || 0) + 1;
-                        if (a.template_id) {
-                            data.automations.byTemplate[a.template_id] = true;
-                        }
-                    });
-                }
-            }
-
-        } catch (error) {
-            console.error('Error gathering analysis data:', error);
-        }
-
-        return data;
-    }
-
-    // Generate smart recommendations based on data
-    async function generateRecommendations(data) {
-        const recommendations = [];
-        const hasTemplate = (id) => data.automations.byTemplate[id];
-
-        // Priority 1: No automations at all - suggest welcome series
-        if (data.automations.total === 0) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'automation',
-                title: 'Start with a Welcome Email Series',
-                description: `You have ${data.customers.total || 'no'} customers but no automations. A welcome series is the foundation - it engages new customers from day one and sets the tone for your relationship.`,
-                confidence_score: 0.95,
-                potential_impact: 'high',
-                suggested_action: 'Create a welcome email automation',
-                action_type: 'create_project_with_automation',
-                action_payload: { template_id: 'welcome-email' }
-            });
-        }
-
-        // Suggest follow-up if not present
-        if (!hasTemplate('post-visit-follow-up') && data.customers.total > 5) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'efficiency',
-                title: 'Automate Post-Visit Follow-ups',
-                description: `With ${data.customers.total} customers, manual follow-ups don't scale. Automated follow-ups after visits increase repeat business by 23% on average.`,
-                confidence_score: 0.88,
-                potential_impact: 'high',
-                suggested_action: 'Create a follow-up automation',
-                action_type: 'create_project_with_automation',
-                action_payload: { template_id: 'follow-up' }
-            });
-        }
-
-        // Suggest win-back if customer count is significant
-        if (!hasTemplate('win-back-campaign') && data.customers.total > 20) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'growth',
-                title: 'Win Back Inactive Customers',
-                description: `Some of your ${data.customers.total} customers likely haven't engaged recently. A win-back campaign can recover 5-15% of churned customers with minimal effort.`,
-                confidence_score: 0.85,
-                potential_impact: 'medium',
-                suggested_action: 'Create a win-back campaign',
-                action_type: 'create_project_with_automation',
-                action_payload: { template_id: 're-engagement' }
-            });
-        }
-
-        // Suggest birthday rewards if enough customers
-        if (!hasTemplate('birthday-rewards') && data.customers.total > 10) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'opportunity',
-                title: 'Celebrate Customer Birthdays',
-                description: `Birthday messages have 481% higher engagement rates than regular communications. With ${data.customers.total} customers, this builds lasting loyalty.`,
-                confidence_score: 0.90,
-                potential_impact: 'high',
-                suggested_action: 'Create birthday rewards automation',
-                action_type: 'create_project_with_automation',
-                action_payload: { template_id: 'birthday' }
-            });
-        }
-
-        // Suggest reviews if no review automation
-        if (!hasTemplate('review-request') && data.customers.total > 15) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'growth',
-                title: 'Build Your Online Reputation',
-                description: 'Automated review requests at the right moment dramatically increase your review count. More reviews = more trust = more customers.',
-                confidence_score: 0.82,
-                potential_impact: 'medium',
-                suggested_action: 'Create review request automation',
-                action_type: 'create_project_with_automation',
-                action_payload: { template_id: 'review-request' }
-            });
-        }
-
-        // Suggest newsletter if significant customer base
-        if (!hasTemplate('monthly-newsletter') && data.customers.total > 50) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'opportunity',
-                title: 'Start a Monthly Newsletter',
-                description: `${data.customers.total} customers is a valuable audience. A monthly newsletter keeps you top-of-mind and drives consistent engagement.`,
-                confidence_score: 0.78,
-                potential_impact: 'medium',
-                suggested_action: 'Create monthly newsletter',
-                action_type: 'create_project_with_automation',
-                action_payload: { template_id: 'newsletter' }
-            });
-        }
-
-        // Suggest loyalty program for larger customer bases
-        if (!hasTemplate('loyalty-program') && data.customers.total > 100) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'growth',
-                title: 'Launch a Loyalty Program',
-                description: 'With over 100 customers, a loyalty program can increase customer lifetime value by 30%. Reward your best customers automatically.',
-                confidence_score: 0.80,
-                potential_impact: 'high',
-                suggested_action: 'Create loyalty program',
-                action_type: 'create_project_with_automation',
-                action_payload: { template_id: 'loyalty' }
-            });
-        }
-
-        // Check for inactive automations
-        if (data.automations.total > 0 && data.automations.active === 0) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'risk',
-                title: 'Your Automations Are Inactive',
-                description: `You have ${data.automations.total} automations but none are active. Review and activate them to start seeing results.`,
-                confidence_score: 0.95,
-                potential_impact: 'high',
-                suggested_action: 'Review automations',
-                action_type: 'navigate',
-                action_payload: { url: '/app/automations.html' }
-            });
-        }
-
-        // If no customers yet
-        if (data.customers.total === 0) {
-            recommendations.push({
-                organization_id: organizationId,
-                recommendation_type: 'opportunity',
-                title: 'Import Your Customer Data',
-                description: 'Get started by importing your existing customers. This enables all AI-powered features and personalized recommendations.',
-                confidence_score: 0.95,
-                potential_impact: 'high',
-                suggested_action: 'Go to Customers',
-                action_type: 'navigate',
-                action_payload: { url: '/app/customers.html' }
-            });
-        }
-
-        // Limit to 5 most relevant
-        return recommendations.slice(0, 5);
-    }
-
-    // Save recommendations to database
-    async function saveRecommendations(recommendations) {
-        try {
-            const { error } = await supabase
-                .from('ai_recommendations')
-                .insert(recommendations);
-
-            if (error) {
-                console.error('Error saving recommendations:', error);
-            }
-        } catch (err) {
-            console.log('Could not save recommendations:', err);
         }
     }
 
