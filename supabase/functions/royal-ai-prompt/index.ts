@@ -497,6 +497,7 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
         supabase,
         organizationId: ceoMembership?.organization_id ?? '',
         appId: undefined,
+        loadedKnowledgeIds: [], // CEO path loads no business knowledge
       }
 
       const formatted = messages.map(m => ({
@@ -844,7 +845,9 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
     const toolContext: ToolContext = {
       supabase,
       organizationId,
-      appId: undefined // Will be resolved by tool handlers
+      appId: undefined, // Will be resolved by tool handlers
+      // Provenance for actions queued this turn — the knowledge loaded at :756.
+      loadedKnowledgeIds: knowledge.map((k) => k.id).filter(Boolean)
     }
 
     // Select model based on query complexity (Haiku for simple, Sonnet for complex)

@@ -5,6 +5,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { wrapEmail } from '../_shared/email-template.ts'
+import { loadBusinessProfile } from '../_shared/knowledge.ts'
 
 function log(level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>): void {
   const entry = { level, message, timestamp: new Date().toISOString(), service: 'message-sender', ...context }
@@ -500,6 +501,16 @@ async function processBatch(
     .select('id, email, phone, fcm_token, first_name, last_name, locale, timezone, communication_preferences, quiet_hours')
     .in('id', memberIds.slice(0, 1000))
 
+  // Load business context once per batch for {{business_*}} interpolation vars.
+  // business_name lives on organizations, not business_profiles.
+  const [businessProfile, orgRow] = await Promise.all([
+    loadBusinessProfile(supabase, batch.organization_id),
+    supabase.from('organizations').select('name').eq('id', batch.organization_id).single(),
+  ])
+  const businessName = (orgRow.data?.name as string) || ''
+  const avgTicket = businessProfile?.avg_ticket != null ? String(businessProfile.avg_ticket) : ''
+  const businessType = businessProfile?.business_type || ''
+
   const results: DeliveryResult[] = []
 
   // Batch fatigue check: single query for all members instead of N individual RPCs
@@ -541,11 +552,14 @@ async function processBatch(
       continue
     }
 
-    // Interpolate message with member data
+    // Interpolate message with member + business data
     const interpolate = (text: string) => text
       .replace(/\{\{name\}\}/g, member.first_name || 'Friend')
       .replace(/\{\{first_name\}\}/g, member.first_name || '')
       .replace(/\{\{last_name\}\}/g, member.last_name || '')
+      .replace(/\{\{business_name\}\}/g, businessName)
+      .replace(/\{\{avg_ticket\}\}/g, avgTicket)
+      .replace(/\{\{business_type\}\}/g, businessType)
 
     const subject = batch.subject ? interpolate(batch.subject) : null
     const body = interpolate(batch.body)

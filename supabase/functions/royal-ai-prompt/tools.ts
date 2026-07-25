@@ -868,6 +868,29 @@ async function getAppIdForOrg(supabase: SupabaseClient, organizationId: string):
 }
 
 /**
+ * Stamp the knowledge facts that shaped this turn onto a freshly-queued action.
+ * Fire-and-forget (service-role, RLS bypassed): records provenance in
+ * ai_action_queue.knowledge_refs (proper JSONB array) and bumps
+ * business_knowledge.times_used via increment_knowledge_usage. No-op when the
+ * queue failed to return an id or no knowledge was loaded this turn.
+ */
+function stampKnowledgeRefs(ctx: ToolContext, actionId: string | null | undefined): void {
+  const ids = ctx.loadedKnowledgeIds?.filter(Boolean) || []
+  if (!actionId || ids.length === 0) return
+
+  // Pass the JS array directly — supabase-js serializes it as a JSONB array.
+  ctx.supabase
+    .from('ai_action_queue')
+    .update({ knowledge_refs: ids })
+    .eq('id', actionId)
+    .then(() => {}, () => {})
+
+  // rpc builder is a PromiseLike — use .then(onOk, onErr), not .catch.
+  ctx.supabase.rpc('increment_knowledge_usage', { p_ids: ids })
+    .then(() => {}, () => {})
+}
+
+/**
  * Tool handlers registry
  */
 export const TOOL_HANDLERS: Record<string, ToolHandler> = {
@@ -1276,6 +1299,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
       return { success: false, error: error.message }
     }
 
+    stampKnowledgeRefs(ctx, queueResult?.action_id)
+
     return {
       success: true,
       data: {
@@ -1577,6 +1602,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
       return { success: false, error: error.message }
     }
 
+    stampKnowledgeRefs(ctx, queueResult?.action_id)
+
     return {
       success: true,
       data: {
@@ -1678,6 +1705,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
       return { success: false, error: error.message }
     }
 
+    stampKnowledgeRefs(ctx, queueResult?.action_id)
+
     return {
       success: true,
       data: {
@@ -1737,6 +1766,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
     if (error) {
       return { success: false, error: error.message }
     }
+
+    stampKnowledgeRefs(ctx, queueResult?.action_id)
 
     return {
       success: true,
@@ -1832,6 +1863,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
       return { success: false, error: error.message }
     }
 
+    stampKnowledgeRefs(ctx, queueResult?.action_id)
+
     return {
       success: true,
       data: {
@@ -1877,6 +1910,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
     if (error) {
       return { success: false, error: error.message }
     }
+
+    stampKnowledgeRefs(ctx, queueResult?.action_id)
 
     return {
       success: true,

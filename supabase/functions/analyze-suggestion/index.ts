@@ -4,8 +4,8 @@
 // Triggered fire-and-forget from customer app after suggestion submission.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { sortByImportance } from '../_shared/knowledge-sort.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { loadBusinessKnowledge, loadBusinessProfile } from '../_shared/knowledge.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -17,74 +17,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// ============================================================================
-// BUSINESS CONTEXT LOADERS (same patterns as royal-ai-prompt)
-// ============================================================================
-
-interface BusinessKnowledge {
-  fact: string
-  layer: string
-  category: string
-  importance: string
-}
-
-interface BusinessProfile {
-  business_type: string | null
-  business_subtype: string | null
-  avg_ticket: number | null
-  gross_margin_pct: number | null
-  food_cost_pct: number | null
-  price_positioning: string | null
-  primary_revenue_streams: string[] | null
-  customer_frequency: string | null
-}
-
-async function loadBusinessKnowledge(
-  supabase: SupabaseClient,
-  organizationId: string
-): Promise<BusinessKnowledge[]> {
-  try {
-    // importance is TEXT — over-fetch and sort by true rank in TS (see
-    // _shared/knowledge-sort.ts) rather than a mis-ordering SQL ORDER BY.
-    const { data, error } = await supabase
-      .from('business_knowledge')
-      .select('fact, layer, category, importance, confidence, created_at')
-      .eq('organization_id', organizationId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(100)
-
-    if (error) {
-      console.error('Failed to load business knowledge:', error)
-      return []
-    }
-    return sortByImportance(data || []).slice(0, 15)
-  } catch (e) {
-    console.error('Error loading knowledge:', e)
-    return []
-  }
-}
-
-async function loadBusinessProfile(
-  supabase: SupabaseClient,
-  organizationId: string
-): Promise<BusinessProfile | null> {
-  try {
-    const { data, error } = await supabase
-      .from('business_profiles')
-      .select('business_type, business_subtype, avg_ticket, gross_margin_pct, food_cost_pct, price_positioning, primary_revenue_streams, customer_frequency')
-      .eq('organization_id', organizationId)
-      .single()
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Failed to load business profile:', error)
-    }
-    return data || null
-  } catch (e) {
-    console.error('Error loading profile:', e)
-    return null
-  }
-}
+// Business context loaders now come from _shared/knowledge.ts (single source of
+// truth). This function keeps its own Haiku prompt format below.
 
 // ============================================================================
 // HANDLER
@@ -133,7 +67,7 @@ Deno.serve(async (req) => {
 
     // 2. Load business context
     const [knowledge, profile] = await Promise.all([
-      loadBusinessKnowledge(supabase, suggestion.organization_id),
+      loadBusinessKnowledge(supabase, suggestion.organization_id, 15),
       loadBusinessProfile(supabase, suggestion.organization_id),
     ])
 

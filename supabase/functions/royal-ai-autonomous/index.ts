@@ -601,9 +601,13 @@ async function executeSendWeeklyDigest(
   const ownerEmail = owner.profiles.email as string
   const ownerName = (owner.profiles.first_name as string) || 'there'
 
+  // "What Royal learned this week" — newest active facts, preferring
+  // conversation/research/integration over inferred outcome noise.
+  const learnings = await loadRecentLearnings(supabase, organizationId, 3)
+
   // Format digest email
   const emailSubject = `Weekly Automation Report: ${weekStart} - ${weekEnd}`
-  const emailBody = formatDigestEmail(digestData, ownerName)
+  const emailBody = formatDigestEmail(digestData, ownerName, learnings)
 
   // Get organization's app for message batch
   const { data: app } = await supabase
@@ -666,9 +670,50 @@ async function executeSendWeeklyDigest(
 }
 
 /**
+ * Load the newest active learnings for the weekly digest.
+ * Prefers conversation/research/integration facts over inferred outcome noise,
+ * falling back to inferred facts only if there aren't enough of the former.
+ */
+async function loadRecentLearnings(
+  supabase: SupabaseClient,
+  organizationId: string,
+  limit: number
+): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('business_knowledge')
+      .select('fact, source_type, created_at')
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    if (error || !data) {
+      if (error) log('warn', 'Failed to load digest learnings', { organizationId, error: error.message })
+      return []
+    }
+
+    // Preferred sources first (stable within group by created_at DESC from query).
+    const preferred = data.filter((r) => r.source_type !== 'inferred')
+    const inferred = data.filter((r) => r.source_type === 'inferred')
+    return [...preferred, ...inferred]
+      .slice(0, limit)
+      .map((r) => String(r.fact))
+      .filter(Boolean)
+  } catch (e) {
+    log('warn', 'Error loading digest learnings', { organizationId, error: String(e) })
+    return []
+  }
+}
+
+/**
  * Format digest email content
  */
-function formatDigestEmail(digest: Record<string, unknown>, firstName: string): string {
+function formatDigestEmail(
+  digest: Record<string, unknown>,
+  firstName: string,
+  learnings: string[] = []
+): string {
   const topPerformers = (digest.top_performers as Array<Record<string, unknown>>) || []
   const underperformers = (digest.underperformers as Array<Record<string, unknown>>) || []
   const newlyPaused = (digest.newly_paused as Array<Record<string, unknown>>) || []
@@ -713,6 +758,14 @@ function formatDigestEmail(digest: Record<string, unknown>, firstName: string): 
     body += `These automations have been paused for 7+ days and may be ready to try again:\n`
     recoveryCandidates.forEach((r) => {
       body += `- ${r.name} (paused ${r.days_paused} days)\n`
+    })
+    body += `\n`
+  }
+
+  if (learnings.length > 0) {
+    body += `=== WHAT ROYAL LEARNED THIS WEEK ===\n`
+    learnings.forEach((fact) => {
+      body += `- ${fact}\n`
     })
     body += `\n`
   }
@@ -1168,6 +1221,9 @@ async function saveOutcomeLearning(
         importance,
         source_type: 'inferred',
         status: 'active',
+        // Outcome learnings are time-sensitive — let them expire so the prune's
+        // expiry branch actually fires (it was inert while expires_at was null).
+        expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         trigger_context: {
           action_id: action.id,
           action_type: actionType,
@@ -1255,7 +1311,9 @@ async function runPostActionReflection(
         confidence: Math.min(stats.total / 10, 0.9),
         importance,
         source_type: 'inferred',
-        status: 'active'
+        status: 'active',
+        // Weekly-pattern insights are time-sensitive — expire so prune can reap.
+        expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
       })
 
     insightsGenerated++

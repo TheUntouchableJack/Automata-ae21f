@@ -6,6 +6,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { checkRateLimit, rateLimitHeaders } from '../_shared/rate-limit.ts'
+import { loadBusinessKnowledge, loadBusinessProfile, buildKnowledgeContextSection } from '../_shared/knowledge.ts'
+
+// Per-request token accumulator (track-only cost monitoring; not concurrency-shared).
+interface UsageAccumulator { input: number; output: number }
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -218,8 +222,8 @@ interface ArticleResult {
   quality_score: QualityScore
 }
 
-// Call Claude API
-async function callClaude(prompt: string, maxTokens: number = 4000): Promise<string> {
+// Call Claude API. Optionally accumulates token usage for cost tracking.
+async function callClaude(prompt: string, maxTokens: number = 4000, usage?: UsageAccumulator): Promise<string> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -240,11 +244,15 @@ async function callClaude(prompt: string, maxTokens: number = 4000): Promise<str
   }
 
   const data = await response.json()
+  if (usage && data.usage) {
+    usage.input += data.usage.input_tokens || 0
+    usage.output += data.usage.output_tokens || 0
+  }
   return data.content[0].text
 }
 
 // Generate the article
-async function generateArticle(topic: GenerateRequest['topic'], context: GenerateRequest['context']): Promise<string> {
+async function generateArticle(topic: GenerateRequest['topic'], context: GenerateRequest['context'], knowledgeSection: string = '', usage?: UsageAccumulator): Promise<string> {
   const businessName = context.business_name || 'the business'
   const personality = context.voice?.personality || 'friendly and professional'
   const tone = context.voice?.tone || 'warm and practical'
@@ -273,6 +281,7 @@ async function generateArticle(topic: GenerateRequest['topic'], context: Generat
 ${origin ? `- Origin story: ${origin}` : ''}
 ${mission ? `- Mission: ${mission}` : ''}
 ${differentiator ? `- What makes them different: ${differentiator}` : ''}
+${knowledgeSection}
 
 ## This Article
 - Title: ${topic.title}
@@ -309,11 +318,11 @@ ${differentiator ? `- What makes them different: ${differentiator}` : ''}
 
 Write the complete article now. Just the article content in markdown, no preamble or explanation:`
 
-  return await callClaude(prompt, 4000)
+  return await callClaude(prompt, 4000, usage)
 }
 
 // Quality check with self-critique
-async function qualityCheck(article: string, context: GenerateRequest['context']): Promise<{ score: QualityScore; issues: string[]; verdict: string }> {
+async function qualityCheck(article: string, context: GenerateRequest['context'], usage?: UsageAccumulator): Promise<{ score: QualityScore; issues: string[]; verdict: string }> {
   const personality = context.voice?.personality || 'friendly and professional'
 
   const prompt = `You are a tough editor reviewing this article. Be critical but fair.
@@ -350,7 +359,7 @@ Rate each 1-10 and explain briefly:
 
 Respond with only the JSON, no other text:`
 
-  const response = await callClaude(prompt, 1000)
+  const response = await callClaude(prompt, 1000, usage)
 
   try {
     // Extract JSON from response (handle potential markdown code blocks)
@@ -388,7 +397,7 @@ Respond with only the JSON, no other text:`
 }
 
 // Rewrite article with feedback
-async function rewriteWithFeedback(originalArticle: string, issues: string[], context: GenerateRequest['context'], topic: GenerateRequest['topic']): Promise<string> {
+async function rewriteWithFeedback(originalArticle: string, issues: string[], context: GenerateRequest['context'], topic: GenerateRequest['topic'], knowledgeSection: string = '', usage?: UsageAccumulator): Promise<string> {
   const prompt = `You wrote this article but an editor found issues. Rewrite it to fix them.
 
 ## Original Article
@@ -401,17 +410,19 @@ ${issues.map((issue, i) => `${i + 1}. ${issue}`).join('\n')}
 - Personality: ${context.voice?.personality || 'friendly and professional'}
 - Tone: ${context.voice?.tone || 'warm and practical'}
 - Audience: ${context.audience?.primary || 'small business owners'}
+${knowledgeSection}
 
 ## Requirements
 - Fix the specific issues mentioned
 - Keep what's working well
+- Keep it grounded in the real business facts above
 - Maintain 1200-1800 words
 - Make it feel more human and specific
 - Start with something that grabs attention
 
 Write the improved article now. Just the article content in markdown:`
 
-  return await callClaude(prompt, 4000)
+  return await callClaude(prompt, 4000, usage)
 }
 
 // Generate SEO metadata
@@ -575,8 +586,22 @@ Deno.serve(async (req) => {
 
     console.log(`Generating article: "${topic.title}" for app ${app_id}`)
 
+    // Load accumulated business knowledge so articles reflect this specific
+    // business, not generic advice. Truncated to keep the prompt lean.
+    let knowledgeSection = ''
+    if (organization_id) {
+      const [knowledge, profile] = await Promise.all([
+        loadBusinessKnowledge(supabase, organization_id),
+        loadBusinessProfile(supabase, organization_id),
+      ])
+      knowledgeSection = buildKnowledgeContextSection(knowledge, profile).slice(0, 1500)
+    }
+
+    // Track-only token accumulator (no hard budget gate — generation never blocked).
+    const usage: UsageAccumulator = { input: 0, output: 0 }
+
     // Step 1: Generate initial article
-    let article = await generateArticle(topic, context)
+    let article = await generateArticle(topic, context, knowledgeSection, usage)
     console.log('Initial article generated')
 
     // Step 2: Scan for taboo phrases (hard fail if found)
@@ -586,7 +611,7 @@ Deno.serve(async (req) => {
     }
 
     // Step 3: Quality check
-    let qualityResult = await qualityCheck(article, context)
+    let qualityResult = await qualityCheck(article, context, usage)
     console.log(`Quality score: ${qualityResult.score.total}, verdict: ${qualityResult.verdict}`)
 
     // Step 4: Rewrite if needed (score < 7 OR taboo phrases found)
@@ -599,7 +624,7 @@ Deno.serve(async (req) => {
       }
 
       console.log(`Rewriting article (attempt ${rewriteCount + 1})...`)
-      article = await rewriteWithFeedback(article, allIssues, context, topic)
+      article = await rewriteWithFeedback(article, allIssues, context, topic, knowledgeSection, usage)
 
       // Re-scan for taboo phrases
       tabooViolations = scanForTabooPhrases(article)
@@ -610,7 +635,7 @@ Deno.serve(async (req) => {
       }
 
       // Re-check quality
-      qualityResult = await qualityCheck(article, context)
+      qualityResult = await qualityCheck(article, context, usage)
       console.log(`New quality score: ${qualityResult.score.total}`)
       rewriteCount++
     }
@@ -654,6 +679,19 @@ Deno.serve(async (req) => {
     } catch (logError) {
       console.error('Failed to log generation:', logError)
       // Don't fail the request if logging fails
+    }
+
+    // Track AI usage for cost monitoring (track-only — no hard budget gate here;
+    // article generation is never blocked). Fire-and-forget, don't block response.
+    if (organization_id && (usage.input > 0 || usage.output > 0)) {
+      supabase.rpc('increment_ai_usage', {
+        p_org_id: organization_id,
+        p_input_tokens: usage.input,
+        p_output_tokens: usage.output,
+        p_cache_read_tokens: 0,
+        p_model: 'sonnet',
+        p_function_name: 'generate_article'
+      }).then(({ error: e }: { error: unknown }) => { if (e) console.error('AI usage tracking error:', e) })
     }
 
     console.log(`Article generation complete: ${result.title}`)

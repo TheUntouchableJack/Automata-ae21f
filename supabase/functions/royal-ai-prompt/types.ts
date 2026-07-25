@@ -101,15 +101,8 @@ export type PromptResponse = ReviewResponse | ChatResponse
 // KNOWLEDGE & DISCOVERY TYPES
 // ============================================================================
 
-export interface BusinessKnowledge {
-  id: string
-  layer: 'operational' | 'customer' | 'financial' | 'market' | 'growth' | 'regulatory'
-  category: string
-  fact: string
-  confidence: number
-  importance: 'critical' | 'high' | 'medium' | 'low'
-  source_type: 'conversation' | 'research' | 'integration' | 'inferred'
-}
+// Unified with the shared loaders — single source of truth in _shared/knowledge.ts.
+export type { BusinessKnowledge, BusinessProfile } from '../_shared/knowledge.ts'
 
 export interface DiscoveryQuestion {
   question_id: string
@@ -117,23 +110,6 @@ export interface DiscoveryQuestion {
   question: string
   why_asking: string
   priority: number
-}
-
-export interface BusinessProfile {
-  business_type?: string
-  revenue_model?: string
-  avg_ticket?: number
-  gross_margin_pct?: number
-  food_cost_pct?: number
-  labor_cost_pct?: number
-  price_positioning?: string
-  competitive_advantage?: string
-  current_stage?: string
-  biggest_challenge?: string
-  success_vision?: string
-  ideal_customer_description?: string
-  primary_age_range?: string
-  profile_completeness?: number
 }
 
 export interface SessionDiscoveryState {
@@ -227,6 +203,10 @@ export interface ToolContext {
   supabase: SupabaseClient
   organizationId: string
   appId?: string
+  // IDs of business_knowledge facts loaded into this turn's prompt context.
+  // Stamped onto queued actions (ai_action_queue.knowledge_refs) as provenance +
+  // used to bump business_knowledge.times_used. Empty when no knowledge loaded.
+  loadedKnowledgeIds?: string[]
 }
 
 /**
