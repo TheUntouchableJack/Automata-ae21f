@@ -69,20 +69,28 @@ async function rpc(fn, body) {
 }
 
 /**
- * Hero image metadata for every published article, keyed by slug.
+ * Per-article columns that get_article_by_slug does not return, keyed by slug:
+ * the hero image's alt/credit and the author byline.
  *
- * og_image_alt / og_image_credit / og_image_credit_url are columns on
- * newsletter_articles that get_article_by_slug does not return, so they are
- * read straight from the table. Anon can already SELECT published articles
- * (that is how blog.js works), and a read-only select for three columns is a
- * far smaller change than replacing that RPC's body.
+ * Read straight from the table because anon can already SELECT published
+ * articles (that is how blog.js works), and a read-only select is a far
+ * smaller change than replacing that RPC's body, which also assembles the
+ * series, related and translation payloads.
  *
- * Never throws: a hero image is decoration, and losing it must not take the
- * whole prerender down with it.
+ * Never throws: a missing image credit or byline must not take the whole
+ * prerender down with it.
  */
-async function fetchHeroMeta() {
+async function fetchArticleExtras() {
   const params = new URLSearchParams({
-    select: 'slug,og_image_url,og_image_alt,og_image_credit,og_image_credit_url',
+    select: [
+      'slug',
+      'og_image_url',
+      'og_image_alt',
+      'og_image_credit',
+      'og_image_credit_url',
+      'author_name',
+      'author_title',
+    ].join(','),
     app_id: `eq.${APP_ID}`,
     status: 'eq.published',
     deleted_at: 'is.null',
@@ -95,12 +103,12 @@ async function fetchHeroMeta() {
       },
     });
     if (!res.ok) {
-      console.warn(`  [hero] skipped — ${res.status} reading image columns`);
+      console.warn(`  [extras] skipped — ${res.status} reading image/author columns`);
       return new Map();
     }
     return new Map((await res.json()).map((r) => [r.slug, r]));
   } catch (e) {
-    console.warn(`  [hero] skipped — ${e.message}`);
+    console.warn(`  [extras] skipped — ${e.message}`);
     return new Map();
   }
 }
@@ -208,6 +216,14 @@ function heroHtml(article) {
                 </figure>`;
 }
 
+/** "By Jay Whitley Jr., Founder" — or '' when the article has no named author. */
+function bylineText(article) {
+  if (!article.author_name) return '';
+  return article.author_title
+    ? `By ${article.author_name}, ${article.author_title}`
+    : `By ${article.author_name}`;
+}
+
 function buildPage(template, article) {
   const title = article.meta_title || article.title;
   const description = article.meta_description || excerpt(article.content);
@@ -228,7 +244,17 @@ function buildPage(template, article) {
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     datePublished: published || undefined,
     dateModified: modified || undefined,
-    author: { '@type': 'Organization', name: 'Royalty', url: `${SITE_URL}/` },
+    // A named person with a stated role is a stronger E-E-A-T signal than a
+    // faceless organisation — but only when the person is real. Articles with
+    // no author_name fall back to the organisation rather than inventing one.
+    author: article.author_name
+      ? {
+          '@type': 'Person',
+          name: article.author_name,
+          ...(article.author_title ? { jobTitle: article.author_title } : {}),
+          worksFor: { '@type': 'Organization', name: 'Royalty', url: `${SITE_URL}/` },
+        }
+      : { '@type': 'Organization', name: 'Royalty', url: `${SITE_URL}/` },
     publisher: {
       '@type': 'Organization',
       name: 'Royalty',
@@ -313,6 +339,12 @@ ${jsonLd(breadcrumbSchema)}
       /(<span class="post-date" id="post-date">)([\s\S]*?)(<\/span>)/,
       `$1${escapeHtml(formatDate(article.published_at))}$3`
     )
+    // Visible byline. The JSON-LD author above is for machines; a reader
+    // deciding whether to trust the article wants to see the name too.
+    .replace(
+      /(<span class="post-author" id="post-author">)([\s\S]*?)(<\/span>)/,
+      `$1${escapeHtml(bylineText(article))}$3`
+    )
     .replace(
       /(<span class="post-industry" id="post-industry">)([\s\S]*?)(<\/span>)/,
       `$1${escapeHtml(article.primary_topic || article.industry || '')}$3`
@@ -392,7 +424,7 @@ async function main() {
   }
 
   const template = loadTemplate();
-  const heroMeta = await fetchHeroMeta();
+  const extras = await fetchArticleExtras();
   const slugs = new Set();
   let written = 0;
   const failures = [];
@@ -413,8 +445,8 @@ async function main() {
         throw new Error('no content returned');
       }
 
-      // The detail RPC predates the hero-image columns, so merge them in here.
-      Object.assign(article, heroMeta.get(slug) || {});
+      // The detail RPC predates these columns, so merge them in here.
+      Object.assign(article, extras.get(slug) || {});
 
       assertClean(article, article.content);
 

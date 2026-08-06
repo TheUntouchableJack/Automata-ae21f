@@ -557,6 +557,15 @@ function renderPost(post) {
     document.getElementById('post-title').textContent = post.title;
     document.getElementById('post-date').textContent = publishedDate;
 
+    // Byline. get_article_by_slug doesn't return author_name yet, so this only
+    // fills in where the caller already has it; prerendered pages bake it in.
+    const authorEl = document.getElementById('post-author');
+    if (authorEl) {
+        authorEl.textContent = post.author_name
+            ? (post.author_title ? `By ${post.author_name}, ${post.author_title}` : `By ${post.author_name}`)
+            : '';
+    }
+
     showEditButtonIfAdmin(post.slug);
 
     const topic = post.primary_topic || post.industry;
