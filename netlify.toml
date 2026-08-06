@@ -2,13 +2,18 @@
 
 # publish and command are independent — publish stays "." (the repo root is the
 # site) while the command generates the static blog pages and a fresh sitemap.
-# The trailing "|| true" is deliberate: without it a transient Supabase failure
+# The two scripts are separated by ";" and each carries its own "|| true": they
+# are independent jobs, and a prerender failure must not skip the sitemap. With
+# "&&" a single bad article froze the sitemap on every subsequent deploy, and the
+# trailing "|| true" bound to the whole chain, so the deploy still reported green.
+# The "|| true" itself is deliberate: without it a transient Supabase failure
 # turns a routine sitemap refresh into a failed deploy that publishes nothing.
-# Both scripts already refuse to clobber good output when the API is unreachable.
+# Both scripts keep their existing output rather than clobbering it when the API
+# is unreachable or returns an unrecognised shape.
 # Adding any command makes Netlify run a dependency install (~30-60s).
 [build]
   publish = "."
-  command = "node scripts/prerender-blog.mjs && node scripts/generate-sitemap.mjs || true"
+  command = "node scripts/prerender-blog.mjs || true; node scripts/generate-sitemap.mjs || true"
 
 # Security Headers
 [[headers]]

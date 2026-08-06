@@ -77,8 +77,11 @@ async function rpc(fn, body) {
  * smaller change than replacing that RPC's body, which also assembles the
  * series, related and translation payloads.
  *
- * Never throws: a missing image credit or byline must not take the whole
- * prerender down with it.
+ * Throws on failure. Swallowing the error here returned an empty Map, which
+ * stripped the hero image, credit and byline from every generated page while
+ * still reporting a clean run — a silent, site-wide content regression. Failing
+ * the run instead leaves the previous good pages on disk (see cleanupStale's
+ * call site) which is strictly better.
  */
 async function fetchArticleExtras() {
   const params = new URLSearchParams({
@@ -95,22 +98,18 @@ async function fetchArticleExtras() {
     status: 'eq.published',
     deleted_at: 'is.null',
   });
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/newsletter_articles?${params}`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    });
-    if (!res.ok) {
-      console.warn(`  [extras] skipped — ${res.status} reading image/author columns`);
-      return new Map();
-    }
-    return new Map((await res.json()).map((r) => [r.slug, r]));
-  } catch (e) {
-    console.warn(`  [extras] skipped — ${e.message}`);
-    return new Map();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/newsletter_articles?${params}`, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+  });
+  if (!res.ok) {
+    throw new Error(
+      `reading image/author columns failed: ${res.status} ${await res.text()}`
+    );
   }
+  return new Map((await res.json()).map((r) => [r.slug, r]));
 }
 
 function escapeHtml(str) {
@@ -415,8 +414,20 @@ async function main() {
     p_topic: null,
     p_limit: 200,
   });
-  const articles = (Array.isArray(listed) ? listed : listed?.articles) || [];
+  // Resolve to null, not [], on an unrecognised shape. Coalescing to [] made an
+  // unexpected response indistinguishable from "nothing is published", and the
+  // zero-articles branch below then deleted every generated page and exited 0.
+  const articles = Array.isArray(listed)
+    ? listed
+    : (Array.isArray(listed?.articles) ? listed.articles : null);
+  if (articles === null) {
+    throw new Error(
+      `get_published_articles returned an unrecognised shape: ${JSON.stringify(listed)?.slice(0, 300)}`
+    );
+  }
 
+  // Zero rows from a reachable API is a genuine "nothing published" — the shape
+  // guard above is what makes that safe to act on. Matches generate-sitemap.mjs.
   if (articles.length === 0) {
     console.log('No published articles — nothing to prerender.');
     cleanupStale(new Set());
@@ -461,7 +472,15 @@ async function main() {
     }
   }
 
-  cleanupStale(slugs);
+  // Only prune when every article succeeded. `slugs` gains an entry on success
+  // only, so after a transient per-article RPC failure that article looks stale
+  // and its good, live page would be deleted. Keeping a stale page is strictly
+  // better than deleting a live one.
+  if (failures.length === 0) {
+    cleanupStale(slugs);
+  } else {
+    console.warn('  skipping stale cleanup — some articles failed this run');
+  }
   console.log(`Prerendered ${written}/${articles.length} article(s).`);
 
   if (failures.length) {
