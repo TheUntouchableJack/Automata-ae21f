@@ -68,6 +68,43 @@ async function rpc(fn, body) {
   return res.json();
 }
 
+/**
+ * Hero image metadata for every published article, keyed by slug.
+ *
+ * og_image_alt / og_image_credit / og_image_credit_url are columns on
+ * newsletter_articles that get_article_by_slug does not return, so they are
+ * read straight from the table. Anon can already SELECT published articles
+ * (that is how blog.js works), and a read-only select for three columns is a
+ * far smaller change than replacing that RPC's body.
+ *
+ * Never throws: a hero image is decoration, and losing it must not take the
+ * whole prerender down with it.
+ */
+async function fetchHeroMeta() {
+  const params = new URLSearchParams({
+    select: 'slug,og_image_url,og_image_alt,og_image_credit,og_image_credit_url',
+    app_id: `eq.${APP_ID}`,
+    status: 'eq.published',
+    deleted_at: 'is.null',
+  });
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/newsletter_articles?${params}`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+    });
+    if (!res.ok) {
+      console.warn(`  [hero] skipped — ${res.status} reading image columns`);
+      return new Map();
+    }
+    return new Map((await res.json()).map((r) => [r.slug, r]));
+  } catch (e) {
+    console.warn(`  [hero] skipped — ${e.message}`);
+    return new Map();
+  }
+}
+
 function escapeHtml(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
@@ -144,6 +181,31 @@ function loadTemplate() {
     bodyOpenTag: match[0],
     tail: html.slice(bodyEnd),
   };
+}
+
+/**
+ * The hero <img>, plus a credit line when we know who took the photo.
+ *
+ * alt falls back to '' rather than to the article title: an empty alt marks the
+ * image as decorative, which is honest, whereas repeating the headline makes a
+ * screen reader read it twice and describes nothing.
+ */
+function heroHtml(article) {
+  const alt = article.og_image_alt || '';
+  const credit = article.og_image_credit;
+  const creditUrl = article.og_image_credit_url;
+
+  const creditHtml = credit
+    ? `\n                    <figcaption class="post-hero-credit">Photo: ${
+        creditUrl
+          ? `<a href="${escapeHtml(creditUrl)}" rel="nofollow noopener" target="_blank">${escapeHtml(credit)}</a>`
+          : escapeHtml(credit)
+      }</figcaption>`
+    : '';
+
+  return `<figure class="post-hero" id="post-hero">
+                    <img id="post-hero-img" src="${escapeHtml(article.og_image_url)}" alt="${escapeHtml(alt)}" loading="eager">${creditHtml}
+                </figure>`;
 }
 
 function buildPage(template, article) {
@@ -262,6 +324,15 @@ ${jsonLd(breadcrumbSchema)}
       '$1'
     );
 
+  // Bake the hero image in too. blog.js sets #post-hero client-side, but it
+  // bails out early on a prerendered page (see the data-prerendered check in
+  // renderPost), so on these pages that code never runs — without this the
+  // hero stays display:none and the article has no image at all.
+  head = head.replace(
+    /<div class="post-hero" id="post-hero"[^>]*>[\s\S]*?<\/div>/,
+    article.og_image_url ? heroHtml(article) : ''
+  );
+
   // data-article-id lets blog.js exclude this article from its own related-posts
   // query without another round trip.
   const bodyOpenTag = template.bodyOpenTag.replace(
@@ -321,6 +392,7 @@ async function main() {
   }
 
   const template = loadTemplate();
+  const heroMeta = await fetchHeroMeta();
   const slugs = new Set();
   let written = 0;
   const failures = [];
@@ -340,6 +412,9 @@ async function main() {
       if (!article || !article.content) {
         throw new Error('no content returned');
       }
+
+      // The detail RPC predates the hero-image columns, so merge them in here.
+      Object.assign(article, heroMeta.get(slug) || {});
 
       assertClean(article, article.content);
 

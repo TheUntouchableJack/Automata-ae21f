@@ -972,19 +972,33 @@
 }
 
 /* ===== Post Hero Image ===== */
+/* Prerendered pages render this as a <figure> with a credit line; the client
+   path still builds a <div>. Both work. The rounding and the height cap moved
+   onto the image itself so a figcaption isn't clipped by the container. */
 .post-hero {
     width: 100%;
-    margin-bottom: 40px;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    max-height: 480px;
+    margin: 0 0 40px;
 }
 
 .post-hero img {
     width: 100%;
-    height: 100%;
+    max-height: 480px;
     object-fit: cover;
     display: block;
+    border-radius: var(--radius-lg);
+}
+
+.post-hero-credit {
+    margin-top: 8px;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    text-align: right;
+}
+
+.post-hero-credit a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
 /* Hide marketing nav when reading an article */
