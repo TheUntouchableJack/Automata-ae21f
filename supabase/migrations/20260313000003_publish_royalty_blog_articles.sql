@@ -64,13 +64,19 @@ $$;
 REVOKE ALL ON FUNCTION get_published_articles(UUID, TEXT, TEXT, UUID, INTEGER, INTEGER) FROM anon;
 GRANT EXECUTE ON FUNCTION get_published_articles(UUID, TEXT, TEXT, UUID, INTEGER, INTEGER) TO anon, authenticated;
 
--- Publish all draft articles for the royalty-marketing blog.
--- Articles were loaded via Python CLI which defaults to status='draft'.
--- This bulk-publishes them so they appear on royaltyapp.ai/blog.
-UPDATE newsletter_articles
-SET
-    status       = 'published',
-    published_at = COALESCE(published_at, NOW())
-WHERE app_id    = 'd0229946-0812-4a96-acc4-0344613ee8b1'::uuid
-  AND status    = 'draft'
-  AND deleted_at IS NULL;
+-- REMOVED 2026-08-06: a one-time data operation that bulk-published every draft
+-- article for the royalty-marketing app (app_id d0229946-0812-4a96-acc4-0344613ee8b1).
+--
+-- It was applied once, in March 2026, and the rows it published were later
+-- destroyed by the newsletter_articles -> customer_apps ON DELETE CASCADE, so it
+-- has no targets left. What it does still have is blast radius: the statement was
+-- unscoped by date or slug, so replaying this migration against any database
+-- holding drafts would publish ALL of them — including unreviewed drafts with
+-- incorrect pricing and unverified claims. Deleted rather than date-scoped
+-- because there is nothing left for it to legitimately do.
+--
+-- Publishing is a human decision made in /app/blog-review.html. It does not
+-- belong in schema migrations. Do not reintroduce a blanket UPDATE here.
+--
+-- The rest of this migration (CREATE OR REPLACE FUNCTION get_published_articles)
+-- is idempotent and stays.
