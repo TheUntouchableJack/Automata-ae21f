@@ -557,8 +557,10 @@ function renderPost(post) {
     document.getElementById('post-title').textContent = post.title;
     document.getElementById('post-date').textContent = publishedDate;
 
-    // Byline. get_article_by_slug doesn't return author_name yet, so this only
-    // fills in where the caller already has it; prerendered pages bake it in.
+    // Byline. get_article_by_slug returns author_name/author_title as of
+    // migration 20260806000004; prerendered pages bake the same value in.
+    // Still guarded — an article with no named author renders no byline rather
+    // than "By undefined".
     const authorEl = document.getElementById('post-author');
     if (authorEl) {
         authorEl.textContent = post.author_name
@@ -858,11 +860,15 @@ function escapeHtml(text) {
 }
 
 function getCurrentLanguage() {
-    // Check for i18n library
-    if (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') {
-        return window.i18n.getCurrentLanguage();
+    // i18n/i18n.js exports window.I18n (capital I) and loads before this file on
+    // both blog pages. This checked window.i18n, which is never defined, so the
+    // branch was dead.
+    if (window.I18n && typeof window.I18n.getCurrentLanguage === 'function') {
+        return window.I18n.getCurrentLanguage();
     }
-    // Fallback to URL param or localStorage or default
+    // Fallback to URL param or localStorage or default.
+    // The storage key is 'royalty_language' (i18n/i18n.js:18) — reading
+    // 'language' was the second dead fallback.
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('lang') || localStorage.getItem('language') || 'en';
+    return urlParams.get('lang') || localStorage.getItem('royalty_language') || 'en';
 }
