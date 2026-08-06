@@ -98,6 +98,78 @@ export default defineConfig({
     {
       name: 'customer-app-rewrite',
       configureServer(server) {
+        // --- Dev parity for the Netlify domain-router edge function ---
+        // Public anon creds (same values shipped in the client bundle).
+        const DEV_SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
+        const DEV_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocG1tZmhmd25wbWF2eXRvb21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTgyMDYsImV4cCI6MjA4NTE3NDIwNn0.6JmfnTTR8onr3ZgFpzdZa4BbVBraUyePVEUHOJgxmuk';
+        const ASSET_RE = /\.(js|mjs|css|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|eot|map|json|txt|xml|webmanifest|mp4|webm|pdf)$/i;
+        const hostCache = new Map(); // host -> {slug, appType} | null
+
+        async function resolveHostToApp(host) {
+          if (hostCache.has(host)) return hostCache.get(host);
+          let value = null;
+          try {
+            const res = await fetch(`${DEV_SUPABASE_URL}/rest/v1/rpc/get_app_by_domain`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                apikey: DEV_SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${DEV_SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({ p_host: host }),
+            });
+            if (res.ok) {
+              const rows = await res.json();
+              const row = Array.isArray(rows) ? rows[0] : rows;
+              if (row && row.slug) value = { slug: row.slug, appType: row.app_type || 'loyalty' };
+            }
+          } catch (_e) {
+            value = null;
+          }
+          hostCache.set(host, value);
+          return value;
+        }
+
+        function targetFor(appType, pathname) {
+          const p = (pathname || '/').replace(/\/+$/, '');
+          if (p.endsWith('/checkin')) return { page: 'app.html', extra: '&action=checkin' };
+          if (p.endsWith('/app')) return { page: 'app.html', extra: '' };
+          if (p.endsWith('/social')) return { page: 'social.html', extra: '' };
+          if (appType === 'social') return { page: 'social.html', extra: '' };
+          return { page: 'index.html', extra: '' };
+        }
+
+        // Host-based rewrite: simulate a custom domain via ?host= override or a
+        // <label>.localhost hostname, resolved through the same RPC as prod.
+        server.middlewares.use(async (req, res, next) => {
+          const urlObj = new URL(req.url, 'http://localhost');
+          const pathname = urlObj.pathname;
+          const hostOverride = urlObj.searchParams.get('host');
+          const hostHeader = (req.headers.host || '').split(':')[0];
+          const simulatedHost = hostOverride
+            || (hostHeader.endsWith('.localhost') && hostHeader !== 'localhost' ? hostHeader : null);
+
+          if (
+            simulatedHost &&
+            !ASSET_RE.test(pathname) &&
+            !pathname.startsWith('/customer-app/') &&
+            !pathname.startsWith('/app/') &&
+            !pathname.startsWith('/@') &&
+            !pathname.startsWith('/node_modules/') &&
+            !pathname.startsWith('/src/')
+          ) {
+            const resolved = await resolveHostToApp(simulatedHost);
+            if (resolved) {
+              const { page, extra } = targetFor(resolved.appType, pathname);
+              // Preserve the ?host override so internal nav keeps simulating the domain.
+              const keepHost = hostOverride ? `&host=${encodeURIComponent(hostOverride)}` : '';
+              req.url = `/customer-app/${page}?slug=${encodeURIComponent(resolved.slug)}${extra}${keepHost}`;
+              return next();
+            }
+          }
+          next();
+        });
+
         server.middlewares.use((req, res, next) => {
           // Extract slug from /a/{slug} pattern
           const match = req.url && req.url.match(/^\/a\/([^\/\?]+)(\/app|\/social|\/checkin)?\/?(\?.*)?$/);

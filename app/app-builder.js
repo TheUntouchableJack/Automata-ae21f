@@ -400,6 +400,9 @@ async function loadApp(appId) {
         // Populate form fields
         populateFormFromApp(data);
 
+        // Custom-domain section (white-label; existing apps only)
+        initDomainSection();
+
         // Show first step
         showStep(1);
 
@@ -644,6 +647,10 @@ function setupEventListeners() {
 
     // Preview in browser
     document.getElementById('preview-in-browser-btn').addEventListener('click', openPreviewInBrowser);
+
+    // Custom domain (white-label)
+    document.getElementById('domain-connect-btn')?.addEventListener('click', connectDomain);
+    document.getElementById('domain-verify-btn')?.addEventListener('click', verifyDomain);
 
     // Type cards
     document.querySelectorAll('.type-card').forEach(card => {
@@ -1432,6 +1439,159 @@ function showPersistentError(message, helpLink) {
     });
 
     container.prepend(banner);
+}
+
+// ===== Custom Domain (white-label) =====
+const DOMAIN_STATUS_LABELS = {
+    none:         { text: 'Not connected',    cls: 'neutral' },
+    pending_dns:  { text: 'Pending DNS',      cls: 'pending' },
+    verifying:    { text: 'Verifying',        cls: 'pending' },
+    provisioning: { text: 'Provisioning SSL', cls: 'pending' },
+    live:         { text: 'Live · SSL',       cls: 'live' },
+    error:        { text: 'Needs attention',  cls: 'error' },
+};
+
+// Pull the JSON error body out of a Supabase FunctionsHttpError (non-2xx).
+async function functionErrorMessage(error, fallback) {
+    try {
+        const body = await error.context.json();
+        if (body && body.error) return body.error;
+    } catch (_e) { /* not JSON */ }
+    return error.message || fallback;
+}
+
+async function initDomainSection() {
+    const section = document.getElementById('domain-section');
+    if (!section) return;
+
+    // Attaching a domain needs a saved app (an id). Hide for brand-new drafts.
+    if (!currentApp?.id || isNewApp) { section.style.display = 'none'; return; }
+    section.style.display = '';
+
+    const upsell = document.getElementById('domain-upsell');
+    const controls = document.getElementById('domain-controls');
+
+    // Authoritative white-label check (connect-domain re-checks server-side).
+    let whiteLabel = false;
+    try {
+        const { data } = await supabase.rpc('org_has_white_label', { p_org_id: currentApp.organization_id });
+        whiteLabel = data === true;
+    } catch (_e) { whiteLabel = false; }
+
+    if (!whiteLabel) {
+        upsell.style.display = '';
+        controls.style.display = 'none';
+        return;
+    }
+    upsell.style.display = 'none';
+    controls.style.display = '';
+
+    const input = document.getElementById('custom-domain');
+    if (input) input.value = currentApp.custom_domain || '';
+    renderDomainState();
+}
+
+function renderDomainState() {
+    const status = currentApp?.domain_status || 'none';
+    const meta = DOMAIN_STATUS_LABELS[status] || DOMAIN_STATUS_LABELS.none;
+
+    const badge = document.getElementById('domain-status-badge');
+    const statusRow = document.getElementById('domain-status-row');
+    const dnsWrap = document.getElementById('domain-dns');
+
+    if (badge) {
+        badge.textContent = (currentApp?.domain_error && status !== 'live')
+            ? `${meta.text} — ${currentApp.domain_error}`
+            : meta.text;
+        badge.className = `domain-status-badge status-${meta.cls}`;
+    }
+
+    const hasDomain = !!currentApp?.custom_domain && status !== 'none';
+    if (statusRow) statusRow.style.display = hasDomain ? '' : 'none';
+    if (dnsWrap && (!hasDomain || status === 'live')) dnsWrap.style.display = 'none';
+}
+
+function renderDnsRecords(records) {
+    const wrap = document.getElementById('domain-dns-records');
+    const dnsWrap = document.getElementById('domain-dns');
+    const esc = window.escapeHtml || ((s) => s);
+    if (!wrap) return;
+
+    wrap.innerHTML = (records || []).map((r) => `
+        <div class="dns-record">
+            <span class="dns-type">${esc(r.type)}</span>
+            <div class="dns-fields">
+                <div><span class="dns-k">Name</span><code>${esc(r.host)}</code></div>
+                <div><span class="dns-k">Value</span><code>${esc(r.value)}</code></div>
+            </div>
+        </div>`).join('');
+
+    if (dnsWrap && records && records.length) dnsWrap.style.display = '';
+}
+
+async function connectDomain() {
+    const input = document.getElementById('custom-domain');
+    const errEl = document.getElementById('domain-error');
+    const btn = document.getElementById('domain-connect-btn');
+    const domain = (input?.value || '').trim();
+
+    if (errEl) errEl.style.display = 'none';
+    if (!domain) {
+        if (errEl) { errEl.textContent = 'Enter a domain.'; errEl.style.display = ''; }
+        return;
+    }
+
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Connecting…';
+    try {
+        const { data, error } = await supabase.functions.invoke('connect-domain', {
+            body: { appId: currentApp.id, domain },
+        });
+        if (error) throw new Error(await functionErrorMessage(error, 'Could not connect domain.'));
+        if (data?.error) throw new Error(data.error);
+
+        currentApp.custom_domain = data.domain;
+        currentApp.domain_status = data.status || 'pending_dns';
+        currentApp.domain_error = null;
+        renderDnsRecords(data.dns_records);
+        renderDomainState();
+        if (typeof showSuccess === 'function') showSuccess('Domain connected. Add the DNS records below, then Verify.');
+    } catch (e) {
+        if (errEl) { errEl.textContent = e.message || 'Could not connect domain.'; errEl.style.display = ''; }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+    }
+}
+
+async function verifyDomain() {
+    const btn = document.getElementById('domain-verify-btn');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Checking…';
+    try {
+        const { data, error } = await supabase.functions.invoke('verify-domain', {
+            body: { appId: currentApp.id },
+        });
+        if (error) throw new Error(await functionErrorMessage(error, 'Verification failed.'));
+        if (data?.error) throw new Error(data.error);
+
+        currentApp.domain_status = data.status;
+        currentApp.domain_error = data.message || null;
+        renderDomainState();
+
+        if (data.status === 'live') {
+            if (typeof showSuccess === 'function') showSuccess('Your domain is live with SSL!');
+        } else if (data.message && typeof showToast === 'function') {
+            showToast(data.message, 'info');
+        }
+    } catch (e) {
+        if (typeof showError === 'function') showError(e.message || 'Verification failed.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+    }
 }
 
 // ===== Initialize =====

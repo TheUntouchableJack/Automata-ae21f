@@ -21,6 +21,12 @@
     Permissions-Policy = "camera=(self), microphone=(), geolocation=(self)"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://fcm.googleapis.com https://fcmregistrations.googleapis.com; frame-src https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'"
 
+# Custom-domain / subdomain -> customer-app router.
+# Runs before redirects; first-party hosts, assets, and /app/* early-return inside the function.
+[[edge_functions]]
+  path = "/*"
+  function = "domain-router"
+
 # Belt-and-braces for the repo paths 404'd below: if a path ever slips through a
 # redirect, it still must not be indexed.
 [[headers]]

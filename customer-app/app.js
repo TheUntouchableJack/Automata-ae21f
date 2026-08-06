@@ -244,6 +244,7 @@ async function loadApp(slug) {
 
         // Apply branding
         applyBranding(currentApp.branding);
+        applyWhiteLabelExtras(currentApp);
 
         // Update UI with app info
         updateAppUI();
@@ -269,6 +270,7 @@ async function loadAppForPreview(appId) {
 
         // Apply branding
         applyBranding(currentApp.branding);
+        applyWhiteLabelExtras(currentApp);
 
         // Update UI with app info
         updateAppUI();
@@ -341,6 +343,47 @@ function applyBranding(branding) {
     const themeColor = document.querySelector('meta[name="theme-color"]');
     if (themeColor && branding.primary_color) {
         themeColor.content = branding.primary_color;
+    }
+}
+
+// White-label completeness: favicon, cover, owner custom CSS, and hiding
+// "Powered by Royalty" for apps on a white-label plan (is_white_label flag
+// comes from get_app_by_slug / get_app_by_domain).
+function applyWhiteLabelExtras(app) {
+    if (!app) return;
+    const b = app.branding || {};
+
+    // Favicon swap
+    if (b.favicon_url) {
+        let link = document.querySelector('link[rel="icon"]');
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+        }
+        link.href = b.favicon_url;
+    }
+
+    // Cover image exposed as a CSS var (no-op if the theme doesn't use it)
+    if (b.cover_image_url) {
+        document.documentElement.style.setProperty('--app-cover-image', `url("${b.cover_image_url}")`);
+    }
+
+    // Owner-trusted custom CSS — white-label only. Neutralise </style> breakout.
+    if (b.custom_css && app.is_white_label) {
+        const safe = String(b.custom_css).replace(/<\/style/gi, '<\\/style');
+        let styleEl = document.getElementById('app-custom-css');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'app-custom-css';
+            document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = safe;
+    }
+
+    // Un-Royalty a white-label app
+    if (app.is_white_label) {
+        document.querySelectorAll('.cta-footer').forEach((el) => { el.style.display = 'none'; });
     }
 }
 

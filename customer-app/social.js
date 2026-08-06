@@ -223,6 +223,12 @@ async function init() {
 
         currentApp = app;
         applyBranding(app);
+        // Resolve white-label plan status for branding completeness (custom CSS, etc.)
+        try {
+            const { data: wl } = await supabaseClient.rpc('org_has_white_label', { p_org_id: app.organization_id });
+            app.is_white_label = wl === true;
+        } catch (_e) { app.is_white_label = false; }
+        applyWhiteLabelExtras(app);
         document.title = `${app.name} - Social`;
 
         // Check if viewer is the business owner
@@ -264,6 +270,42 @@ function applyBranding(app) {
         appLogo.src = branding.logo_url;
         appLogo.style.display = 'block';
         if (logoFallback) logoFallback.style.display = 'none';
+    }
+}
+
+// White-label completeness: favicon, cover, owner custom CSS, and hiding any
+// "Powered by Royalty" footer for apps on a white-label plan.
+function applyWhiteLabelExtras(app) {
+    if (!app) return;
+    const b = app.branding || {};
+
+    if (b.favicon_url) {
+        let link = document.querySelector('link[rel="icon"]');
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+        }
+        link.href = b.favicon_url;
+    }
+
+    if (b.cover_image_url) {
+        document.documentElement.style.setProperty('--app-cover-image', `url("${b.cover_image_url}")`);
+    }
+
+    if (b.custom_css && app.is_white_label) {
+        const safe = String(b.custom_css).replace(/<\/style/gi, '<\\/style');
+        let styleEl = document.getElementById('app-custom-css');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'app-custom-css';
+            document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = safe;
+    }
+
+    if (app.is_white_label) {
+        document.querySelectorAll('.cta-footer').forEach((el) => { el.style.display = 'none'; });
     }
 }
 

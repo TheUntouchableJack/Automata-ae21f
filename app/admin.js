@@ -370,6 +370,26 @@ function updateAppStats() {
     document.getElementById('stat-social-apps').textContent = allApps.filter(a => a.app_type === 'social').length;
 }
 
+// Domain cell for the Apps table: domain + provisioning-state badge.
+function renderDomainCell(app) {
+    const domain = app.custom_domain;
+    const status = app.domain_status || 'none';
+    if (!domain || status === 'none') {
+        return '<span class="text-muted">—</span>';
+    }
+    const meta = {
+        pending_dns:  { label: 'Pending DNS',      cls: 'free' },
+        verifying:    { label: 'Verifying',        cls: 'free' },
+        provisioning: { label: 'Provisioning',     cls: 'free' },
+        live:         { label: 'Live · SSL',       cls: 'pro' },
+        error:        { label: 'Error',            cls: '' },
+    }[status] || { label: status, cls: '' };
+    return `<div style="display:flex;flex-direction:column;gap:2px;">
+                <span class="text-muted" style="word-break:break-all;">${escapeHtml(domain)}</span>
+                <span class="plan-badge ${meta.cls}">${meta.label}</span>
+            </div>`;
+}
+
 function renderApps() {
     const tbody = document.getElementById('apps-table-body');
     const start = (appPage - 1) * PAGE_SIZE;
@@ -383,6 +403,7 @@ function renderApps() {
             : (app.is_active ? '<span class="plan-badge free">Draft</span>' : '<span class="plan-badge">Inactive</span>');
         const orgName = escapeHtml(app.org_name || 'Unknown');
         const orgArg = orgName.replace(/'/g, "\\'");
+        const domainCell = renderDomainCell(app);
 
         return `
             <tr data-app-id="${app.id}">
@@ -395,10 +416,11 @@ function renderApps() {
                 <td><span class="text-muted">${orgName}</span></td>
                 <td><span class="text-muted">${escapeHtml(app.app_type || '-')}</span></td>
                 <td>${statusBadge}</td>
+                <td>${domainCell}</td>
                 <td><span class="text-muted">${createdDate}</span></td>
                 <td>
                     <div class="row-actions" style="opacity: 1;">
-                        <button class="action-btn view-as" onclick="openAppAsOrg('${app.id}', '${app.organization_id}', '${orgArg}')" title="Open in App Builder (as this org)">
+                        <button class="action-btn view-as" onclick="openAppAsOrg('${app.id}', '${app.organization_id}', '${orgArg}')" title="Attach / verify domain &amp; edit (as this org)">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <path d="M11.5 2.5L13.5 4.5L5 13H3V11L11.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>

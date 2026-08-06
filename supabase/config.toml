@@ -420,3 +420,13 @@ entrypoint = "./functions/create-portal-session/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/royal-ai-recommend/index.ts"
+
+[functions.connect-domain]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/connect-domain/index.ts"
+
+[functions.verify-domain]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/verify-domain/index.ts"

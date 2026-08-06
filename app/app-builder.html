@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
     <link rel="stylesheet" href="../i18n/i18n.css">
-    <link rel="stylesheet" href="app-builder.css?v=3">
+    <link rel="stylesheet" href="app-builder.css?v=4">
 </head>
 <body>
     <!-- App Layout with Sidebar -->
@@ -253,6 +253,43 @@
                                         <input type="checkbox" id="require-phone">
                                         <span>Require phone number</span>
                                     </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Domain (white-label) -->
+                        <div class="settings-section" id="domain-section" style="display: none;">
+                            <h3 data-i18n="builder.domain.title">Use your own domain</h3>
+                            <p class="section-desc" data-i18n="builder.domain.desc">Serve your app at your own web address (like yourbusiness.com) with your branding — no Royalty branding, fully yours.</p>
+
+                            <!-- Upsell shown when the plan doesn't include white-label -->
+                            <div class="domain-upsell" id="domain-upsell" style="display: none;">
+                                <p data-i18n="builder.domain.upsell">Custom domains are a white-label feature. Upgrade to Scale, or add Royalty Pro, to connect your own domain.</p>
+                                <a class="btn btn-secondary btn-small" href="/app/upgrade.html" data-i18n="builder.domain.upsellCta">View plans</a>
+                            </div>
+
+                            <!-- Live controls (enabled only for white-label plans on a saved app) -->
+                            <div class="domain-controls" id="domain-controls" style="display: none;">
+                                <div class="form-group">
+                                    <label for="custom-domain" data-i18n="builder.domain.label">Your domain</label>
+                                    <div class="domain-input-row">
+                                        <input type="text" id="custom-domain" placeholder="yourbusiness.com" autocomplete="off" spellcheck="false">
+                                        <button type="button" class="btn btn-primary" id="domain-connect-btn" data-i18n="builder.domain.connect">Connect</button>
+                                    </div>
+                                    <span class="form-helper" data-i18n="builder.domain.helper">Enter the domain only — no https:// and no path.</span>
+                                    <span class="form-error" id="domain-error" style="display: none;"></span>
+                                </div>
+
+                                <div class="domain-status-row" id="domain-status-row" style="display: none;">
+                                    <span data-i18n="builder.domain.statusLabel">Status:</span>
+                                    <span class="domain-status-badge" id="domain-status-badge">—</span>
+                                    <button type="button" class="btn btn-secondary btn-small" id="domain-verify-btn" data-i18n="builder.domain.verify">Verify</button>
+                                </div>
+
+                                <!-- DNS records the client adds at their registrar -->
+                                <div class="domain-dns" id="domain-dns" style="display: none;">
+                                    <p class="section-desc" data-i18n="builder.domain.dnsIntro">Add these records at your domain registrar, then click Verify:</p>
+                                    <div id="domain-dns-records"></div>
                                 </div>
                             </div>
                         </div>
@@ -669,11 +706,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="../i18n/i18n.js?v=1"></script>
+    <script src="../i18n/i18n.js?v=2"></script>
     <script src="auth.js?v=11"></script>
     <script src="utils.js?v=5"></script>
     <script src="sidebar.js?v=23"></script>
     <script src="app-templates-library.js?v=2"></script>
-    <script src="app-builder.js?v=22"></script>
+    <script src="app-builder.js?v=23"></script>
 </body>
 </html>

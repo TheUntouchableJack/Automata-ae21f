@@ -2007,6 +2007,26 @@
             if (rgb) root.style.setProperty('--app-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
             document.querySelector('meta[name="theme-color"]').content = primaryColor;
 
+            // White-label completeness: favicon, cover, owner custom CSS, hide "Powered by Royalty"
+            const b = currentApp.branding || {};
+            if (b.favicon_url) {
+                let link = document.querySelector('link[rel="icon"]');
+                if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+                link.href = b.favicon_url;
+            }
+            if (b.cover_image_url) {
+                root.style.setProperty('--app-cover-image', `url("${b.cover_image_url}")`);
+            }
+            if (b.custom_css && currentApp.is_white_label) {
+                const safe = String(b.custom_css).replace(/<\/style/gi, '<\\/style');
+                let styleEl = document.getElementById('app-custom-css');
+                if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'app-custom-css'; document.head.appendChild(styleEl); }
+                styleEl.textContent = safe;
+            }
+            if (currentApp.is_white_label) {
+                document.querySelectorAll('.cta-footer').forEach((el) => { el.style.display = 'none'; });
+            }
+
             // Logo
             const logoEl = document.getElementById('brand-logo');
             if (currentApp.branding?.logo_url) {
