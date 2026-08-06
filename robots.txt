@@ -3,16 +3,36 @@
 
 User-agent: *
 Allow: /
-Allow: /blog/
-Allow: /pricing.html
-Allow: /automations/
 
-# App pages (authenticated, no index value)
+# Authenticated / per-tenant pages — no index value.
+# /a/ is the public-facing form of /customer-app/ via the netlify.toml rewrite,
+# so it has to be listed separately. Note robots.txt only stops crawling — the
+# noindex meta tag on those pages is what actually keeps them out of the index.
 Disallow: /app/
 Disallow: /customer-app/
+Disallow: /a/
 
-# Assets
-Disallow: /js/
-Disallow: /css/
+# Repo files served because publish = "." — also hard-404'd in netlify.toml.
+Disallow: /database/
+Disallow: /supabase/
+Disallow: /docs/
+Disallow: /tests/
+Disallow: /e2e/
+Disallow: /scripts/
+Disallow: /skills/
+Disallow: /funding-applications/
+Disallow: /test-results/
+Disallow: /playwright-report/
+Disallow: /.playwright-mcp/
+Disallow: /.github/
+Disallow: /stripe/
+Disallow: /email-templates/
+Disallow: /CLAUDE.md
+Disallow: /README.md
+Disallow: /APPSUMO-LAUNCH-PLAN.md
+Disallow: /MONDAY-PLAN.md
+
+# NOTE: do not add Disallow: /js/ — it blocks cookie-consent.js and the blog's
+# client-side renderer, which Google needs to render the page.
 
 Sitemap: https://royaltyapp.ai/sitemap.xml

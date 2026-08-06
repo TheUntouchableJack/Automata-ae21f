@@ -43,10 +43,11 @@ build/
 test-results/
 playwright-report/
 
-# Video project (Remotion)
-video/node_modules/
-video/out/
-video/.remotion/
+# Video project (Remotion).
+# Local production asset, not part of the deployed site. Ignored wholesale
+# because publish = "." serves every committed file publicly, and this tree
+# holds reference stills and a third-party video transcript.
+video/
 
 # Large temporary images (testing/screenshots)
 *.screenshot.png

@@ -16,7 +16,9 @@
     "test:alpha:ui": "ALPHA_TEST_ENABLED=true playwright test e2e/flows/alpha-*.spec.js --ui",
     "alpha:check": "bash scripts/alpha-readiness.sh",
     "alpha:start": "npm run alpha:check && npm run dev",
-    "check-i18n": "node scripts/check-i18n.js",
+    "check-i18n": "node scripts/check-i18n.cjs",
+    "prerender-blog": "node scripts/prerender-blog.mjs",
+    "generate-sitemap": "node scripts/generate-sitemap.mjs",
     "reset-welcome": "bash scripts/reset-welcome.sh"
   },
   "devDependencies": {
@@ -35,6 +37,7 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
+    "marked": "^18.0.9",
     "simplex-noise": "^4.0.3",
     "three": "^0.182.0"
   }

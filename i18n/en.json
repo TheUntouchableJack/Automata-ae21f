@@ -1991,6 +1991,22 @@
         }
     },
     "faq": {
-        "tag": "FAQ"
+        "tag": "FAQ",
+        "title": "Frequently Asked Questions",
+        "subtitle": "The things people ask before they start",
+        "q1": "Is this a royalty program or a loyalty program?",
+        "a1": "A loyalty program. We're called Royalty because your regulars deserve to be treated like it — but what we build is a customer loyalty program: points, rewards, and repeat visits. A royalty in the licensing sense (music, publishing, patents) is a completely different thing. <a href=\"/royalty-vs-loyalty.html\">Here's the full difference</a>.",
+        "q2": "How long does setup actually take?",
+        "a2": "You describe your business in a sentence or two, and the AI builds your program — points, tiers, and rewards — in about 60 seconds. You can edit anything it picks. Printing a QR code for the counter is usually the slowest part.",
+        "q3": "Do my customers have to download an app?",
+        "a3": "No. They scan a QR code or tap a link and they're in — it runs in the browser and they can save it to their home screen. No app store, no download, no password to forget.",
+        "q4": "How do customers earn points?",
+        "a4": "By visiting. Customers check in with a QR scan, earn points, climb tiers, and redeem rewards. There's no menu to build and no checkout to connect — Royalty is about how often people come back, not what they spend per order.",
+        "q5": "What kinds of businesses is this for?",
+        "a5": "Local businesses that people come back to: cafés and restaurants, salons and barbershops, gyms and studios, clinics, and independent retail. If you'd recognise your regulars on sight, Royalty is built for you.",
+        "q6": "Do I have to run the marketing myself?",
+        "a6": "Not unless you want to. Royal, the built-in AI, learns your business and runs the follow-ups for you — birthday offers, win-backs for customers who've gone quiet, review requests. You choose whether it acts on its own or checks with you first.",
+        "q7": "What happens to my customer list if I leave?",
+        "a7": "It's yours. We don't sell your customer data and we don't market to your customers on our own behalf, and you can request your data in a portable format at any time. See our <a href=\"/privacy.html\">privacy policy</a> for the details."
     }
 }

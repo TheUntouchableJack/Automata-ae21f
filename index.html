@@ -26,6 +26,33 @@
     <link rel="canonical" href="https://royaltyapp.ai/">
 
     <!-- Structured Data -->
+    <!-- Organization: establishes Royalty as a distinct entity. Matters here because
+         the brand name collides with "royalty" (licensing/music) and with the
+         unrelated Royalty Rewards® company — see /royalty-vs-loyalty.html.
+         No "sameAs": there are no verified social profiles to point at yet, and
+         inventing them is worse than omitting the property. -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://royaltyapp.ai/#organization",
+        "name": "Royalty",
+        "alternateName": "Royalty App",
+        "url": "https://royaltyapp.ai/",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://royaltyapp.ai/logo.svg"
+        },
+        "image": "https://royaltyapp.ai/og-image.png",
+        "description": "Royalty builds and runs AI-powered customer loyalty programs for small local businesses.",
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "url": "https://royaltyapp.ai/contact.html"
+        }
+    }
+    </script>
+
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -35,11 +62,13 @@
         "url": "https://royaltyapp.ai",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
+        "publisher": { "@id": "https://royaltyapp.ai/#organization" },
         "offers": {
             "@type": "AggregateOffer",
             "lowPrice": "0",
             "highPrice": "79.99",
-            "priceCurrency": "USD"
+            "priceCurrency": "USD",
+            "offerCount": "4"
         }
     }
     </script>
@@ -841,51 +870,61 @@
         <div class="container">
             <div class="section-header">
                 <span class="section-tag" data-i18n="faq.tag">FAQ</span>
-                <h2 data-i18n="pricingPage.faq.title">Frequently Asked Questions</h2>
-                <p data-i18n="pricingPage.faq.subtitle">Everything you need to know about pricing</p>
+                <h2 data-i18n="faq.title">Frequently Asked Questions</h2>
+                <p data-i18n="faq.subtitle">The things people ask before they start</p>
             </div>
+            <!-- Product-level questions only. The pricing-specific set lives on
+                 /pricing.html and is marked up as FAQPage there; duplicating it
+                 here would declare the same FAQ content on two URLs. -->
             <div class="faq-list">
                 <div class="faq-item">
                     <button class="faq-question" type="button" aria-expanded="false">
-                        <span data-i18n="pricingPage.faq.q1">What is a "customer"?</span>
+                        <span data-i18n="faq.q1">Is this a royalty program or a loyalty program?</span>
                         <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div class="faq-answer"><p data-i18n="pricingPage.faq.a1">A customer is someone who joins your loyalty program. Each unique email or phone number counts as one customer, regardless of how many visits they make.</p></div>
+                    <div class="faq-answer"><p data-i18n="[html]faq.a1">A loyalty program. We're called Royalty because your regulars deserve to be treated like it — but what we build is a customer loyalty program: points, rewards, and repeat visits. A royalty in the licensing sense (music, publishing, patents) is a completely different thing. <a href="/royalty-vs-loyalty.html">Here's the full difference</a>.</p></div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question" type="button" aria-expanded="false">
-                        <span data-i18n="pricingPage.faq.q2">What does Royal AI do?</span>
+                        <span data-i18n="faq.q2">How long does setup actually take?</span>
                         <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div class="faq-answer"><p data-i18n="pricingPage.faq.a2">Royal is your AI marketing assistant. On Free, you get 20 queries/month to taste the AI. On Pro, Royal runs autonomously — learning your business, creating automations, and sending campaigns without asking. On Max, Royal also proves ROI by tracking which campaigns drive store visits.</p></div>
+                    <div class="faq-answer"><p data-i18n="faq.a2">You describe your business in a sentence or two, and the AI builds your program — points, tiers, and rewards — in about 60 seconds. You can edit anything it picks. Printing a QR code for the counter is usually the slowest part.</p></div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question" type="button" aria-expanded="false">
-                        <span data-i18n="pricingPage.faq.q3">Do I need a credit card to start?</span>
+                        <span data-i18n="faq.q3">Do my customers have to download an app?</span>
                         <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div class="faq-answer"><p data-i18n="pricingPage.faq.a3">No. You can start with our free plan or begin a 14-day trial of any paid plan without entering a credit card. Upgrade when you're ready.</p></div>
+                    <div class="faq-answer"><p data-i18n="faq.a3">No. They scan a QR code or tap a link and they're in — it runs in the browser and they can save it to their home screen. No app store, no download, no password to forget.</p></div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question" type="button" aria-expanded="false">
-                        <span data-i18n="pricingPage.faq.q5">Can I change plans anytime?</span>
+                        <span data-i18n="faq.q4">How do customers earn points?</span>
                         <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div class="faq-answer"><p data-i18n="pricingPage.faq.a5">Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing.</p></div>
+                    <div class="faq-answer"><p data-i18n="faq.a4">By visiting. Customers check in with a QR scan, earn points, climb tiers, and redeem rewards. There's no menu to build and no checkout to connect — Royalty is about how often people come back, not what they spend per order.</p></div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question" type="button" aria-expanded="false">
-                        <span data-i18n="pricingPage.faq.q6">What's white-label branding?</span>
+                        <span data-i18n="faq.q5">What kinds of businesses is this for?</span>
                         <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div class="faq-answer"><p data-i18n="pricingPage.faq.a6">White-label removes "Powered by Royalty" branding from your customer-facing loyalty app. Your customers see your brand only.</p></div>
+                    <div class="faq-answer"><p data-i18n="faq.a5">Local businesses that people come back to: cafés and restaurants, salons and barbershops, gyms and studios, clinics, and independent retail. If you'd recognise your regulars on sight, Royalty is built for you.</p></div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question" type="button" aria-expanded="false">
-                        <span data-i18n="pricingPage.faq.q7">Is there a money-back guarantee?</span>
+                        <span data-i18n="faq.q6">Do I have to run the marketing myself?</span>
                         <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div class="faq-answer"><p data-i18n="pricingPage.faq.a7">Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform.</p></div>
+                    <div class="faq-answer"><p data-i18n="faq.a6">Not unless you want to. Royal, the built-in AI, learns your business and runs the follow-ups for you — birthday offers, win-backs for customers who've gone quiet, review requests. You choose whether it acts on its own or checks with you first.</p></div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" type="button" aria-expanded="false">
+                        <span data-i18n="faq.q7">What happens to my customer list if I leave?</span>
+                        <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div class="faq-answer"><p data-i18n="[html]faq.a7">It's yours. We don't sell your customer data and we don't market to your customers on our own behalf, and you can request your data in a portable format at any time. See our <a href="/privacy.html">privacy policy</a> for the details.</p></div>
                 </div>
             </div>
 

@@ -1991,6 +1991,22 @@
         }
     },
     "faq": {
-        "tag": "FAQ"
+        "tag": "FAQ",
+        "title": "Domande frequenti",
+        "subtitle": "Quello che ci chiedono prima di iniziare",
+        "q1": "È un programma di royalty o un programma fedeltà?",
+        "a1": "Un programma fedeltà. Ci chiamiamo Royalty perché i tuoi clienti abituali meritano un trattamento da re, ma quello che costruiamo è un programma di fidelizzazione: punti, premi e visite ripetute. Una royalty nel senso delle licenze (musica, editoria, brevetti) è tutt'altra cosa. <a href=\"/royalty-vs-loyalty.html\">Qui trovi la differenza completa</a>.",
+        "q2": "Quanto tempo serve davvero per la configurazione?",
+        "a2": "Descrivi la tua attività in una o due frasi e l'IA costruisce il tuo programma — punti, livelli e premi — in circa 60 secondi. Puoi modificare qualsiasi cosa scelga. Stampare il codice QR per il bancone è di solito la parte più lenta.",
+        "q3": "I miei clienti devono scaricare un'app?",
+        "a3": "No. Scansionano un codice QR o toccano un link e sono dentro: funziona nel browser e possono salvarlo sulla schermata home. Nessuno store, nessun download, nessuna password da dimenticare.",
+        "q4": "Come guadagnano punti i clienti?",
+        "a4": "Venendo. I clienti registrano la visita con una scansione QR, accumulano punti, salgono di livello e riscattano premi. Non c'è un menù da creare né una cassa da collegare: Royalty guarda a quanto spesso tornano, non a quanto spendono per ordine.",
+        "q5": "Per che tipo di attività è pensato?",
+        "a5": "Per attività locali dove le persone tornano: bar e ristoranti, saloni e barbieri, palestre e studi, ambulatori e negozi indipendenti. Se riconosci i tuoi clienti abituali a colpo d'occhio, Royalty è fatto per te.",
+        "q6": "Devo occuparmi io del marketing?",
+        "a6": "Solo se vuoi. Royal, l'IA integrata, impara come funziona la tua attività e gestisce i follow-up al posto tuo: offerte di compleanno, recupero dei clienti che non si vedono da tempo, richieste di recensione. Decidi tu se agisce da sola o se ti chiede prima conferma.",
+        "q7": "Che fine fa la mia lista clienti se me ne vado?",
+        "a7": "È tua. Non vendiamo i dati dei tuoi clienti e non facciamo marketing verso di loro per conto nostro, e puoi richiedere i tuoi dati in un formato portabile quando vuoi. Consulta la nostra <a href=\"/privacy.html\">informativa sulla privacy</a> per i dettagli."
     }
 }

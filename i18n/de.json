@@ -1991,6 +1991,22 @@
         }
     },
     "faq": {
-        "tag": "FAQ"
+        "tag": "FAQ",
+        "title": "Häufige Fragen",
+        "subtitle": "Was Leute fragen, bevor sie loslegen",
+        "q1": "Ist das ein Royalty-Programm oder ein Treueprogramm?",
+        "a1": "Ein Treueprogramm. Wir heißen Royalty, weil Ihre Stammkunden königlich behandelt gehören — was wir aufbauen, ist aber ein Kundenbindungsprogramm: Punkte, Prämien und wiederkehrende Besuche. Eine Royalty im Lizenzsinn (Musik, Verlagswesen, Patente) ist etwas völlig anderes. <a href=\"/royalty-vs-loyalty.html\">Hier ist der ganze Unterschied</a>.",
+        "q2": "Wie lange dauert die Einrichtung wirklich?",
+        "a2": "Sie beschreiben Ihr Geschäft in ein, zwei Sätzen, und die KI baut Ihr Programm — Punkte, Stufen und Prämien — in etwa 60 Sekunden. Alles, was sie wählt, können Sie ändern. Den QR-Code für den Tresen auszudrucken dauert meist am längsten.",
+        "q3": "Müssen meine Kunden eine App herunterladen?",
+        "a3": "Nein. Sie scannen einen QR-Code oder tippen auf einen Link und sind dabei — es läuft im Browser und lässt sich auf dem Startbildschirm speichern. Kein App Store, kein Download, kein Passwort zum Vergessen.",
+        "q4": "Wie sammeln Kunden Punkte?",
+        "a4": "Durch Besuche. Kunden checken per QR-Scan ein, sammeln Punkte, steigen Stufen auf und lösen Prämien ein. Es gibt keine Speisekarte anzulegen und keine Kasse anzubinden — bei Royalty geht es darum, wie oft jemand wiederkommt, nicht wie viel pro Bestellung ausgegeben wird.",
+        "q5": "Für welche Art von Betrieben ist das gedacht?",
+        "a5": "Für lokale Betriebe, zu denen man zurückkommt: Cafés und Restaurants, Salons und Barbershops, Fitnessstudios, Praxen und inhabergeführter Einzelhandel. Wenn Sie Ihre Stammkunden auf einen Blick erkennen, ist Royalty für Sie gebaut.",
+        "q6": "Muss ich das Marketing selbst machen?",
+        "a6": "Nur wenn Sie möchten. Royal, die eingebaute KI, lernt Ihr Geschäft kennen und übernimmt die Nachfassaktionen: Geburtstagsangebote, Rückgewinnung von Kunden, die länger nicht da waren, und Bewertungsanfragen. Sie entscheiden, ob sie eigenständig handelt oder erst nachfragt.",
+        "q7": "Was passiert mit meiner Kundenliste, wenn ich gehe?",
+        "a7": "Sie gehört Ihnen. Wir verkaufen die Daten Ihrer Kunden nicht und bewerben sie nicht in eigenem Namen, und Sie können Ihre Daten jederzeit in einem portablen Format anfordern. Einzelheiten finden Sie in unserer <a href=\"/privacy.html\">Datenschutzerklärung</a>."
     }
 }

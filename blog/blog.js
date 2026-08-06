@@ -317,6 +317,16 @@ async function loadPost(slug) {
     const postContent = document.getElementById('post-content');
     const notFound = document.getElementById('not-found');
 
+    // Pages written by scripts/prerender-blog.mjs already have the title, meta
+    // tags, canonical, JSON-LD and article body baked in. Re-fetching would
+    // re-render identical content over the top and undo the point of
+    // prerendering, so only the progressive enhancements run here.
+    const prerenderedBody = document.querySelector('#post-body[data-prerendered="1"]');
+    if (prerenderedBody) {
+        await enhancePrerenderedPost(prerenderedBody, slug);
+        return;
+    }
+
     try {
         let post = null;
 
@@ -604,6 +614,43 @@ function renderPost(post) {
     if (post.series_id) {
         renderSeriesNav(post);
     }
+}
+
+/**
+ * Applies the client-side extras to an already-prerendered article: table of
+ * contents, mid-article CTA, embed widgets, and related posts. Everything a
+ * crawler needs is already in the HTML; this is purely additive, so any failure
+ * here must leave the baked article standing.
+ */
+async function enhancePrerenderedPost(postBody, slug) {
+    // The shell's spinner is markup, not state — the article is already visible.
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
+
+    try {
+        if (typeof parseEmbeds === 'function') {
+            postBody.innerHTML = parseEmbeds(postBody.innerHTML);
+        }
+        injectTOC(postBody);
+        buildFloatingTOC(postBody);
+        injectMidCTA(postBody);
+    } catch (error) {
+        console.error('Post enhancement failed (article still rendered):', error);
+    }
+
+    // Related posts are the one piece that genuinely needs data, and they sit
+    // below the article, so fetching them late costs nothing.
+    try {
+        const topic = document.getElementById('post-industry')?.textContent?.trim();
+        const articleId = postBody.dataset.articleId;
+        // loadRelatedByTopic does .neq('id', excludeId); a null there is not a
+        // valid PostgREST filter, so only run this once we have the real id.
+        if (topic && articleId) await loadRelatedByTopic(topic, articleId);
+    } catch (error) {
+        console.error('Related posts failed to load:', error);
+    }
+
+    showEditButtonIfAdmin(slug);
 }
 
 async function showEditButtonIfAdmin(slug) {

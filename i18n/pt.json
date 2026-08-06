@@ -1991,6 +1991,22 @@
         }
     },
     "faq": {
-        "tag": "FAQ"
+        "tag": "FAQ",
+        "title": "Perguntas frequentes",
+        "subtitle": "O que as pessoas perguntam antes de começar",
+        "q1": "Isto é um programa de royalties ou um programa de fidelidade?",
+        "a1": "Um programa de fidelidade. Chamamo-nos Royalty porque os seus clientes habituais merecem tratamento de realeza, mas o que construímos é um programa de fidelização de clientes: pontos, recompensas e visitas repetidas. Um royalty no sentido de licenciamento (música, edição, patentes) é uma coisa completamente diferente. <a href=\"/royalty-vs-loyalty.html\">Veja aqui a diferença completa</a>.",
+        "q2": "Quanto tempo demora realmente a configurar?",
+        "a2": "Descreve o seu negócio numa ou duas frases e a IA cria o seu programa — pontos, níveis e recompensas — em cerca de 60 segundos. Pode editar tudo o que ela escolher. Imprimir o código QR para o balcão costuma ser a parte mais demorada.",
+        "q3": "Os meus clientes têm de descarregar uma aplicação?",
+        "a3": "Não. Digitalizam um código QR ou tocam num link e ficam registados: funciona no navegador e podem guardá-lo no ecrã inicial. Sem loja de aplicações, sem descargas e sem palavras-passe para esquecer.",
+        "q4": "Como é que os clientes ganham pontos?",
+        "a4": "Visitando. Os clientes registam a visita com uma leitura de QR, ganham pontos, sobem de nível e trocam recompensas. Não há menu para criar nem caixa para ligar: o Royalty foca-se na frequência com que voltam, não no valor de cada pedido.",
+        "q5": "Para que tipo de negócios é isto?",
+        "a5": "Para negócios locais onde as pessoas voltam: cafés e restaurantes, salões e barbearias, ginásios e estúdios, clínicas e comércio independente. Se reconhece os seus clientes habituais à primeira vista, o Royalty foi feito para si.",
+        "q6": "Tenho de tratar do marketing sozinho?",
+        "a6": "Só se quiser. O Royal, a IA integrada, aprende como funciona o seu negócio e trata do acompanhamento por si: ofertas de aniversário, recuperação de clientes que deixaram de aparecer e pedidos de avaliação. É você que decide se ela age sozinha ou se pergunta primeiro.",
+        "q7": "O que acontece à minha lista de clientes se eu sair?",
+        "a7": "É sua. Não vendemos os dados dos seus clientes nem lhes fazemos marketing em nome próprio, e pode pedir os seus dados num formato portável a qualquer momento. Consulte a nossa <a href=\"/privacy.html\">política de privacidade</a> para mais detalhes."
     }
 }

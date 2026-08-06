@@ -25,6 +25,113 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://royaltyapp.ai/pricing.html">
 
+    <!-- Structured Data. Prices mirror the rendered tiers exactly (Free / 19.99 /
+         39.99 / 79.99). Enterprise renders as "Custom", so it gets no Offer —
+         schema must never state a price the page doesn't show. -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Royalty",
+        "description": "AI-powered customer loyalty programs for local businesses.",
+        "url": "https://royaltyapp.ai/pricing.html",
+        "image": "https://royaltyapp.ai/og-image.png",
+        "brand": { "@type": "Brand", "name": "Royalty" },
+        "offers": [
+            {
+                "@type": "Offer",
+                "name": "Free",
+                "description": "Get started with a loyalty program at no cost.",
+                "price": "0",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "url": "https://royaltyapp.ai/pricing.html"
+            },
+            {
+                "@type": "Offer",
+                "name": "Starter",
+                "description": "For a single location getting its loyalty program off the ground.",
+                "price": "19.99",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "url": "https://royaltyapp.ai/pricing.html"
+            },
+            {
+                "@type": "Offer",
+                "name": "Growth",
+                "description": "Adds Royal AI automations and campaign sending.",
+                "price": "39.99",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "url": "https://royaltyapp.ai/pricing.html"
+            },
+            {
+                "@type": "Offer",
+                "name": "Scale",
+                "description": "Full autonomous Royal AI, SMS campaigns, and white-label branding.",
+                "price": "79.99",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "url": "https://royaltyapp.ai/pricing.html"
+            }
+        ]
+    }
+    </script>
+
+    <!-- FAQPage lives ONLY here. index.html renders the identical
+         pricingPage.faq.q1..q7 i18n keys; marking up both would formally declare
+         duplicate FAQ content. Google restricted FAQ rich results to gov/health
+         sites in Aug 2023, so the value now is entity clarity for AI answer
+         engines, not a SERP feature. -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is a \"customer\"?",
+                "acceptedAnswer": { "@type": "Answer", "text": "A customer is someone who joins your loyalty program. Each unique email or phone number counts as one customer, regardless of how many visits they make." }
+            },
+            {
+                "@type": "Question",
+                "name": "What does Royal AI do?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Royal is your AI marketing assistant. On Free, you get 20 queries/month to taste the AI. On Pro, Royal runs autonomously — learning your business, creating automations, and sending campaigns without asking. On Max, Royal also proves ROI by tracking which campaigns drive store visits." }
+            },
+            {
+                "@type": "Question",
+                "name": "Do I need a credit card to start?",
+                "acceptedAnswer": { "@type": "Answer", "text": "No. You can start with our free plan or begin a 14-day trial of any paid plan without entering a credit card. Upgrade when you're ready." }
+            },
+            {
+                "@type": "Question",
+                "name": "What's the difference between LTD and subscriptions?",
+                "acceptedAnswer": { "@type": "Answer", "text": "AppSumo Lifetime Deal (LTD) includes the loyalty platform and email campaigns forever. Subscription plans add Royal AI, SMS campaigns, and more features. LTD users can add Royalty Pro ($79/mo) to unlock full Royal AI, SMS, and white-label branding." }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I change plans anytime?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing." }
+            },
+            {
+                "@type": "Question",
+                "name": "What's white-label branding?",
+                "acceptedAnswer": { "@type": "Answer", "text": "White-label removes \"Powered by Royalty\" branding from your customer-facing loyalty app. Your customers see your brand only." }
+            },
+            {
+                "@type": "Question",
+                "name": "Is there a money-back guarantee?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform." }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I stack AppSumo codes?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Yes! Each code increases your customer limit. Tier 1 = 500 customers, Tier 2 = 2,000 customers, Tier 3 = unlimited customers. Stack to reach the tier you need." }
+            }
+        ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">

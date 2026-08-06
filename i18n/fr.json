@@ -1991,6 +1991,22 @@
         }
     },
     "faq": {
-        "tag": "FAQ"
+        "tag": "FAQ",
+        "title": "Questions fréquentes",
+        "subtitle": "Ce qu'on nous demande avant de se lancer",
+        "q1": "S'agit-il d'un programme de royalties ou d'un programme de fidélité ?",
+        "a1": "D'un programme de fidélité. Nous nous appelons Royalty parce que vos habitués méritent d'être traités comme tels, mais ce que nous créons est un programme de fidélité client : points, récompenses et visites répétées. Une royaltie au sens des licences (musique, édition, brevets) est tout autre chose. <a href=\"/royalty-vs-loyalty.html\">Voici la différence en détail</a>.",
+        "q2": "Combien de temps faut-il vraiment pour la configuration ?",
+        "a2": "Vous décrivez votre activité en une ou deux phrases et l'IA construit votre programme — points, niveaux et récompenses — en une soixantaine de secondes. Vous pouvez modifier tout ce qu'elle propose. Imprimer le QR code pour le comptoir reste généralement l'étape la plus longue.",
+        "q3": "Mes clients doivent-ils télécharger une application ?",
+        "a3": "Non. Ils scannent un QR code ou touchent un lien et c'est fait : tout fonctionne dans le navigateur et ils peuvent l'ajouter à leur écran d'accueil. Pas de store, pas de téléchargement, pas de mot de passe à oublier.",
+        "q4": "Comment les clients gagnent-ils des points ?",
+        "a4": "En venant. Les clients s'enregistrent en scannant un QR code, gagnent des points, montent en niveau et échangent des récompenses. Aucun menu à créer, aucune caisse à connecter : Royalty s'intéresse à la fréquence des visites, pas au montant de chaque commande.",
+        "q5": "À quels types d'entreprises cela s'adresse-t-il ?",
+        "a5": "Aux commerces de proximité où l'on revient : cafés et restaurants, salons de coiffure et barbiers, salles de sport et studios, cabinets et commerces indépendants. Si vous reconnaissez vos habitués au premier coup d'œil, Royalty est fait pour vous.",
+        "q6": "Dois-je gérer le marketing moi-même ?",
+        "a6": "Seulement si vous le souhaitez. Royal, l'IA intégrée, apprend le fonctionnement de votre activité et prend en charge les relances : offres d'anniversaire, reconquête des clients qui ne viennent plus, demandes d'avis. Vous décidez si elle agit seule ou vous consulte d'abord.",
+        "q7": "Qu'advient-il de ma liste de clients si je pars ?",
+        "a7": "Elle vous appartient. Nous ne vendons pas les données de vos clients et nous ne leur faisons pas de marketing pour notre propre compte, et vous pouvez demander vos données dans un format portable à tout moment. Consultez notre <a href=\"/privacy.html\">politique de confidentialité</a> pour les détails."
     }
 }

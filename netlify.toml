@@ -1,7 +1,14 @@
 # Netlify Configuration
 
+# publish and command are independent — publish stays "." (the repo root is the
+# site) while the command generates the static blog pages and a fresh sitemap.
+# The trailing "|| true" is deliberate: without it a transient Supabase failure
+# turns a routine sitemap refresh into a failed deploy that publishes nothing.
+# Both scripts already refuse to clobber good output when the API is unreachable.
+# Adding any command makes Netlify run a dependency install (~30-60s).
 [build]
   publish = "."
+  command = "node scripts/prerender-blog.mjs && node scripts/generate-sitemap.mjs || true"
 
 # Security Headers
 [[headers]]
@@ -14,6 +21,89 @@
     Permissions-Policy = "camera=(self), microphone=(), geolocation=(self)"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://fcm.googleapis.com https://fcmregistrations.googleapis.com; frame-src https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'"
 
+# Belt-and-braces for the repo paths 404'd below: if a path ever slips through a
+# redirect, it still must not be indexed.
+[[headers]]
+  for = "/database/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/supabase/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/docs/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/tests/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/e2e/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/scripts/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/skills/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/funding-applications/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/test-results/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/playwright-report/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/CLAUDE.md"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/README.md"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/APPSUMO-LAUNCH-PLAN.md"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/MONDAY-PLAN.md"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+# Customer-app URLs are thin per-tenant pages — never index them.
+[[headers]]
+  for = "/a/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/customer-app/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
 # Cache static assets
 [[headers]]
   for = "*.js"
@@ -24,6 +114,168 @@
   for = "*.css"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Repo files are publicly served because publish = "." with no build output dir.
+# Netlify has no "exclude" for that, so these forced 404s are the block.
+# force = true is REQUIRED: a non-forced redirect loses to a file that exists on disk.
+# Must stay above the /* catch-all below.
+[[redirects]]
+  from = "/database/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/docs/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/tests/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/e2e/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/scripts/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/skills/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/funding-applications/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/test-results/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/playwright-report/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.playwright-mcp/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.github/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# Edge-function sources. Netlify compiles these separately; the .ts files
+# themselves must not be readable over HTTP.
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/stripe/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/email-templates/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/Screenshots/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/CLAUDE.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/APPSUMO-LAUNCH-PLAN.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/MONDAY-PLAN.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package-lock.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/vite.config.js"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/vitest.config.js"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/playwright.config.js"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/deno.lock"
+  to = "/404.html"
+  status = 404
+  force = true
 
 # Force redirect Netlify subdomain to custom domain
 [[redirects]]
@@ -59,16 +311,25 @@
   to = "/customer-app/index.html?slug=:slug"
   status = 200
 
-# Blog post clean URLs (SEO-friendly paths instead of hash routing)
-[[redirects]]
-  from = "/blog/:slug"
-  to = "/blog/post.html"
-  status = 200
+# Blog post clean URLs — REMOVED (SEO 1.2).
+# This rewrite matched every path under /blog/ and always returned 200 against
+# post.html's "Loading..." shell. With zero published articles that made 100% of
+# /blog/* a soft 404. Paths now fall through to the real 404 below.
+# Restored (or made unnecessary) in Phase 3a once articles are prerendered to
+# real blog/<slug>.html files — Netlify resolves those for /blog/<slug> directly.
 
 # Public roadmap clean URL
 [[redirects]]
   from = "/roadmap"
   to = "/roadmap.html"
+  status = 200
+
+# Royalty vs. loyalty explainer clean URL.
+# Canonical is the .html form (see the canonical scheme note in the sitemap), so
+# this is a convenience alias only — it must not be the URL we advertise.
+[[redirects]]
+  from = "/royalty-vs-loyalty"
+  to = "/royalty-vs-loyalty.html"
   status = 200
 
 # Clean URLs for legal/contact pages
