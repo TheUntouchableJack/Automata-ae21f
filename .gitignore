@@ -59,3 +59,10 @@ architect-*.png
 24hd-*.png
 sign-off-*.png
 pdf-*.png
+
+# Prerendered blog pages. Generated from newsletter_articles by
+# scripts/prerender-blog.mjs on every Netlify build — committing them means a
+# stale copy can outrank the real one after an article is edited.
+/blog/*.html
+!/blog/index.html
+!/blog/post.html
