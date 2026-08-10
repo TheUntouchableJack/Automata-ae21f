@@ -1033,6 +1033,12 @@
         /* Fallback styles */
         .analysis-fallback { display: none; }
     </style>
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. Session
+         replay + masking inside /app only. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
 </head>
 <body>
     <div class="signup-layout" id="signup-layout">
@@ -1331,7 +1337,23 @@
             const layout = document.getElementById('signup-layout');
             layout.classList.remove('state-loading', 'state-analysis', 'state-form');
             layout.classList.add('state-' + state);
+            // These three states share one URL, so page views can't tell them
+            // apart. Reaching 'analysis' but never 'form' is a real drop-off
+            // that would otherwise be invisible.
+            window.Analytics?.track('signup_state', { state: state });
         }
+
+        // Record which pricing tier (if any) sent them here. The pricing CTAs
+        // now carry ?plan=, so plan intent is finally measurable — previously
+        // every tier button landed on an identical bare URL and the signal was
+        // lost. Purely observational: nothing in the signup flow reads it.
+        try {
+            const _params = new URLSearchParams(window.location.search);
+            window.Analytics?.track('signup_page_viewed', {
+                plan_intent: _params.get('plan') || null,
+                from_onboarding: _params.get('onboarding') === 'true'
+            });
+        } catch (e) { /* analytics must never block signup */ }
 
         // Redirect if already logged in
         redirectIfAuthenticated();
@@ -1588,7 +1610,11 @@
                 if (progressFill) progressFill.style.width = '70%';
 
                 if (!signUpData.session) {
-                    // Email confirmation required
+                    // Email confirmation required. This branch parks the user
+                    // outside the product until they open an email, so it needs
+                    // separating from the straight-through case — the two
+                    // convert at very different rates.
+                    window.Analytics?.track('signup_email_confirm_required', { had_onboarding: hasOnboarding });
                     if (progressFill) progressFill.style.width = '100%';
                     submitBtn.classList.remove('btn-loading');
                     submitBtn.classList.add('btn-success');

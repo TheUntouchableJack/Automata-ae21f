@@ -819,6 +819,17 @@ if (navCTABtn) {
     });
 }
 
+// First keystroke in the textarea. This is the top of the real funnel: it
+// separates "saw the page" from "engaged with the form", which is the single
+// biggest drop-off on the site and is invisible to a page-view count.
+// once:true — we want the start of typing, not every character.
+const heroPromptEl = document.getElementById('hero-business-prompt');
+if (heroPromptEl) {
+    heroPromptEl.addEventListener('input', () => {
+        window.Analytics?.track('hero_prompt_started');
+    }, { once: true });
+}
+
 // Analyze button → call edge function → show confirmation
 const analyzeBtn = document.getElementById('analyze-business-btn');
 if (analyzeBtn) {
@@ -835,6 +846,9 @@ if (confirmBtn) {
 const retryBtn = document.getElementById('retry-prompt-btn');
 if (retryBtn) {
     retryBtn.addEventListener('click', () => {
+        // A retry means step 2 showed them something wrong enough to start over.
+        // High-signal: a rising rate here points at the AI extraction, not the UI.
+        window.Analytics?.track('hero_retry_clicked', { had_analysis: !!_analysisResult });
         _analysisResult = null;
         _analysisToken++;  // invalidate any in-flight analysis so its results don't land
         stopOrbWordCycle();
@@ -958,8 +972,13 @@ async function handleAnalyzeBusiness() {
         promptEl?.focus();
         promptEl?.classList.add('shake');
         setTimeout(() => promptEl?.classList.remove('shake'), 500);
+        // People bouncing off this validation look identical to people who never
+        // engaged at all, unless we say so.
+        window.Analytics?.track('hero_analyze_rejected', { reason: 'too_short', length: prompt.length });
         return;
     }
+
+    window.Analytics?.track('hero_analyze_clicked', { prompt_length: prompt.length });
 
     // Bump the analysis token so any prior in-flight fetch gets ignored
     const myToken = ++_analysisToken;
@@ -1042,9 +1061,17 @@ async function handleAnalyzeBusiness() {
         // Hide the status row — analysis complete
         stopOrbWordCycle();
         if (statusRow) statusRow.classList.add('hidden');
+        window.Analytics?.track('hero_analysis_succeeded', {
+            industry: extracted.industry || null,
+            had_website: !!extracted.websiteUrl
+        });
     } catch (err) {
         if (myToken !== _analysisToken) return;  // stale — user has moved on
         console.error('Analysis error:', err);
+        // The user can still proceed from here, so an outage of
+        // analyze-business-signup is completely invisible from the outside —
+        // conversion just quietly sags. This event is the only alarm we get.
+        window.Analytics?.track('hero_analysis_failed', { message: String(err && err.message || err) });
         stopOrbWordCycle();
         if (statusRow) statusRow.classList.add('hidden');
         // User is already in confirm state with their smart-guess name — leave them
@@ -1113,6 +1140,15 @@ function handleConfirmAndSignup() {
             }));
         }
     } catch (e) { /* ignore */ }
+
+    // The conversion moment. This is a hard navigation into /app, which used to
+    // be a completely untracked surface — the funnel went dark right here.
+    window.Analytics?.track('hero_confirmed_signup', {
+        industry: industry || null,
+        has_location: !!location,
+        has_website: !!websiteUrl,
+        analysis_succeeded: !!_analysisResult
+    });
 
     window.location.href = '/app/signup.html?onboarding=true';
 }

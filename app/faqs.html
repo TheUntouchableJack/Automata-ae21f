@@ -17,6 +17,12 @@
     <link rel="stylesheet" href="support.css?v=1">
     <link rel="stylesheet" href="faqs.css?v=1">
     <link rel="stylesheet" href="../i18n/i18n.css">
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. Session
+         replay + masking inside /app only. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
 </head>
 <body>
     <div class="app-layout">

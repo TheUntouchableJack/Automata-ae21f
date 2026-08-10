@@ -183,6 +183,10 @@ async function resetPassword(email) {
 async function signOut() {
     const { error } = await db.auth.signOut();
     if (!error) {
+        // Clear the analytics identity too, or the next person to use this
+        // browser inherits the previous user's id and their activity merges
+        // into the wrong account.
+        window.Analytics?.reset();
         window.location.href = '/app/login.html';
     }
     return { error };
@@ -230,6 +234,12 @@ async function requireAuth() {
         window.location.href = '/app/login.html';
         return null;
     }
+    // Every authenticated app page funnels through here, so this is the one
+    // place that needs to tie the analytics session to a stable user id.
+    // Without it the post-signup funnel can't join across page loads (/app is
+    // multi-page, not a SPA — every nav is a fresh document).
+    // Only the id is sent: no email, no name.
+    window.Analytics?.identify(user.id);
     return user;
 }
 

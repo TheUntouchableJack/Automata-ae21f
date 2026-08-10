@@ -273,6 +273,15 @@ async function handleCheckout(plan) {
         ? 'royalty_pro_monthly'
         : `${plan}_${isAnnual ? 'annual' : 'monthly'}`;
 
+    // Checkout runs in an embedded Stripe modal, so opening it changes neither
+    // the URL nor the page — intent to pay is otherwise unobservable.
+    window.Analytics?.track('checkout_started', {
+        plan: plan,
+        price_key: priceKey,
+        annual: isAnnual,
+        has_promo: !!appliedPromoCode
+    });
+
     const btn = document.querySelector(`.checkout-btn[data-plan="${plan}"]`);
     const originalText = btn.innerHTML;
     btn.disabled = true;
@@ -384,6 +393,11 @@ function closeCheckoutModal() {
 }
 
 async function handleCheckoutComplete() {
+    // Revenue. Stripe's webhook is the source of truth for billing state — this
+    // event exists only to close the client-side funnel, so never reconcile
+    // money from it.
+    window.Analytics?.track('checkout_completed');
+
     closeCheckoutModal();
 
     // Reload org data to get new plan

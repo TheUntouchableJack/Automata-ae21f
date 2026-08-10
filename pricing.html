@@ -654,9 +654,12 @@
         }
     </style>
 
-    <!-- Analytics (loaded after cookie consent) -->
-    <script>window.GA_MEASUREMENT_ID = 'G-FQ3SGEP2YG';</script>
-    <script src="/js/cookie-consent.js" defer></script>
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. Session
+         replay + masking inside /app only. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
 </head>
 <body>
     <!-- AppSumo Announcement Banner -->
@@ -766,7 +769,7 @@
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.free.f3">20 Royal chat queries/mo</span></li>
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.free.f4">Points, rewards & referrals</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.free.cta">Start Free</a>
+                    <a href="/app/signup.html?plan=free" class="btn btn-secondary btn-block" data-i18n="pricing.free.cta">Start Free</a>
                 </div>
 
                 <!-- Starter -->
@@ -785,7 +788,7 @@
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f3">1,000 emails + 100 SMS/mo</span></li>
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.starter.f4">Review-mode automations</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.starter.cta">Start Trial</a>
+                    <a href="/app/signup.html?plan=starter" class="btn btn-secondary btn-block" data-i18n="pricing.starter.cta">Start Trial</a>
                     <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
 
@@ -806,7 +809,7 @@
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f3">Autonomous Mode + fatigue protection</span></li>
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.growth.f4">Performance metrics & analytics</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-primary btn-block" data-i18n="pricing.growth.cta">Start Trial</a>
+                    <a href="/app/signup.html?plan=growth" class="btn btn-primary btn-block" data-i18n="pricing.growth.cta">Start Trial</a>
                     <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
 
@@ -826,7 +829,7 @@
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f3">Visit attribution (prove ROI)</span></li>
                         <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="pricing.scale.f4">White-label + dedicated support</span></li>
                     </ul>
-                    <a href="/app/signup.html" class="btn btn-secondary btn-block" data-i18n="pricing.scale.cta">Start Trial</a>
+                    <a href="/app/signup.html?plan=scale" class="btn btn-secondary btn-block" data-i18n="pricing.scale.cta">Start Trial</a>
                     <p class="pricing-note" data-i18n="pricing.freeTrial">14-day free trial</p>
                 </div>
 
@@ -1150,7 +1153,7 @@
                     <div class="price-label" data-i18n="pricingPage.royaltyPro.priceLabel">Add to your LTD</div>
                     <div class="price-amount">$79</div>
                     <div class="price-period" data-i18n="pricingPage.royaltyPro.pricePeriod">/month</div>
-                    <a href="/app/signup.html" class="btn btn-block" data-i18n="pricingPage.royaltyPro.cta">Add Royalty Pro</a>
+                    <a href="/app/signup.html?plan=royalty_pro" class="btn btn-block" data-i18n="pricingPage.royaltyPro.cta">Add Royalty Pro</a>
                 </div>
             </div>
             <p style="text-align: center; margin-top: 32px; font-size: 14px; color: rgba(255,255,255,0.6);">

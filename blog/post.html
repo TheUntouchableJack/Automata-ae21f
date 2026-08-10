@@ -26,9 +26,12 @@
     <meta name="twitter:description" content="">
     <meta name="twitter:image" content="">
 
-    <!-- Analytics (loaded after cookie consent) -->
-    <script>window.GA_MEASUREMENT_ID = 'G-FQ3SGEP2YG';</script>
-    <script src="/js/cookie-consent.js" defer></script>
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. Session
+         replay + masking inside /app only. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
 
     <!-- Fonts & Styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

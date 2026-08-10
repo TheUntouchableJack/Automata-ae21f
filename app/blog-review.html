@@ -809,6 +809,12 @@
             .br-save-bar { margin: 0 -20px; padding: 14px 20px; }
         }
     </style>
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. Session
+         replay + masking inside /app only. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
 </head>
 <body>
 <div class="app-layout">

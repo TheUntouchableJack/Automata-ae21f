@@ -330,9 +330,21 @@ const OnboardingSave = (function () {
             }
 
             console.log('Onboarding data saved to project:', project.id);
+            // The account exists and the business data is persisted — the point
+            // where a signup becomes a usable org. Everything before this is
+            // reversible; this is the first durable write.
+            window.Analytics?.track('onboarding_committed', {
+                industry: ctx.industry || null,
+                automations_seeded: knowledgeFacts.length > 0
+            });
             return project.id;
         } catch (err) {
             console.error('Error saving onboarding data:', err);
+            // This failure strands the user with an account but no business
+            // data, and today it only surfaces in their console. Worth an alarm.
+            window.Analytics?.track('onboarding_commit_failed', {
+                message: String(err && err.message || err)
+            });
             return null;
         }
     }

@@ -539,6 +539,11 @@ function populateFormFromApp(app) {
 function showStep(step) {
     currentStep = step;
 
+    // The 6-step wizard runs entirely on one URL, so without this the whole
+    // build flow is a single page view and you cannot see which step people
+    // abandon. This is the main activation cliff — instrument it properly.
+    window.Analytics?.track('app_builder_step', { step: step });
+
     // Hide loading, show navigation
     document.getElementById('loading').style.display = 'none';
     document.getElementById('step-nav').style.display = 'flex';
@@ -944,6 +949,14 @@ async function publishApp() {
 
         if (error) throw error;
 
+        // True activation: the loyalty program is now live at /a/{slug} and can
+        // actually take customers. This is the north-star event the whole
+        // funnel is measured against.
+        window.Analytics?.track('app_published', {
+            app_type: currentApp?.app_type || null,
+            created_from: currentApp?.settings?.created_from || null
+        });
+
         showSuccess('App published successfully!');
 
         // Redirect to apps list
@@ -953,6 +966,9 @@ async function publishApp() {
 
     } catch (error) {
         console.error('Failed to publish app:', error);
+        window.Analytics?.track('app_publish_failed', {
+            message: String(error && error.message || error)
+        });
         showError('Failed to publish app');
     }
 }

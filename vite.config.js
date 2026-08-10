@@ -90,7 +90,28 @@ export default defineConfig({
     open: false,
     cors: true,
     // Handle /a/{slug} routes for customer app
-    proxy: {},
+    proxy: {
+      // Mirror the PostHog first-party proxy from netlify.toml so analytics
+      // behaves identically in dev and prod. Without this, /ingest/* 404s
+      // locally and every analytics call fails silently while you develop.
+      // Asset paths (/static, /array) come from the assets host; everything
+      // else from the ingest host — same split as production.
+      '/ingest/static': {
+        target: 'https://us-assets.i.posthog.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ingest/, ''),
+      },
+      '/ingest/array': {
+        target: 'https://us-assets.i.posthog.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ingest/, ''),
+      },
+      '/ingest': {
+        target: 'https://us.i.posthog.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ingest/, ''),
+      },
+    },
   },
 
   // Plugin to rewrite /a/* routes to customer app

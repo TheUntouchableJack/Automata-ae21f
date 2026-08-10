@@ -24,7 +24,16 @@
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(self), microphone=(), geolocation=(self)"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://fcm.googleapis.com https://fcmregistrations.googleapis.com; frame-src https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'"
+    # PostHog is served first-party through the /ingest/* proxy below, so it needs
+    # no extra script-src/connect-src origins — 'self' already covers it. That is
+    # the point of the proxy: it also survives ad blockers, which block the
+    # posthog.com origins outright.
+    # worker-src blob: is required by the session-replay recorder, which runs in a
+    # web worker. Without it replay fails SILENTLY — the page looks fine and no
+    # recording is ever produced. The previous GA4 install died exactly this way
+    # (googletagmanager.com was never in script-src), so verify with:
+    #   curl -sI https://royaltyapp.ai | grep -i content-security-policy
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://cdnjs.cloudflare.com https://www.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://fcm.googleapis.com https://fcmregistrations.googleapis.com; frame-src https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'"
 
 # Belt-and-braces for the repo paths 404'd below: if a path ever slips through a
 # redirect, it still must not be indexed.
@@ -119,6 +128,45 @@
   for = "*.css"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# PostHog analytics, reverse-proxied as first-party.
+#
+# Why proxy instead of loading us-assets.i.posthog.com directly: our users are SMB
+# owners and a large share run ad blockers, which block the posthog.com origins by
+# name. Served from our own domain the requests are indistinguishable from any
+# other asset, and the CSP needs no third-party origins at all.
+#
+# The `host` lines are part of PostHog's documented Netlify config and are load-
+# bearing — without them the upstream rejects the request. /static/* and /array/*
+# come from the ASSETS host; everything else (ingest, decide, replay) from the
+# INGEST host. Order matters: the specific asset rules must precede the catch-all.
+#
+# force = true is required — nothing exists on disk at /ingest, so without it the
+# final /* -> 404.html rule would win.
+#
+# CAVEAT: PostHog documents that this proxy does NOT work on *.netlify.app
+# domains (Netlify rewrites content-encoding headers there). Verify on
+# https://royaltyapp.ai only — a deploy-preview URL will fail and that is expected.
+[[redirects]]
+  from = "/ingest/static/*"
+  to = "https://us-assets.i.posthog.com/static/:splat"
+  host = "us-assets.i.posthog.com"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/ingest/array/*"
+  to = "https://us-assets.i.posthog.com/array/:splat"
+  host = "us-assets.i.posthog.com"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/ingest/*"
+  to = "https://us.i.posthog.com/:splat"
+  host = "us.i.posthog.com"
+  status = 200
+  force = true
 
 # Repo files are publicly served because publish = "." with no build output dir.
 # Netlify has no "exclude" for that, so these forced 404s are the block.

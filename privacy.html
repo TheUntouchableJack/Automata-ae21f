@@ -9,14 +9,12 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FQ3SGEP2YG"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-FQ3SGEP2YG');
-    </script>
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. Session
+         replay + masking inside /app only. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -155,7 +153,7 @@
             <h2>4. Data Sharing and Disclosure</h2>
             <p>We do not sell your personal information. We may share your data with:</p>
             <ul>
-                <li><strong>Service Providers:</strong> Supabase (database hosting), Stripe (payments), Cloudflare (security), Anthropic (AI features)</li>
+                <li><strong>Service Providers:</strong> Supabase (database hosting), Stripe (payments), Cloudflare (security), Anthropic (AI features), PostHog (product analytics &mdash; see section 10)</li>
                 <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
                 <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
             </ul>
@@ -191,8 +189,19 @@
             <h2>9. Children's Privacy</h2>
             <p>Our services are not directed to individuals under 16. We do not knowingly collect personal data from children. If you believe we have collected data from a child, please contact us immediately.</p>
 
-            <h2>10. Cookies and Tracking</h2>
-            <p>We use essential cookies to maintain your session and preferences. We use Cloudflare Turnstile for security verification. We do not use third-party advertising cookies.</p>
+            <h2>10. Cookies and Analytics</h2>
+            <p>We use essential cookies to maintain your session and preferences. We use Cloudflare Turnstile for security verification. We do not use third-party advertising cookies, and we do not sell or share your data with advertisers.</p>
+
+            <p>For product analytics we use <strong>PostHog</strong>, a processor acting on our instructions. PostHog processes this data in the <strong>United States</strong>. Where this involves transferring personal data out of the UK or European Economic Area, that transfer is governed by Standard Contractual Clauses under our data processing agreement with PostHog. How the analytics work depends on which part of the site you are on:</p>
+
+            <ul>
+                <li><strong>On our public pages</strong> (such as our home page, pricing and blog) analytics run in a <strong>cookieless</strong> mode. We set no cookies and store nothing on your device for analytics. Visits are counted using a rotating, salted hash derived from your IP address and browser type. Your IP address is used only momentarily to compute that hash and is not retained; the salt is rotated and discarded daily, so the resulting value cannot be used to identify you or to track you across other websites or across days. Because nothing is stored on your device, no cookie consent banner is required. We do not record sessions on these pages.</li>
+                <li><strong>Inside your account</strong> (pages under <code>/app</code>), analytics use standard storage so that we can understand how our product is used and fix problems. This includes <strong>session recordings</strong> of your interactions with the Royalty dashboard. All text and all form inputs are <strong>masked before leaving your browser</strong> — this means the contents of your customer lists, email addresses, phone numbers and messages are never transmitted to or stored by our analytics provider. Recordings capture layout and interaction, not content.</li>
+            </ul>
+
+            <p>We use this data only to improve Royalty — to see which features are used, where people get stuck, and what is broken. It is never used for advertising.</p>
+
+            <p><strong>Opting out.</strong> You can exclude your device from all analytics at any time by visiting <a href="/?notrack=1">royaltyapp.ai/?notrack=1</a>. This preference is stored locally on your device and applies until you clear your browser storage. You can re-enable analytics with <a href="/?notrack=0">royaltyapp.ai/?notrack=0</a>. We also honour your browser's Do Not Track and Global Privacy Control signals where they are sent.</p>
 
             <h2>11. Third-Party Links</h2>
             <p>Our platform may contain links to third-party websites. We are not responsible for their privacy practices. Please review their privacy policies before providing personal information.</p>
