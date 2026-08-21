@@ -264,6 +264,176 @@
             color: #f59e0b;
         }
 
+        /* Venue is saved but has no lat/lng, so it is invisible to both the
+           map and search in the customer app. */
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.16);
+            color: #b45309;
+            cursor: help;
+        }
+
+        /* ===== Admin tabs ===== */
+        .admin-tabs {
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-surface);
+        }
+
+        .admin-tabs .container {
+            display: flex;
+            gap: 4px;
+        }
+
+        .admin-tab {
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .admin-tab:hover {
+            color: var(--color-text);
+        }
+
+        .admin-tab.active {
+            color: var(--color-primary, #6366f1);
+            border-bottom-color: var(--color-primary, #6366f1);
+        }
+
+        .admin-tab-count {
+            display: inline-block;
+            min-width: 20px;
+            padding: 1px 6px;
+            margin-left: 4px;
+            border-radius: 10px;
+            background: var(--color-border);
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* ===== Admin search ===== */
+        .admin-search-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-surface);
+            color: var(--color-text-muted);
+        }
+
+        .admin-search-bar input {
+            flex: 1;
+            border: none;
+            background: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--color-text);
+        }
+
+        /* ===== Members table ===== */
+        .members-table-wrap {
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            overflow-x: auto;
+            background: var(--color-surface);
+        }
+
+        .members-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .members-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--color-text-muted);
+            border-bottom: 1px solid var(--color-border);
+            white-space: nowrap;
+        }
+
+        .members-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--color-border);
+            vertical-align: middle;
+        }
+
+        .members-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .member-identity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--color-primary, #6366f1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .member-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .member-name {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .member-email {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .member-muted {
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
+        .member-remove-btn {
+            padding: 5px 10px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background: none;
+            font-family: inherit;
+            font-size: 12px;
+            color: #ef4444;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .member-remove-btn:hover {
+            background: rgba(239, 68, 68, 0.06);
+        }
+
         .venue-card-meta {
             display: flex;
             justify-content: space-between;
@@ -744,7 +914,7 @@
                             </svg>
                             Back to Apps
                         </a>
-                        <h1 class="page-title">Venues</h1>
+                        <h1 class="page-title">Social App</h1>
                         <p class="page-subtitle-app" id="app-name-subtitle">Loading...</p>
                     </div>
                     <button class="btn btn-primary" id="add-venue-btn">
@@ -756,15 +926,41 @@
                 </div>
             </div>
 
-            <section class="projects-section">
+            <!-- Everything for this app lives behind these tabs rather than in
+                 separate sidebar entries. Moderation and Analytics join them in
+                 later phases. -->
+            <div class="admin-tabs">
+                <div class="container">
+                    <button class="admin-tab active" data-admin-tab="venues">Venues</button>
+                    <button class="admin-tab" data-admin-tab="members">
+                        Members <span class="admin-tab-count" id="members-count"></span>
+                    </button>
+                </div>
+            </div>
+
+            <section class="projects-section" id="admin-panel-venues">
                 <div class="container">
                     <!-- Loading State -->
                     <div class="loading-container" id="loading">
                         <div class="loading-spinner"></div>
                     </div>
 
+                    <!-- Venue search -->
+                    <div class="admin-search-bar" id="venue-search-bar" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="search" id="venue-search" placeholder="Search venues by name, handle, or city..." autocomplete="off">
+                    </div>
+
                     <!-- Venues Grid -->
                     <div class="venues-grid" id="venues-grid" style="display: none;"></div>
+
+                    <!-- No search matches (distinct from having no venues at all) -->
+                    <div class="empty-state" id="venue-search-empty" style="display: none;">
+                        <h3>No venues match that search</h3>
+                        <p>Try a different name, handle, or city.</p>
+                    </div>
 
                     <!-- Empty State -->
                     <div class="empty-state" id="empty-state" style="display: none;">
@@ -782,6 +978,46 @@
                             </svg>
                             Add First Venue
                         </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Members ===== -->
+            <section class="projects-section" id="admin-panel-members" style="display: none;">
+                <div class="container">
+                    <div class="admin-search-bar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="search" id="member-search" placeholder="Search members by name or email..." autocomplete="off">
+                    </div>
+
+                    <div class="loading-container" id="members-loading" style="display: none;">
+                        <div class="loading-spinner"></div>
+                    </div>
+
+                    <div class="members-table-wrap" id="members-table-wrap" style="display: none;">
+                        <table class="members-table">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Joined</th>
+                                    <th>Last seen</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="members-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty-state" id="members-empty" style="display: none;">
+                        <div class="empty-state-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <h3>No members yet</h3>
+                        <p>People who create an account in the app will appear here.</p>
                     </div>
                 </div>
             </section>
@@ -819,15 +1055,11 @@
                         </div>
                         <div class="form-group">
                             <label for="venue-category">Category</label>
+                            <!-- Options rendered from VENUE_CATEGORIES by
+                                 renderCategoryOptions() so the slugs written here
+                                 always match the ones the app filters on. -->
                             <select id="venue-category">
                                 <option value="">Select category...</option>
-                                <option value="nightlife">Nightlife</option>
-                                <option value="bar">Bar</option>
-                                <option value="club">Club</option>
-                                <option value="lounge">Lounge</option>
-                                <option value="restaurant">Restaurant</option>
-                                <option value="rooftop">Rooftop</option>
-                                <option value="event_space">Event Space</option>
                             </select>
                         </div>
                     </div>
@@ -1019,6 +1251,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/venue-categories.js?v=1"></script>
     <script src="../i18n/i18n.js?v=1"></script>
     <script src="auth.js?v=11"></script>
     <script src="utils.js?v=5"></script>
@@ -1034,26 +1267,196 @@
     let currentOrganization = null;
     let currentApp = null;
     let allVenues = [];
+    let venueSearchQuery = '';
+    let allMembers = [];
+    let memberSearchQuery = '';
+    let membersLoaded = false;
     let editingVenueId = null;
     let mediaVenueId = null;
     let selectedMediaFile = null;
     let pendingProfileImage = null;
     let pendingCoverImage = null;
 
-    const CATEGORY_LABELS = {
-        nightlife: 'Nightlife',
-        bar: 'Bar',
-        club: 'Club',
-        lounge: 'Lounge',
-        restaurant: 'Restaurant',
-        rooftop: 'Rooftop',
-        event_space: 'Event Space'
-    };
+    // Derived from the shared VENUE_CATEGORIES list (/js/venue-categories.js),
+    // which the customer app renders its filter pills from. Keeping a second
+    // hand-maintained copy here is what let the two drift apart: the pills sent
+    // plurals while this dropdown wrote singulars, so filtering matched nothing.
+    const CATEGORY_LABELS = (window.VENUE_CATEGORIES || []).reduce((acc, c) => {
+        acc[c.slug] = c.label;
+        return acc;
+    }, {});
+
+    // ===== Admin tabs =====
+    // Everything for this app lives here rather than in separate sidebar
+    // entries, so the owner has one place to manage it.
+    function switchAdminTab(tab) {
+        document.querySelectorAll('.admin-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.adminTab === tab);
+        });
+        document.querySelectorAll('[id^="admin-panel-"]').forEach(panel => {
+            panel.style.display = panel.id === `admin-panel-${tab}` ? '' : 'none';
+        });
+
+        // "Add Venue" is meaningless on the Members tab
+        const addBtn = document.getElementById('add-venue-btn');
+        if (addBtn) addBtn.style.display = tab === 'venues' ? '' : 'none';
+
+        if (tab === 'members' && !membersLoaded) loadMembers();
+    }
+
+    // ===== Venue search =====
+    function filterVenues(venues, query) {
+        const q = (query || '').trim().toLowerCase();
+        if (!q) return venues;
+        return venues.filter(v => [
+            v.name, v.handle, v.city, v.state,
+            CATEGORY_LABELS[v.category], v.category
+        ].filter(Boolean).join(' ').toLowerCase().includes(q));
+    }
+
+    // ===== Members =====
+    async function loadMembers() {
+        const loading = document.getElementById('members-loading');
+        const wrap = document.getElementById('members-table-wrap');
+        const empty = document.getElementById('members-empty');
+
+        if (loading) loading.style.display = 'flex';
+        if (wrap) wrap.style.display = 'none';
+        if (empty) empty.style.display = 'none';
+
+        // RLS: "Org can manage app members" already scopes this to the owner's
+        // organization, so no extra filter is needed beyond app_id.
+        const { data, error } = await supabase
+            .from('app_members')
+            .select('id, first_name, last_name, display_name, email, phone, avatar_url, user_id, created_at, last_login_at')
+            .eq('app_id', currentApp.id)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        if (loading) loading.style.display = 'none';
+        membersLoaded = true;
+
+        if (error) {
+            console.error('Failed to load members:', error);
+            showToast('Could not load members', 'error');
+            return;
+        }
+
+        allMembers = data || [];
+        const countEl = document.getElementById('members-count');
+        if (countEl) countEl.textContent = allMembers.length ? String(allMembers.length) : '';
+        renderMembers();
+    }
+
+    function renderMembers() {
+        const wrap = document.getElementById('members-table-wrap');
+        const tbody = document.getElementById('members-tbody');
+        const empty = document.getElementById('members-empty');
+        if (!tbody) return;
+
+        const q = memberSearchQuery.trim().toLowerCase();
+        const visible = q
+            ? allMembers.filter(m => [m.first_name, m.last_name, m.display_name, m.email, m.phone]
+                .filter(Boolean).join(' ').toLowerCase().includes(q))
+            : allMembers;
+
+        if (visible.length === 0) {
+            if (wrap) wrap.style.display = 'none';
+            if (empty) {
+                empty.style.display = 'block';
+                empty.querySelector('h3').textContent = q ? 'No members match that search' : 'No members yet';
+                empty.querySelector('p').textContent = q
+                    ? 'Try a different name or email.'
+                    : 'People who create an account in the app will appear here.';
+            }
+            return;
+        }
+
+        if (empty) empty.style.display = 'none';
+        if (wrap) wrap.style.display = 'block';
+
+        tbody.innerHTML = visible.map(m => {
+            const name = m.display_name
+                || [m.first_name, m.last_name].filter(Boolean).join(' ')
+                || '(no name)';
+            const initial = (name === '(no name)' ? (m.email || '?') : name).charAt(0).toUpperCase();
+            const avatar = m.avatar_url
+                ? `<img src="${AppUtils.escapeHtml(m.avatar_url)}" alt="">`
+                : AppUtils.escapeHtml(initial);
+
+            return `
+                <tr data-member-id="${m.id}">
+                    <td>
+                        <div class="member-identity">
+                            <div class="member-avatar">${avatar}</div>
+                            <div>
+                                <div class="member-name">${AppUtils.escapeHtml(name)}</div>
+                                <div class="member-email">${AppUtils.escapeHtml(m.email || '')}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="member-muted">${formatAdminDate(m.created_at)}</td>
+                    <td class="member-muted">${m.last_login_at ? formatAdminDate(m.last_login_at) : 'Never'}</td>
+                    <td style="text-align:right;">
+                        <button class="member-remove-btn" onclick="removeMember('${m.id}', '${AppUtils.escapeHtml(name).replace(/'/g, "\\'")}')">Remove</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function formatAdminDate(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    /**
+     * Removes a member from THIS app. Soft delete only — it does not touch
+     * their Supabase Auth login, so they could sign up again. Deleting the
+     * login itself is the member's own action, via Delete Account in the app
+     * (delete-social-account edge function).
+     */
+    async function removeMember(memberId, memberName) {
+        if (!confirm(`Remove ${memberName} from this app?\n\nTheir membership and profile are removed. Their login is not deleted — only they can do that, from the app.`)) {
+            return;
+        }
+
+        const { error } = await supabase
+            .from('app_members')
+            .update({ deleted_at: new Date().toISOString(), user_id: null })
+            .eq('id', memberId);
+
+        if (error) {
+            console.error('Failed to remove member:', error);
+            showToast('Could not remove member', 'error');
+            return;
+        }
+
+        allMembers = allMembers.filter(m => m.id !== memberId);
+        const countEl = document.getElementById('members-count');
+        if (countEl) countEl.textContent = allMembers.length ? String(allMembers.length) : '';
+        renderMembers();
+        showToast('Member removed', 'success');
+    }
+
+    // Populates the venue form's category <select> from VENUE_CATEGORIES.
+    function renderCategoryOptions() {
+        const select = document.getElementById('venue-category');
+        if (!select) return;
+        const cats = window.VENUE_CATEGORIES || [];
+        select.innerHTML = '<option value="">Select category...</option>' +
+            cats.map(c => `<option value="${c.slug}">${AppUtils.escapeHtml(c.label)}</option>`).join('');
+    }
 
     // ===== Initialization =====
     async function initVenues() {
         currentUser = await requireAuth();
         if (!currentUser) return;
+
+        renderCategoryOptions();
 
         // Get app_id from URL
         const params = new URLSearchParams(window.location.search);
@@ -1142,17 +1545,34 @@
     function renderVenues() {
         const grid = document.getElementById('venues-grid');
         const emptyState = document.getElementById('empty-state');
+        const searchBar = document.getElementById('venue-search-bar');
+        const searchEmpty = document.getElementById('venue-search-empty');
 
+        // No venues at all is a different state from no search matches — the
+        // first wants "Add First Venue", the second wants "try another term".
         if (allVenues.length === 0) {
             grid.style.display = 'none';
             emptyState.style.display = 'block';
+            if (searchBar) searchBar.style.display = 'none';
+            if (searchEmpty) searchEmpty.style.display = 'none';
             return;
         }
 
         emptyState.style.display = 'none';
+        if (searchBar) searchBar.style.display = 'flex';
+
+        const visible = filterVenues(allVenues, venueSearchQuery);
+
+        if (visible.length === 0) {
+            grid.style.display = 'none';
+            if (searchEmpty) searchEmpty.style.display = 'block';
+            return;
+        }
+
+        if (searchEmpty) searchEmpty.style.display = 'none';
         grid.style.display = 'grid';
 
-        grid.innerHTML = allVenues.map(venue => {
+        grid.innerHTML = visible.map(venue => {
             const categoryLabel = CATEGORY_LABELS[venue.category] || venue.category || '';
             const cityState = [venue.city, venue.state].filter(Boolean).join(', ');
             const avatarHtml = venue.profile_image_url
@@ -1160,6 +1580,11 @@
                 : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
             const mediaCount = venue.media_count || 0;
             const rating = venue.average_rating ? parseFloat(venue.average_rating).toFixed(1) : null;
+            // get_venues_for_map() requires non-null lat/lng, and the customer
+            // app's search filters the same array — so a venue without
+            // coordinates is invisible in BOTH the map and search, with no
+            // indication anywhere that it exists. Surface it here.
+            const missingCoords = venue.latitude == null || venue.longitude == null;
 
             return `
                 <div class="venue-card" data-venue-id="${venue.id}" onclick="openEditVenue('${venue.id}', event)">
@@ -1209,6 +1634,7 @@
                         ${categoryLabel ? `<span class="badge badge-category">${AppUtils.escapeHtml(categoryLabel)}</span>` : ''}
                         <span class="badge ${venue.is_active ? 'badge-active' : 'badge-inactive'}">${venue.is_active ? 'Active' : 'Inactive'}</span>
                         ${venue.is_featured ? '<span class="badge badge-featured">Featured</span>' : ''}
+                        ${missingCoords ? `<span class="badge badge-warning" title="This venue has no coordinates, so it will not appear on the map or in search. Edit it and use Find Coordinates.">No coordinates</span>` : ''}
                     </div>
                     <div class="venue-card-meta">
                         <div class="venue-card-stat">
@@ -1229,6 +1655,29 @@
     function setupEventListeners() {
         document.getElementById('add-venue-btn').addEventListener('click', () => openVenueModal());
         document.getElementById('empty-add-venue-btn').addEventListener('click', () => openVenueModal());
+
+        // Admin tabs
+        document.querySelectorAll('.admin-tab').forEach(btn => {
+            btn.addEventListener('click', () => switchAdminTab(btn.dataset.adminTab));
+        });
+
+        // Venue search
+        const venueSearch = document.getElementById('venue-search');
+        if (venueSearch) {
+            venueSearch.addEventListener('input', AppUtils.debounce((e) => {
+                venueSearchQuery = e.target.value;
+                renderVenues();
+            }, 200));
+        }
+
+        // Member search
+        const memberSearch = document.getElementById('member-search');
+        if (memberSearch) {
+            memberSearch.addEventListener('input', AppUtils.debounce((e) => {
+                memberSearchQuery = e.target.value;
+                renderMembers();
+            }, 200));
+        }
 
         // Image upload handlers
         document.getElementById('profile-image-input').addEventListener('change', (e) => handleImagePreview(e, 'profile'));

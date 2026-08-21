@@ -8,7 +8,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Discover - Royalty</title>
-    <link rel="manifest" href="manifest.json">
+    <!-- Social app type has its own manifest. The shared manifest.json is
+         loyalty-branded ("Royalty Rewards", start_url /customer-app/app.html,
+         "Scan to Earn" shortcuts) and described the wrong app entirely.
+         KNOWN LIMIT: start_url has no ?slug, so an installed shortcut opens
+         the app chrome without a tenant. Per-tenant install needs a generated
+         manifest — deferred, tracked for Phase 6. -->
+    <link rel="manifest" href="/customer-app/social-manifest.json">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -16,20 +22,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="social.css">
+    <link rel="stylesheet" href="/customer-app/social.css?v=2">
 </head>
 <body>
 
     <!-- ===== App Header ===== -->
     <header class="social-header">
-        <button class="header-btn menu-btn" aria-label="Open menu" data-i18n-aria="social.menuBtn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="3" y1="12" x2="21" y2="12"/>
-                <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-        </button>
-
         <div class="header-brand">
             <div class="header-logo" id="header-logo">
                 <img src="" alt="" id="header-logo-img" style="display:none;">
@@ -47,15 +45,9 @@
     </header>
 
     <!-- ===== Category Pills ===== -->
-    <div class="category-pills" role="tablist" aria-label="Venue categories">
-        <button class="pill active" data-category="all" role="tab" aria-selected="true" data-i18n="social.catAll">All</button>
-        <button class="pill" data-category="nightlife" role="tab" aria-selected="false" data-i18n="social.catNightlife">Nightlife</button>
-        <button class="pill" data-category="bars" role="tab" aria-selected="false" data-i18n="social.catBars">Bars</button>
-        <button class="pill" data-category="clubs" role="tab" aria-selected="false" data-i18n="social.catClubs">Clubs</button>
-        <button class="pill" data-category="restaurants" role="tab" aria-selected="false" data-i18n="social.catRestaurants">Restaurants</button>
-        <button class="pill" data-category="lounges" role="tab" aria-selected="false" data-i18n="social.catLounges">Lounges</button>
-        <button class="pill" data-category="rooftop" role="tab" aria-selected="false" data-i18n="social.catRooftop">Rooftop</button>
-    </div>
+    <!-- Rendered from window.VENUE_CATEGORIES (/js/venue-categories.js) so the
+         slugs can never drift from venues.category again. See renderCategoryPills(). -->
+    <div class="category-pills" id="category-pills" role="tablist" aria-label="Venue categories"></div>
 
     <!-- ===== Tab Content: Feed ===== -->
     <section id="tab-feed" class="tab-view active" role="tabpanel" aria-label="Feed">
@@ -194,12 +186,14 @@
                 >
             </div>
 
-            <!-- Recent searches -->
-            <div class="recent-searches" id="recent-searches">
-                <h4 class="recent-searches-title" data-i18n="social.recentSearches">Recent Searches</h4>
-                <div class="recent-searches-list" id="recent-searches-list">
-                    <!-- Dynamically populated from localStorage -->
+            <!-- Recent searches — populated from localStorage by renderRecentSearches().
+                 Hidden entirely until there is at least one entry. -->
+            <div class="recent-searches" id="recent-searches" style="display:none;">
+                <div class="recent-searches-header">
+                    <h4 class="recent-searches-title" data-i18n="social.recentSearches">Recent Searches</h4>
+                    <button class="recent-searches-clear" id="recent-searches-clear" type="button" data-i18n="social.clearAll">Clear</button>
                 </div>
+                <div class="recent-searches-list" id="recent-searches-list"></div>
             </div>
 
             <!-- Search results -->
@@ -222,8 +216,34 @@
 
     <!-- ===== Tab Content: Profile ===== -->
     <section id="tab-profile" class="tab-view" role="tabpanel" aria-label="Profile">
-        <div class="profile-container">
-            <!-- Member info card -->
+
+        <!-- Signed OUT: browsing stays anonymous, so this is an invitation, not a wall -->
+        <div class="profile-container" id="profile-signed-out">
+            <div class="profile-signin-prompt">
+                <div class="profile-signin-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <h3 data-i18n="social.joinTitle">Join the community</h3>
+                <p data-i18n="social.joinBody">Create an account to post Viibes, follow venues, and keep track of where you have been.</p>
+                <button class="auth-btn auth-btn-primary" id="profile-signup-btn" data-i18n="social.createAccount">Create Account</button>
+                <button class="auth-btn auth-btn-ghost" id="profile-login-btn" data-i18n="social.logIn">Log In</button>
+            </div>
+
+            <div class="profile-menu">
+                <button class="profile-menu-item" id="contact-us-btn-out">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    <span data-i18n="social.contactUs">Contact Us</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Signed IN -->
+        <div class="profile-container" id="profile-signed-in" style="display:none;">
             <div class="profile-card">
                 <div class="profile-avatar" id="profile-avatar">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -232,135 +252,254 @@
                     </svg>
                 </div>
                 <div class="profile-info">
-                    <h3 class="profile-name" id="profile-name" data-i18n="social.profileNamePlaceholder">--</h3>
+                    <!-- Owned by renderProfileIdentity(); no data-i18n, or a
+                         late i18n pass would overwrite the real name -->
+                    <h3 class="profile-name" id="profile-name">--</h3>
                     <p class="profile-email" id="profile-email"></p>
                 </div>
             </div>
 
-            <!-- Placeholder section -->
-            <div class="profile-placeholder">
-                <div class="empty-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 20h9"/>
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            <!-- Full profile editing, follows and check-ins arrive in Phase 2 -->
+            <div class="profile-menu">
+                <button class="profile-menu-item" id="contact-us-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
                     </svg>
-                </div>
-                <p data-i18n="social.profileComingSoon">Profile coming soon</p>
+                    <span data-i18n="social.contactUs">Contact Us</span>
+                </button>
+                <button class="profile-menu-item" id="change-password-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <span data-i18n="social.changePassword">Change Password</span>
+                </button>
             </div>
 
-            <!-- Logout -->
             <button class="logout-btn" id="logout-btn" data-i18n="social.logout">Log Out</button>
+
+            <button class="profile-danger-btn" id="delete-account-btn" data-i18n="social.deleteAccount">Delete Account</button>
         </div>
     </section>
 
-    <!-- ===== Venue Detail Bottom Sheet ===== -->
-    <div class="venue-sheet-backdrop" id="venue-sheet-backdrop"></div>
-    <aside class="venue-sheet" id="venue-sheet" role="dialog" aria-modal="true" aria-label="Venue details">
-        <div class="venue-sheet-handle"></div>
+    <!-- ===== Auth Overlay =====
+         One full-screen overlay with four views (splash, login, signup, forgot,
+         reset). Keeps auth out of the four-tab structure — the bottom nav stays
+         at exactly four tabs and this layers over it. -->
+    <div class="auth-overlay" id="auth-overlay" role="dialog" aria-modal="true" aria-label="Account">
 
-        <!-- Close button -->
-        <button class="venue-sheet-close" id="venue-sheet-close" aria-label="Close venue details">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-        </button>
-
-        <div class="venue-sheet-content" id="venue-sheet-content">
-            <!-- Profile row -->
-            <div class="venue-sheet-profile">
-                <div class="venue-sheet-profile-img" id="venue-sheet-profile-img">
-                    <img src="" alt="" id="venue-sheet-avatar">
-                </div>
-                <div class="venue-sheet-profile-info">
-                    <h2 class="venue-sheet-name" id="venue-sheet-name"></h2>
-                    <span class="venue-sheet-handle" id="venue-sheet-handle"></span>
-                </div>
-            </div>
-
-            <!-- Rating -->
-            <div class="venue-sheet-rating">
-                <div class="stars" id="venue-sheet-stars">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                </div>
-                <span class="venue-sheet-review-count" id="venue-sheet-review-count"></span>
-            </div>
-
-            <!-- Cover image -->
-            <div class="venue-sheet-cover" id="venue-sheet-cover">
-                <img src="" alt="" id="venue-sheet-cover-img">
-            </div>
-
-            <!-- Address + directions -->
-            <div class="venue-sheet-section">
-                <div class="venue-sheet-address-row">
-                    <div class="venue-sheet-address-info">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                            <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        <span id="venue-sheet-address"></span>
-                    </div>
-                    <a class="venue-sheet-directions-btn" id="venue-sheet-directions" href="#" target="_blank" rel="noopener noreferrer" data-i18n="social.getDirections">
-                        Get Directions
-                    </a>
-                </div>
-            </div>
-
-            <!-- Contact info -->
-            <div class="venue-sheet-section venue-sheet-contact" id="venue-sheet-contact">
-                <div class="venue-sheet-contact-item" id="venue-sheet-phone-row" style="display:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    <a href="#" id="venue-sheet-phone"></a>
-                </div>
-                <div class="venue-sheet-contact-item" id="venue-sheet-website-row" style="display:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="2" y1="12" x2="22" y2="12"/>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                    </svg>
-                    <a href="#" id="venue-sheet-website" target="_blank" rel="noopener noreferrer"></a>
-                </div>
-                <div class="venue-sheet-contact-item" id="venue-sheet-instagram-row" style="display:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                    </svg>
-                    <a href="#" id="venue-sheet-instagram" target="_blank" rel="noopener noreferrer"></a>
-                </div>
-            </div>
-
-            <!-- Hours -->
-            <div class="venue-sheet-section" id="venue-sheet-hours-section" style="display:none;">
-                <h4 class="venue-sheet-section-title" data-i18n="social.hours">Hours</h4>
-                <div class="venue-sheet-hours" id="venue-sheet-hours">
-                    <!-- Dynamic hours rows -->
-                </div>
-            </div>
-
-            <!-- Tags -->
-            <div class="venue-sheet-section" id="venue-sheet-tags-section" style="display:none;">
-                <div class="venue-sheet-tags" id="venue-sheet-tags">
-                    <!-- Dynamic tag pills -->
-                </div>
-            </div>
-
-            <!-- Media gallery -->
-            <div class="venue-sheet-section" id="venue-sheet-gallery-section" style="display:none;">
-                <h4 class="venue-sheet-section-title" data-i18n="social.gallery">Gallery</h4>
-                <div class="venue-sheet-gallery" id="venue-sheet-gallery">
-                    <!-- Dynamic media grid -->
+        <!-- Splash: brand + the two ways in -->
+        <div class="auth-view" id="auth-view-splash">
+            <video class="auth-splash-video" id="auth-splash-video" autoplay muted loop playsinline></video>
+            <div class="auth-splash-scrim"></div>
+            <div class="auth-splash-content">
+                <div class="auth-splash-logo" id="auth-splash-logo">V</div>
+                <h1 class="auth-splash-name" id="auth-splash-name">ViibeView</h1>
+                <p class="auth-splash-tagline" data-i18n="social.splashTagline">See what tonight looks like.</p>
+                <div class="auth-splash-actions">
+                    <button class="auth-btn auth-btn-primary" data-auth-view="signup" data-i18n="social.createAccount">Create Account</button>
+                    <button class="auth-btn auth-btn-light" data-auth-view="login" data-i18n="social.logIn">Log In</button>
+                    <button class="auth-btn auth-btn-ghost-light" id="auth-browse-btn" data-i18n="social.browseFirst">Browse without an account</button>
                 </div>
             </div>
         </div>
-    </aside>
+
+        <!-- Log in -->
+        <div class="auth-view" id="auth-view-login" style="display:none;">
+            <div class="auth-header">
+                <button class="auth-back" data-auth-view="splash" aria-label="Back">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 data-i18n="social.logIn">Log In</h2>
+            </div>
+            <form class="auth-form" id="login-form" novalidate>
+                <div class="auth-field">
+                    <label for="login-email" data-i18n="social.email">Email</label>
+                    <input type="email" id="login-email" autocomplete="email" inputmode="email" required>
+                    <div class="auth-field-error" id="login-email-error"></div>
+                </div>
+                <div class="auth-field">
+                    <label for="login-password" data-i18n="social.password">Password</label>
+                    <div class="auth-password-wrap">
+                        <input type="password" id="login-password" autocomplete="current-password" required>
+                        <button type="button" class="auth-password-toggle" data-toggle-password="login-password" aria-label="Show password">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="auth-field-error" id="login-password-error"></div>
+                </div>
+                <div class="auth-form-error" id="login-form-error"></div>
+                <button type="submit" class="auth-btn auth-btn-primary" id="login-submit" data-i18n="social.logIn">Log In</button>
+                <button type="button" class="auth-link" data-auth-view="forgot" data-i18n="social.forgotPassword">Forgot your password?</button>
+                <p class="auth-switch">
+                    <span data-i18n="social.noAccount">No account yet?</span>
+                    <button type="button" class="auth-link-inline" data-auth-view="signup" data-i18n="social.createAccount">Create Account</button>
+                </p>
+            </form>
+        </div>
+
+        <!-- Sign up -->
+        <div class="auth-view" id="auth-view-signup" style="display:none;">
+            <div class="auth-header">
+                <button class="auth-back" data-auth-view="splash" aria-label="Back">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 data-i18n="social.createAccount">Create Account</h2>
+            </div>
+            <form class="auth-form" id="signup-form" novalidate>
+                <div class="auth-field-row">
+                    <div class="auth-field">
+                        <label for="signup-first-name" data-i18n="social.firstName">First name</label>
+                        <input type="text" id="signup-first-name" autocomplete="given-name" required>
+                        <!-- Each field owns its own error node; setFieldError()
+                             resolves it as `${fieldId}-error`. -->
+                        <div class="auth-field-error" id="signup-first-name-error"></div>
+                    </div>
+                    <div class="auth-field">
+                        <label for="signup-last-name" data-i18n="social.lastName">Last name</label>
+                        <input type="text" id="signup-last-name" autocomplete="family-name">
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="signup-email" data-i18n="social.email">Email</label>
+                    <input type="email" id="signup-email" autocomplete="email" inputmode="email" required>
+                    <div class="auth-field-error" id="signup-email-error"></div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="signup-phone" data-i18n="social.phoneOptional">Phone (optional)</label>
+                    <input type="tel" id="signup-phone" autocomplete="tel" inputmode="tel" placeholder="(310) 555-0101">
+                    <div class="auth-field-error" id="signup-phone-error"></div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="signup-password" data-i18n="social.password">Password</label>
+                    <div class="auth-password-wrap">
+                        <input type="password" id="signup-password" autocomplete="new-password" required>
+                        <button type="button" class="auth-password-toggle" data-toggle-password="signup-password" aria-label="Show password">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="auth-strength" id="signup-strength" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                    <div class="auth-field-hint" id="signup-password-hint" data-i18n="social.passwordHint">At least 8 characters, with upper and lower case and a number.</div>
+                    <div class="auth-field-error" id="signup-password-error"></div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="signup-confirm" data-i18n="social.confirmPassword">Confirm password</label>
+                    <input type="password" id="signup-confirm" autocomplete="new-password" required>
+                    <div class="auth-field-error" id="signup-confirm-error"></div>
+                </div>
+
+                <label class="auth-checkbox">
+                    <input type="checkbox" id="signup-terms">
+                    <span>
+                        <span data-i18n="social.acceptPrefix">I accept the</span>
+                        <a href="/terms.html" target="_blank" rel="noopener" data-i18n="social.termsLink">Terms &amp; Conditions</a>
+                        <span data-i18n="social.and">and</span>
+                        <a href="/privacy.html" target="_blank" rel="noopener" data-i18n="social.privacyLink">Privacy Policy</a>
+                    </span>
+                </label>
+                <div class="auth-field-error" id="signup-terms-error"></div>
+
+                <div class="auth-form-error" id="signup-form-error"></div>
+                <button type="submit" class="auth-btn auth-btn-primary" id="signup-submit" data-i18n="social.createAccount">Create Account</button>
+                <p class="auth-switch">
+                    <span data-i18n="social.haveAccount">Already have an account?</span>
+                    <button type="button" class="auth-link-inline" data-auth-view="login" data-i18n="social.logIn">Log In</button>
+                </p>
+            </form>
+        </div>
+
+        <!-- Forgot password -->
+        <div class="auth-view" id="auth-view-forgot" style="display:none;">
+            <div class="auth-header">
+                <button class="auth-back" data-auth-view="login" aria-label="Back">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 data-i18n="social.resetPassword">Reset Password</h2>
+            </div>
+            <form class="auth-form" id="forgot-form" novalidate>
+                <p class="auth-blurb" data-i18n="social.resetBlurb">Enter your email and we will send you a link to set a new password.</p>
+                <div class="auth-field">
+                    <label for="forgot-email" data-i18n="social.email">Email</label>
+                    <input type="email" id="forgot-email" autocomplete="email" inputmode="email" required>
+                    <div class="auth-field-error" id="forgot-email-error"></div>
+                </div>
+                <div class="auth-form-error" id="forgot-form-error"></div>
+                <div class="auth-form-success" id="forgot-form-success"></div>
+                <button type="submit" class="auth-btn auth-btn-primary" id="forgot-submit" data-i18n="social.sendResetLink">Send Reset Link</button>
+            </form>
+        </div>
+
+        <!-- Set a new password (arrives here from the emailed recovery link) -->
+        <div class="auth-view" id="auth-view-reset" style="display:none;">
+            <div class="auth-header">
+                <h2 data-i18n="social.newPassword">New Password</h2>
+            </div>
+            <form class="auth-form" id="reset-form" novalidate>
+                <div class="auth-field">
+                    <label for="reset-password" data-i18n="social.newPassword">New password</label>
+                    <div class="auth-password-wrap">
+                        <input type="password" id="reset-password" autocomplete="new-password" required>
+                        <button type="button" class="auth-password-toggle" data-toggle-password="reset-password" aria-label="Show password">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="auth-strength" id="reset-strength" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                    <div class="auth-field-error" id="reset-password-error"></div>
+                </div>
+                <div class="auth-field">
+                    <label for="reset-confirm" data-i18n="social.confirmPassword">Confirm password</label>
+                    <input type="password" id="reset-confirm" autocomplete="new-password" required>
+                    <div class="auth-field-error" id="reset-confirm-error"></div>
+                </div>
+                <div class="auth-form-error" id="reset-form-error"></div>
+                <button type="submit" class="auth-btn auth-btn-primary" id="reset-submit" data-i18n="social.updatePassword">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== Contact Us ===== -->
+    <div class="sheet-backdrop" id="contact-backdrop"></div>
+    <div class="app-sheet" id="contact-sheet" role="dialog" aria-modal="true" aria-label="Contact us">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.contactUs">Contact Us</h3>
+            <button class="app-sheet-close" id="contact-close" aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form class="auth-form" id="contact-form" novalidate>
+            <div class="auth-field">
+                <label for="contact-email" data-i18n="social.email">Your email</label>
+                <input type="email" id="contact-email" autocomplete="email" inputmode="email" required>
+                <div class="auth-field-error" id="contact-email-error"></div>
+            </div>
+            <div class="auth-field">
+                <label for="contact-message" data-i18n="social.message">Message</label>
+                <textarea id="contact-message" rows="5" maxlength="2000" required></textarea>
+                <div class="auth-field-error" id="contact-message-error"></div>
+            </div>
+            <div class="auth-form-error" id="contact-form-error"></div>
+            <div class="auth-form-success" id="contact-form-success"></div>
+            <button type="submit" class="auth-btn auth-btn-primary" id="contact-submit" data-i18n="social.sendMessage">Send Message</button>
+        </form>
+    </div>
+
+    <!-- ===== Confirm dialog (delete account) ===== -->
+    <div class="sheet-backdrop" id="confirm-backdrop"></div>
+    <div class="confirm-dialog" id="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+        <h3 id="confirm-title"></h3>
+        <p id="confirm-body"></p>
+        <div class="confirm-actions">
+            <button class="auth-btn auth-btn-ghost" id="confirm-cancel" data-i18n="social.cancel">Cancel</button>
+            <button class="auth-btn auth-btn-danger" id="confirm-accept"></button>
+        </div>
+    </div>
 
     <!-- ===== Bottom Navigation ===== -->
     <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
@@ -518,7 +657,12 @@
     <!-- ===== Scripts ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
-    <script src="social.js"></script>
+    <!-- i18n must load before social.js: this page is covered in data-i18n
+         attributes that were inert until now because it was never included. -->
+    <script src="/i18n/i18n.js?v=1"></script>
+    <script src="/js/venue-categories.js?v=1"></script>
+    <script src="/customer-app/social-auth.js?v=1"></script>
+    <script src="/customer-app/social.js?v=3"></script>
 
 </body>
 </html>

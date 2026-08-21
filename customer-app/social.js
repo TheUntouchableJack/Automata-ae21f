@@ -11,8 +11,11 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 // ===== State =====
 let currentApp = null;
+let appFeatures = {};   // customer_apps.features — App Builder toggles
+let appSettings = {};   // customer_apps.settings — video cap, default view, etc.
 let appSlug = null;
 let venues = [];
+let usingDemoVenues = false;  // true when DEMO_VENUES stand in for an empty DB
 let feedItems = [];
 let feedOffset = 0;
 let feedLoading = false;
@@ -32,6 +35,7 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let recordingTimerInterval = null;
 let recordingStartTime = 0;
+let recordedDurationSeconds = null;
 let venuePageVenueId = null;
 let venuePageFeed = [];
 let venuePageOffset = 0;
@@ -79,7 +83,7 @@ const DEMO_VENUES = [
         id: 'demo-2',
         name: 'Velvet Underground',
         handle: 'velvetdtla',
-        category: 'clubs',
+        category: 'club',
         latitude: 34.0407,
         longitude: -118.2468,
         city: 'Los Angeles',
@@ -108,7 +112,7 @@ const DEMO_VENUES = [
         id: 'demo-3',
         name: 'The Golden Bear',
         handle: 'goldenbear',
-        category: 'bars',
+        category: 'bar',
         latitude: 34.0259,
         longitude: -118.4961,
         city: 'Santa Monica',
@@ -137,7 +141,7 @@ const DEMO_VENUES = [
         id: 'demo-4',
         name: 'Nobu Malibu',
         handle: 'nobumalibu',
-        category: 'restaurants',
+        category: 'restaurant',
         latitude: 34.0381,
         longitude: -118.6923,
         city: 'Malibu',
@@ -169,7 +173,7 @@ const DEMO_VENUES = [
         id: 'demo-5',
         name: 'Dusk Lounge',
         handle: 'dusklounge',
-        category: 'lounges',
+        category: 'lounge',
         latitude: 34.0093,
         longitude: -118.4974,
         city: 'Santa Monica',
@@ -197,10 +201,28 @@ const DEMO_VENUES = [
 ];
 
 // ===== Initialization =====
+
+// The app is reachable two ways:
+//   /customer-app/social.html?slug=viibeview   — slug in the query string
+//   /a/viibeview/social                        — the pretty URL
+//
+// The pretty URL is a SERVER-SIDE rewrite (netlify.toml 200 rewrite in prod,
+// the customer-app-rewrite middleware in Vite). Both rewrite the request path
+// internally but leave the browser's address bar on /a/viibeview/social — so
+// window.location.search is empty and the ?slug the rewrite appended is
+// invisible to client JS. Reading only the query param meant every visit to
+// the pretty URL bailed out with "App not found".
+function resolveAppSlug() {
+    const fromQuery = new URLSearchParams(window.location.search).get('slug');
+    if (fromQuery) return fromQuery;
+
+    // /a/{slug}[/social|/app|/checkin]
+    const match = window.location.pathname.match(/^\/a\/([^/]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
 async function init() {
-    // Get slug from URL
-    const params = new URLSearchParams(window.location.search);
-    appSlug = params.get('slug');
+    appSlug = resolveAppSlug();
 
     if (!appSlug) {
         showEmptyState('App not found');
@@ -208,12 +230,16 @@ async function init() {
     }
 
     try {
-        // Load app data
+        // Load app data. is_published matters as much as is_active: the venues
+        // and venue_media RLS policies both require is_published = true, so an
+        // unpublished app used to load a full shell with zero venues and then
+        // silently fall back to the hardcoded demo data.
         const { data: app, error } = await supabaseClient
             .from('customer_apps')
             .select('*')
             .eq('slug', appSlug)
             .eq('is_active', true)
+            .eq('is_published', true)
             .maybeSingle();
 
         if (error || !app) {
@@ -222,8 +248,24 @@ async function init() {
         }
 
         currentApp = app;
+        appFeatures = app.features || {};
+        appSettings = app.settings || {};
         applyBranding(app);
+        applyFeatureFlags();
         document.title = `${app.name} - Social`;
+
+        SocialAuth.init({
+            supabaseClient,
+            appId: app.id,
+            appSlug,
+            supabaseUrl: SUPABASE_URL
+        });
+
+        // Pills must exist before anything reads or highlights them
+        renderCategoryPills();
+
+        setupAuthListeners();
+        await renderProfileIdentity();
 
         // Check if viewer is the business owner
         await checkOwnerAccess();
@@ -255,16 +297,516 @@ function applyBranding(app) {
     document.documentElement.style.setProperty('--app-primary', primary);
     document.documentElement.style.setProperty('--app-secondary', secondary);
 
-    // Header
+    // Match the browser/OS chrome to the tenant's brand. The static manifest
+    // can't do this per-tenant, but the meta tag can.
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.setAttribute('content', primary);
+
+    // Header — show the app's own name ("ViibeView"), not the generic app-type
+    // label. This was hardcoded to 'Social App', so no white-label app ever
+    // showed its own brand in its own header.
     const appName = document.getElementById('header-app-name');
     const appLogo = document.getElementById('header-logo-img');
     const logoFallback = document.getElementById('header-logo-fallback');
-    if (appName) appName.textContent = 'Social App';
+    if (appName) {
+        appName.textContent = app.name || 'Discover';
+        // Stop i18n from overwriting the brand name on the next pass
+        appName.removeAttribute('data-i18n');
+    }
+    if (logoFallback) logoFallback.textContent = (app.name || 'R').charAt(0).toUpperCase();
     if (appLogo && branding.logo_url) {
         appLogo.src = branding.logo_url;
         appLogo.style.display = 'block';
         if (logoFallback) logoFallback.style.display = 'none';
     }
+
+    // Auth splash carries the same identity as the header
+    const splashName = document.getElementById('auth-splash-name');
+    const splashLogo = document.getElementById('auth-splash-logo');
+    if (splashName) splashName.textContent = app.name || '';
+    if (splashLogo) {
+        if (branding.logo_url) {
+            splashLogo.innerHTML = `<img src="${escapeHtml(branding.logo_url)}" alt="">`;
+        } else {
+            splashLogo.textContent = (app.name || 'R').charAt(0).toUpperCase();
+        }
+    }
+
+    // Optional looping splash video from branding; the scrim keeps text legible
+    // whether or not one is configured.
+    const splashVideo = document.getElementById('auth-splash-video');
+    if (splashVideo) {
+        if (branding.splash_video_url) {
+            splashVideo.src = branding.splash_video_url;
+        } else {
+            splashVideo.style.display = 'none';
+        }
+    }
+}
+
+// ===== Feature Flags =====
+// customer_apps.features is written by the App Builder and the seed script but
+// was never read here, so every toggle in the builder was purely cosmetic.
+function applyFeatureFlags() {
+    const enabled = (key) => appFeatures[key] !== false; // default on
+
+    const toggles = [
+        ['map_enabled', '[data-tab="map"]'],
+        ['search_enabled', '[data-tab="search"]'],
+        ['feed_enabled', '[data-tab="feed"]']
+    ];
+
+    toggles.forEach(([key, selector]) => {
+        if (enabled(key)) return;
+        document.querySelectorAll(selector).forEach(el => { el.style.display = 'none'; });
+    });
+
+    if (!enabled('categories_enabled')) {
+        const pills = document.getElementById('category-pills');
+        if (pills) pills.style.display = 'none';
+    }
+}
+
+// Max recording length, in seconds. Read from the app row so the App Builder
+// value is authoritative; falls back to the SOW's 15s for ViibeView.
+function maxVideoDuration() {
+    const v = parseInt(appSettings.video_max_duration, 10);
+    return Number.isFinite(v) && v > 0 ? v : 15;
+}
+
+// ===== Session =====
+
+async function handleLogout() {
+    await SocialAuth.signOut();
+    window.location.reload();
+}
+
+// Swaps the Profile tab between its signed-out invitation and the real card.
+// Browsing is deliberately anonymous — an account is only needed to post,
+// follow, or keep a profile — so this is a prompt, never a wall.
+async function renderProfileIdentity() {
+    const signedOut = document.getElementById('profile-signed-out');
+    const signedIn = document.getElementById('profile-signed-in');
+    const nameEl = document.getElementById('profile-name');
+    const emailEl = document.getElementById('profile-email');
+
+    const session = await SocialAuth.getSession();
+
+    if (!session) {
+        if (signedOut) signedOut.style.display = '';
+        if (signedIn) signedIn.style.display = 'none';
+        return;
+    }
+
+    const member = await SocialAuth.loadMember();
+    const email = member?.email || session.user?.email || '';
+    const meta = session.user?.user_metadata || {};
+    const displayName =
+        member?.display_name ||
+        [member?.first_name, member?.last_name].filter(Boolean).join(' ') ||
+        [meta.first_name, meta.last_name].filter(Boolean).join(' ') ||
+        (email ? email.split('@')[0] : 'Member');
+
+    if (nameEl) nameEl.textContent = displayName;
+    if (emailEl) emailEl.textContent = email;
+    if (signedOut) signedOut.style.display = 'none';
+    if (signedIn) signedIn.style.display = '';
+}
+
+// ===== Auth Overlay =====
+
+function showAuth(view = 'splash') {
+    const overlay = document.getElementById('auth-overlay');
+    if (!overlay) return;
+    setAuthView(view);
+    overlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideAuth() {
+    const overlay = document.getElementById('auth-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('visible');
+    document.body.style.overflow = '';
+}
+
+function setAuthView(view) {
+    ['splash', 'login', 'signup', 'forgot', 'reset'].forEach(v => {
+        const el = document.getElementById(`auth-view-${v}`);
+        if (el) el.style.display = v === view ? '' : 'none';
+    });
+    clearAuthErrors();
+
+    // Autofocus the first real input, but not on the splash (no form there)
+    // and not on touch, where it yanks the keyboard open unprompted.
+    if (view !== 'splash' && !('ontouchstart' in window)) {
+        const first = document.querySelector(`#auth-view-${view} input`);
+        if (first) setTimeout(() => first.focus(), 50);
+    }
+}
+
+function clearAuthErrors() {
+    document.querySelectorAll('.auth-field-error, .auth-form-error, .auth-form-success')
+        .forEach(el => { el.textContent = ''; el.style.display = 'none'; });
+    document.querySelectorAll('.auth-field input.invalid')
+        .forEach(el => el.classList.remove('invalid'));
+}
+
+function setFieldError(fieldId, message) {
+    const el = document.getElementById(`${fieldId}-error`);
+    const input = document.getElementById(fieldId);
+    if (el) {
+        el.textContent = message || '';
+        el.style.display = message ? 'block' : 'none';
+    }
+    if (input) input.classList.toggle('invalid', !!message);
+    return !message;
+}
+
+function setFormMessage(formId, message, kind = 'error') {
+    const el = document.getElementById(`${formId}-${kind === 'error' ? 'error' : 'success'}`);
+    if (!el) return;
+    el.textContent = message || '';
+    el.style.display = message ? 'block' : 'none';
+}
+
+function setSubmitting(buttonId, busy, busyLabel) {
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+    if (busy) {
+        btn.dataset.label = btn.textContent;
+        btn.textContent = busyLabel || 'Please wait…';
+        btn.disabled = true;
+    } else {
+        if (btn.dataset.label) btn.textContent = btn.dataset.label;
+        btn.disabled = false;
+    }
+}
+
+function renderStrengthMeter(meterId, password) {
+    const meter = document.getElementById(meterId);
+    if (!meter) return;
+    const score = SocialAuth.passwordStrength(password);
+    [...meter.children].forEach((bar, i) => {
+        bar.className = i < score ? `filled s${score}` : '';
+    });
+}
+
+// Gate used by anything that needs an account (posting now; following and
+// profile editing from Phase 2). Returns true when the caller may proceed.
+async function requireAccount(reason) {
+    if (await SocialAuth.isSignedIn()) return true;
+    if (reason) showToast(reason);
+    showAuth('signup');
+    return false;
+}
+
+// ===== Auth Wiring =====
+
+function setupAuthListeners() {
+    // View switching — every element carrying data-auth-view
+    document.querySelectorAll('[data-auth-view]').forEach(el => {
+        el.addEventListener('click', () => setAuthView(el.dataset.authView));
+    });
+
+    // Show/hide password
+    document.querySelectorAll('[data-toggle-password]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.dataset.togglePassword);
+            if (!input) return;
+            const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+            btn.classList.toggle('active', !showing);
+        });
+    });
+
+    // Entry points from the Profile tab
+    document.getElementById('profile-signup-btn')?.addEventListener('click', () => showAuth('signup'));
+    document.getElementById('profile-login-btn')?.addEventListener('click', () => showAuth('login'));
+    document.getElementById('auth-browse-btn')?.addEventListener('click', hideAuth);
+
+    // Live formatting + strength feedback
+    const phoneInput = document.getElementById('signup-phone');
+    phoneInput?.addEventListener('input', () => {
+        phoneInput.value = SocialAuth.formatPhone(phoneInput.value);
+    });
+
+    const signupPassword = document.getElementById('signup-password');
+    signupPassword?.addEventListener('input', () => renderStrengthMeter('signup-strength', signupPassword.value));
+
+    const resetPassword = document.getElementById('reset-password');
+    resetPassword?.addEventListener('input', () => renderStrengthMeter('reset-strength', resetPassword.value));
+
+    // Validate email format on blur — SOW calls this out specifically
+    document.getElementById('signup-email')?.addEventListener('blur', (e) => {
+        setFieldError('signup-email', SocialAuth.validateEmail(e.target.value));
+    });
+
+    document.getElementById('login-form')?.addEventListener('submit', handleLoginSubmit);
+    document.getElementById('signup-form')?.addEventListener('submit', handleSignupSubmit);
+    document.getElementById('forgot-form')?.addEventListener('submit', handleForgotSubmit);
+    document.getElementById('reset-form')?.addEventListener('submit', handleResetSubmit);
+    document.getElementById('contact-form')?.addEventListener('submit', handleContactSubmit);
+
+    document.getElementById('change-password-btn')?.addEventListener('click', () => showAuth('reset'));
+    document.getElementById('delete-account-btn')?.addEventListener('click', confirmDeleteAccount);
+
+    ['contact-us-btn', 'contact-us-btn-out'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', openContactSheet);
+    });
+    document.getElementById('contact-close')?.addEventListener('click', closeContactSheet);
+    document.getElementById('contact-backdrop')?.addEventListener('click', closeContactSheet);
+
+    // Arriving from a password-recovery email
+    if (SocialAuth.isRecoveryRedirect()) {
+        showAuth('reset');
+    }
+}
+
+async function handleLoginSubmit(e) {
+    e.preventDefault();
+    clearAuthErrors();
+
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    setSubmitting('login-submit', true, 'Logging in…');
+    const result = await SocialAuth.signIn({ email, password });
+    setSubmitting('login-submit', false);
+
+    if (!result.ok) {
+        setFormMessage('login-form', result.error);
+        return;
+    }
+
+    hideAuth();
+    await onSignedIn();
+    showToast('Welcome back');
+}
+
+async function handleSignupSubmit(e) {
+    e.preventDefault();
+    clearAuthErrors();
+
+    const firstName = document.getElementById('signup-first-name').value;
+    const lastName = document.getElementById('signup-last-name').value;
+    const email = document.getElementById('signup-email').value;
+    const phone = document.getElementById('signup-phone').value;
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-confirm').value;
+    const acceptedTerms = document.getElementById('signup-terms').checked;
+
+    // Field-level errors first, so the user sees exactly which input to fix
+    // rather than one generic message at the bottom of the form.
+    let valid = true;
+    valid = setFieldError('signup-first-name', firstName.trim() ? null : 'Enter your first name') && valid;
+    valid = setFieldError('signup-email', SocialAuth.validateEmail(email)) && valid;
+    valid = setFieldError('signup-phone', SocialAuth.validatePhone(phone)) && valid;
+    valid = setFieldError('signup-password', SocialAuth.validatePassword(password)) && valid;
+    valid = setFieldError('signup-confirm', SocialAuth.validatePasswordMatch(password, confirmPassword)) && valid;
+    valid = setFieldError('signup-terms', acceptedTerms ? null : 'Accept the Terms & Conditions to continue') && valid;
+    if (!valid) return;
+
+    setSubmitting('signup-submit', true, 'Creating account…');
+    const result = await SocialAuth.signUp({
+        email, password, confirmPassword, firstName, lastName, phone, acceptedTerms
+    });
+    setSubmitting('signup-submit', false);
+
+    if (!result.ok) {
+        // Email-already-taken belongs on the email field, not in the footer
+        if (/already registered/i.test(result.error)) {
+            setFieldError('signup-email', result.error);
+        } else {
+            setFormMessage('signup-form', result.error);
+        }
+        return;
+    }
+
+    if (result.needsConfirmation) {
+        setAuthView('login');
+        setFormMessage('login-form', 'Check your email to confirm your account, then log in.', 'success');
+        return;
+    }
+
+    hideAuth();
+    await onSignedIn();
+    showToast('Account created');
+}
+
+async function handleForgotSubmit(e) {
+    e.preventDefault();
+    clearAuthErrors();
+
+    const email = document.getElementById('forgot-email').value;
+    if (!setFieldError('forgot-email', SocialAuth.validateEmail(email))) return;
+
+    setSubmitting('forgot-submit', true, 'Sending…');
+    const result = await SocialAuth.requestPasswordReset(email);
+    setSubmitting('forgot-submit', false);
+
+    if (!result.ok) {
+        setFormMessage('forgot-form', result.error);
+        return;
+    }
+
+    // Deliberately unconditional — confirming whether an address is registered
+    // would make this form an account-enumeration oracle.
+    setFormMessage('forgot-form', 'If that email has an account, a reset link is on its way.', 'success');
+}
+
+async function handleResetSubmit(e) {
+    e.preventDefault();
+    clearAuthErrors();
+
+    const password = document.getElementById('reset-password').value;
+    const confirmPassword = document.getElementById('reset-confirm').value;
+
+    let valid = true;
+    valid = setFieldError('reset-password', SocialAuth.validatePassword(password)) && valid;
+    valid = setFieldError('reset-confirm', SocialAuth.validatePasswordMatch(password, confirmPassword)) && valid;
+    if (!valid) return;
+
+    setSubmitting('reset-submit', true, 'Updating…');
+    const result = await SocialAuth.updatePassword({ password, confirmPassword });
+    setSubmitting('reset-submit', false);
+
+    if (!result.ok) {
+        setFormMessage('reset-form', result.error);
+        return;
+    }
+
+    // Clear the recovery fragment so a refresh doesn't reopen this view
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    hideAuth();
+    await onSignedIn();
+    showToast('Password updated');
+}
+
+// Runs after any successful sign-in / sign-up.
+async function onSignedIn() {
+    await SocialAuth.loadMember({ force: true });
+    await checkOwnerAccess();
+    await renderProfileIdentity();
+}
+
+// ===== Contact Us =====
+
+function openContactSheet() {
+    const sheet = document.getElementById('contact-sheet');
+    const backdrop = document.getElementById('contact-backdrop');
+    if (!sheet || !backdrop) return;
+
+    clearAuthErrors();
+    const emailInput = document.getElementById('contact-email');
+    const member = SocialAuth.getMember();
+    if (emailInput && member?.email) emailInput.value = member.email;
+
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeContactSheet() {
+    document.getElementById('contact-sheet')?.classList.remove('visible');
+    document.getElementById('contact-backdrop')?.classList.remove('visible');
+    document.body.style.overflow = '';
+}
+
+async function handleContactSubmit(e) {
+    e.preventDefault();
+    clearAuthErrors();
+
+    const email = document.getElementById('contact-email').value;
+    const message = document.getElementById('contact-message').value;
+
+    let valid = true;
+    valid = setFieldError('contact-email', SocialAuth.validateEmail(email)) && valid;
+    valid = setFieldError('contact-message', message.trim().length >= 10 ? null : 'Tell us a little more (at least 10 characters)') && valid;
+    if (!valid) return;
+
+    setSubmitting('contact-submit', true, 'Sending…');
+    try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/contact-inquiry`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+                type: 'support',   // one of contact-inquiry's known TYPE_SUBJECTS
+                name: [SocialAuth.getMember()?.first_name, SocialAuth.getMember()?.last_name]
+                    .filter(Boolean).join(' ') || 'App member',
+                email: email.trim(),
+                message: message.trim(),
+                source: `${currentApp?.slug || 'social'}-app`
+            })
+        });
+
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || 'Could not send your message');
+        }
+
+        document.getElementById('contact-form').reset();
+        setFormMessage('contact-form', 'Thanks — we will get back to you shortly.', 'success');
+        setTimeout(closeContactSheet, 2200);
+    } catch (err) {
+        setFormMessage('contact-form', err.message || 'Could not send your message. Try again.');
+    } finally {
+        setSubmitting('contact-submit', false);
+    }
+}
+
+// ===== Delete Account =====
+
+function confirmDeleteAccount() {
+    showConfirm({
+        title: 'Delete your account?',
+        body: 'This permanently removes your account and your posts. It cannot be undone.',
+        acceptLabel: 'Delete Account',
+        onAccept: async () => {
+            showToast('Deleting your account…');
+            const result = await SocialAuth.deleteAccount();
+            if (!result.ok) {
+                showToast(result.error);
+                return;
+            }
+            window.location.reload();
+        }
+    });
+}
+
+function showConfirm({ title, body, acceptLabel, onAccept }) {
+    const dialog = document.getElementById('confirm-dialog');
+    const backdrop = document.getElementById('confirm-backdrop');
+    if (!dialog || !backdrop) return;
+
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-body').textContent = body;
+
+    const accept = document.getElementById('confirm-accept');
+    const cancel = document.getElementById('confirm-cancel');
+    accept.textContent = acceptLabel;
+
+    const close = () => {
+        dialog.classList.remove('visible');
+        backdrop.classList.remove('visible');
+        document.body.style.overflow = '';
+        // Replacing the nodes drops every listener — no accumulation across opens
+        accept.replaceWith(accept.cloneNode(true));
+        cancel.replaceWith(cancel.cloneNode(true));
+    };
+
+    accept.addEventListener('click', async () => { close(); await onAccept(); });
+    cancel.addEventListener('click', close);
+    backdrop.addEventListener('click', close, { once: true });
+
+    dialog.classList.add('visible');
+    backdrop.classList.add('visible');
+    document.body.style.overflow = 'hidden';
 }
 
 // ===== Owner Access Check =====
@@ -330,9 +872,40 @@ async function loadVenues() {
 
     venues = data || [];
 
-    // Inject demo venues for preview if none loaded from DB
-    if (venues.length === 0) {
+    // Fall back to sample venues so the app is explorable before any real ones
+    // exist — but SAY SO. Silently swapping in fake data is what hid both the
+    // broken category filter and the fact that this app has no venues at all:
+    // everything looked populated and working.
+    usingDemoVenues = venues.length === 0;
+    if (usingDemoVenues) {
         venues = DEMO_VENUES;
+        showSampleDataNotice();
+    }
+}
+
+// Shown only while DEMO_VENUES are standing in for real data.
+function showSampleDataNotice() {
+    if (document.getElementById('sample-data-notice')) return;
+
+    // This notice takes precedence — drop the location banner if it beat us here
+    // (geolocation resolves independently of the venue fetch, so either can win).
+    document.getElementById('location-banner')?.remove();
+
+    const notice = document.createElement('div');
+    notice.id = 'sample-data-notice';
+    notice.className = 'sample-data-notice';
+    notice.innerHTML = `
+        <span>Showing sample venues — none have been added yet</span>
+        <button class="sample-data-notice-close" type="button" aria-label="Dismiss">&times;</button>
+    `;
+    notice.querySelector('.sample-data-notice-close')
+        .addEventListener('click', () => notice.remove());
+
+    const pills = document.getElementById('category-pills');
+    if (pills && pills.parentNode) {
+        pills.parentNode.insertBefore(notice, pills.nextSibling);
+    } else {
+        document.body.appendChild(notice);
     }
 }
 
@@ -342,7 +915,11 @@ function getVenueById(id) {
 
 // ===== Feed =====
 async function loadFeed(append = false) {
-    if (feedLoading || (!append && !feedHasMore)) return;
+    if (feedLoading) return;
+    // feedHasMore only gates pagination. It used to gate fresh loads too, so
+    // once a feed ran out (or came back empty on first load) every subsequent
+    // category change was silently dropped — the filter looked dead.
+    if (append && !feedHasMore) return;
     feedLoading = true;
 
     if (!append) {
@@ -400,15 +977,25 @@ function renderFeed() {
         const locationText = locationParts.join(', ');
         const isVideo = item.media_type === 'video';
 
+        // Identity comes from the venue the Viibe was posted at. get_venue_feed
+        // already returns venue_handle and venue_profile_image_url; every card
+        // used to render a hardcoded "@Admin" and ignore both.
+        const handle = item.venue_handle
+            ? `@${item.venue_handle}`
+            : (item.venue_name || '');
+        const avatarLetter = (item.venue_name || '?').charAt(0).toUpperCase();
+
         return `
             <div class="feed-card" data-media-id="${item.id}" data-venue-id="${item.venue_id}">
                 <div class="feed-card-header">
                     <div class="feed-venue-info" onclick="openVenuePage('${item.venue_id}')">
                         <div class="venue-avatar">
-                            <div class="venue-avatar-placeholder">A</div>
+                            ${item.venue_profile_image_url
+                                ? `<img src="${escapeHtml(item.venue_profile_image_url)}" alt="">`
+                                : `<div class="venue-avatar-placeholder">${escapeHtml(avatarLetter)}</div>`}
                         </div>
                         <div class="venue-meta">
-                            <div class="venue-handle">@Admin</div>
+                            <div class="venue-handle">${escapeHtml(handle)}</div>
                             <div class="venue-location">${escapeHtml(locationText)}</div>
                         </div>
                     </div>
@@ -493,9 +1080,15 @@ function renderMapPins() {
             iconAnchor: [7, 7]
         });
 
+        // Tapping a pin opens that venue's page (SOW: "tap a venue pin to open
+        // its detail page"). It also records the selection first, so closing
+        // the page returns you to the map with this venue still highlighted.
         const marker = L.marker([venue.latitude, venue.longitude], { icon })
             .addTo(map)
-            .on('click', () => selectVenueOnMap(venue));
+            .on('click', () => {
+                selectVenueOnMap(venue);
+                openVenuePage(venue.id);
+            });
 
         markers.push(marker);
     });
@@ -579,23 +1172,105 @@ function centerOnMe() {
     map.setView([userLocation.lat, userLocation.lng], 14, { animate: true });
 }
 
-// ===== Search =====
-function handleSearch(query) {
-    const resultsContainer = document.getElementById('search-results');
-    if (!resultsContainer) return;
+// ===== Recent Searches =====
+// The markup and CSS for this shipped, but nothing ever wrote to it, so an
+// empty "Recent Searches" heading rendered permanently under the search box.
+const RECENT_SEARCHES_KEY = 'viibe_recent_searches';
+const RECENT_SEARCHES_MAX = 5;
 
-    if (!query || query.length < 2) {
-        resultsContainer.innerHTML = '';
+function getRecentSearches() {
+    try {
+        const raw = localStorage.getItem(`${RECENT_SEARCHES_KEY}_${appSlug}`);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function recordRecentSearch(venue) {
+    if (!venue) return;
+    try {
+        const entry = { id: venue.id, name: venue.name, category: venue.category || '' };
+        const existing = getRecentSearches().filter(v => v.id !== venue.id);
+        const next = [entry, ...existing].slice(0, RECENT_SEARCHES_MAX);
+        localStorage.setItem(`${RECENT_SEARCHES_KEY}_${appSlug}`, JSON.stringify(next));
+        renderRecentSearches();
+    } catch {
+        // localStorage unavailable (private mode) — recents are non-essential
+    }
+}
+
+function clearRecentSearches() {
+    try {
+        localStorage.removeItem(`${RECENT_SEARCHES_KEY}_${appSlug}`);
+    } catch { /* no-op */ }
+    renderRecentSearches();
+}
+
+function renderRecentSearches() {
+    const wrap = document.getElementById('recent-searches');
+    const list = document.getElementById('recent-searches-list');
+    if (!wrap || !list) return;
+
+    const recents = getRecentSearches();
+    if (recents.length === 0) {
+        wrap.style.display = 'none';
+        list.innerHTML = '';
         return;
     }
 
+    wrap.style.display = '';
+    list.innerHTML = recents.map(v => `
+        <button class="recent-search-item" type="button" onclick="goToVenueOnMap('${v.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span class="recent-search-name">${escapeHtml(v.name)}</span>
+            ${v.category ? `<span class="recent-search-category">${escapeHtml(categoryLabel(v.category))}</span>` : ''}
+        </button>
+    `).join('');
+}
+
+// ===== Search =====
+
+// Shared by the Search tab and the map's floating search. Matches the display
+// label as well as the raw slug, so typing "Bars" still finds a venue whose
+// category column reads "bar".
+function matchesQuery(v, q) {
+    if (!v || !q) return false;
+    const haystack = [
+        v.name,
+        v.handle,
+        v.category,
+        categoryLabel(v.category),
+        v.city
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(q);
+}
+
+function handleSearch(query) {
+    const resultsContainer = document.getElementById('search-results');
+    const emptyHint = document.getElementById('search-empty');
+    const recentsWrap = document.getElementById('recent-searches');
+    if (!resultsContainer) return;
+
+    // Below the 2-character threshold there are no results, so show the
+    // starting state again: the hint plus any recent searches.
+    if (!query || query.length < 2) {
+        resultsContainer.innerHTML = '';
+        if (emptyHint) emptyHint.style.display = '';
+        renderRecentSearches();
+        return;
+    }
+
+    // Searching — the "Search for venues nearby" hint and the recents list are
+    // both noise now. The hint used to stay visible underneath the results.
+    if (emptyHint) emptyHint.style.display = 'none';
+    if (recentsWrap) recentsWrap.style.display = 'none';
+
     const q = query.toLowerCase();
-    const results = venues.filter(v =>
-        v.name.toLowerCase().includes(q) ||
-        (v.handle && v.handle.toLowerCase().includes(q)) ||
-        (v.category && v.category.toLowerCase().includes(q)) ||
-        (v.city && v.city.toLowerCase().includes(q))
-    );
+    const results = venues.filter(v => matchesQuery(v, q));
 
     if (results.length === 0) {
         resultsContainer.innerHTML = '<div class="search-empty">No venues found</div>';
@@ -616,7 +1291,7 @@ function handleSearch(query) {
                 <div class="search-result-info">
                     <div class="search-result-name">${escapeHtml(venue.name)}</div>
                     <div class="search-result-meta">
-                        <span class="search-result-category">${escapeHtml(venue.category || '')}</span>
+                        <span class="search-result-category">${escapeHtml(categoryLabel(venue.category))}</span>
                         ${distanceText ? `<span class="search-result-distance">${distanceText}</span>` : ''}
                     </div>
                 </div>
@@ -625,157 +1300,22 @@ function handleSearch(query) {
     }).join('');
 }
 
+// Selecting a search result takes you to the venue's page. It used to only
+// recentre the map and stop there, which is the broken navigation path the SOW
+// calls out ("Map Search: Navigate to Venue Page from Results").
 function goToVenueOnMap(venueId) {
     const venue = getVenueById(venueId);
     if (!venue) return;
 
+    recordRecentSearch(venue);
     switchTab('map');
     setTimeout(() => {
         if (map && venue.latitude && venue.longitude) {
             map.setView([venue.latitude, venue.longitude], 15, { animate: true });
             selectVenueOnMap(venue);
         }
+        openVenuePage(venueId);
     }, 300);
-}
-
-// ===== Venue Detail Sheet =====
-async function openVenueSheet(venueId) {
-    const sheet = document.getElementById('venue-sheet');
-    const backdrop = document.getElementById('venue-sheet-backdrop');
-    if (!sheet || !backdrop) return;
-
-    // Load full venue detail
-    const { data, error } = await supabaseClient.rpc('get_venue_detail', { p_venue_id: venueId });
-    if (error || !data || (Array.isArray(data) && data.length === 0)) {
-        console.error('Failed to load venue detail:', error);
-        return;
-    }
-
-    const venue = Array.isArray(data) ? data[0] : data;
-
-    // Load venue media
-    const { data: media, error: mediaError } = await supabaseClient
-        .from('venue_media')
-        .select('id, url, thumbnail_url, media_type, caption')
-        .eq('venue_id', venueId)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(12);
-
-    if (mediaError) console.warn('Failed to load venue media:', mediaError);
-    const safeMedia = media || [];
-
-    const sheetContent = document.getElementById('venue-sheet-content');
-    if (!sheetContent) return;
-
-    const distance = userLocation && venue.latitude ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude) : null;
-    const mapsUrl = venue.address_line1 ? `https://maps.google.com/?q=${encodeURIComponent([venue.address_line1, venue.city, venue.state].filter(Boolean).join(', '))}` : null;
-
-    sheetContent.innerHTML = `
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-            <div class="sheet-venue-identity">
-                <div class="sheet-venue-avatar">
-                    ${venue.profile_image_url ? `<img src="${venue.profile_image_url}" alt="">` : `<div class="sheet-avatar-placeholder">${(venue.name || '?')[0]}</div>`}
-                </div>
-                <div>
-                    <h2 class="sheet-venue-name">${escapeHtml(venue.name)}</h2>
-                    ${venue.handle ? `<div class="sheet-venue-handle">@${escapeHtml(venue.handle)}</div>` : ''}
-                </div>
-            </div>
-            <button class="sheet-close-btn" onclick="closeVenueSheet()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        <div class="sheet-rating">
-            ${renderStars(venue.average_rating || 0)}
-            <span class="sheet-rating-text">${venue.average_rating || 0}</span>
-            ${venue.review_count ? `<span class="sheet-review-count">${venue.review_count} reviews</span>` : ''}
-            ${distance !== null ? `<span class="sheet-distance">&middot; ${distance.toFixed(1)} mi away</span>` : ''}
-        </div>
-
-        ${venue.cover_image_url ? `<img class="sheet-cover" src="${venue.cover_image_url}" alt="">` : ''}
-
-        ${venue.description ? `<p class="sheet-description">${escapeHtml(venue.description)}</p>` : ''}
-
-        <div class="sheet-details">
-            ${venue.address_line1 ? `
-                <div class="sheet-detail-row">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    <div>
-                        <div>${escapeHtml(venue.address_line1)}</div>
-                        <div class="sheet-detail-sub">${escapeHtml([venue.city, venue.state, venue.postal_code].filter(Boolean).join(', '))}</div>
-                    </div>
-                    ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="sheet-directions-btn">Directions</a>` : ''}
-                </div>
-            ` : ''}
-            ${venue.phone ? `
-                <a href="tel:${venue.phone}" class="sheet-detail-row">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    <span>${escapeHtml(venue.phone)}</span>
-                </a>
-            ` : ''}
-            ${venue.website ? `
-                <a href="${venue.website}" target="_blank" class="sheet-detail-row">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                    <span>${escapeHtml(venue.website)}</span>
-                </a>
-            ` : ''}
-            ${venue.instagram_handle ? `
-                <a href="https://instagram.com/${venue.instagram_handle}" target="_blank" class="sheet-detail-row">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>
-                    <span>@${escapeHtml(venue.instagram_handle)}</span>
-                </a>
-            ` : ''}
-        </div>
-
-        ${venue.tags && venue.tags.length > 0 ? `
-            <div class="sheet-tags">
-                ${venue.tags.map(t => `<span class="sheet-tag">${escapeHtml(t)}</span>`).join('')}
-            </div>
-        ` : ''}
-
-        ${safeMedia.length > 0 ? `
-            <div class="sheet-media-section">
-                <h3 class="sheet-section-title">Media</h3>
-                <div class="sheet-media-grid">
-                    ${safeMedia.map(m => `
-                        <div class="sheet-media-item" onclick="playMediaFromSheet('${m.url}', '${m.media_type}')">
-                            <img src="${m.thumbnail_url || m.url}" alt="${escapeHtml(m.caption || '')}">
-                            ${m.media_type === 'video' ? '<div class="sheet-media-play"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>' : ''}
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        ` : ''}
-    `;
-
-    sheet.classList.add('visible');
-    backdrop.classList.add('visible');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeVenueSheet() {
-    const sheet = document.getElementById('venue-sheet');
-    const backdrop = document.getElementById('venue-sheet-backdrop');
-    if (sheet) sheet.classList.remove('visible');
-    if (backdrop) backdrop.classList.remove('visible');
-    document.body.style.overflow = '';
-}
-
-function playMediaFromSheet(url, type) {
-    if (type === 'video') {
-        const overlay = document.createElement('div');
-        overlay.className = 'video-fullscreen-overlay';
-        overlay.innerHTML = `
-            <video src="${url}" autoplay playsinline controls></video>
-            <button class="video-fullscreen-close" onclick="this.parentElement.remove()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2"/></svg>
-            </button>
-        `;
-        document.body.appendChild(overlay);
-    }
 }
 
 // ===== Venue Location Page =====
@@ -790,9 +1330,6 @@ async function openVenuePage(venueId) {
     venuePageOffset = 0;
     venuePageHasMore = true;
     venuePageLoading = false;
-
-    // Close venue sheet if open
-    closeVenueSheet();
 
     // Show page immediately (content loads inside)
     page.classList.add('visible');
@@ -1132,6 +1669,11 @@ function closeVenuePage() {
 }
 
 // ===== Tab Navigation =====
+// Tabs the category filter actually applies to. Search has its own query and
+// Profile has no venue list, so showing the pills there was dead chrome that
+// implied a filter which did nothing.
+const CATEGORY_TABS = ['feed', 'map'];
+
 function switchTab(tabId) {
     activeTab = tabId;
 
@@ -1139,6 +1681,12 @@ function switchTab(tabId) {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.toggle('active', item.dataset.tab === tabId);
     });
+
+    // Show the pills only where they mean something
+    const pills = document.getElementById('category-pills');
+    if (pills && appFeatures.categories_enabled !== false) {
+        pills.style.display = CATEGORY_TABS.includes(tabId) ? '' : 'none';
+    }
 
     // Update views
     document.querySelectorAll('.tab-view').forEach(view => {
@@ -1155,13 +1703,53 @@ function switchTab(tabId) {
 }
 
 // ===== Category Filter =====
-function setCategory(category) {
-    activeCategory = category || null;
 
-    // Update pill active state
+// Pills are rendered from the shared VENUE_CATEGORIES list rather than hardcoded
+// in the HTML, so their slugs cannot drift from venues.category.
+function renderCategoryPills() {
+    const container = document.getElementById('category-pills');
+    if (!container) return;
+
+    const cats = window.VENUE_CATEGORIES || [];
+    container.innerHTML = `
+        <button class="pill active" data-category="${window.ALL_CATEGORY || 'all'}" role="tab" aria-selected="true" data-i18n="social.catAll">All</button>
+        ${cats.map(c => `
+            <button class="pill" data-category="${c.slug}" role="tab" aria-selected="false" data-i18n="${c.labelKey}">${escapeHtml(c.label)}</button>
+        `).join('')}
+    `;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+
+    pinCategoryPills();
+}
+
+// The pills stick beneath the header, whose height varies with the safe-area
+// inset, so the offset has to be measured rather than hardcoded.
+function pinCategoryPills() {
+    const header = document.querySelector('.social-header');
+    const pills = document.getElementById('category-pills');
+    if (!header || !pills) return;
+    pills.style.top = `${header.offsetHeight}px`;
+}
+
+function setCategory(category) {
+    // 'all' means "no filter" and must reach the RPC as NULL — passing the
+    // literal string made get_venue_feed filter WHERE category = 'all',
+    // which returned nothing and emptied both the feed and the map.
+    activeCategory = window.normalizeCategory
+        ? window.normalizeCategory(category)
+        : (category && category !== 'all' ? category : null);
+
+    // Update pill active state (aria-selected too — it used to never update)
     document.querySelectorAll('.pill').forEach(pill => {
-        const pillCat = pill.dataset.category || null;
-        pill.classList.toggle('active', pillCat === activeCategory);
+        const pillCat = window.normalizeCategory
+            ? window.normalizeCategory(pill.dataset.category)
+            : (pill.dataset.category || null);
+        const isActive = pillCat === activeCategory;
+        pill.classList.toggle('active', isActive);
+        pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
 
     // Reload feed with new category
@@ -1222,20 +1810,23 @@ function setupVideoObserver() {
 }
 
 // ===== Infinite Scroll =====
+// Observes the #load-more-trigger sentinel that already sat at the bottom of the
+// feed unused. Replaces a window scroll listener doing scrollHeight arithmetic —
+// the observer fires only when the sentinel is actually near the viewport, so it
+// costs nothing while the user is on the Map or Search tabs.
 function setupInfiniteScroll() {
-    const feedView = document.getElementById('tab-feed');
-    if (!feedView) return;
+    const trigger = document.getElementById('load-more-trigger');
+    if (!trigger) return;
 
-    window.addEventListener('scroll', () => {
-        if (activeTab !== 'feed' || feedLoading || !feedHasMore) return;
-
-        const scrollBottom = window.innerHeight + window.scrollY;
-        const docHeight = document.documentElement.scrollHeight;
-
-        if (docHeight - scrollBottom < 400) {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            if (activeTab !== 'feed' || feedLoading || !feedHasMore) return;
             loadFeed(true);
-        }
-    });
+        });
+    }, { rootMargin: '400px' });
+
+    observer.observe(trigger);
 }
 
 // ===== Event Listeners =====
@@ -1249,12 +1840,15 @@ function setupEventListeners() {
         });
     });
 
-    // Category pills
-    document.querySelectorAll('.pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-            setCategory(pill.dataset.category || null);
+    // Category pills — delegated, because the pills are rendered dynamically
+    // from VENUE_CATEGORIES and so don't exist when this runs.
+    const pillsContainer = document.getElementById('category-pills');
+    if (pillsContainer) {
+        pillsContainer.addEventListener('click', (e) => {
+            const pill = e.target.closest('.pill');
+            if (pill) setCategory(pill.dataset.category);
         });
-    });
+    }
 
     // Search input
     const searchInput = document.getElementById('search-input');
@@ -1265,25 +1859,44 @@ function setupEventListeners() {
         });
     }
 
-    // Map search input
+    // Map search input + its clear button (the button shipped with no handler
+    // and was permanently display:none, so it could never be used)
     const mapSearchInput = document.getElementById('map-search-input');
+    const mapSearchClear = document.getElementById('map-search-clear');
     if (mapSearchInput) {
         mapSearchInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            if (mapSearchClear) mapSearchClear.style.display = value ? '' : 'none';
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => handleMapSearch(e.target.value.trim()), 300);
+            searchTimeout = setTimeout(() => handleMapSearch(value), 300);
         });
+    }
+    if (mapSearchClear) {
+        mapSearchClear.addEventListener('click', () => {
+            if (mapSearchInput) mapSearchInput.value = '';
+            mapSearchClear.style.display = 'none';
+            const dropdown = document.getElementById('map-search-results');
+            if (dropdown) dropdown.classList.remove('visible');
+            if (mapSearchInput) mapSearchInput.focus();
+        });
+    }
+
+    // Recent searches: clear all
+    const recentsClear = document.getElementById('recent-searches-clear');
+    if (recentsClear) {
+        recentsClear.addEventListener('click', clearRecentSearches);
+    }
+
+    // Log out — the button existed but was bound to nothing at all
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
     }
 
     // Center on me button
     const centerBtn = document.getElementById('center-on-me-btn');
     if (centerBtn) {
         centerBtn.addEventListener('click', centerOnMe);
-    }
-
-    // Venue sheet backdrop close
-    const backdrop = document.getElementById('venue-sheet-backdrop');
-    if (backdrop) {
-        backdrop.addEventListener('click', closeVenueSheet);
     }
 
     // Venue page back + backdrop
@@ -1358,6 +1971,10 @@ function setupEventListeners() {
 
     // Infinite scroll
     setupInfiniteScroll();
+
+    // Re-measure the sticky offset when the header can change height
+    window.addEventListener('resize', pinCategoryPills);
+    window.addEventListener('orientationchange', pinCategoryPills);
 }
 
 function handleMapSearch(query) {
@@ -1370,11 +1987,7 @@ function handleMapSearch(query) {
     }
 
     const q = query.toLowerCase();
-    const results = venues.filter(v =>
-        v.name.toLowerCase().includes(q) ||
-        (v.handle && v.handle.toLowerCase().includes(q)) ||
-        (v.category && v.category.toLowerCase().includes(q))
-    ).slice(0, 5);
+    const results = venues.filter(v => matchesQuery(v, q)).slice(0, 5);
 
     if (results.length === 0) {
         dropdown.innerHTML = '<div class="map-search-empty">No venues found</div>';
@@ -1385,7 +1998,7 @@ function handleMapSearch(query) {
     dropdown.innerHTML = results.map(v => `
         <div class="map-search-result" onclick="goToVenueOnMap('${v.id}'); document.getElementById('map-search-results').classList.remove('visible');">
             <span class="map-search-name">${escapeHtml(v.name)}</span>
-            <span class="map-search-category">${escapeHtml(v.category || '')}</span>
+            <span class="map-search-category">${escapeHtml(categoryLabel(v.category))}</span>
         </div>
     `).join('');
 
@@ -1469,7 +2082,9 @@ async function getOrCreateDefaultVenue() {
             slug: 'general-' + Date.now().toString(36),
             organization_id: ownerOrgId,
             app_id: currentApp.id,
-            category: 'general',
+            // Must be a real slug from VENUE_CATEGORIES, otherwise this venue's
+            // posts only ever surface under "All" and vanish behind every pill.
+            category: 'nightlife',
             is_active: true,
             media_count: 0
         })
@@ -1483,8 +2098,17 @@ async function getOrCreateDefaultVenue() {
     return data;
 }
 
-function openCreatePost() {
-    if (!isOwner) return;
+async function openCreatePost() {
+    // Signed-out visitors get the signup prompt rather than a silent no-op.
+    // Hiding the button is presentation, not authorization — this function is
+    // also reachable directly, and it becomes the member path in Phase 3.
+    if (!(await requireAccount('Create an account to post a Viibe'))) return;
+
+    // Posting is still owner-only until Phase 3 opens UGC to members.
+    if (!isOwner) {
+        showToast('Posting opens to members soon');
+        return;
+    }
 
     const modal = document.getElementById('create-post-modal');
     const backdrop = document.getElementById('create-post-backdrop');
@@ -1493,6 +2117,7 @@ function openCreatePost() {
     // Reset state
     selectedPostFile = null;
     recordedChunks = [];
+    recordedDurationSeconds = null;
     const caption = document.getElementById('post-caption');
     if (caption) caption.value = '';
     const countEl = document.getElementById('caption-count');
@@ -1531,6 +2156,7 @@ function closeCreatePost() {
     document.body.style.overflow = '';
     selectedPostFile = null;
     recordedChunks = [];
+    recordedDurationSeconds = null;
     stopCamera();
 }
 
@@ -1594,6 +2220,7 @@ function startRecording() {
     if (!cameraStream) return;
 
     recordedChunks = [];
+    recordedDurationSeconds = null;
 
     // Pick supported mimeType
     const mimeType = MediaRecorder.isTypeSupported('video/mp4')
@@ -1608,10 +2235,20 @@ function startRecording() {
         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
     };
 
+    const maxSeconds = maxVideoDuration();
+
     mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: mimeType });
         const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
         selectedPostFile = new File([blob], `recording-${Date.now()}.${ext}`, { type: mimeType });
+
+        // Capture the real elapsed length so venue_media.duration_seconds is
+        // populated — the feed renders a duration badge from it, and it was
+        // never being set.
+        recordedDurationSeconds = Math.min(
+            Math.max(1, Math.round((Date.now() - recordingStartTime) / 1000)),
+            maxSeconds
+        );
 
         // Show preview
         showRecordingPreview(blob);
@@ -1627,13 +2264,20 @@ function startRecording() {
     const timer = document.getElementById('recording-timer');
     if (timer) timer.classList.add('active');
 
-    // Start timer
+    // Count DOWN from the cap rather than up — the limit is the point, and the
+    // user needs to see it coming.
     recordingTimerInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-        const mins = Math.floor(elapsed / 60);
-        const secs = elapsed % 60;
-        if (timer) timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-    }, 500);
+        const elapsed = (Date.now() - recordingStartTime) / 1000;
+        const remaining = Math.max(0, Math.ceil(maxSeconds - elapsed));
+        if (timer) timer.textContent = `0:${remaining.toString().padStart(2, '0')}`;
+
+        // Hard stop at the cap. settings.video_max_duration was seeded at 15s
+        // for ViibeView but nothing enforced it, so recordings ran unbounded.
+        if (elapsed >= maxSeconds) {
+            stopRecording();
+            showToast(`Clips are capped at ${maxSeconds} seconds`);
+        }
+    }, 200);
 }
 
 function stopRecording() {
@@ -1675,6 +2319,7 @@ function showRecordingPreview(blob) {
 function retakeRecording() {
     selectedPostFile = null;
     recordedChunks = [];
+    recordedDurationSeconds = null;
 
     const preview = document.getElementById('upload-preview');
     if (preview) { preview.innerHTML = ''; preview.style.display = 'none'; }
@@ -1743,16 +2388,16 @@ async function submitPost() {
                 media_type: 'video',
                 caption: caption,
                 status: 'approved',
-                storage_path: path
+                storage_path: path,
+                duration_seconds: recordedDurationSeconds,
+                file_size_bytes: selectedPostFile.size
             });
 
         if (insertError) throw insertError;
 
-        // Increment media count on venue
-        await supabaseClient
-            .from('venues')
-            .update({ media_count: (venue.media_count || 0) + 1 })
-            .eq('id', venueId);
+        // venues.media_count is maintained by the trg_venue_media_count trigger
+        // (migration 20260821000001). The client used to do a read-modify-write
+        // here, which lost an increment on concurrent uploads.
 
         if (progressFill) progressFill.style.width = '100%';
         if (progressText) progressText.textContent = 'Posted!';
@@ -1776,13 +2421,33 @@ async function submitPost() {
 }
 
 // ===== Location Banner =====
+// Inserted into normal flow directly beneath the category pills. It used to be
+// position:fixed at top:56px, which laid it straight over the pills and
+// swallowed their clicks — so denying location (a very common choice) silently
+// disabled category filtering entirely.
 function showLocationBanner() {
     if (document.getElementById('location-banner')) return;
+    // At most one notice bar at a time — stacking them pushes the feed and map
+    // down the screen. The sample-data notice outranks this one, and distances
+    // are meaningless against sample venues anyway.
+    if (document.getElementById('sample-data-notice')) return;
+
     const banner = document.createElement('div');
     banner.id = 'location-banner';
-    banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:100;background:#fef3c7;color:#92400e;padding:8px 40px 8px 16px;font-size:12px;text-align:center;';
-    banner.innerHTML = 'Enable location access for distance info <button onclick="this.parentElement.remove()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#92400e;font-size:18px;cursor:pointer;line-height:1;">&times;</button>';
-    document.body.appendChild(banner);
+    banner.className = 'location-banner';
+    banner.innerHTML = `
+        <span>Enable location access for distance info</span>
+        <button class="location-banner-close" type="button" aria-label="Dismiss">&times;</button>
+    `;
+    banner.querySelector('.location-banner-close')
+        .addEventListener('click', () => banner.remove());
+
+    const pills = document.getElementById('category-pills');
+    if (pills && pills.parentNode) {
+        pills.parentNode.insertBefore(banner, pills.nextSibling);
+    } else {
+        document.body.appendChild(banner);
+    }
 }
 
 // ===== Toast Notifications =====
@@ -1802,5 +2467,19 @@ function showToast(message) {
     }, 3000);
 }
 
+// ===== Service Worker =====
+// sw.js already precaches social.html/.css/.js, but this page never registered
+// it — so offline support and push were dead weight for the whole app type.
+function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+
+    navigator.serviceWorker.register('/customer-app/sw.js', { scope: '/customer-app/' })
+        .catch(err => console.warn('Service worker registration failed:', err));
+}
+
 // ===== Start =====
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    registerServiceWorker();
+});
