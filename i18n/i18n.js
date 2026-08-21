@@ -22,13 +22,18 @@ const I18n = (function() {
     let fallbackTranslations = {};
     let isInitialized = false;
 
-    // Get the base path for translation files
+    // Get the base path for translation files.
+    //
+    // Absolute, not relative. This used to guess depth from a hardcoded list of
+    // path prefixes, which silently 404'd anywhere that list didn't cover:
+    // /customer-app/* fetched /customer-app/i18n/en.json, and the social app at
+    // /a/{slug}/social fetched /a/{slug}/i18n/en.json. Netlify publishes the
+    // repo root (netlify.toml `publish = "."`) and Vite serves from the repo
+    // root too, so /i18n/ resolves correctly at every depth in both dev and
+    // prod — including the rewritten /a/{slug} routes, which have no real
+    // directory on disk to be relative to.
     function getBasePath() {
-        const path = window.location.pathname;
-        if (path.includes('/app/') || path.includes('/blog/') || path.includes('/automations/')) {
-            return '../i18n/';
-        }
-        return './i18n/';
+        return '/i18n/';
     }
 
     // Detect browser language
