@@ -1108,7 +1108,7 @@
                                 <line x1="2" y1="12" x2="22" y2="12"/>
                                 <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
                             </svg>
-                            Geocode Address
+                            Find Coordinates
                         </button>
                     </div>
 
@@ -1196,6 +1196,22 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeVenueModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary" id="save-venue-btn" form="venue-form">Add Venue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Missing Coordinates Choice Modal (non-dismissable) -->
+    <div class="modal-overlay" id="coords-required-modal">
+        <div class="modal" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3>No coordinates found</h3>
+            </div>
+            <div class="modal-body">
+                <p>This venue won't appear on the map or in search without coordinates. Save it as inactive for now, or go back and add coordinates.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="resolveCoordsChoice('inactive')">Save as Inactive</button>
+                <button type="button" class="btn btn-primary" onclick="resolveCoordsChoice('edit')">Add Coordinates</button>
             </div>
         </div>
     </div>
@@ -1460,12 +1476,7 @@
 
         // Get app_id from URL
         const params = new URLSearchParams(window.location.search);
-        const appId = params.get('app_id');
-        if (!appId) {
-            showToast('No app specified', 'error');
-            window.location.href = 'apps.html';
-            return;
-        }
+        let appId = params.get('app_id');
 
         const [userInfo, orgData] = await Promise.all([
             AppUtils.loadUserInfo(currentUser.id, currentUser.email),
@@ -1484,6 +1495,15 @@
             });
         }
 
+        if (!appId) {
+            appId = await resolveSocialAppId();
+            if (!appId) {
+                showToast('No social app found for this organization', 'error');
+                window.location.href = 'apps.html';
+                return;
+            }
+        }
+
         // Load app details
         await loadApp(appId);
         if (!currentApp) {
@@ -1492,10 +1512,35 @@
             return;
         }
 
+        if (currentApp.app_type !== 'social') {
+            showToast('Venues are only available for social apps', 'error');
+            window.location.href = 'apps.html';
+            return;
+        }
+
         document.getElementById('app-name-subtitle').textContent = currentApp.name;
 
         await loadVenues();
         setupEventListeners();
+    }
+
+    async function resolveSocialAppId() {
+        try {
+            const { data, error } = await supabase
+                .from('customer_apps')
+                .select('id')
+                .eq('organization_id', currentOrganization.id)
+                .eq('app_type', 'social')
+                .is('deleted_at', null)
+                .order('created_at', { ascending: true })
+                .limit(1)
+                .maybeSingle();
+
+            if (!error && data) return data.id;
+        } catch (e) {
+            console.error('Failed to resolve social app:', e);
+        }
+        return null;
     }
 
     async function loadApp(appId) {
@@ -1782,9 +1827,46 @@
         if (venue) openVenueModal(venue);
     }
 
+    // ===== Missing-coordinates choice modal =====
+    let coordsChoiceResolve = null;
+
+    function showCoordsRequiredModal() {
+        return new Promise(resolve => {
+            coordsChoiceResolve = resolve;
+            document.getElementById('coords-required-modal').classList.add('active');
+        });
+    }
+
+    function resolveCoordsChoice(choice) {
+        document.getElementById('coords-required-modal').classList.remove('active');
+        if (coordsChoiceResolve) {
+            coordsChoiceResolve(choice);
+            coordsChoiceResolve = null;
+        }
+    }
+
     // ===== Save Venue =====
     async function saveVenue(event) {
         event.preventDefault();
+
+        const addressFilled = ['venue-address', 'venue-city', 'venue-state', 'venue-postal']
+            .some(id => document.getElementById(id).value.trim());
+        const coordsBlank = !document.getElementById('venue-lat').value && !document.getElementById('venue-lng').value;
+
+        if (addressFilled && coordsBlank) {
+            await geocodeAddress();
+        }
+
+        if (!document.getElementById('venue-lat').value && !document.getElementById('venue-lng').value
+            && document.getElementById('venue-active').checked) {
+            const choice = await showCoordsRequiredModal();
+            if (choice === 'edit') {
+                document.getElementById('venue-address').focus();
+                return;
+            }
+            // choice === 'inactive'
+            document.getElementById('venue-active').checked = false;
+        }
 
         const saveBtn = document.getElementById('save-venue-btn');
         saveBtn.disabled = true;
@@ -1879,7 +1961,11 @@
 
         } catch (err) {
             console.error('Failed to save venue:', err);
-            showToast(err.message || 'Failed to save venue', 'error');
+            if (err.code === '23514') {
+                showToast("This venue won't appear on the map or in search without coordinates. Save as inactive, or add coordinates.", 'error');
+            } else {
+                showToast(err.message || 'Failed to save venue', 'error');
+            }
         } finally {
             saveBtn.disabled = false;
             saveBtn.textContent = editingVenueId ? 'Save Changes' : 'Add Venue';
@@ -1936,6 +2022,10 @@
     }
 
     // ===== Geocoding =====
+    let geocodeQueue = Promise.resolve();
+    let lastGeocodeAt = 0;
+    const GEOCODE_MIN_INTERVAL_MS = 1100;
+
     async function geocodeAddress() {
         const parts = [
             document.getElementById('venue-address').value,
@@ -1946,27 +2036,47 @@
 
         if (parts.length === 0) {
             showToast('Enter an address to geocode', 'error');
-            return;
+            return false;
         }
 
-        const query = encodeURIComponent(parts.join(', '));
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`, {
-                headers: { 'User-Agent': 'RoyaltyApp/1.0' }
-            });
-            const data = await res.json();
+        const result = await runGeocode(parts.join(', '));
+        if (result) {
+            document.getElementById('venue-lat').value = result.lat.toFixed(6);
+            document.getElementById('venue-lng').value = result.lng.toFixed(6);
+            showToast('Coordinates found', 'success');
+            return true;
+        }
 
-            if (data && data.length > 0) {
-                document.getElementById('venue-lat').value = parseFloat(data[0].lat).toFixed(6);
-                document.getElementById('venue-lng').value = parseFloat(data[0].lon).toFixed(6);
-                showToast('Coordinates found', 'success');
-            } else {
-                showToast('Address not found. Try adding more detail.', 'error');
+        showToast('Address not found. Try adding more detail.', 'error');
+        return false;
+    }
+
+    // Serializes calls so concurrent geocode requests respect Nominatim's ~1 req/sec policy.
+    function runGeocode(addressText) {
+        const task = geocodeQueue.then(async () => {
+            const wait = Math.max(0, GEOCODE_MIN_INTERVAL_MS - (Date.now() - lastGeocodeAt));
+            if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
+            lastGeocodeAt = Date.now();
+
+            const query = encodeURIComponent(addressText);
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=us`, {
+                    signal: AbortSignal.timeout(10000)
+                });
+                const data = await res.json();
+
+                if (data && data.length > 0) {
+                    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                }
+                return null;
+            } catch (err) {
+                console.error('Geocoding error:', err);
+                return null;
             }
-        } catch (err) {
-            console.error('Geocoding error:', err);
-            showToast('Geocoding failed', 'error');
-        }
+        });
+
+        geocodeQueue = task.catch(() => {});
+        return task;
     }
 
     // ===== Venue Actions =====
@@ -2126,15 +2236,6 @@
 
             if (insertError) throw insertError;
 
-            // Update media count on venue
-            const venue = allVenues.find(v => v.id === mediaVenueId);
-            if (venue) {
-                await supabase
-                    .from('venues')
-                    .update({ media_count: (venue.media_count || 0) + 1 })
-                    .eq('id', mediaVenueId);
-            }
-
             progressFill.style.width = '100%';
             progressText.textContent = 'Upload complete!';
 
@@ -2227,15 +2328,6 @@
                 .eq('id', mediaId);
 
             if (error) throw error;
-
-            // Decrement media count
-            const venue = allVenues.find(v => v.id === venueId);
-            if (venue && (venue.media_count || 0) > 0) {
-                await supabase
-                    .from('venues')
-                    .update({ media_count: (venue.media_count || 0) - 1 })
-                    .eq('id', venueId);
-            }
 
             showToast('Media deleted', 'success');
             await loadExistingMedia(venueId);

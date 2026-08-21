@@ -1089,7 +1089,7 @@
             "phoneHelper": "Opcional",
             "saveChanges": "Salvar Alterações",
             "advancedMode": "Modo Avançado",
-            "advancedModeDesc": "Mostrar navegação avançada (Projetos, Apps, Roteiro, Plano de Lançamento). Ative se você gerencia múltiplos projetos ou precisa de recursos avançados."
+            "advancedModeDesc": "Mostrar navegação avançada (Apps). Ative se você gerencia múltiplos apps ou precisa de recursos avançados."
         },
         "security": {
             "title": "Alterar Senha",

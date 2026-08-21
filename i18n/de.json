@@ -1089,7 +1089,7 @@
             "phoneHelper": "Optional",
             "saveChanges": "Änderungen Speichern",
             "advancedMode": "Erweiterter Modus",
-            "advancedModeDesc": "Erweiterte Navigation anzeigen (Projekte, Apps, Roadmap, Startplan). Aktivieren Sie dies, wenn Sie mehrere Projekte verwalten oder Power-User-Funktionen benötigen."
+            "advancedModeDesc": "Erweiterte Navigation anzeigen (Apps). Aktivieren Sie dies, wenn Sie mehrere Apps verwalten oder Power-User-Funktionen benötigen."
         },
         "security": {
             "title": "Passwort Ändern",

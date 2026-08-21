@@ -87,14 +87,13 @@
         }
         currentUser = session.user;
 
-        // Load organization and check admin
+        // Load organization (for display in the sidebar)
         await loadOrganization();
 
-        // Check if user is admin
-        if (userRole !== 'owner' && userRole !== 'admin') {
-            // Redirect non-admins
-            alert(window.t ? window.t('errors.adminOnly') : 'This page is for administrators only.');
-            window.location.href = 'dashboard.html';
+        // Super-admin only — Launch Plan is not an org owner/admin feature
+        const adminCheck = await isAdmin();
+        if (!adminCheck) {
+            window.location.href = '/app/dashboard.html';
             return;
         }
 

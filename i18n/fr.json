@@ -1089,7 +1089,7 @@
             "phoneHelper": "Optionnel",
             "saveChanges": "Enregistrer les Modifications",
             "advancedMode": "Mode Avancé",
-            "advancedModeDesc": "Afficher la navigation avancée (Projets, Apps, Feuille de Route, Plan de Lancement). Activez si vous gérez plusieurs projets ou avez besoin de fonctionnalités avancées."
+            "advancedModeDesc": "Afficher la navigation avancée (Apps). Activez si vous gérez plusieurs apps ou avez besoin de fonctionnalités avancées."
         },
         "security": {
             "title": "Changer le Mot de Passe",

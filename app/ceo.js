@@ -60,6 +60,12 @@
             ceoCeoUserId = session.user?.id || null;
         }
 
+        const adminCheck = await isAdmin();
+        if (!adminCheck) {
+            window.location.href = '/app/dashboard.html';
+            return;
+        }
+
         // Resolve org for chat thread persistence
         if (ceoCeoUserId) {
             try {

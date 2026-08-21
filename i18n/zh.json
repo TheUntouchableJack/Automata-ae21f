@@ -1089,7 +1089,7 @@
             "phoneHelper": "可选",
             "saveChanges": "保存更改",
             "advancedMode": "高级模式",
-            "advancedModeDesc": "显示高级导航（项目、应用、路线图、启动计划）。如果您管理多个项目或需要高级功能，请启用此选项。"
+            "advancedModeDesc": "显示高级导航（应用）。如果您管理多个应用或需要高级功能，请启用此选项。"
         },
         "security": {
             "title": "更改密码",

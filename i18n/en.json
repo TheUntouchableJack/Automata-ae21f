@@ -1447,7 +1447,7 @@
             "phoneHelper": "Optional",
             "saveChanges": "Save Changes",
             "advancedMode": "Advanced Mode",
-            "advancedModeDesc": "Show advanced navigation (Projects, Apps, Roadmap, Launch Plan). Turn this on if you manage multiple projects or need power user features."
+            "advancedModeDesc": "Show advanced navigation (Apps). Turn this on if you manage multiple apps or need power user features."
         },
         "security": {
             "title": "Change Password",

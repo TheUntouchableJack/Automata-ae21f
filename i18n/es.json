@@ -1089,7 +1089,7 @@
             "phoneHelper": "Opcional",
             "saveChanges": "Guardar Cambios",
             "advancedMode": "Modo Avanzado",
-            "advancedModeDesc": "Mostrar navegación avanzada (Proyectos, Apps, Hoja de Ruta, Plan de Lanzamiento). Actívalo si gestionas múltiples proyectos o necesitas funciones avanzadas."
+            "advancedModeDesc": "Mostrar navegación avanzada (Apps). Actívalo si gestionas múltiples apps o necesitas funciones avanzadas."
         },
         "security": {
             "title": "Cambiar Contraseña",

@@ -1089,7 +1089,7 @@
             "phoneHelper": "Opzionale",
             "saveChanges": "Salva Modifiche",
             "advancedMode": "Modalità Avanzata",
-            "advancedModeDesc": "Mostra navigazione avanzata (Progetti, App, Roadmap, Piano di Lancio). Attivalo se gestisci più progetti o hai bisogno di funzionalità avanzate."
+            "advancedModeDesc": "Mostra navigazione avanzata (App). Attivalo se gestisci più app o hai bisogno di funzionalità avanzate."
         },
         "security": {
             "title": "Cambia Password",

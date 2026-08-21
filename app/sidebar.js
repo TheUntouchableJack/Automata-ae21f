@@ -24,7 +24,7 @@ const AppSidebar = (function() {
                 // Rewards - manage loyalty rewards (elevated — daily-use feature)
                 { id: 'rewards', icon: 'gift', href: '/app/rewards.html', labelKey: 'nav.rewards', label: 'Rewards' },
                 // Apps - admin only (SMB users manage their single program)
-                { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', adminOnly: true },
+                { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', advancedOnly: true },
                 // Automations - visible to all
                 { id: 'automations', icon: 'zap', href: '/app/automations.html', labelKey: 'nav.automations', label: 'Automations' },
                 // Campaigns - output of automations, visible to all
@@ -211,6 +211,7 @@ const AppSidebar = (function() {
         if (path.includes('content-generator')) return 'content-generator';
         if (path.includes('admin.html')) return 'admin-panel';
         if (path.includes('upgrade')) return 'upgrade';
+        if (path.includes('venues')) return 'venues';
         return 'dashboard';
     }
 
@@ -241,8 +242,10 @@ const AppSidebar = (function() {
         const advancedModeFromStorage = localStorage.getItem('advancedMode') === 'true';
         const isAdvanced = userData.advancedMode !== undefined ? userData.advancedMode : advancedModeFromStorage;
 
-        // Show admin items if: super admin OR advanced mode is enabled
-        const showAdminItems = isSuperAdmin || isAdvanced;
+        // Admin items (CEO, Blog, Launch Plan, Super Admin) are super-admin-only.
+        // Advanced-only items (Apps) unlock via Advanced Mode as well as super admin.
+        const showAdminItems = isSuperAdmin;
+        const showAdvancedItems = isSuperAdmin || isAdvanced;
         const currentPage = getCurrentPageId(showAdminItems);
 
         let navHTML = '';
@@ -260,8 +263,13 @@ const AppSidebar = (function() {
 
             // Section items
             section.items.forEach(item => {
-                // Skip admin-only items if advanced mode is not enabled
+                // Skip admin-only items if not a super admin
                 if (item.adminOnly && !showAdminItems) {
+                    return;
+                }
+
+                // Skip advanced-only items unless super admin or Advanced Mode is on
+                if (item.advancedOnly && !showAdvancedItems) {
                     return;
                 }
 
