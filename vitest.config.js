@@ -15,7 +15,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['app/**/*.js'],
+      include: ['app/**/*.js', 'js/**/*.js'],
       exclude: [
         'app/auth.js',           // Contains Supabase credentials
         'app/*-library.js',      // Static data files

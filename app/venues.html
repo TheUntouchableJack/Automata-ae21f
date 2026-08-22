@@ -570,6 +570,148 @@
             margin-top: 4px;
         }
 
+        /* ===== Hours grid =====
+           Mirrors the .hours-grid / .hours-row markup in app/support-settings.html
+           (styled in app/support.css). Those classes are file-scoped to the
+           support stylesheet, which this page does not load, so the copies live
+           here. */
+        .hours-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hours-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hours-day {
+            min-width: 96px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .hours-inputs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hours-inputs input[type="time"] {
+            padding: 6px 8px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            font-size: 13px;
+        }
+
+        .hours-inputs input[type="time"]:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .hours-inputs input[type="time"]:disabled {
+            opacity: 0.45;
+        }
+
+        .hours-inputs span {
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
+        /* Bars close after midnight, so close < open is the norm here, not an
+           error. The chip states the convention instead of blocking the save. */
+        .hours-nextday {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm, 4px);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
+        .hours-closed-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--color-text-muted);
+            cursor: pointer;
+        }
+
+        .hours-row-error {
+            flex-basis: 100%;
+            font-size: 12px;
+            color: var(--color-danger, #dc2626);
+        }
+
+        .hours-actions {
+            margin-top: 10px;
+        }
+
+        .btn-copy-monday {
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            cursor: pointer;
+        }
+
+        .btn-copy-monday:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Legacy free-text hours. Venue writes are not audit-logged, so this
+           JSONB cell is the only copy — the banner exists so the owner can
+           retype it rather than lose it. */
+        .hours-legacy-banner {
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .hours-legacy-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .hours-legacy-dismiss {
+            padding: 2px 8px;
+            font-size: 12px;
+            background: none;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm, 4px);
+            color: var(--color-text-muted);
+            cursor: pointer;
+        }
+
+        .hours-legacy-text {
+            margin: 8px 0 0;
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--color-text);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1132,10 +1274,28 @@
 
                     <div class="form-section-title">Details</div>
 
+                    <!-- Hours: a structured 7-day grid, built in JS from
+                         VenueHours.DAYS. It replaced a free-text textarea whose
+                         placeholder taught a shape the customer app could not
+                         render — every venue typed by hand showed "Closed"
+                         seven days a week on the public page. -->
                     <div class="form-group">
-                        <label for="venue-hours">Hours</label>
-                        <textarea id="venue-hours" placeholder="Mon-Thu: 5PM - 12AM&#10;Fri-Sat: 5PM - 2AM&#10;Sun: Closed" rows="3"></textarea>
-                        <div class="hint">Enter operating hours (stored as structured data)</div>
+                        <label>Hours</label>
+                        <div class="hours-legacy-banner" id="hours-legacy-banner" style="display: none;">
+                            <div class="hours-legacy-head">
+                                <span>Previously entered hours</span>
+                                <button type="button" class="hours-legacy-dismiss" id="hours-legacy-dismiss"
+                                        onclick="dismissLegacyHours()">Discard</button>
+                            </div>
+                            <pre class="hours-legacy-text" id="hours-legacy-text"></pre>
+                            <div class="hint">Kept as-is until you enter hours below. Retype them in the grid to replace it.</div>
+                        </div>
+                        <div class="hours-grid" id="venue-hours-grid"></div>
+                        <div class="hours-actions">
+                            <button type="button" class="btn-copy-monday" id="hours-copy-monday"
+                                    onclick="copyMondayToAllDays()">Copy Monday to all days</button>
+                        </div>
+                        <div class="hint">Closing after midnight is normal — a close time earlier than the open time means the next day.</div>
                     </div>
 
                     <div class="form-group">
@@ -1268,6 +1428,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/venue-categories.js?v=1"></script>
+    <!-- Shared with customer-app/social.html. Owns every venues.hours shape
+         decision, so the admin and the customer app cannot drift again. -->
+    <script src="/js/venue-hours.js?v=1"></script>
     <script src="../i18n/i18n.js?v=1"></script>
     <script src="auth.js?v=11"></script>
     <script src="utils.js?v=5"></script>
@@ -1276,7 +1439,7 @@
     <script src="audit-log.js?v=1"></script>
     <script src="soft-delete.js?v=1"></script>
     <script src="undo-toast.js?v=1"></script>
-    <script src="sidebar.js?v=23"></script>
+    <script src="sidebar.js?v=24"></script>
     <script>
     // ===== Venues Management Page =====
     let currentUser = null;
@@ -1292,6 +1455,14 @@
     let selectedMediaFile = null;
     let pendingProfileImage = null;
     let pendingCoverImage = null;
+
+    // The venue's hours exactly as they came out of the DB, held for the life
+    // of the open modal. Venue writes are NOT audit-logged (audit-log.js is
+    // loaded on this page but saveVenue never calls it), so that JSONB cell is
+    // the only copy. Without this, an owner editing a phone number would
+    // silently erase hours the grid could not represent.
+    let editingVenueOriginalHours = null;
+    let legacyHoursDismissed = false;
 
     // Derived from the shared VENUE_CATEGORIES list (/js/venue-categories.js),
     // which the customer app renders its filter pills from. Keeping a second
@@ -1760,6 +1931,9 @@
         editingVenueId = venue ? venue.id : null;
         pendingProfileImage = null;
         pendingCoverImage = null;
+        uploadedProfileImageUrl = null;
+        uploadedCoverImageUrl = null;
+        editingVenueOriginalHours = venue ? (venue.hours ?? null) : null;
 
         const modal = document.getElementById('venue-modal');
         const title = document.getElementById('venue-modal-title');
@@ -1791,7 +1965,6 @@
             document.getElementById('venue-phone').value = venue.phone || '';
             document.getElementById('venue-website').value = venue.website || '';
             document.getElementById('venue-instagram').value = venue.instagram_handle || '';
-            document.getElementById('venue-hours').value = venue.hours ? (typeof venue.hours === 'string' ? venue.hours : JSON.stringify(venue.hours, null, 2)) : '';
             document.getElementById('venue-tags').value = Array.isArray(venue.tags) ? venue.tags.join(', ') : (venue.tags || '');
             document.getElementById('venue-rating').value = venue.average_rating || '';
             document.getElementById('venue-reviews').value = venue.review_count || '';
@@ -1807,6 +1980,9 @@
             }
         }
 
+        // After form.reset(), which does not touch the JS-built hours grid.
+        populateHoursForm(editingVenueOriginalHours);
+
         modal.classList.add('active');
     }
 
@@ -1815,6 +1991,10 @@
         editingVenueId = null;
         pendingProfileImage = null;
         pendingCoverImage = null;
+        uploadedProfileImageUrl = null;
+        uploadedCoverImageUrl = null;
+        editingVenueOriginalHours = null;
+        legacyHoursDismissed = false;
     }
 
     function openEditVenue(venueId, event, fromMenu = false) {
@@ -1825,6 +2005,272 @@
 
         const venue = allVenues.find(v => v.id === venueId);
         if (venue) openVenueModal(venue);
+    }
+
+    // ===== Hours editor =====
+    //
+    // Replaces the free-text textarea that used to live here. Its placeholder
+    // taught "Mon-Thu: 5PM - 12AM", saveVenue wrapped that in {text: "..."},
+    // and the customer app — which only understood {monday:{open,close}} —
+    // rendered "Closed" seven days a week under a green success toast.
+    //
+    // Every shape decision belongs to VenueHours (/js/venue-hours.js), shared
+    // with the customer app so the two surfaces cannot disagree again.
+
+    // Form state immediately after populateHoursForm(), used to tell "the owner
+    // entered hours" from "the owner opened the modal to fix a typo in the
+    // phone number". See saveVenue.
+    let hoursFormSnapshot = '';
+
+    function hoursInput(dayKey, part) {
+        return document.getElementById(`hours-${dayKey}-${part}`);
+    }
+
+    // Built in JS from VenueHours.DAYS so the day list has exactly one source.
+    function buildHoursGrid() {
+        const grid = document.getElementById('venue-hours-grid');
+        if (!grid || grid.dataset.built === 'true') return;
+
+        grid.innerHTML = window.VenueHours.DAYS.map(day => `
+            <div class="hours-row" data-day="${day.key}">
+                <span class="hours-day">${day.label}</span>
+                <div class="hours-inputs">
+                    <input type="time" id="hours-${day.key}-open" aria-label="${day.label} opening time">
+                    <span>to</span>
+                    <input type="time" id="hours-${day.key}-close" aria-label="${day.label} closing time">
+                    <span class="hours-nextday" id="hours-${day.key}-nextday" style="display: none;">+1 day</span>
+                </div>
+                <label class="hours-closed-label">
+                    <input type="checkbox" id="hours-${day.key}-closed">
+                    <span>Closed</span>
+                </label>
+                <div class="hours-row-error" id="hours-${day.key}-error"></div>
+            </div>
+        `).join('');
+
+        window.VenueHours.DAYS.forEach(day => {
+            const open = hoursInput(day.key, 'open');
+            const close = hoursInput(day.key, 'close');
+            const closed = hoursInput(day.key, 'closed');
+
+            [open, close].forEach(input => {
+                // While typing, a half-filled row is expected — showing
+                // "Add a closing time" after the first keystroke is just noise.
+                // Errors surface on blur and at save.
+                input.addEventListener('input', () => {
+                    if (input.value && closed.checked) closed.checked = false;
+                    syncHoursRow(day.key, { showError: false });
+                });
+                // Both blank and unticked is an ambiguous row. Resolving it on
+                // blur means the form never lies about what it will save.
+                input.addEventListener('blur', () => {
+                    if (!open.value && !close.value && !closed.checked && rowWasTouched(day.key)) {
+                        closed.checked = true;
+                    }
+                    syncHoursRow(day.key);
+                });
+            });
+
+            closed.addEventListener('change', () => {
+                if (closed.checked) {
+                    open.value = '';
+                    close.value = '';
+                }
+                syncHoursRow(day.key);
+            });
+        });
+
+        grid.dataset.built = 'true';
+    }
+
+    // A row counts as touched once the owner has interacted with it; used only
+    // to avoid auto-ticking Closed on rows they merely tabbed through.
+    const touchedHoursRows = new Set();
+
+    function rowWasTouched(dayKey) {
+        return touchedHoursRows.has(dayKey);
+    }
+
+    function syncHoursRow(dayKey, options) {
+        const showError = !options || options.showError !== false;
+        touchedHoursRows.add(dayKey);
+
+        const open = hoursInput(dayKey, 'open');
+        const close = hoursInput(dayKey, 'close');
+        const closed = hoursInput(dayKey, 'closed');
+        const chip = document.getElementById(`hours-${dayKey}-nextday`);
+        const error = document.getElementById(`hours-${dayKey}-error`);
+
+        open.disabled = closed.checked;
+        close.disabled = closed.checked;
+
+        // Overnight is the norm for bars — never an error, just labelled.
+        const overnight = !closed.checked && open.value && close.value
+            && window.VenueHours.isOvernight({ open: open.value, close: close.value })
+            && open.value !== close.value;
+        chip.style.display = overnight ? 'inline-block' : 'none';
+
+        error.textContent = showError ? (hoursRowError(dayKey) || '') : '';
+        updateCopyMondayState();
+    }
+
+    function hoursRowError(dayKey) {
+        const open = hoursInput(dayKey, 'open');
+        const close = hoursInput(dayKey, 'close');
+        const closed = hoursInput(dayKey, 'closed');
+
+        if (closed.checked) return null;
+        if (open.value && !close.value) return 'Add a closing time, or tick Closed.';
+        if (!open.value && close.value) return 'Add an opening time, or tick Closed.';
+        // 16:00 → 16:00 could mean "open 24h" or "shut". Genuinely ambiguous.
+        if (open.value && open.value === close.value) return 'Opening and closing times are the same.';
+        return null;
+    }
+
+    function updateCopyMondayState() {
+        const btn = document.getElementById('hours-copy-monday');
+        if (!btn) return;
+        const mondayClosed = hoursInput('monday', 'closed');
+        // Copying a ticked-Closed Monday would set the venue shut all week in
+        // one click — reintroducing by hand the exact failure this replaced.
+        btn.disabled = !!(mondayClosed && mondayClosed.checked);
+        btn.title = btn.disabled
+            ? 'Untick Closed on Monday first — copying it would close the venue all week.'
+            : '';
+    }
+
+    function copyMondayToAllDays() {
+        const src = {
+            open: hoursInput('monday', 'open').value,
+            close: hoursInput('monday', 'close').value,
+            closed: hoursInput('monday', 'closed').checked
+        };
+        if (src.closed) return;
+
+        window.VenueHours.DAY_KEYS.slice(1).forEach(key => {
+            hoursInput(key, 'closed').checked = src.closed;
+            hoursInput(key, 'open').value = src.open;
+            hoursInput(key, 'close').value = src.close;
+            syncHoursRow(key);
+        });
+    }
+
+    // Fills the grid from any of the four shapes on disk. Values a
+    // <input type="time"> cannot hold — Shape A's "5pm-2am" — go to the legacy
+    // banner instead of being silently dropped.
+    function populateHoursForm(rawHours) {
+        buildHoursGrid();
+        touchedHoursRows.clear();
+        legacyHoursDismissed = false;
+
+        window.VenueHours.DAY_KEYS.forEach(key => {
+            hoursInput(key, 'open').value = '';
+            hoursInput(key, 'close').value = '';
+            hoursInput(key, 'closed').checked = false;
+            document.getElementById(`hours-${key}-error`).textContent = '';
+            document.getElementById(`hours-${key}-nextday`).style.display = 'none';
+            hoursInput(key, 'open').disabled = false;
+            hoursInput(key, 'close').disabled = false;
+        });
+
+        const normalized = window.VenueHours.normalize(rawHours);
+        let legacyText = null;
+
+        if (normalized.kind === 'schedule') {
+            const uneditable = [];
+            window.VenueHours.DAYS.forEach(day => {
+                const span = normalized.days[day.key];
+                if (!span) {
+                    hoursInput(day.key, 'closed').checked = true;
+                } else if (span.label) {
+                    uneditable.push(`${day.label}: ${span.label}`);
+                } else {
+                    hoursInput(day.key, 'open').value = span.open;
+                    hoursInput(day.key, 'close').value = span.close;
+                }
+                syncHoursRow(day.key);
+            });
+            if (uneditable.length) legacyText = uneditable.join('\n');
+        } else if (normalized.kind === 'text') {
+            legacyText = normalized.text;
+        }
+
+        const banner = document.getElementById('hours-legacy-banner');
+        // textContent, inside <pre> — this is owner-supplied DB content.
+        document.getElementById('hours-legacy-text').textContent = legacyText || '';
+        banner.style.display = legacyText ? 'block' : 'none';
+
+        touchedHoursRows.clear();
+        updateCopyMondayState();
+        hoursFormSnapshot = serializeHoursForm();
+    }
+
+    function dismissLegacyHours() {
+        legacyHoursDismissed = true;
+        document.getElementById('hours-legacy-banner').style.display = 'none';
+    }
+
+    // What actually gets written to venues.hours.
+    //
+    // The rule: stored hours change only when the owner actually enters hours.
+    // Venue writes are not audit-logged, so that JSONB cell is the only copy —
+    // an owner opening the modal to fix a phone number must not lose hours the
+    // grid cannot represent (Shape A labels, Shape C free text). Dismissing the
+    // "Previously entered" banner is the only path to losing them.
+    function resolveHoursForSave(readResult, originalHours, dismissed) {
+        if (!dismissed && serializeHoursForm() === hoursFormSnapshot) {
+            return originalHours;
+        }
+        return readResult.hours;
+    }
+
+    // Cheap identity for "has the owner altered the grid since it was filled?"
+    function serializeHoursForm() {
+        return window.VenueHours.DAY_KEYS.map(key => [
+            hoursInput(key, 'open').value,
+            hoursInput(key, 'close').value,
+            hoursInput(key, 'closed').checked ? '1' : '0'
+        ].join('|')).join(';');
+    }
+
+    // Returns { hours, error }.
+    //
+    //   hours === null  — the grid is untouched. NOT the same as "closed every
+    //                     day", which is seven explicit nulls: there the owner
+    //                     actually said something and it must survive a save.
+    function readHoursFromForm() {
+        const firstError = window.VenueHours.DAY_KEYS
+            .map(key => ({ key, message: hoursRowError(key) }))
+            .find(r => r.message);
+
+        if (firstError) {
+            window.VenueHours.DAY_KEYS.forEach(key => {
+                document.getElementById(`hours-${key}-error`).textContent = hoursRowError(key) || '';
+            });
+            const label = window.VenueHours.DAYS.find(d => d.key === firstError.key).label;
+            return { hours: null, error: `${label}: ${firstError.message}` };
+        }
+
+        const days = {};
+        let saidSomething = false;
+
+        window.VenueHours.DAY_KEYS.forEach(key => {
+            const closed = hoursInput(key, 'closed').checked;
+            const open = hoursInput(key, 'open').value;
+            const close = hoursInput(key, 'close').value;
+
+            if (closed) {
+                days[key] = null;
+                saidSomething = true;
+            } else if (open && close) {
+                days[key] = { open, close };
+                saidSomething = true;
+            } else {
+                days[key] = null;
+            }
+        });
+
+        return { hours: saidSomething ? days : null, error: null };
     }
 
     // ===== Missing-coordinates choice modal =====
@@ -1846,18 +2292,42 @@
     }
 
     // ===== Save Venue =====
+    // Guards the single retry after a coordinate CHECK failure (see the end of
+    // saveVenue). Module-level so a nested call can see it.
+    let retryingAfterCoords = false;
+
+    // URLs of images already uploaded for the venue currently being saved, so
+    // the retry reuses them instead of uploading duplicates.
+    let uploadedProfileImageUrl = null;
+    let uploadedCoverImageUrl = null;
+
     async function saveVenue(event) {
         event.preventDefault();
+        let coordsCheckFailed = false;
+
+        // Validate hours before anything with a side effect — geocoding hits a
+        // rate-limited third party, and image uploads cannot be undone.
+        const hoursResult = readHoursFromForm();
+        if (hoursResult.error) {
+            showToast(hoursResult.error, 'error');
+            const grid = document.getElementById('venue-hours-grid');
+            if (grid) grid.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            return;
+        }
 
         const addressFilled = ['venue-address', 'venue-city', 'venue-state', 'venue-postal']
             .some(id => document.getElementById(id).value.trim());
-        const coordsBlank = !document.getElementById('venue-lat').value && !document.getElementById('venue-lng').value;
+        // `||`, not `&&`. The DB CHECK requires BOTH coordinates, so a venue
+        // with only a latitude is just as unsaveable as one with neither —
+        // and with `&&` it slipped past both the geocode and the choice modal
+        // and died on a 23514 the owner had no way to act on.
+        const coordsBlank = !document.getElementById('venue-lat').value || !document.getElementById('venue-lng').value;
 
         if (addressFilled && coordsBlank) {
             await geocodeAddress();
         }
 
-        if (!document.getElementById('venue-lat').value && !document.getElementById('venue-lng').value
+        if ((!document.getElementById('venue-lat').value || !document.getElementById('venue-lng').value)
             && document.getElementById('venue-active').checked) {
             const choice = await showCoordsRequiredModal();
             if (choice === 'edit') {
@@ -1877,28 +2347,30 @@
             let profileImageUrl = null;
             let coverImageUrl = null;
 
+            // Clearing the pending file on success matters for the retry path
+            // at the end of this function: without it, a second attempt would
+            // upload the same image again and orphan the first copy.
             if (pendingProfileImage) {
                 profileImageUrl = await uploadImage(pendingProfileImage, 'profile');
+                pendingProfileImage = null;
+                uploadedProfileImageUrl = profileImageUrl;
             }
             if (pendingCoverImage) {
                 coverImageUrl = await uploadImage(pendingCoverImage, 'cover');
+                pendingCoverImage = null;
+                uploadedCoverImageUrl = coverImageUrl;
             }
+            profileImageUrl = profileImageUrl || uploadedProfileImageUrl;
+            coverImageUrl = coverImageUrl || uploadedCoverImageUrl;
 
             // Parse tags
             const tagsRaw = document.getElementById('venue-tags').value;
             const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
 
-            // Parse hours as JSONB-compatible
-            const hoursRaw = document.getElementById('venue-hours').value.trim();
-            let hours = null;
-            if (hoursRaw) {
-                try {
-                    hours = JSON.parse(hoursRaw);
-                } catch {
-                    // Store as simple text object if not valid JSON
-                    hours = { text: hoursRaw };
-                }
-            }
+            // Hours come from the structured grid. See resolveHoursForSave —
+            // an untouched grid writes the original value back verbatim rather
+            // than overwriting it with what the grid could represent.
+            const hours = resolveHoursForSave(hoursResult, editingVenueOriginalHours, legacyHoursDismissed);
 
             const venueName = document.getElementById('venue-name').value.trim();
 
@@ -1962,13 +2434,42 @@
         } catch (err) {
             console.error('Failed to save venue:', err);
             if (err.code === '23514') {
-                showToast("This venue won't appear on the map or in search without coordinates. Save as inactive, or add coordinates.", 'error');
+                // The pre-save gate above should make this unreachable, but a
+                // constraint the client doesn't know about would land here. It
+                // used to show the choice copy as a plain toast — the two
+                // options named in the message had no buttons behind them, so
+                // the owner was stuck with a filled-in form and no way out.
+                coordsCheckFailed = true;
             } else {
                 showToast(err.message || 'Failed to save venue', 'error');
             }
         } finally {
             saveBtn.disabled = false;
             saveBtn.textContent = editingVenueId ? 'Save Changes' : 'Add Venue';
+        }
+
+        // Outside the try so the button is live again before the modal opens,
+        // and so a retry is a fresh call rather than nested error handling.
+        if (coordsCheckFailed) {
+            const choice = await showCoordsRequiredModal();
+            if (choice === 'edit') {
+                document.getElementById('venue-address').focus();
+                return;
+            }
+            document.getElementById('venue-active').checked = false;
+            if (!retryingAfterCoords) {
+                // One retry only. If saving as inactive also trips a check
+                // constraint, the generic error path reports it instead of
+                // reopening this modal forever.
+                retryingAfterCoords = true;
+                try {
+                    await saveVenue(event);
+                } finally {
+                    retryingAfterCoords = false;
+                }
+            } else {
+                showToast('Could not save this venue. Check the address and coordinates.', 'error');
+            }
         }
     }
 
@@ -1994,9 +2495,37 @@
         return urlData.publicUrl;
     }
 
+    // The venue-media bucket caps uploads at 50MB and allows images only, but
+    // both rules are enforced server-side AFTER the whole file has gone up.
+    // uploadImage() throws inside saveVenue's try block, which aborts the save
+    // before the insert runs — so an oversized file cost the owner everything
+    // they had typed. Reject it at selection time instead.
+    const VENUE_IMAGE_MAX_BYTES = 50 * 1024 * 1024;
+    const VENUE_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+
+    function validateVenueImage(file) {
+        if (!VENUE_IMAGE_TYPES.includes(file.type)) {
+            return 'Please choose an image (JPG, PNG, GIF, or WebP).';
+        }
+        if (file.size > VENUE_IMAGE_MAX_BYTES) {
+            const mb = (file.size / (1024 * 1024)).toFixed(1);
+            return `That image is ${mb}MB. The limit is 50MB.`;
+        }
+        return null;
+    }
+
     function handleImagePreview(event, type) {
         const file = event.target.files[0];
         if (!file) return;
+
+        const problem = validateVenueImage(file);
+        if (problem) {
+            showToast(problem, 'error');
+            // Clear the input so the same file can be re-picked after resizing,
+            // and so a rejected file is never left staged for save.
+            event.target.value = '';
+            return;
+        }
 
         if (type === 'profile') {
             pendingProfileImage = file;

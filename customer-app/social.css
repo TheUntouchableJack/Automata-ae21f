@@ -1930,6 +1930,15 @@ body {
     color: var(--app-primary, #6366f1);
 }
 
+/* Legacy free-text hours ({"text": "..."}), rendered verbatim. Line breaks are
+   meaningful — the owner typed one line per day range. */
+.venue-page-hours-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #475569;
+    white-space: pre-line;
+}
+
 /* Divider */
 .venue-page-divider {
     height: 8px;

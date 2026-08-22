@@ -31,6 +31,11 @@ const AppSidebar = (function() {
                 { id: 'campaigns', icon: 'send', href: '/app/outgoing.html', labelKey: 'nav.campaigns', label: 'Campaigns' },
                 // Customers - visible to all
                 { id: 'customers', icon: 'users', href: '/app/customers.html', labelKey: 'nav.customers', label: 'Customers' },
+                // Venues - social apps only. Hidden until updateVenuesNavVisibility()
+                // confirms the org has one; there is otherwise no clickable path to
+                // venues.html at all, since the only in-product link is behind
+                // apps.html, which is advancedOnly and off by default.
+                { id: 'venues', icon: 'mapPin', href: '/app/venues.html', labelKey: 'nav.venues', label: 'Venues', socialOnly: true },
             ]
         },
         {
@@ -92,6 +97,10 @@ const AppSidebar = (function() {
             <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
             <line x1="8" y1="2" x2="8" y2="18"></line>
             <line x1="16" y1="6" x2="16" y2="22"></line>
+        </svg>`,
+        mapPin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
         </svg>`,
         settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -273,6 +282,12 @@ const AppSidebar = (function() {
                     return;
                 }
 
+                // Social-only items render hidden and are revealed by
+                // updateVenuesNavVisibility() once the org's apps are known.
+                // Rendering them up front (rather than awaiting the lookup)
+                // keeps render() synchronous for every existing caller.
+                const hiddenUntilResolved = item.socialOnly && item.id !== currentPage;
+
                 // Determine if this item is active
                 const isActive = item.id === currentPage;
 
@@ -287,6 +302,7 @@ const AppSidebar = (function() {
                     <a href="${item.href}"
                        class="sidebar-item ${isActive ? 'active sidebar-item--highlight' : ''} ${!isActive && item.highlight ? 'sidebar-item--badge-hint' : ''}"
                        data-nav="${item.id}"
+                       ${hiddenUntilResolved ? 'style="display: none;"' : ''}
                        data-tooltip="${getText(item.labelKey, item.label)}">
                         <span class="sidebar-item-icon">${icons[item.icon]}</span>
                         <span class="sidebar-item-text" data-i18n="${item.labelKey}">${getText(item.labelKey, item.label)}</span>
@@ -489,6 +505,38 @@ const AppSidebar = (function() {
 
     }
 
+    // Reveal the Venues item if this org actually has a social app.
+    //
+    // Until this shipped there was NO nav entry for venues.html at all —
+    // getCurrentPageId() returned a 'venues' page id that nothing matched, so
+    // the page never highlighted, and the only in-product link to it was
+    // apps.html → ⋯ → "Manage Venues", behind an advancedOnly item that is off
+    // by default. A normal owner had zero clickable path to their own venues.
+    async function updateVenuesNavVisibility(organizationId) {
+        const link = document.querySelector('.sidebar-item[data-nav="venues"]');
+        if (!link) return;
+
+        // On venues.html itself the item renders visible regardless, so the
+        // active page always has a matching nav entry.
+        if (link.classList.contains('active')) return;
+        if (!organizationId || typeof supabase === 'undefined') return;
+
+        try {
+            const { data, error } = await supabase
+                .from('customer_apps')
+                .select('id')
+                .eq('organization_id', organizationId)
+                .eq('app_type', 'social')
+                .is('deleted_at', null)
+                .limit(1)
+                .maybeSingle();
+
+            if (!error && data) link.style.display = '';
+        } catch (err) {
+            // No social app, or no read access — leave it hidden.
+        }
+    }
+
     // Update blog review badge (admin only)
     async function updateBlogReviewBadge() {
         if (typeof supabase === 'undefined') return;
@@ -613,6 +661,13 @@ const AppSidebar = (function() {
         // Render sidebar
         render(appLayout, userData);
 
+        // Fire-and-forget: reveals the Venues item on orgs that have a social
+        // app. Runs on every page so the item is wherever the owner is, not
+        // only on venues.html.
+        if (userData.organization?.id) {
+            updateVenuesNavVisibility(userData.organization.id);
+        }
+
         // Update language display when language changes
         window.addEventListener('i18n:changed', updateLanguageDisplay);
     }
@@ -624,7 +679,8 @@ const AppSidebar = (function() {
         updateNotificationBadge,
         startNotificationPolling,
         updateBlogReviewBadge,
-        startBlogReviewPolling
+        startBlogReviewPolling,
+        updateVenuesNavVisibility
     };
 })();
 

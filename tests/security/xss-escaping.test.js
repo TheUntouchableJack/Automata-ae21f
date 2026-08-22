@@ -4,7 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { resetMocks } from '../setup.js';
+import '../../js/venue-hours.js';
 
 // Create a mock document for escapeHtml function
 const mockCreateElement = vi.fn(() => {
@@ -340,5 +343,129 @@ describe('XSS Escaping - Integration Patterns', () => {
             expect(errorMessage).not.toContain('<script>');
             expect(errorMessage).toContain('&lt;script&gt;');
         });
+    });
+});
+
+// ===== Venue hours renderer =====
+//
+// venues.hours is owner-supplied JSONB that reaches a PUBLIC page. The
+// renderer used to assign a string day value straight to `timeText` and
+// interpolate it into innerHTML unescaped, so
+// {"mon": "<img src=x onerror=alert(1)>"} executed for every visitor.
+//
+// The block is inside openVenuePage() in a ~2,500-line browser-coupled file,
+// so this asserts on the source. Source slicing fails OPEN when code moves —
+// each assertion below is therefore preceded by a guard proving the slice
+// actually matched something.
+describe('XSS - venue hours renderer (customer-app/social.js)', () => {
+    // jsdom replaces the global URL, so resolve from the vitest root instead of
+    // import.meta.url.
+    const source = readFileSync(
+        resolve(process.cwd(), 'customer-app/social.js'),
+        'utf8'
+    );
+
+    // The slice: from the "Render hours" marker to the "Render about" marker
+    // that follows it.
+    const startMarker = '// Render hours';
+    const endMarker = '// Render about';
+
+    function hoursBlock() {
+        const start = source.indexOf(startMarker);
+        const end = source.indexOf(endMarker, start);
+        if (start === -1 || end === -1 || end <= start) return null;
+        return source.slice(start, end);
+    }
+
+    it('the source slice still matches (guard — everything below is vacuous without it)', () => {
+        const block = hoursBlock();
+        expect(block, `"${startMarker}" .. "${endMarker}" no longer delimit the hours renderer`).not.toBeNull();
+        expect(block.length).toBeGreaterThan(400);
+        // Proof it is the renderer and not some unrelated stretch of file.
+        expect(block).toContain('venue-page-hours');
+        expect(block).toContain('venue-page-hours-table');
+    });
+
+    it('every value interpolated into element content goes through escapeHtml', () => {
+        const block = hoursBlock();
+        expect(block).not.toBeNull();
+
+        // Only interpolations landing in *element content* — `>${...}` — can
+        // introduce markup. Expressions that merely build an intermediate
+        // string (`${formatTime(span.open)} – ${formatTime(span.close)}`) are
+        // escaped later, at the point they reach the DOM.
+        const inContent = block.match(/>\$\{[^}]*\}/g) || [];
+        expect(
+            inContent.length,
+            'no `>${...}` interpolations found — the markup was restructured and this test is now vacuous'
+        ).toBeGreaterThanOrEqual(3);
+
+        const unescaped = inContent.filter(expr => {
+            if (expr.includes('escapeHtml(')) return false;
+            // `${rows}` is HTML this same block composed, cell by cell, from
+            // already-escaped values. It is the only permitted raw insert.
+            if (expr === '>${rows}') return false;
+            return true;
+        });
+
+        expect(unescaped, `unescaped interpolation(s) in the hours renderer: ${unescaped.join(', ')}`)
+            .toEqual([]);
+    });
+
+    it('the ${rows} exception above is only safe while every cell escapes', () => {
+        const block = hoursBlock();
+        expect(block).not.toBeNull();
+
+        // Pins the premise of the exception: each <td> escapes its own value.
+        const cells = block.match(/<td>\$\{[^}]*\}<\/td>/g) || [];
+        expect(cells.length, 'the <td> cells were restructured — re-check the ${rows} exception')
+            .toBe(2);
+        cells.forEach(cell => expect(cell).toContain('escapeHtml('));
+    });
+
+    it('does not reassign a raw day value to the rendered text', () => {
+        const block = hoursBlock();
+        expect(block).not.toBeNull();
+
+        // The exact regression: `timeText = h;` where h is the raw JSONB value.
+        expect(block).not.toMatch(/timeText\s*=\s*h\s*;/);
+        expect(block).not.toMatch(/typeof\s+h\s*===\s*'string'/);
+    });
+
+    it('delegates shape detection to VenueHours rather than sniffing inline', () => {
+        const block = hoursBlock();
+        expect(block).not.toBeNull();
+
+        expect(block).toContain('VenueHours.normalize');
+        // A second hand-written day list is how the category slugs drifted.
+        expect(block).not.toContain("'monday', 'tuesday'");
+    });
+
+    it('clears innerHTML when there are no hours (the node is a reused singleton)', () => {
+        const block = hoursBlock();
+        expect(block).not.toBeNull();
+        expect(block).toMatch(/hoursEl\.innerHTML\s*=\s*''/);
+    });
+});
+
+// Behavioral counterpart: the shape layer itself must never hand the renderer
+// a value it would have to trust.
+describe('XSS - VenueHours normalization preserves hostile input as data', () => {
+    it('a script-bearing day value survives as an inert label, not markup', () => {
+        const VenueHours = globalThis.VenueHours;
+        expect(VenueHours, 'js/venue-hours.js did not populate the global').toBeDefined();
+
+        const r = VenueHours.normalize({ mon: '<img src=x onerror=alert(1)>' });
+        expect(r.kind).toBe('schedule');
+        // Still a plain string on a `label` field — the renderer escapes it.
+        expect(r.days.monday).toEqual({ label: '<img src=x onerror=alert(1)>' });
+        expect(typeof r.days.monday.label).toBe('string');
+    });
+
+    it('a script-bearing text blob stays on the text field', () => {
+        const VenueHours = globalThis.VenueHours;
+        const r = VenueHours.normalize({ text: '</div><script>alert(1)</script>' });
+        expect(r.kind).toBe('text');
+        expect(r.text).toBe('</div><script>alert(1)</script>');
     });
 });

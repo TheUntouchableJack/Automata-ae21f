@@ -1467,25 +1467,34 @@ async function openVenuePage(venueId) {
     }
 
     // Render hours
+    //
+    // Shape decisions live in /js/venue-hours.js, loaded before this file. This
+    // block used to do its own shape sniffing and understood only one of the
+    // three shapes on disk: anything else fell through its per-day lookup and
+    // rendered "Closed" seven days a week.
+    //
+    // Every branch escapes. Day values are owner-supplied DB content reaching a
+    // public page — the previous version interpolated a raw string day value
+    // straight into innerHTML.
     const hoursEl = document.getElementById('venue-page-hours');
     if (hoursEl) {
-        if (venue.hours && typeof venue.hours === 'object' && Object.keys(venue.hours).length > 0) {
-            const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-            const today = dayNames[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+        const hours = window.VenueHours ? window.VenueHours.normalize(venue.hours) : null;
+
+        if (hours && hours.kind === 'schedule') {
+            const today = window.VenueHours.todayKey();
 
             let rows = '';
-            dayNames.forEach(day => {
-                const h = venue.hours[day];
-                const isToday = day === today;
+            window.VenueHours.DAYS.forEach(day => {
+                const span = hours.days[day.key];
                 let timeText = 'Closed';
-                if (h) {
-                    if (typeof h === 'string') {
-                        timeText = h;
-                    } else if (h.open && h.close) {
-                        timeText = `${formatTime(h.open)} – ${formatTime(h.close)}`;
-                    }
+                if (span) {
+                    timeText = span.label
+                        ? span.label
+                        : `${window.VenueHours.formatTime(span.open)} – ${window.VenueHours.formatTime(span.close)}`;
                 }
-                rows += `<tr class="${isToday ? 'today' : ''}"><td>${day}</td><td>${timeText}</td></tr>`;
+                rows += `<tr class="${day.key === today ? 'today' : ''}">`
+                     +  `<td>${escapeHtml(day.label)}</td>`
+                     +  `<td>${escapeHtml(timeText)}</td></tr>`;
             });
 
             hoursEl.innerHTML = `
@@ -1493,7 +1502,18 @@ async function openVenuePage(venueId) {
                 <table class="venue-page-hours-table">${rows}</table>
             `;
             hoursEl.style.display = 'block';
+        } else if (hours && hours.kind === 'text') {
+            // Legacy free text typed into the old admin textarea. Render it
+            // verbatim — it is what the owner actually wrote.
+            hoursEl.innerHTML = `
+                <h4 class="venue-page-hours-title">Hours</h4>
+                <div class="venue-page-hours-text">${escapeHtml(hours.text)}</div>
+            `;
+            hoursEl.style.display = 'block';
         } else {
+            // #venue-page is a reused singleton node, so stale hours from the
+            // previously-opened venue linger unless the content is cleared too.
+            hoursEl.innerHTML = '';
             hoursEl.style.display = 'none';
         }
     }
