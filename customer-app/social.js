@@ -2094,6 +2094,33 @@ async function getOrCreateDefaultVenue() {
     const realVenues = venues.filter(v => !String(v.id).startsWith('demo-'));
     if (realVenues.length > 0) return realVenues[0];
 
+    // `venues` is get_venues_for_map()'s output, which drops anything without
+    // coordinates or with is_active = false. So an empty array does NOT mean
+    // "this app has no venues" — it means none are on the map. Creating one on
+    // that basis mints a fresh "General" every session and posts scatter across
+    // them. Ask the table directly before writing anything.
+    const existing = await findAnyOwnedVenue();
+    if (existing) {
+        venues.push(existing);
+        return existing;
+    }
+
+    // venues_active_requires_coordinates (migration 20260823000002) rejects an
+    // active venue with no lat/lng, and get_venue_feed() requires is_active —
+    // so an inactive fallback would swallow the post silently. Coordinates are
+    // genuinely required here; the owner is posting from somewhere, so ask.
+    // The permission prompt can sit open for 10s; don't leave "Preparing..."
+    // on screen with no explanation for why nothing is happening.
+    const progressText = document.getElementById('post-progress-text');
+    if (progressText) progressText.textContent = 'Finding your location...';
+
+    const coords = await getCurrentCoords();
+    if (!coords) {
+        throw new Error(
+            'Turn on location to post your first Viibe, or add a venue with an address in your admin first.'
+        );
+    }
+
     // Auto-create a "General" venue for the org
     const { data, error } = await supabaseClient
         .from('venues')
@@ -2106,6 +2133,8 @@ async function getOrCreateDefaultVenue() {
             // posts only ever surface under "All" and vanish behind every pill.
             category: 'nightlife',
             is_active: true,
+            latitude: coords.lat,
+            longitude: coords.lng,
             media_count: 0
         })
         .select()
@@ -2116,6 +2145,53 @@ async function getOrCreateDefaultVenue() {
     // Add to local venues array so subsequent posts reuse it
     venues.push(data);
     return data;
+}
+
+// The owner's own venues, coordinates or not — "Org members can manage venues"
+// (migration 20260225000001) is FOR ALL, so this sees rows the public map RPC
+// filters out. Oldest first, to match app/venues.html's own resolve order.
+async function findAnyOwnedVenue() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('venues')
+            .select('*')
+            .eq('app_id', currentApp.id)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) {
+            console.warn('Could not look up existing venues:', error);
+            return null;
+        }
+        return data || null;
+    } catch (e) {
+        console.warn('Could not look up existing venues:', e);
+        return null;
+    }
+}
+
+// requestLocation() runs at startup and is fire-and-forget, so userLocation is
+// null both when permission was refused AND when the prompt is still open.
+// Re-ask here rather than treating those as the same thing.
+function getCurrentCoords() {
+    if (userLocation) return Promise.resolve(userLocation);
+    if (!navigator.geolocation) return Promise.resolve(null);
+
+    return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                resolve(userLocation);
+            },
+            (err) => {
+                console.warn('Geolocation unavailable for post:', err.message);
+                resolve(null);
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+        );
+    });
 }
 
 async function openCreatePost() {
