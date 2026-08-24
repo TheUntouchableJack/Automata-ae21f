@@ -119,12 +119,12 @@ const IntelligencePage = (function() {
 
     // Initialize the page
     async function init() {
-        // Get auth data
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            window.location.href = '/app/login.html';
-            return;
-        }
+        // Go through requireAuth() rather than a private supabase.auth.getUser()
+        // gate. This page carries the Learnings tab — the org's business_knowledge,
+        // revenue figures included — and a hand-rolled gate is exactly the kind
+        // that the workspace guard never gets a chance to run behind.
+        const user = await requireAuth();
+        if (!user) return;
         currentUserId = user.id;
 
         // Get organization and user info

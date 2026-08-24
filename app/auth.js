@@ -240,6 +240,18 @@ async function requireAuth() {
     // multi-page, not a SPA — every nav is a fresh document).
     // Only the id is sent: no email, no name.
     window.Analytics?.identify(user.id);
+
+    // Workspace gate. Sends a scoped user (a client who only manages venues
+    // and their app) off pages that aren't part of their workspace. For every
+    // ordinary owner this resolves to 'owner' with zero queries and returns
+    // the page unchanged.
+    //
+    // Called unconditionally, NOT behind a `typeof AppWorkspace` check: a page
+    // that forgot the script tag must throw a loud ReferenceError rather than
+    // silently fail open. tests/workspace.test.js pins the tag on every page.
+    const workspaceMode = await AppWorkspace.guard(user);
+    if (!workspaceMode) return null;
+
     return user;
 }
 
@@ -262,7 +274,7 @@ async function redirectIfAuthenticated() {
             await db.auth.signOut();
             return; // Stay on signup/login page
         }
-        window.location.href = '/app/intelligence.html';
+        window.location.href = AppWorkspace.landingFor(await AppWorkspace.resolve(user));
     }
 }
 
@@ -272,6 +284,9 @@ if (db) {
         if (event === 'SIGNED_OUT') {
             // Clear any cached data
             localStorage.removeItem('royalty_user_profile');
+            // ...including the workspace mode, or the next person to sign in
+            // in this tab inherits the previous user's nav.
+            AppWorkspace.clear();
         }
     });
 
@@ -296,15 +311,19 @@ if (db) {
                     const cleanUrl = window.location.pathname + window.location.hash;
                     window.history.replaceState({}, '', cleanUrl);
 
+                    const landing = AppWorkspace.landingFor(
+                        await AppWorkspace.resolve(data?.session?.user || data?.user)
+                    );
+
                     // Check if this is a new signup with onboarding data
                     const hasOnboarding = localStorage.getItem('royalty_onboarding');
                     if (hasOnboarding) {
                         // New user from landing page - show transition on dashboard
                         sessionStorage.setItem('show_onboarding_transition', 'true');
-                        window.location.href = '/app/intelligence.html';
+                        window.location.href = landing;
                     } else if (!window.location.pathname.includes('login.html')) {
-                        // Returning user - go to intelligence
-                        window.location.href = '/app/intelligence.html';
+                        // Returning user - go to their workspace landing
+                        window.location.href = landing;
                     }
                 }
             } catch (err) {

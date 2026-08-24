@@ -396,11 +396,18 @@ async function mfaChallengeAndVerify(factorId, code) {
  * Returns false → Redirecting to challenge page; caller should stop.
  *
  * @param {object} user  Supabase user object from signInWithPassword
- * @param {string} [returnUrl='/app/intelligence.html']
+ * @param {string|null} [returnUrl=null]  Defaults to the user's workspace
+ *        landing. A default *parameter* can't await, and a hardcoded
+ *        '/app/intelligence.html' would drop a scoped user on a page their
+ *        workspace denies — so it's resolved inside instead.
  * @returns {Promise<boolean>}
  */
-async function mfaGate(user, returnUrl = '/app/intelligence.html') {
+async function mfaGate(user, returnUrl = null) {
     try {
+        if (!returnUrl) {
+            returnUrl = AppWorkspace.landingFor(await AppWorkspace.resolve(user));
+        }
+
         // Check if device is trusted first (skips all MFA)
         const trusted = await mfaCheckTrustedDevice(user.id);
         if (trusted) return true;

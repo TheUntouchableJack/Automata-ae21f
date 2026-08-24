@@ -1163,6 +1163,25 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Shown instead of navigating away when there's no social app to
+                 administer. In a scoped workspace apps.html isn't reachable, so
+                 the old `location.href = 'apps.html'` exits bounced straight
+                 back here — an infinite loop. See showVenuesUnavailable(). -->
+            <section class="projects-section" id="venues-unavailable" style="display: none;">
+                <div class="container">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <h3 data-i18n="venues.unavailableTitle">Venues aren't available yet</h3>
+                        <p id="venues-unavailable-message" data-i18n="venues.unavailableNoApp">There's no social app set up on this account yet. Once one is published, your venues will appear here.</p>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -1432,14 +1451,15 @@
          decision, so the admin and the customer app cannot drift again. -->
     <script src="/js/venue-hours.js?v=1"></script>
     <script src="../i18n/i18n.js?v=1"></script>
-    <script src="auth.js?v=11"></script>
-    <script src="utils.js?v=5"></script>
+    <script src="workspace.js?v=1"></script>
+    <script src="auth.js?v=14"></script>
+    <script src="utils.js?v=6"></script>
     <script src="danger-modal.js?v=1"></script>
     <script src="plan-limits.js?v=1"></script>
     <script src="audit-log.js?v=1"></script>
     <script src="soft-delete.js?v=1"></script>
     <script src="undo-toast.js?v=1"></script>
-    <script src="sidebar.js?v=24"></script>
+    <script src="sidebar.js?v=25"></script>
     <script>
     // ===== Venues Management Page =====
     let currentUser = null;
@@ -1515,10 +1535,10 @@
         // organization, so no extra filter is needed beyond app_id.
         const { data, error } = await supabase
             .from('app_members')
-            .select('id, first_name, last_name, display_name, email, phone, avatar_url, user_id, created_at, last_login_at')
+            .select('id, first_name, last_name, display_name, email, phone, avatar_url, user_id, joined_at, last_login_at')
             .eq('app_id', currentApp.id)
             .is('deleted_at', null)
-            .order('created_at', { ascending: false })
+            .order('joined_at', { ascending: false })
             .limit(500);
 
         if (loading) loading.style.display = 'none';
@@ -1583,7 +1603,7 @@
                             </div>
                         </div>
                     </td>
-                    <td class="member-muted">${formatAdminDate(m.created_at)}</td>
+                    <td class="member-muted">${formatAdminDate(m.joined_at)}</td>
                     <td class="member-muted">${m.last_login_at ? formatAdminDate(m.last_login_at) : 'Never'}</td>
                     <td style="text-align:right;">
                         <button class="member-remove-btn" onclick="removeMember('${m.id}', '${AppUtils.escapeHtml(name).replace(/'/g, "\\'")}')">Remove</button>
@@ -1638,10 +1658,38 @@
             cats.map(c => `<option value="${c.slug}">${AppUtils.escapeHtml(c.label)}</option>`).join('');
     }
 
+    // Dead-ends that used to be `location.href = 'apps.html'`.
+    //
+    // apps.html isn't part of a scoped workspace, so navigating there bounced
+    // the user straight back to venues.html — and round again, forever. Render
+    // an in-page explanation instead. Owners keep the old navigation, which is
+    // still the right answer for them: apps.html is where they'd fix it.
+    function showVenuesUnavailable(message) {
+        const el = document.getElementById('venues-unavailable-message');
+        if (el && message) {
+            el.textContent = message;
+            el.removeAttribute('data-i18n');
+        }
+        document.getElementById('loading').style.display = 'none';
+        document.querySelector('.admin-tabs').style.display = 'none';
+        document.getElementById('admin-panel-venues').style.display = 'none';
+        document.getElementById('admin-panel-members').style.display = 'none';
+        document.getElementById('add-venue-btn').style.display = 'none';
+        document.getElementById('venues-unavailable').style.display = '';
+    }
+
     // ===== Initialization =====
     async function initVenues() {
         currentUser = await requireAuth();
         if (!currentUser) return;
+
+        // Scoped users have no apps.html to fall back to.
+        const scopedWorkspace = AppWorkspace.mode() !== AppWorkspace.DEFAULT_MODE;
+        if (scopedWorkspace) {
+            // "Back to Apps" points somewhere their workspace denies.
+            const backLink = document.querySelector('.page-header .back-link');
+            if (backLink) backLink.style.display = 'none';
+        }
 
         renderCategoryOptions();
 
@@ -1669,6 +1717,7 @@
         if (!appId) {
             appId = await resolveSocialAppId();
             if (!appId) {
+                if (scopedWorkspace) return showVenuesUnavailable();
                 showToast('No social app found for this organization', 'error');
                 window.location.href = 'apps.html';
                 return;
@@ -1678,12 +1727,22 @@
         // Load app details
         await loadApp(appId);
         if (!currentApp) {
+            if (scopedWorkspace) {
+                return showVenuesUnavailable(
+                    AppUtils.tr('venues.unavailableNotFound', "That app couldn't be found on this account.")
+                );
+            }
             showToast('App not found', 'error');
             window.location.href = 'apps.html';
             return;
         }
 
         if (currentApp.app_type !== 'social') {
+            if (scopedWorkspace) {
+                return showVenuesUnavailable(
+                    AppUtils.tr('venues.unavailableNotSocial', 'Venues are only available for social apps.')
+                );
+            }
             showToast('Venues are only available for social apps', 'error');
             window.location.href = 'apps.html';
             return;

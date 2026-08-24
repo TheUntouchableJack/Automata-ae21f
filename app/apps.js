@@ -57,8 +57,11 @@ const APP_TYPE_FEATURES = {
 // ===== Initialization =====
 async function initApps() {
     try {
-        // Check authentication
+        // Check authentication. requireAuth() also returns null when the
+        // workspace gate is redirecting away from this page — keep going and
+        // every downstream currentUser.id throws mid-redirect.
         currentUser = await requireAuth();
+        if (!currentUser) return;
 
         // Load user info and organization
         await loadUserInfo();

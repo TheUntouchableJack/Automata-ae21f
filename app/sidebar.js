@@ -36,6 +36,10 @@ const AppSidebar = (function() {
                 // venues.html at all, since the only in-product link is behind
                 // apps.html, which is advancedOnly and off by default.
                 { id: 'venues', icon: 'mapPin', href: '/app/venues.html', labelKey: 'nav.venues', label: 'Venues', socialOnly: true },
+                // My App - the scoped preview + branding page for client
+                // workspaces. clientOnly: never rendered in the owner
+                // workspace, which has apps.html and the full builder instead.
+                { id: 'my-app', icon: 'smartphone', href: '/app/my-app.html', labelKey: 'nav.myApp', label: 'My App', clientOnly: true },
             ]
         },
         {
@@ -196,32 +200,15 @@ const AppSidebar = (function() {
         return fallback;
     }
 
-    // Get current page ID from URL
+    // Get current page ID from URL.
+    //
+    // The mapping itself now lives in AppWorkspace so the page gate and the
+    // active-highlight can't drift apart. pageIdForPath() returns null for
+    // unmapped paths (deny-by-default over there); the 'dashboard' fallback is
+    // re-applied here so this function's behaviour is byte-identical to what
+    // it was before the move.
     function getCurrentPageId(isAdmin) {
-        const path = window.location.pathname;
-        if (path.includes('ceo')) return 'ceo';
-        if (path.includes('blog-review')) return 'blog-review';
-        // Dashboard page - always highlight 'dashboard' nav item
-        if (path.includes('dashboard')) return 'dashboard';
-        if (path.includes('project.html')) return 'dashboard'; // Individual project pages
-        if (path.includes('intelligence')) return 'intelligence';
-        if (path.includes('automations.html')) return 'automations';
-        if (path.includes('automation.html')) return 'automations';
-        if (path.includes('apps.html')) return 'apps';
-        if (path.includes('app-builder.html')) return 'apps';
-        if (path.includes('customers')) return 'customers';
-        if (path.includes('rewards')) return 'rewards';
-        if (path.includes('outgoing')) return 'campaigns';
-        if (path.includes('roadmap')) return 'roadmap';
-        if (path.includes('support')) return 'support';
-        if (path.includes('faqs')) return 'support';
-        if (path.includes('settings')) return 'settings';
-        if (path.includes('launch-plan')) return 'launch-plan';
-        if (path.includes('content-generator')) return 'content-generator';
-        if (path.includes('admin.html')) return 'admin-panel';
-        if (path.includes('upgrade')) return 'upgrade';
-        if (path.includes('venues')) return 'venues';
-        return 'dashboard';
+        return AppWorkspace.pageIdForPath(window.location.pathname) || 'dashboard';
     }
 
     // Get user initials
@@ -257,11 +244,32 @@ const AppSidebar = (function() {
         const showAdvancedItems = isSuperAdmin || isAdvanced;
         const currentPage = getCurrentPageId(showAdminItems);
 
+        // Scoped workspaces (a client managing one app) get an explicit
+        // allowlist of nav ids; the owner workspace gets null, meaning "no
+        // filter" — the exact behaviour that shipped before this existed.
+        //
+        // userData.mode is the override the e2e specs use, since they drive
+        // AppSidebar with no live session. Otherwise read the memo, which
+        // requireAuth() has already populated via AppWorkspace.resolve().
+        const allowIds = AppWorkspace.allowedNavIds(userData.mode || AppWorkspace.mode());
+
+        // An item survives the mode filter when its id is allowlisted. When
+        // there's no allowlist (owner) everything survives and the
+        // adminOnly/advancedOnly rules below take over instead.
+        const inWorkspace = (item) => !allowIds || allowIds.indexOf(item.id) !== -1;
+
         let navHTML = '';
 
         navItems.forEach((section, sectionIndex) => {
             // Skip admin-only sections if advanced mode is not enabled
             if (section.adminOnly && !showAdminItems) {
+                return;
+            }
+
+            // A scoped workspace usually keeps nothing from Management/System.
+            // Without this the client gets bare "Management" and "System"
+            // labels with no items under them.
+            if (allowIds && !section.items.some(inWorkspace)) {
                 return;
             }
 
@@ -272,21 +280,36 @@ const AppSidebar = (function() {
 
             // Section items
             section.items.forEach(item => {
-                // Skip admin-only items if not a super admin
-                if (item.adminOnly && !showAdminItems) {
-                    return;
-                }
+                if (allowIds) {
+                    // In a scoped workspace the allowlist is the ONLY rule.
+                    // adminOnly/advancedOnly are owner-workspace concepts —
+                    // an allowlisted id was chosen deliberately, and letting
+                    // advancedMode widen the list would be an escalation.
+                    if (!inWorkspace(item)) return;
+                } else {
+                    // Skip client-only items in the owner workspace
+                    if (item.clientOnly) return;
 
-                // Skip advanced-only items unless super admin or Advanced Mode is on
-                if (item.advancedOnly && !showAdvancedItems) {
-                    return;
+                    // Skip admin-only items if not a super admin
+                    if (item.adminOnly && !showAdminItems) {
+                        return;
+                    }
+
+                    // Skip advanced-only items unless super admin or Advanced Mode is on
+                    if (item.advancedOnly && !showAdvancedItems) {
+                        return;
+                    }
                 }
 
                 // Social-only items render hidden and are revealed by
                 // updateVenuesNavVisibility() once the org's apps are known.
                 // Rendering them up front (rather than awaiting the lookup)
                 // keeps render() synchronous for every existing caller.
-                const hiddenUntilResolved = item.socialOnly && item.id !== currentPage;
+                //
+                // A scoped workspace skips that dance entirely: Venues is the
+                // client's whole reason for being here, and waiting on a query
+                // would render their only nav item display:none.
+                const hiddenUntilResolved = !allowIds && item.socialOnly && item.id !== currentPage;
 
                 // Determine if this item is active
                 const isActive = item.id === currentPage;
@@ -311,9 +334,14 @@ const AppSidebar = (function() {
                 `;
             });
 
-            // Add divider after main section
+            // Add divider after main section — but not when nothing follows
+            // it, which is the normal case in a scoped workspace.
             if (section.section === 'main') {
-                navHTML += '<div class="sidebar-divider"></div>';
+                const hasMore = navItems.slice(sectionIndex + 1).some(s => {
+                    if (s.adminOnly && !showAdminItems) return false;
+                    return !allowIds || s.items.some(inWorkspace);
+                });
+                if (hasMore) navHTML += '<div class="sidebar-divider"></div>';
             }
         });
 
@@ -664,7 +692,11 @@ const AppSidebar = (function() {
         // Fire-and-forget: reveals the Venues item on orgs that have a social
         // app. Runs on every page so the item is wherever the owner is, not
         // only on venues.html.
-        if (userData.organization?.id) {
+        //
+        // Scoped workspaces render Venues visible from the start, so the
+        // lookup has nothing to reveal — skip it rather than spend a query.
+        const scoped = AppWorkspace.allowedNavIds(userData.mode || AppWorkspace.mode()) !== null;
+        if (!scoped && userData.organization?.id) {
             updateVenuesNavVisibility(userData.organization.id);
         }
 

@@ -644,6 +644,31 @@ const AppUtils = (function() {
     }
 
     /**
+     * Translate with an explicit English fallback.
+     *
+     * I18n.t()'s second argument is a REPLACEMENTS MAP, not a fallback — a
+     * missing key returns the key itself. `t('myApp.saved', 'Saved')` therefore
+     * puts the literal string "myApp.saved" on screen the moment the i18n fetch
+     * fails or a key is added to en.json but not to the other seven. This gives
+     * the call site somewhere to put real words.
+     *
+     * @param {string} key - Translation key, e.g. 'myApp.saved'
+     * @param {string} fallback - English text to use if the key is missing
+     * @param {object} [replacements] - {name} style substitutions
+     * @returns {string}
+     */
+    function tr(key, fallback, replacements) {
+        let value = (typeof t === 'function') ? t(key, replacements || {}) : key;
+        if (!value || value === key) value = fallback;
+        if (replacements) {
+            value = String(value).replace(/\{(\w+)\}/g, (match, k) => (
+                replacements[k] !== undefined ? replacements[k] : match
+            ));
+        }
+        return value;
+    }
+
+    /**
      * Show a toast notification
      * @param {string} message - Message to display
      * @param {string} type - 'success' | 'error' | 'info' (default: 'info')
@@ -768,6 +793,9 @@ const AppUtils = (function() {
         formatDate,
         formatNumber,
         truncate,
+
+        // i18n
+        tr,
 
         // Notifications
         showToast

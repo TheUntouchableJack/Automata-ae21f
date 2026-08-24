@@ -191,8 +191,11 @@ function updateSaveIndicator(status) {
 // ===== Initialization =====
 async function initAppBuilder() {
     try {
-        // Check authentication
+        // Check authentication. requireAuth() also returns null when the
+        // workspace gate is redirecting away from this page — keep going and
+        // every downstream currentUser.id throws mid-redirect.
         currentUser = await requireAuth();
+        if (!currentUser) return;
 
         // Load user info and organization
         const orgLoaded = await loadUserInfo();

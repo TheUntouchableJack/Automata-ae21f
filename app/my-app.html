@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My App - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=5">
+    <link rel="stylesheet" href="settings.css?v=2">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <style>
+        /* ===== Two-column shell =====
+           Editor left, sticky branded preview right.
+           Our OWN wrapper classes, not dashboard.css's `.dashboard-with-preview`
+           / `.dashboard-preview-col`, for two concrete reasons:
+             1. `.dashboard-with-preview`'s real two-column value ('1fr 340px')
+                is assigned inline from dashboard.js — the class alone is one
+                column.
+             2. Below 1200px `.dashboard-preview-col` becomes `position: fixed`
+                with an `.open` class toggled by dashboard-only JS. Inheriting
+                that would hide this panel on a laptop with no way to reopen it.
+           The *inner* `.preview-*` visuals are reused verbatim; dashboard.css is
+           already loaded above. */
+        .my-app-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .my-app-editor-col { min-width: 0; }
+
+        .my-app-preview-col {
+            position: sticky;
+            top: 24px;
+            align-self: start;
+            height: calc(100vh - 96px);
+            max-height: 760px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 1100px) {
+            .my-app-layout { grid-template-columns: minmax(0, 1fr); }
+
+            /* Static and stacked on top — never a fixed drawer, because this
+               page ships no toggle to reopen one. */
+            .my-app-preview-col {
+                position: static;
+                height: auto;
+                max-height: none;
+                order: -1;
+            }
+
+            .my-app-preview-col .preview-phone-frame { min-height: 420px; }
+        }
+
+        .my-app-preview-note {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin: 0;
+        }
+
+        /* ===== Splash =====
+           Faithful to the real auth splash (customer-app/social.css:2013-2090),
+           which is NOT shaped like the loyalty one dashboard.css styles:
+           secondary_color is the backdrop, the scrim sits over it, the content
+           is bottom-anchored, and primary_color fills the logo tile and the
+           primary button. --splash-primary is set from JS so one assignment
+           repaints both. */
+        .my-app-splash {
+            position: relative;
+            justify-content: flex-end;
+            gap: 0;
+            padding: 0;
+        }
+
+        .my-app-splash-scrim {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(15, 23, 42, 0.45) 0%,
+                rgba(15, 23, 42, 0.75) 55%,
+                rgba(15, 23, 42, 0.94) 100%
+            );
+        }
+
+        .my-app-splash-content {
+            position: relative;
+            width: 100%;
+            padding: 24px 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+        }
+
+        /* The dashboard's chip is a white circle; the social app's is a rounded
+           square filled with the primary colour. */
+        .my-app-splash .preview-splash-logo {
+            background: var(--splash-primary, #7c3aed);
+            border-radius: 14px;
+            box-shadow: none;
+        }
+
+        .my-app-splash .preview-splash-logo span { color: #fff; }
+        .my-app-splash .preview-splash-logo img { border-radius: 10px; }
+
+        .my-app-splash .preview-splash-name {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .my-app-splash .preview-splash-subtitle {
+            margin-top: 0;
+            color: rgba(255, 255, 255, 0.82);
+        }
+
+        /* Cosmetic: this mirrors the visitor's "Create Account" button. The
+           controls that actually go somewhere live in the footer. */
+        .my-app-splash .preview-splash-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 11px 16px;
+            border-radius: var(--radius-md);
+            background: var(--splash-primary, #7c3aed);
+            color: #fff;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        .my-app-splash .preview-splash-btn:hover {
+            background: var(--splash-primary, #7c3aed);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .my-app-grid {
+            display: grid;
+            gap: 20px;
+            max-width: 720px;
+        }
+
+        .my-app-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+        }
+
+        .my-app-card h2 {
+            font-size: 1rem;
+            margin: 0 0 4px;
+        }
+
+        .my-app-card .card-hint {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin: 0 0 20px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .field:last-child { margin-bottom: 0; }
+
+        .field label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .field input[type="text"] {
+            padding: 12px 16px;
+            font-family: inherit;
+            font-size: 15px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text);
+            outline: none;
+        }
+
+        .field input[type="text"]:focus {
+            border-color: var(--color-primary);
+        }
+
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .color-row input[type="color"] {
+            width: 48px;
+            height: 40px;
+            padding: 0;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: none;
+            cursor: pointer;
+        }
+
+        .color-row input[type="text"] {
+            width: 140px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            text-transform: lowercase;
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .logo-preview {
+            width: 72px;
+            height: 72px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: var(--color-bg-secondary);
+            flex-shrink: 0;
+        }
+
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-preview-empty {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            text-align: center;
+            padding: 4px;
+        }
+
+        .publish-pill {
+            display: inline-flex;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+
+        .publish-pill--live {
+            background: rgba(34, 197, 94, 0.12);
+            color: var(--color-success);
+        }
+
+        .publish-pill--draft {
+            background: rgba(148, 163, 184, 0.16);
+            color: var(--color-text-muted);
+        }
+
+        .link-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .link-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+        .link-row .link-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .link-row .link-note {
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
+        .link-row a {
+            font-size: 13px;
+            color: var(--color-primary);
+            word-break: break-all;
+        }
+
+        .my-app-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+    </style>
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. Session
+         replay + masking inside /app only. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
+</head>
+<body>
+    <div class="app-layout">
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title" data-i18n="myApp.title">My App</h1>
+                        <p class="page-subtitle" id="app-name-subtitle"></p>
+                    </div>
+                </div>
+            </div>
+
+            <section class="settings-section">
+                <div class="container">
+                    <div class="loading-container" id="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+
+                    <div class="my-app-layout" id="my-app-content" style="display: none;">
+                      <div class="my-app-editor-col">
+                        <div class="my-app-grid">
+
+                        <!-- ===== Links =====
+                             Social apps have no ?preview=true mode, so the live
+                             URL is the only real one. See renderLinks(). -->
+                        <div class="my-app-card">
+                            <h2 data-i18n="myApp.linksTitle">Your links</h2>
+                            <p class="card-hint" data-i18n="myApp.linksHint">Share these with the people you want in the app.</p>
+
+                            <div id="links-block" style="display: none;">
+                                <div class="link-row">
+                                    <span class="link-label" data-i18n="myApp.linkAppLabel">The app</span>
+                                    <span class="link-note" data-i18n="myApp.linkAppNote">Venues, feed and search — the thing people use.</span>
+                                    <a id="link-live" href="#" target="_blank" rel="noopener"></a>
+                                </div>
+                                <div class="link-row">
+                                    <span class="link-label" data-i18n="myApp.linkJoinLabel">The sign-up page</span>
+                                    <span class="link-note" data-i18n="myApp.linkJoinNote">The front door where new people create an account.</span>
+                                    <a id="link-join" href="#" target="_blank" rel="noopener"></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ===== Branding =====
+                             Only the fields the social app actually renders:
+                             name, primary_color, secondary_color, logo_url. -->
+                        <div class="my-app-card">
+                            <h2 data-i18n="myApp.brandingTitle">Branding</h2>
+                            <p class="card-hint" data-i18n="myApp.brandingHint">Changes go live as soon as you save.</p>
+
+                            <div class="field">
+                                <label for="field-name" data-i18n="myApp.fieldName">App name</label>
+                                <input type="text" id="field-name" maxlength="60" autocomplete="off">
+                            </div>
+
+                            <div class="field">
+                                <label for="field-primary" data-i18n="myApp.fieldPrimary">Primary color</label>
+                                <div class="color-row">
+                                    <input type="color" id="field-primary" value="#7c3aed">
+                                    <input type="text" id="field-primary-text" spellcheck="false" autocomplete="off">
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="field-secondary" data-i18n="myApp.fieldSecondary">Secondary color</label>
+                                <div class="color-row">
+                                    <input type="color" id="field-secondary" value="#ec4899">
+                                    <input type="text" id="field-secondary-text" spellcheck="false" autocomplete="off">
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label data-i18n="myApp.fieldLogo">Logo</label>
+                                <div class="logo-row">
+                                    <div class="logo-preview" id="logo-preview"></div>
+                                    <input type="file" id="logo-input" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none;">
+                                    <button type="button" class="btn btn-secondary" id="logo-upload-btn" data-i18n="myApp.uploadLogo">Upload logo</button>
+                                    <button type="button" class="btn btn-ghost" id="logo-remove-btn" style="display: none;" data-i18n="myApp.removeLogo">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="my-app-actions">
+                            <button class="btn btn-primary btn-large" id="save-btn" data-i18n="myApp.save">Save changes</button>
+                        </div>
+                        </div><!-- /.my-app-grid -->
+                      </div><!-- /.my-app-editor-col -->
+
+                        <!-- ===== Live preview =====
+                             A branded splash rendered in pure DOM, not an
+                             iframe: royaltyapp.ai sends X-Frame-Options: DENY
+                             and its frame-src has no 'self', so an iframe would
+                             look right on the Vite dev server and be silently
+                             blank in production. Pure DOM also repaints as he
+                             types, before anything is saved. -->
+                        <aside class="my-app-preview-col">
+                            <div class="preview-panel">
+                                <div class="preview-panel-header">
+                                    <div class="preview-header-title">
+                                        <h3 data-i18n="myApp.previewTitle">Preview your app</h3>
+                                        <p class="my-app-preview-note" data-i18n="myApp.previewHint">This is exactly what your visitors see.</p>
+                                    </div>
+                                    <span class="publish-pill" id="publish-status"></span>
+                                </div>
+
+                                <div class="preview-phone-frame">
+                                    <div class="preview-phone-notch"></div>
+                                    <div class="preview-splash my-app-splash" id="preview-splash">
+                                        <div class="my-app-splash-scrim"></div>
+                                        <div class="my-app-splash-content">
+                                            <div class="preview-splash-logo" id="preview-splash-logo"></div>
+                                            <div class="preview-splash-name" id="preview-splash-name"></div>
+                                            <div class="preview-splash-subtitle" id="preview-splash-subtitle"></div>
+                                            <button class="preview-splash-btn" id="preview-splash-btn" type="button" tabindex="-1" aria-hidden="true"></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="preview-qr-section" id="preview-qr-section" style="display: none;">
+                                    <div class="preview-qr-display" id="preview-qr-code"></div>
+                                    <div class="preview-qr-actions">
+                                        <button class="btn btn-sm btn-secondary" id="preview-download-qr-btn">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="7 10 12 15 17 10"/>
+                                                <line x1="12" y1="15" x2="12" y2="3"/>
+                                            </svg>
+                                            <span data-i18n="myApp.downloadQR">Download QR</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="preview-panel-footer" id="preview-footer" style="display: none;">
+                                    <span class="preview-url" id="preview-url-display"></span>
+                                    <div class="preview-footer-actions">
+                                        <button class="btn btn-sm btn-ghost" id="preview-copy-url-btn" data-i18n="myApp.copyLink">Copy link</button>
+                                        <a class="btn btn-sm btn-ghost" id="preview-launch-btn" href="#" target="_blank" rel="noopener" data-i18n-title="myApp.openLive" title="Open the live app">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                                <polyline points="15 3 21 3 21 9"/>
+                                                <line x1="10" y1="14" x2="21" y2="3"/>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </div><!-- /.my-app-layout -->
+
+                    <!-- Nothing to administer. Rendered in place rather than
+                         redirected, because a scoped workspace has nowhere to
+                         redirect TO — see venues.html for the same reasoning. -->
+                    <div class="empty-state" id="my-app-unavailable" style="display: none;">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                            </svg>
+                        </div>
+                        <h3 data-i18n="myApp.unavailableTitle">No app yet</h3>
+                        <p id="my-app-unavailable-message" data-i18n="myApp.noApp">There's no app set up on this account yet.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR encoder. cdn.jsdelivr.net is already in the production script-src
+         (netlify.toml:36). If it fails to load anyway, `qrcode` is undefined —
+         generateQR() guards on that and hides the QR block rather than throwing
+         or reaching for a second external service.
+
+         NOT qrcode@1.5.3/build/qrcode.min.js, which dashboard.html:457 and
+         app-builder.html:677 both request: that path is a hard 404 on
+         jsdelivr (the npm package ships no build/ directory), so those two
+         pages have always been running on their api.qrserver.com image
+         fallback. Pre-existing and out of scope here, but don't copy the URL. -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="../i18n/i18n.js?v=1"></script>
+    <script src="workspace.js?v=1"></script>
+    <script src="auth.js?v=14"></script>
+    <script src="utils.js?v=6"></script>
+    <script src="sidebar.js?v=25"></script>
+    <script src="my-app.js?v=2"></script>
+</body>
+</html>

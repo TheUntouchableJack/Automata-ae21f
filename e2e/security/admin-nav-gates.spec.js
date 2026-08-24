@@ -19,6 +19,7 @@ test.describe('Admin nav gates (rendering)', () => {
         // login.html doesn't load sidebar.js (no sidebar pre-auth) — inject it
         // directly so AppSidebar can be driven without a live session.
         await page.goto('/app/login.html', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ url: '/app/workspace.js' });
         await page.addScriptTag({ url: '/app/sidebar.js' });
 
         const html = await page.evaluate(({ isAdmin, advancedMode }) => {
@@ -52,6 +53,7 @@ test.describe('Admin nav gates (rendering)', () => {
     // clickable path to their own venues.
     test('Venues is rendered but hidden until a social app is confirmed', async ({ page }) => {
         await page.goto('/app/login.html', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ url: '/app/workspace.js' });
         await page.addScriptTag({ url: '/app/sidebar.js' });
 
         const venues = await page.evaluate(() => {
@@ -76,6 +78,7 @@ test.describe('Admin nav gates (rendering)', () => {
 
     test('Venues is not gated behind Advanced Mode or super admin', async ({ page }) => {
         await page.goto('/app/login.html', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ url: '/app/workspace.js' });
         await page.addScriptTag({ url: '/app/sidebar.js' });
 
         const revealed = await page.evaluate(() => {
@@ -101,6 +104,7 @@ test.describe('Admin nav gates (rendering)', () => {
 
     test('on venues.html the item renders visible and active', async ({ page }) => {
         await page.goto('/app/login.html', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ url: '/app/workspace.js' });
         await page.addScriptTag({ url: '/app/sidebar.js' });
 
         const state = await page.evaluate(() => {
@@ -139,6 +143,107 @@ test.describe('Admin nav gates (rendering)', () => {
         // point of retiring the dead getCurrentPageId() reference.
         expect(state.display).toBe('');
         expect(state.active).toBe(true);
+    });
+});
+
+// ===== Scoped client workspace =====
+//
+// A client (Pahkie, running ViibeView) has an account inside the owner's org so
+// he can manage venues. Before this, /app had no role gate: requireAuth() only
+// checked that a session existed, so he landed in the middle of the owner
+// dashboard — organization.html's team roster, the Intelligence Learnings tab
+// with the org's revenue figures, the lot.
+//
+// These drive AppSidebar with an explicit `mode` because the real one comes
+// from AppWorkspace.resolve(), which needs a live session.
+test.describe('Client workspace nav', () => {
+    async function renderWith(page, userData) {
+        await page.goto('/app/login.html', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ url: '/app/workspace.js' });
+        await page.addScriptTag({ url: '/app/sidebar.js' });
+
+        return page.evaluate((data) => {
+            const host = document.createElement('div');
+            host.className = 'app-layout';
+            document.body.appendChild(host);
+            AppSidebar.render(host, data);
+
+            const nav = host.querySelector('.sidebar-nav');
+            const venues = host.querySelector('.sidebar-item[data-nav="venues"]');
+            return {
+                html: nav ? nav.innerHTML : '',
+                hrefs: [...host.querySelectorAll('.sidebar-item')].map((a) => a.getAttribute('href')),
+                venuesDisplay: venues ? venues.style.display : null,
+            };
+        }, userData);
+    }
+
+    const BASE = {
+        name: 'Pahkie Andrews',
+        email: 'pahkie@viibeview.com',
+        organization: { name: 'Royalty' },
+        role: 'member',
+    };
+
+    test('mode:client shows Venues and My App, and nothing else', async ({ page }) => {
+        const nav = await renderWith(page, { ...BASE, mode: 'client', isAdmin: false, advancedMode: false });
+
+        expect(nav.hrefs).toEqual(['/app/venues.html', '/app/my-app.html']);
+
+        for (const denied of [
+            'intelligence.html', 'dashboard.html', 'customers.html', 'settings.html',
+            'apps.html', 'ceo.html', 'rewards.html', 'automations.html', 'outgoing.html',
+            'roadmap.html', 'support.html', 'admin.html', 'launch-plan.html',
+        ]) {
+            expect(nav.html).not.toContain(denied);
+        }
+
+        // Bare "Management" / "System" headings with nothing under them.
+        expect(nav.html).not.toContain('nav.management');
+        expect(nav.html).not.toContain('nav.system');
+    });
+
+    // Venues carries socialOnly:true, so in the owner workspace it renders
+    // display:none and waits on updateVenuesNavVisibility(). For a client that
+    // would hide their only nav item behind a query.
+    test('mode:client renders Venues visible immediately, not display:none', async ({ page }) => {
+        const nav = await renderWith(page, { ...BASE, mode: 'client', isAdmin: false, advancedMode: false });
+        expect(nav.venuesDisplay).toBe('');
+    });
+
+    // The privilege-escalation pin. In a scoped workspace the allowlist is the
+    // only rule — isAdmin and advancedMode must not widen it.
+    test('mode:client + isAdmin + advancedMode is still just the two items', async ({ page }) => {
+        const nav = await renderWith(page, { ...BASE, mode: 'client', isAdmin: true, advancedMode: true });
+
+        expect(nav.hrefs).toEqual(['/app/venues.html', '/app/my-app.html']);
+        expect(nav.html).not.toContain('ceo.html');
+        expect(nav.html).not.toContain('admin.html');
+        expect(nav.html).not.toContain('apps.html');
+    });
+
+    // The "Jay is unaffected" pin — an omitted mode must render exactly what
+    // shipped before workspace.js existed.
+    test('mode omitted renders the full owner nav, with My App absent', async ({ page }) => {
+        const nav = await renderWith(page, {
+            name: 'Jay', email: 'jay@24hour.design',
+            organization: { name: 'Royalty' }, role: 'owner',
+            isAdmin: true, advancedMode: true,
+        });
+
+        for (const expected of [
+            'intelligence.html', 'dashboard.html', 'rewards.html', 'apps.html',
+            'automations.html', 'outgoing.html', 'customers.html', 'venues.html',
+            'roadmap.html', 'support.html', 'settings.html',
+            'ceo.html', 'blog-review.html', 'launch-plan.html', 'admin.html',
+        ]) {
+            expect(nav.html).toContain(expected);
+        }
+
+        // my-app.html is clientOnly: the owner has apps.html and the builder.
+        expect(nav.hrefs).not.toContain('/app/my-app.html');
+        // And Venues still waits on updateVenuesNavVisibility() for owners.
+        expect(nav.venuesDisplay).toBe('none');
     });
 });
 
