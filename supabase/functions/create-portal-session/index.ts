@@ -79,9 +79,12 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
-    if (!membership) {
+    // The role was already being selected and then discarded, so ANY org
+    // member could open the organization's Stripe billing portal — invoices,
+    // payment methods, the lot. Same guard as cancel-subscription/index.ts.
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
       return new Response(
-        JSON.stringify({ error: 'Access denied' }),
+        JSON.stringify({ error: 'Access denied. Only owners and admins can manage subscriptions.' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
