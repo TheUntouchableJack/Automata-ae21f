@@ -1351,14 +1351,24 @@ function renderPostPins() {
     });
 }
 
-// Category pills filter venues, and a post inherits its venue's category. A
-// post with no venue has no category, so it shows under "All" only — the same
-// rule get_venue_feed applies, kept in one place conceptually even though it is
-// enforced in two.
+// Which posts get a pin of their own.
+//
+// ⚠️ Only posts with their OWN coordinates. get_recent_post_pins COALESCEs the
+// post's fix over its venue's — right for the default centre, wrong for pins: a
+// post with no fix inherits its venue's exactly, so the post pin lands on the
+// venue pin, covers it, and eats its click. That is not hypothetical; it broke
+// "tapping a map pin opens the venue page" the moment post pins shipped, and a
+// venue with fifty posts would stack fifty pins on one point. Such a post is
+// already represented by its venue pin and reachable through the venue page.
+//
+// Then the category rule: pills filter venues, and a post inherits its venue's
+// category. A post with no venue has no category, so it shows under "All" only —
+// the same rule get_venue_feed applies.
 function visiblePostPins() {
-    if (!activeCategory) return postPins;
+    const located = postPins.filter(pin => pin.has_own_coords);
+    if (!activeCategory) return located;
 
-    return postPins.filter(pin => {
+    return located.filter(pin => {
         if (!pin.venue_id) return false;
         const venue = getVenueById(pin.venue_id);
         return !!venue && venue.category === activeCategory;
