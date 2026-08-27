@@ -307,7 +307,8 @@ async function init() {
             supabaseClient,
             appId: app.id,
             appSlug,
-            supabaseUrl: SUPABASE_URL
+            supabaseUrl: SUPABASE_URL,
+            supabaseAnonKey: SUPABASE_ANON_KEY
         });
 
         // Pills must exist before anything reads or highlights them
@@ -583,12 +584,22 @@ function renderCountrySelect() {
     if (countries.length === 0) {
         // The dataset failed to load. Leave a working +1 rather than an empty
         // select that silently posts no dial code at all.
-        select.innerHTML = '<option value="US" data-dial="1">🇺🇸 +1</option>';
+        select.innerHTML = '<option value="US" data-dial="1">United States (US) +1</option>';
         return;
     }
 
+    // Label is "France (FR) +33", and the list is ordered by country name.
+    //
+    // The name leads deliberately. A native <select> does type-ahead against
+    // the option text FROM THE FIRST CHARACTER, so a label starting with the
+    // flag emoji (as this did) makes every option begin with the same class of
+    // character — typing "f" for France jumped nowhere, and the only way to
+    // find a country was to already know its dial code and scan 240 numbers.
+    // With the name first, typing "fra" lands on France. The ISO code is kept
+    // because it is what people recognise on sight (FR, US, GB), and the dial
+    // code trails because it is the one part nobody searches by.
     select.innerHTML = countries.map(c => `
-        <option value="${escapeHtml(c.iso)}" data-dial="${escapeHtml(c.dial)}">${escapeHtml(c.flag)} +${escapeHtml(c.dial)}</option>
+        <option value="${escapeHtml(c.iso)}" data-dial="${escapeHtml(c.dial)}">${escapeHtml(c.name)} (${escapeHtml(c.iso)}) +${escapeHtml(c.dial)}</option>
     `).join('');
 
     const defaultIso = window.defaultCountryIso ? window.defaultCountryIso('US') : 'US';
@@ -744,11 +755,12 @@ async function handleSignupSubmit(e) {
     setSubmitting('signup-submit', false);
 
     if (!result.ok) {
-        // Email-already-taken belongs on the email field, not in the footer.
-        // Same for the duplicate phone number that app_members' UNIQUE(app_id,
-        // phone) now makes reachable — linkMembership tags it with field:'phone'.
-        if (result.field === 'phone') {
-            setFieldError('signup-phone', result.error);
+        // Field-tagged errors land on their own input, not in the footer:
+        // 'email' (already registered, bad format) and 'password' come from the
+        // social-signup function; 'phone' comes from linkMembership, where
+        // app_members' UNIQUE(app_id, phone) is now reachable.
+        if (result.field && document.getElementById(`signup-${result.field}`)) {
+            setFieldError(`signup-${result.field}`, result.error);
         } else if (/already registered/i.test(result.error)) {
             setFieldError('signup-email', result.error);
         } else {
@@ -757,15 +769,14 @@ async function handleSignupSubmit(e) {
         return;
     }
 
-    if (result.needsConfirmation) {
-        setAuthView('login');
-        setFormMessage('login-form', 'Check your email to confirm your account, then log in.', 'success');
-        return;
-    }
-
+    // No needsConfirmation branch any more. Signup goes through the
+    // social-signup edge function, which creates the account pre-confirmed and
+    // then signs in — so by the time we get here there is a real session.
+    // Being bounced to the login form to wait for an email was the single
+    // worst step in this flow, and a mistyped address made it unrecoverable.
     hideAuth();
     await onSignedIn();
-    showToast('Account created');
+    showToast('Welcome to ViibeView');
 }
 
 async function handleForgotSubmit(e) {

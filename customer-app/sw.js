@@ -32,9 +32,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
  * Provides offline support and caching for the PWA
  */
 
-const CACHE_NAME = 'royalty-rewards-v3';
-const STATIC_CACHE = 'royalty-static-v3';
-const DYNAMIC_CACHE = 'royalty-dynamic-v3';
+const CACHE_NAME = 'royalty-rewards-v4';
+const STATIC_CACHE = 'royalty-static-v4';
+const DYNAMIC_CACHE = 'royalty-dynamic-v4';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -106,6 +106,24 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Skip anything not served by this origin — Google Fonts, jsDelivr, tiles.
+    //
+    // Not an optimisation: re-issuing a cross-origin request through fetch()
+    // CHANGES WHICH CSP DIRECTIVE GOVERNS IT. A <link rel="stylesheet"> to
+    // fonts.googleapis.com is checked against style-src, which allows it; the
+    // same URL fetched from inside a service worker is checked against
+    // connect-src, which does not list it. So this handler took a request the
+    // page was allowed to make and turned it into one the browser refused —
+    // "Refused to connect because it violates the document's Content Security
+    // Policy" — and then the .catch() below returned an uncached undefined,
+    // which is the "Failed to convert value to 'Response'" TypeError.
+    //
+    // Returning without calling respondWith() hands the request back to the
+    // browser untouched, which is what should have happened all along.
+    if (url.origin !== self.location.origin) {
+        return;
+    }
+
     // Handle navigation requests (HTML pages)
     if (request.mode === 'navigate') {
         event.respondWith(
@@ -120,15 +138,22 @@ self.addEventListener('fetch', (event) => {
                     return response;
                 })
                 .catch(() => {
-                    // Offline - serve from cache or offline page
+                    // Offline - serve from cache or the matching app shell.
+                    //
+                    // Two bugs lived here. The shell was hardcoded to
+                    // app.html — the LOYALTY app — so a social-app URL fell
+                    // back to a completely different product's markup. And
+                    // caches.match() resolves undefined on a miss, so
+                    // respondWith(undefined) threw "Failed to convert value to
+                    // 'Response'" instead of degrading. Every branch now ends
+                    // in a real Response.
+                    const shell = url.pathname.includes('social')
+                        ? '/customer-app/social.html'
+                        : '/customer-app/app.html';
+
                     return caches.match(request)
-                        .then(cachedResponse => {
-                            if (cachedResponse) {
-                                return cachedResponse;
-                            }
-                            // Return the app shell for any unmatched navigation
-                            return caches.match('/customer-app/app.html');
-                        });
+                        .then(cachedResponse => cachedResponse || caches.match(shell))
+                        .then(shellResponse => shellResponse || offlineResponse());
                 })
         );
         return;
@@ -161,18 +186,34 @@ self.addEventListener('fetch', (event) => {
                 }
                 return response;
             })
-            .catch(() => {
-                return caches.match(request);
-            })
+            .catch(() =>
+                // Same undefined-is-not-a-Response trap as the navigation
+                // branch: a cache miss here used to reject the FetchEvent.
+                caches.match(request).then(cached => cached || offlineResponse())
+            )
     );
 });
+
+// Last resort when the network is gone and nothing is cached. respondWith()
+// requires a Response — handing it undefined throws a TypeError that surfaces
+// as an unhandled rejection and leaves the request failed rather than degraded.
+function offlineResponse() {
+    return new Response('', {
+        status: 503,
+        statusText: 'Offline',
+        headers: { 'Content-Type': 'text/plain' }
+    });
+}
 
 // Helper: Check if URL is a static asset
 function isStaticAsset(pathname) {
     return /\.(css|js|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)$/.test(pathname);
 }
 
-// Helper: Fetch and cache a request
+// Helper: Fetch and cache a request.
+// Never rejects: a rejected promise handed to respondWith() fails the request
+// outright instead of degrading, which is how an offline CSS file used to take
+// the whole response down.
 function fetchAndCache(request, cacheName) {
     return fetch(request)
         .then(response => {
@@ -182,7 +223,8 @@ function fetchAndCache(request, cacheName) {
                     .then(cache => cache.put(request, responseClone));
             }
             return response;
-        });
+        })
+        .catch(() => caches.match(request).then(cached => cached || offlineResponse()));
 }
 
 // Handle push notifications (future feature)

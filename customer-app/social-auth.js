@@ -204,27 +204,62 @@
 
         if (problem) return { ok: false, error: problem };
 
-        const { data, error } = await client.auth.signUp({
-            email: email.trim(),
-            password,
-            options: {
-                data: {
-                    // Load-bearing — see the file header. Without this the
-                    // signup trigger provisions a Royalty organization.
-                    user_type: 'app_member',
+        // Goes through the social-signup edge function rather than
+        // client.auth.signUp.
+        //
+        // "Confirm email" is ON for this Supabase project and is project-wide
+        // with no per-app scoping — Royalty business-owner accounts carry
+        // billing, so it stays on for them. client.auth.signUp therefore
+        // returns NO session, which is why signing up used to dump you back at
+        // the login form to wait for an email. Worse, a mistyped address (it
+        // happens: jay+j@24hour.desgn) sent the confirmation into a void and
+        // left an account that could never be logged into, with a login error
+        // that just said "email or password is incorrect".
+        //
+        // The edge function creates the user with email_confirm: true, which
+        // bypasses that setting for social-type apps ONLY, and refuses any app
+        // whose app_type is not 'social'. Then we sign in normally below.
+        let res;
+        try {
+            res = await fetch(`${global.__socialSupabaseUrl}/functions/v1/social-signup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': global.__socialAnonKey,
+                    'Authorization': `Bearer ${global.__socialAnonKey}`
+                },
+                body: JSON.stringify({
+                    app_id: currentAppId,
+                    email: email.trim(),
+                    password,
                     first_name: firstName?.trim() || null,
-                    last_name: lastName?.trim() || null,
-                    app_slug: global.__socialAppSlug || null
-                }
-            }
+                    last_name: lastName?.trim() || null
+                })
+            });
+        } catch (e) {
+            return { ok: false, error: 'Connection problem. Check your signal and try again.' };
+        }
+
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || payload.success === false) {
+            // The function tags which input was wrong so the message lands on
+            // that field rather than in the footer.
+            return {
+                ok: false,
+                field: payload.field || null,
+                error: payload.error || 'Could not create your account. Try again.'
+            };
+        }
+
+        // The account exists and is confirmed, so this succeeds immediately —
+        // no email round trip, no second visit to the login form.
+        const { error: signInError } = await client.auth.signInWithPassword({
+            email: email.trim(),
+            password
         });
 
-        if (error) return { ok: false, error: friendlyAuthError(error, 'create your account') };
-
-        // Email confirmation is on: there is no session yet, so the membership
-        // row gets created on first login instead.
-        if (!data.session) {
-            return { ok: true, needsConfirmation: true, pendingProfile: { firstName, lastName, phone, dialCode } };
+        if (signInError) {
+            return { ok: false, error: friendlyAuthError(signInError, 'log in to your new account') };
         }
 
         const linked = await linkMembership({ firstName, lastName, phone, dialCode });
@@ -384,11 +419,14 @@
 
     // ===== Init =====
 
-    function init({ supabaseClient, appId, appSlug, supabaseUrl }) {
+    function init({ supabaseClient, appId, appSlug, supabaseUrl, supabaseAnonKey }) {
         client = supabaseClient;
         currentAppId = appId;
         global.__socialAppSlug = appSlug;
         global.__socialSupabaseUrl = supabaseUrl;
+        // Needed as the bearer for the social-signup edge function, which is
+        // called before any session exists.
+        global.__socialAnonKey = supabaseAnonKey;
     }
 
     global.SocialAuth = {

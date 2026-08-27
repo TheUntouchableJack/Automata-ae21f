@@ -2330,22 +2330,24 @@ body {
 }
 
 /* HTML: <div class="auth-phone-row"> wrapping #signup-country + #signup-phone.
-   The select is sized to its content (flag + dial code) so the number itself
-   keeps the full remaining width — the part people actually type into. */
+   The country select sits on its own line: its options read "France (FR) +33",
+   and squeezing that beside the number input truncated it to "Franc…" — which
+   defeats the point of putting the name there. The number keeps a full-width
+   row of its own, which is the field people actually type into. */
 .auth-phone-row {
     display: flex;
+    flex-direction: column;
     gap: var(--spacing-sm);
     align-items: stretch;
 }
 
 .auth-phone-row input {
-    flex: 1;
+    width: 100%;
     min-width: 0;
 }
 
 .auth-phone-country {
-    flex: 0 0 auto;
-    max-width: 42%;
+    width: 100%;
     padding: var(--spacing-sm);
     border: 1.5px solid var(--color-border);
     border-radius: var(--radius-md);
