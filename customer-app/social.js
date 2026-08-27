@@ -3004,11 +3004,28 @@ async function startCamera() {
         return;
     }
 
+    const videoConstraints = { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } };
+
     try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: true
-        });
+        // Audio first — a Viibe is a video with sound, and the feed has a sound
+        // toggle. But getUserMedia is all-or-nothing: ask for audio you cannot
+        // have and you get NO stream, not a video-only one. That is how a
+        // Permissions-Policy of microphone=() turned into "Camera access
+        // denied" with a perfectly working camera.
+        //
+        // So: try with sound, and if only the audio half is unavailable, fall
+        // back to a silent recording rather than refusing to record at all.
+        // Being unable to post is worse than posting without sound.
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: videoConstraints,
+                audio: true
+            });
+        } catch (audioErr) {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+            console.warn('Microphone unavailable, recording video only:', audioErr.name);
+            showToast('No microphone available — your Viibe will be silent');
+        }
 
         const viewfinder = document.getElementById('camera-viewfinder');
         if (viewfinder) {
@@ -3027,14 +3044,22 @@ async function startCamera() {
         if (uploadArea) uploadArea.classList.add('camera-active');
 
     } catch (e) {
+        // Name the actual obstacle. "Camera access denied" was reported for a
+        // camera that was never asked for permission, because the request had
+        // already failed on the microphone.
         if (e.name === 'NotAllowedError') {
-            showToast('Camera access denied. Please allow camera access.');
-        } else if (e.name === 'NotFoundError') {
+            const byPolicy = /permissions policy|disallowed by permissions/i.test(e.message || '');
+            showToast(byPolicy
+                ? 'Camera is blocked by this site’s settings. Tell support.'
+                : 'Camera access denied. Allow camera access in your browser, then try again.');
+        } else if (e.name === 'NotFoundError' || e.name === 'OverconstrainedError') {
             showToast('No camera found on this device');
+        } else if (e.name === 'NotReadableError') {
+            showToast('Your camera is in use by another app');
         } else {
             showToast('Could not access camera');
-            console.error('Camera error:', e);
         }
+        console.error('Camera error:', e.name, e.message);
     }
 }
 

@@ -23,7 +23,14 @@
     X-Content-Type-Options = "nosniff"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(self), microphone=(), geolocation=(self)"
+    # microphone=(self) is required by the ViibeView composer, which records
+    # video WITH sound — the feed has a sound toggle, so a silent-only recorder
+    # would be a strange product. This read microphone=() (disallowed for
+    # everyone, including this origin), which made getUserMedia({video, audio})
+    # reject outright; the app then reported "Camera access denied", blaming the
+    # camera for a microphone the site had blocked itself. Like the CSP above,
+    # it only failed in production — `npm run dev` sends no Permissions-Policy.
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=(self)"
     # PostHog is served first-party through the /ingest/* proxy below, so it needs
     # no extra script-src/connect-src origins — 'self' already covers it. That is
     # the point of the proxy: it also survives ad blockers, which block the
