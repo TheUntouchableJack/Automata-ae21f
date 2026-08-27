@@ -82,10 +82,12 @@ test.describe('ViibeView member accounts', () => {
         await openProfileTab(page);
         await page.click('#profile-signup-btn');
 
-        // Empty submit — every required field should report its own error
+        // Empty submit — every required field should report its own error.
+        // Phone joined that list when it became required.
         await page.click('#signup-submit');
         await expect(page.locator('#signup-first-name-error')).toBeVisible();
         await expect(page.locator('#signup-email-error')).toBeVisible();
+        await expect(page.locator('#signup-phone-error')).toBeVisible();
         await expect(page.locator('#signup-password-error')).toBeVisible();
         await expect(page.locator('#signup-terms-error')).toBeVisible();
 
@@ -115,10 +117,32 @@ test.describe('ViibeView member accounts', () => {
         await page.click('#signup-submit');
         await expect(page.locator('#signup-confirm-error')).toContainText(/do not match/i);
 
-        // Terms unchecked blocks submission even when everything else is valid
+        // Terms unchecked blocks submission even when everything else is valid.
+        // "Everything else" now includes the phone number.
         await page.fill('#signup-confirm', 'ValidPass1');
+        await page.fill('#signup-phone', '3105550101');
         await page.click('#signup-submit');
+        await expect(page.locator('#signup-phone-error')).toBeHidden();
         await expect(page.locator('#signup-terms-error')).toContainText(/Terms/i);
+    });
+
+    test('the country selector defaults to a real dial code', async ({ page }) => {
+        await loadApp(page);
+        await openProfileTab(page);
+        await page.click('#profile-signup-btn');
+
+        const select = page.locator('#signup-country');
+        await expect(select).toBeVisible();
+
+        // The full ISO list, not a curated handful.
+        const optionCount = await select.locator('option').count();
+        expect(optionCount).toBeGreaterThan(200);
+
+        // Whatever navigator.language resolves to, it has to carry a dial code —
+        // a selected option with no data-dial would post a phone number with no
+        // country and land in app_members.phone as a bare local number.
+        const dial = await select.evaluate(el => el.selectedOptions[0]?.dataset.dial);
+        expect(dial, 'selected country has no dial code').toMatch(/^\d+$/);
     });
 
     test('password strength meter responds to input', async ({ page }) => {
@@ -140,8 +164,19 @@ test.describe('ViibeView member accounts', () => {
         await openProfileTab(page);
         await page.click('#profile-signup-btn');
 
+        // The (310) 555-0101 mask is a North American convention and now
+        // applies to +1 only, so this assertion is only meaningful once the
+        // selected country is confirmed. Playwright runs en-US by default.
+        await page.selectOption('#signup-country', 'US');
+
         await page.fill('#signup-phone', '3105550101');
         await expect(page.locator('#signup-phone')).toHaveValue('(310) 555-0101');
+
+        // Outside +1 the mask has to get out of the way — a French number
+        // rendered as (612) 345-678 is not recognisable as anyone's phone.
+        await page.selectOption('#signup-country', 'FR');
+        await page.fill('#signup-phone', '612345678');
+        await expect(page.locator('#signup-phone')).toHaveValue('612345678');
     });
 
     test('login validates before hitting the network', async ({ page }) => {
@@ -190,9 +225,12 @@ test.describe('ViibeView member accounts', () => {
     test('signed-out visitors are prompted, not silently ignored, on post', async ({ page }) => {
         await loadApp(page);
 
-        // The button is hidden for non-owners, so drive the handler directly —
-        // hiding UI is presentation, and this path must still be gated.
-        await page.evaluate(() => openCreatePost());
+        // The create button is visible to everyone now — posting is open to any
+        // signed-in member, and hiding the button was what made a member think
+        // the app had no way to post at all. Clicking the real button is the
+        // path a visitor actually takes.
+        await expect(page.locator('.post-btn')).toBeVisible();
+        await page.click('.post-btn');
         await page.waitForTimeout(500);
 
         await expect(page.locator('#auth-overlay')).toHaveClass(/visible/);

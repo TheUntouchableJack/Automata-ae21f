@@ -43,7 +43,56 @@ let venuePageHasMore = true;
 let venuePageLoading = false;
 let venuePageScrollHandler = null;
 
+// The signed-in user's auth id. Needed on every feed card to decide whether the
+// 3-dots menu offers Delete or Report, so it is cached rather than awaited
+// inside the render loop.
+let currentUserId = null;
+
+// Venue the composer will attach the post to. null = an unattached Viibe,
+// credited to its author. Set by openCreatePost(venueId).
+let composerVenueId = null;
+
+// Set when a signed-out visitor taps Create: the auth overlay opens first and
+// the composer reopens by itself on success. A recording is never held across
+// an email-confirmation redirect — the composer opens empty.
+let pendingComposerVenueId;   // undefined = no pending intent (null is "no venue")
+let hasPendingComposer = false;
+
+// Sound is a user preference that survives navigation, not per-video state.
+// One writer (applySoundState) so the observer, the tap-to-play handler and the
+// speaker button cannot disagree.
+let feedSoundOn = false;
+
+// Hoisted so each renderFeed() disconnects the previous observer. They used to
+// be created per render and never disconnected, so after five pages five
+// observers fought over the same <video> elements.
+let feedVideoObserver = null;
+let venueVideoObserver = null;
+
+// requestLocation() resolves asynchronously and used to call renderFeed()
+// unconditionally, blowing away innerHTML and restarting every playing video.
+let feedHasRendered = false;
+
+// Map post pins (distinct from venue `markers`).
+let postPins = [];
+let postMarkers = [];
+let previewPostId = null;
+
+// Scroll chrome
+let scrollChromeTicking = false;
+let lastScrollY = 0;
+
+// Which post the options sheet is acting on.
+let optionsMediaId = null;
+
 const FEED_PAGE_SIZE = 20;
+const SOUND_PREF_KEY = 'viibe_sound_on';
+const REPORT_REASONS = [
+    { value: 'inappropriate', key: 'social.reportInappropriate', label: 'Inappropriate content' },
+    { value: 'spam',          key: 'social.reportSpam',          label: 'Spam or misleading' },
+    { value: 'harassment',    key: 'social.reportHarassment',    label: 'Harassment or bullying' },
+    { value: 'other',         key: 'social.reportOther',         label: 'Something else' }
+];
 
 // ===== Demo Venues (for preview when DB has no venues) =====
 const DEMO_VENUES = [
@@ -264,6 +313,12 @@ async function init() {
         // Pills must exist before anything reads or highlights them
         renderCategoryPills();
 
+        // The country <select> has to exist before the signup form can be
+        // opened, and the overlay can be opened from the very first tap.
+        renderCountrySelect();
+
+        loadSoundPreference();
+
         setupAuthListeners();
         await renderProfileIdentity();
 
@@ -275,6 +330,10 @@ async function init() {
 
         // Load venues for map
         await loadVenues();
+
+        // Post pins double as the map's default centre, so they are loaded up
+        // front rather than lazily with the map tab.
+        await loadPostPins();
 
         // Load initial feed
         await loadFeed();
@@ -494,11 +553,54 @@ function renderStrengthMeter(meterId, password) {
 
 // Gate used by anything that needs an account (posting now; following and
 // profile editing from Phase 2). Returns true when the caller may proceed.
-async function requireAccount(reason) {
+//
+// `pendingVenueId` records what the visitor was trying to do so onSignedIn()
+// can finish it. Auth first, composer second — deliberately, so a recording is
+// never held across an email-confirmation redirect that discards the page.
+async function requireAccount(reason, { pendingVenueId } = {}) {
     if (await SocialAuth.isSignedIn()) return true;
+
+    if (pendingVenueId !== undefined) {
+        pendingComposerVenueId = pendingVenueId;
+        hasPendingComposer = true;
+    }
+
     if (reason) showToast(reason);
     showAuth('signup');
     return false;
+}
+
+// ===== Signup: country dial codes =====
+
+// Populated from /js/country-dial-codes.js, which is the full ISO list. A
+// <select> rather than a search widget: 240 options is nothing for a native
+// picker, and there is no custom dropdown to build, style or make accessible.
+function renderCountrySelect() {
+    const select = document.getElementById('signup-country');
+    if (!select) return;
+
+    const countries = window.COUNTRY_DIAL_CODES || [];
+    if (countries.length === 0) {
+        // The dataset failed to load. Leave a working +1 rather than an empty
+        // select that silently posts no dial code at all.
+        select.innerHTML = '<option value="US" data-dial="1">🇺🇸 +1</option>';
+        return;
+    }
+
+    select.innerHTML = countries.map(c => `
+        <option value="${escapeHtml(c.iso)}" data-dial="${escapeHtml(c.dial)}">${escapeHtml(c.flag)} +${escapeHtml(c.dial)}</option>
+    `).join('');
+
+    const defaultIso = window.defaultCountryIso ? window.defaultCountryIso('US') : 'US';
+    select.value = defaultIso;
+    if (!select.value) select.value = 'US';
+}
+
+// Calling code for the currently selected country, without the '+'.
+function selectedDialCode() {
+    const select = document.getElementById('signup-country');
+    const option = select?.selectedOptions?.[0];
+    return option?.dataset.dial || SocialAuth.NANP_DIAL;
 }
 
 // ===== Auth Wiring =====
@@ -524,12 +626,36 @@ function setupAuthListeners() {
     // Entry points from the Profile tab
     document.getElementById('profile-signup-btn')?.addEventListener('click', () => showAuth('signup'));
     document.getElementById('profile-login-btn')?.addEventListener('click', () => showAuth('login'));
-    document.getElementById('auth-browse-btn')?.addEventListener('click', hideAuth);
+    // "Browse without an account" abandons whatever the overlay interrupted.
+    // Without this, a visitor who taps Create, backs out, and signs in an hour
+    // later from the Profile tab gets a composer they never asked for.
+    // Cleared HERE and not in hideAuth(), which the successful-auth paths call
+    // immediately before onSignedIn() — the one moment the intent must survive.
+    document.getElementById('auth-browse-btn')?.addEventListener('click', () => {
+        hasPendingComposer = false;
+        pendingComposerVenueId = undefined;
+        hideAuth();
+    });
 
-    // Live formatting + strength feedback
+    // Live formatting + strength feedback.
+    // The (310) 555-0101 mask is a North American convention and applies to +1
+    // only — running it over a French or Nigerian number produces something the
+    // user cannot recognise as their own phone.
     const phoneInput = document.getElementById('signup-phone');
     phoneInput?.addEventListener('input', () => {
-        phoneInput.value = SocialAuth.formatPhone(phoneInput.value);
+        if (selectedDialCode() === SocialAuth.NANP_DIAL) {
+            phoneInput.value = SocialAuth.formatPhone(phoneInput.value);
+        }
+    });
+
+    // Switching country re-applies (or drops) the mask on what is already typed.
+    document.getElementById('signup-country')?.addEventListener('change', () => {
+        if (!phoneInput) return;
+        const digits = phoneInput.value.replace(/\D/g, '');
+        phoneInput.value = selectedDialCode() === SocialAuth.NANP_DIAL
+            ? SocialAuth.formatPhone(digits)
+            : digits;
+        setFieldError('signup-phone', null);
     });
 
     const signupPassword = document.getElementById('signup-password');
@@ -593,6 +719,7 @@ async function handleSignupSubmit(e) {
     const lastName = document.getElementById('signup-last-name').value;
     const email = document.getElementById('signup-email').value;
     const phone = document.getElementById('signup-phone').value;
+    const dialCode = selectedDialCode();
     const password = document.getElementById('signup-password').value;
     const confirmPassword = document.getElementById('signup-confirm').value;
     const acceptedTerms = document.getElementById('signup-terms').checked;
@@ -602,7 +729,9 @@ async function handleSignupSubmit(e) {
     let valid = true;
     valid = setFieldError('signup-first-name', firstName.trim() ? null : 'Enter your first name') && valid;
     valid = setFieldError('signup-email', SocialAuth.validateEmail(email)) && valid;
-    valid = setFieldError('signup-phone', SocialAuth.validatePhone(phone)) && valid;
+    // Phone is required now: it is how a venue reaches someone about a Viibe,
+    // and how Royal AI can text a member at all.
+    valid = setFieldError('signup-phone', SocialAuth.validatePhone(phone, { required: true, dial: dialCode })) && valid;
     valid = setFieldError('signup-password', SocialAuth.validatePassword(password)) && valid;
     valid = setFieldError('signup-confirm', SocialAuth.validatePasswordMatch(password, confirmPassword)) && valid;
     valid = setFieldError('signup-terms', acceptedTerms ? null : 'Accept the Terms & Conditions to continue') && valid;
@@ -610,13 +739,17 @@ async function handleSignupSubmit(e) {
 
     setSubmitting('signup-submit', true, 'Creating account…');
     const result = await SocialAuth.signUp({
-        email, password, confirmPassword, firstName, lastName, phone, acceptedTerms
+        email, password, confirmPassword, firstName, lastName, phone, dialCode, acceptedTerms
     });
     setSubmitting('signup-submit', false);
 
     if (!result.ok) {
-        // Email-already-taken belongs on the email field, not in the footer
-        if (/already registered/i.test(result.error)) {
+        // Email-already-taken belongs on the email field, not in the footer.
+        // Same for the duplicate phone number that app_members' UNIQUE(app_id,
+        // phone) now makes reachable — linkMembership tags it with field:'phone'.
+        if (result.field === 'phone') {
+            setFieldError('signup-phone', result.error);
+        } else if (/already registered/i.test(result.error)) {
             setFieldError('signup-email', result.error);
         } else {
             setFormMessage('signup-form', result.error);
@@ -689,6 +822,18 @@ async function onSignedIn() {
     await SocialAuth.loadMember({ force: true });
     await checkOwnerAccess();
     await renderProfileIdentity();
+
+    // The feed cards render Delete vs Report from currentUserId, which was null
+    // for the whole signed-out session.
+    if (feedHasRendered) renderFeed();
+
+    // Finish what the visitor was doing when the overlay interrupted them.
+    if (hasPendingComposer) {
+        const venueId = pendingComposerVenueId;
+        hasPendingComposer = false;
+        pendingComposerVenueId = undefined;
+        openCreatePost(venueId);
+    }
 }
 
 // ===== Contact Us =====
@@ -810,9 +955,18 @@ function showConfirm({ title, body, acceptLabel, onAccept }) {
 }
 
 // ===== Owner Access Check =====
+//
+// This no longer gates the create button — posting is open to any signed-in
+// member. What it still establishes is (a) who the viewer is, so a feed card
+// can offer Delete instead of Report, and (b) ownerOrgId, which the owner
+// upload path still needs for the {orgId}/{venueId}/ storage prefix.
 async function checkOwnerAccess() {
+    isOwner = false;
+    ownerOrgId = null;
+
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
+        currentUserId = session?.user?.id || null;
         if (!session) return;
 
         // Check if this user is an org member for the current app's organization
@@ -826,11 +980,9 @@ async function checkOwnerAccess() {
         if (membership) {
             isOwner = true;
             ownerOrgId = membership.organization_id;
-            const postBtn = document.querySelector('.post-btn');
-            if (postBtn) postBtn.style.display = '';
         }
     } catch (e) {
-        // Not an owner — that's fine, button stays hidden
+        // Not an owner — that's fine, they post through the member path
     }
 }
 
@@ -841,12 +993,19 @@ function requestLocation() {
     navigator.geolocation.getCurrentPosition(
         (pos) => {
             userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            // Re-render feed with distances
-            renderFeed();
-            // Center map if it's initialized
-            if (map && activeTab === 'map') {
-                map.setView([userLocation.lat, userLocation.lng], 13);
-            }
+
+            // Re-render for distances ONLY when it costs nothing. This used to
+            // fire unconditionally, and since renderFeed() replaces innerHTML
+            // it tore down every <video> mid-playback the moment the GPS
+            // permission resolved — which on a cold start is a few seconds
+            // after the user has started scrolling.
+            if (!feedHasRendered || activeTab !== 'feed') renderFeed();
+
+            // Deliberately NOT recentring the map here. The default centre is
+            // now the most recent post (see initMap), and this would fight it
+            // whenever geolocation resolved after the map mounted.
+            // #center-on-me-btn still does it, explicitly, on request.
+            renderVenueSwimLane();
         },
         (err) => {
             console.warn('Geolocation denied:', err.message);
@@ -972,55 +1131,86 @@ function renderFeed() {
 
     if (emptyState) emptyState.style.display = 'none';
 
-    container.innerHTML = feedItems.map(item => {
-        const locationParts = [item.venue_name, item.venue_city].filter(Boolean);
-        const locationText = locationParts.join(', ');
-        const isVideo = item.media_type === 'video';
-
-        // Identity comes from the venue the Viibe was posted at. get_venue_feed
-        // already returns venue_handle and venue_profile_image_url; every card
-        // used to render a hardcoded "@Admin" and ignore both.
-        const handle = item.venue_handle
-            ? `@${item.venue_handle}`
-            : (item.venue_name || '');
-        const avatarLetter = (item.venue_name || '?').charAt(0).toUpperCase();
-
-        return `
-            <div class="feed-card" data-media-id="${item.id}" data-venue-id="${item.venue_id}">
-                <div class="feed-card-header">
-                    <div class="feed-venue-info" onclick="openVenuePage('${item.venue_id}')">
-                        <div class="venue-avatar">
-                            ${item.venue_profile_image_url
-                                ? `<img src="${escapeHtml(item.venue_profile_image_url)}" alt="">`
-                                : `<div class="venue-avatar-placeholder">${escapeHtml(avatarLetter)}</div>`}
-                        </div>
-                        <div class="venue-meta">
-                            <div class="venue-handle">${escapeHtml(handle)}</div>
-                            <div class="venue-location">${escapeHtml(locationText)}</div>
-                        </div>
-                    </div>
-                    <button class="feed-more-btn" onclick="showVenueOptions('${item.venue_id}')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                    </button>
-                </div>
-                <div class="feed-media" onclick="toggleVideoPlay(this)">
-                    ${isVideo ? `
-                        <video src="${item.url}" poster="${item.thumbnail_url || ''}" playsinline muted preload="none" loop></video>
-                        <div class="video-play-btn">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                        ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
-                    ` : `
-                        <img src="${item.url}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
-                    `}
-                </div>
-                ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
-            </div>
-        `;
-    }).join('');
+    container.innerHTML = feedItems.map(item => renderFeedCard(item)).join('');
 
     // Setup intersection observer for video autoplay
     setupVideoObserver();
+    refreshSoundButtons();
+    feedHasRendered = true;
+}
+
+// Who a post is by.
+//
+// A post carries a venue OR an author, and now usually the latter: members post
+// unattached Viibes. Before venue_id was nullable, submitPost() invented a
+// "General" venue for every post so the NOT NULL could be satisfied — which is
+// why Jay's test post reads "General / General" and links to a venue nobody
+// created on purpose.
+function postIdentity(item) {
+    if (item.venue_id) {
+        return {
+            title: item.venue_handle ? `@${item.venue_handle}` : (item.venue_name || ''),
+            subtitle: [item.venue_name, item.venue_city].filter(Boolean).join(', '),
+            imageUrl: item.venue_profile_image_url || null,
+            letter: (item.venue_name || '?').charAt(0).toUpperCase(),
+            venueId: item.venue_id
+        };
+    }
+
+    const name = [item.author_first_name, item.author_last_name].filter(Boolean).join(' ');
+    return {
+        // Pre-UGC posts have no venue AND no author (uploaded_by_user_id has
+        // never been written before this release). "Someone" beats a blank row.
+        title: name || 'Someone',
+        subtitle: '',
+        imageUrl: null,
+        letter: (name || '?').charAt(0).toUpperCase(),
+        venueId: null
+    };
+}
+
+function renderFeedCard(item) {
+    const isVideo = item.media_type === 'video';
+    const identity = postIdentity(item);
+
+    return `
+        <div class="feed-card" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
+            <div class="feed-card-header">
+                <div class="feed-venue-info"${identity.venueId ? ` onclick="openVenuePage('${escapeHtml(identity.venueId)}')"` : ''}>
+                    <div class="venue-avatar">
+                        ${identity.imageUrl
+                            ? `<img src="${escapeHtml(identity.imageUrl)}" alt="">`
+                            : `<div class="venue-avatar-placeholder">${escapeHtml(identity.letter)}</div>`}
+                    </div>
+                    <div class="venue-meta">
+                        <div class="venue-handle">${escapeHtml(identity.title)}</div>
+                        ${identity.subtitle ? `<div class="venue-location">${escapeHtml(identity.subtitle)}</div>` : ''}
+                    </div>
+                </div>
+                <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                </button>
+            </div>
+            <div class="feed-media" onclick="toggleVideoPlay(this)">
+                ${isVideo ? `
+                    <!-- preload="metadata" is the backfill story for the poster
+                         frame: every post that predates thumbnail generation has
+                         thumbnail_url NULL, and metadata makes the browser paint
+                         the first frame instead of a grey block. No data
+                         migration is possible — the column was never written. -->
+                    <video src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="metadata" loop></video>
+                    <div class="video-play-btn">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                    ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
+                    <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
+                ` : `
+                    <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
+                `}
+            </div>
+            ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
+        </div>
+    `;
 }
 
 function showFeedLoading(show) {
@@ -1029,17 +1219,44 @@ function showFeedLoading(show) {
 }
 
 // ===== Map =====
+
+// Newest approved posts with a resolvable coordinate (post coords COALESCEd
+// over venue coords). Non-fatal: the map still works with venue pins alone.
+async function loadPostPins() {
+    if (!currentApp) return;
+
+    const { data, error } = await supabaseClient.rpc('get_recent_post_pins', {
+        p_app_id: currentApp.id,
+        p_limit: 200
+    });
+
+    if (error) {
+        console.warn('Failed to load post pins:', error.message);
+        postPins = [];
+        return;
+    }
+
+    postPins = data || [];
+}
+
 function initMap() {
     if (map) return; // Already initialized
 
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return;
 
-    const center = userLocation
-        ? [userLocation.lat, userLocation.lng]
-        : venues.length > 0
-            ? [venues[0].latitude, venues[0].longitude]
-            : [34.0195, -118.4912]; // Default: Santa Monica
+    // Centre priority: the most recent post, then the user, then a venue, then
+    // Santa Monica. Opening the map should show you what was just posted —
+    // "where I am standing" is one tap away on #center-on-me-btn, and a map
+    // centred on an empty stretch of your own street shows nothing at all.
+    const newestPost = postPins[0];
+    const center = newestPost
+        ? [newestPost.latitude, newestPost.longitude]
+        : userLocation
+            ? [userLocation.lat, userLocation.lng]
+            : venues.length > 0
+                ? [venues[0].latitude, venues[0].longitude]
+                : [34.0195, -118.4912]; // Default: Santa Monica
 
     map = L.map('map-container', {
         zoomControl: false,
@@ -1056,6 +1273,7 @@ function initMap() {
         .addTo(map);
 
     renderMapPins();
+    renderPostPins();
     renderVenueSwimLane();
 }
 
@@ -1093,12 +1311,112 @@ function renderMapPins() {
         markers.push(marker);
     });
 
-    // Fit bounds if we have venues with valid coordinates
+    // Fit bounds if we have venues with valid coordinates.
+    // Skipped when there are post pins: initMap deliberately centred on the
+    // newest post, and fitting every venue would immediately throw that away.
     const geoVenues = filteredVenues.filter(v => v.latitude && v.longitude);
-    if (geoVenues.length > 0 && !userLocation) {
+    if (geoVenues.length > 0 && !userLocation && postPins.length === 0) {
         const bounds = L.latLngBounds(geoVenues.map(v => [v.latitude, v.longitude]));
         map.fitBounds(bounds, { padding: [40, 40] });
     }
+}
+
+// Post pins, drawn alongside venue pins.
+//
+// ⚠️ The class MUST stay distinct from `.map-pin-wrapper`.
+// viibeview-social.spec.js clicks `.map-pin-wrapper` and asserts the venue page
+// opens; sharing the class would let that test hit a post pin and fail on a
+// change that is otherwise correct.
+function renderPostPins() {
+    if (!map) return;
+
+    postMarkers.forEach(m => map.removeLayer(m));
+    postMarkers = [];
+
+    visiblePostPins().forEach(pin => {
+        if (!pin.latitude || !pin.longitude) return;
+
+        const icon = L.divIcon({
+            className: 'map-post-pin-wrapper',
+            html: `<div class="map-post-pin"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        });
+
+        const marker = L.marker([pin.latitude, pin.longitude], { icon })
+            .addTo(map)
+            .on('click', () => openPostPreview(pin.id));
+
+        postMarkers.push(marker);
+    });
+}
+
+// Category pills filter venues, and a post inherits its venue's category. A
+// post with no venue has no category, so it shows under "All" only — the same
+// rule get_venue_feed applies, kept in one place conceptually even though it is
+// enforced in two.
+function visiblePostPins() {
+    if (!activeCategory) return postPins;
+
+    return postPins.filter(pin => {
+        if (!pin.venue_id) return false;
+        const venue = getVenueById(pin.venue_id);
+        return !!venue && venue.category === activeCategory;
+    });
+}
+
+// ===== Post preview (map pin tap) =====
+// Layers over the map. No switchTab, no openVenuePage — the map stays mounted
+// underneath so closing the preview returns you exactly where you were.
+function openPostPreview(postId) {
+    const pin = postPins.find(p => p.id === postId);
+    if (!pin) return;
+
+    const modal = document.getElementById('post-preview-modal');
+    const backdrop = document.getElementById('post-preview-backdrop');
+    const mediaEl = document.getElementById('post-preview-media');
+    const infoEl = document.getElementById('post-preview-info');
+    if (!modal || !backdrop || !mediaEl || !infoEl) return;
+
+    previewPostId = postId;
+
+    const authorName = [pin.author_first_name, pin.author_last_name].filter(Boolean).join(' ');
+    const byline = pin.venue_id ? (pin.venue_name || '') : (authorName || 'Someone');
+
+    mediaEl.innerHTML = `
+        <video src="${escapeHtml(pin.url)}" poster="${escapeHtml(pin.thumbnail_url || '')}"
+               playsinline muted loop autoplay preload="metadata"></video>
+    `;
+
+    infoEl.innerHTML = `
+        <div class="post-preview-byline">${escapeHtml(byline)}</div>
+        ${pin.caption ? `<div class="post-preview-caption">${escapeHtml(pin.caption)}</div>` : ''}
+        ${pin.venue_id
+            ? `<button class="auth-btn auth-btn-primary post-preview-venue-btn" type="button"
+                       onclick="closePostPreview(); openVenuePage('${escapeHtml(pin.venue_id)}')"
+                       data-i18n="social.openVenue">Open venue</button>`
+            : ''}
+    `;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+
+    modal.classList.add('visible');
+    backdrop.classList.add('visible');
+}
+
+function closePostPreview() {
+    const modal = document.getElementById('post-preview-modal');
+    const backdrop = document.getElementById('post-preview-backdrop');
+    const mediaEl = document.getElementById('post-preview-media');
+
+    if (modal) modal.classList.remove('visible');
+    if (backdrop) backdrop.classList.remove('visible');
+    // Clearing the node stops the clip; a paused <video> left in the DOM keeps
+    // its buffer and keeps downloading.
+    if (mediaEl) mediaEl.innerHTML = '';
+    previewPostId = null;
 }
 
 function selectVenueOnMap(venue) {
@@ -1249,18 +1567,65 @@ function matchesQuery(v, q) {
     return haystack.includes(q);
 }
 
+// One template for both the browse list and the results list, so the two
+// cannot drift. The second line reads venue.city/state, which get_venues_for_map
+// only started returning in migration 20260828000003 — before that it was blank
+// on every card and nobody noticed, because nothing errored.
+function renderVenueCards(list) {
+    return list.map(venue => {
+        const distance = userLocation
+            ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude)
+            : null;
+        const distanceText = distance !== null ? `${distance.toFixed(1)} mi` : '';
+        const place = [venue.city, venue.state].filter(Boolean).join(', ');
+
+        return `
+            <div class="search-result-card" onclick="goToVenueOnMap('${escapeHtml(venue.id)}')">
+                <div class="search-result-thumb">
+                    ${venue.profile_image_url
+                        ? `<img src="${escapeHtml(venue.profile_image_url)}" alt="">`
+                        : `<div class="search-result-placeholder">${escapeHtml((venue.name || '?')[0])}</div>`}
+                </div>
+                <div class="search-result-info">
+                    <div class="search-result-name">${escapeHtml(venue.name)}</div>
+                    <div class="search-result-meta">
+                        <span class="search-result-category">${escapeHtml(categoryLabel(venue.category))}</span>
+                        ${place ? `<span class="search-result-place">${escapeHtml(place)}</span>` : ''}
+                        ${distanceText ? `<span class="search-result-distance">${distanceText}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 function handleSearch(query) {
     const resultsContainer = document.getElementById('search-results');
     const emptyHint = document.getElementById('search-empty');
     const recentsWrap = document.getElementById('recent-searches');
     if (!resultsContainer) return;
 
-    // Below the 2-character threshold there are no results, so show the
-    // starting state again: the hint plus any recent searches.
+    // Below the 2-character threshold, browse. An empty tab that says "Search
+    // for venues nearby" tells a first-time visitor nothing about what is in
+    // here; the full venue list does. The hint is now reserved for the one case
+    // it is actually true for — an app with no venues at all.
     if (!query || query.length < 2) {
-        resultsContainer.innerHTML = '';
-        if (emptyHint) emptyHint.style.display = '';
         renderRecentSearches();
+
+        if (venues.length === 0) {
+            resultsContainer.innerHTML = '';
+            if (emptyHint) emptyHint.style.display = '';
+            return;
+        }
+
+        if (emptyHint) emptyHint.style.display = 'none';
+        resultsContainer.innerHTML = `
+            <h4 class="search-section-title" data-i18n="social.allVenues">All venues</h4>
+            ${renderVenueCards(venues)}
+        `;
+        if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+            window.I18n.applyTranslations();
+        }
         return;
     }
 
@@ -1277,27 +1642,7 @@ function handleSearch(query) {
         return;
     }
 
-    resultsContainer.innerHTML = results.map(venue => {
-        const distance = userLocation ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude) : null;
-        const distanceText = distance !== null ? `${distance.toFixed(1)} mi` : '';
-
-        return `
-            <div class="search-result-card" onclick="goToVenueOnMap('${venue.id}')">
-                <div class="search-result-thumb">
-                    ${venue.profile_image_url
-                        ? `<img src="${venue.profile_image_url}" alt="">`
-                        : `<div class="search-result-placeholder">${(venue.name || '?')[0]}</div>`}
-                </div>
-                <div class="search-result-info">
-                    <div class="search-result-name">${escapeHtml(venue.name)}</div>
-                    <div class="search-result-meta">
-                        <span class="search-result-category">${escapeHtml(categoryLabel(venue.category))}</span>
-                        ${distanceText ? `<span class="search-result-distance">${distanceText}</span>` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
+    resultsContainer.innerHTML = renderVenueCards(results);
 }
 
 // Selecting a search result takes you to the venue's page. It used to only
@@ -1572,9 +1917,12 @@ async function loadVenuePageFeed(append = false) {
     if (loadingEl) loadingEl.style.display = 'block';
 
     const pageSize = 20;
+    // uploaded_by_user_id is load-bearing: the options sheet decides Delete vs
+    // Report from it, and an explicit select list that omits it makes the menu
+    // silently wrong on this page while it is right on the main feed.
     const { data, error } = await supabaseClient
         .from('venue_media')
-        .select('id, url, thumbnail_url, media_type, caption, duration_seconds, created_at')
+        .select('id, url, thumbnail_url, media_type, caption, duration_seconds, created_at, uploaded_by_user_id, venue_id')
         .eq('venue_id', venuePageVenueId)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
@@ -1619,16 +1967,22 @@ function renderVenuePageFeed() {
     container.innerHTML = venuePageFeed.map(item => {
         const isVideo = item.media_type === 'video';
         return `
-            <div class="feed-card" data-media-id="${item.id}">
+            <div class="feed-card" data-media-id="${escapeHtml(item.id)}">
+                <div class="feed-card-header feed-card-header-compact">
+                    <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    </button>
+                </div>
                 <div class="feed-media" onclick="toggleVideoPlay(this)">
                     ${isVideo ? `
-                        <video src="${item.url}" poster="${item.thumbnail_url || ''}" playsinline muted preload="none" loop></video>
+                        <video src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="metadata" loop></video>
                         <div class="video-play-btn">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
                         </div>
                         ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
+                        <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
                     ` : `
-                        <img src="${item.url}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
+                        <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
                     `}
                 </div>
                 ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
@@ -1638,14 +1992,19 @@ function renderVenuePageFeed() {
 
     // Setup video autoplay observers for venue page feed
     setupVideoObserverIn(container);
+    refreshSoundButtons();
 }
 
+// Same leak, same fix, for the venue page's own feed.
 function setupVideoObserverIn(container) {
-    const observer = new IntersectionObserver((entries) => {
+    if (venueVideoObserver) venueVideoObserver.disconnect();
+
+    venueVideoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (!video) return;
             if (entry.isIntersecting) {
+                applySoundState(video);
                 video.play().catch(() => {
                     const playBtn = entry.target.querySelector('.video-play-btn');
                     if (playBtn) playBtn.style.display = 'flex';
@@ -1660,7 +2019,7 @@ function setupVideoObserverIn(container) {
     }, { threshold: 0.6 });
 
     container.querySelectorAll('.feed-media').forEach(el => {
-        if (el.querySelector('video')) observer.observe(el);
+        if (el.querySelector('video')) venueVideoObserver.observe(el);
     });
 }
 
@@ -1720,6 +2079,62 @@ function switchTab(tabId) {
             else map.invalidateSize();
         });
     }
+
+    // The Search tab now opens on the browse list rather than an empty hint.
+    if (tabId === 'search') {
+        const input = document.getElementById('search-input');
+        handleSearch((input?.value || '').trim());
+    }
+
+    // Chrome hiding is scoped to the feed: #map-container's height subtracts
+    // var(--nav-height), so a hidden nav on the map tab would leave a dead
+    // strip. Re-run on every tab change so leaving the feed mid-scroll restores
+    // the nav rather than stranding it offscreen.
+    updateScrollChrome();
+}
+
+// ===== Scroll chrome =====
+// One rAF-throttled window listener. Uses transform, never display: body has
+// padding-bottom: calc(var(--nav-height) …), so removing the nav from flow
+// would jump the page by the height of the nav on every scroll.
+function setupScrollChrome() {
+    window.addEventListener('scroll', () => {
+        if (scrollChromeTicking) return;
+        scrollChromeTicking = true;
+        requestAnimationFrame(() => {
+            updateScrollChrome();
+            scrollChromeTicking = false;
+        });
+    }, { passive: true });
+
+    document.getElementById('back-to-top')?.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+function updateScrollChrome() {
+    const nav = document.querySelector('.bottom-nav');
+    const backToTop = document.getElementById('back-to-top');
+    const y = window.scrollY || window.pageYOffset || 0;
+
+    if (activeTab !== 'feed') {
+        nav?.classList.remove('hidden');
+        backToTop?.classList.remove('visible');
+        lastScrollY = y;
+        return;
+    }
+
+    // Scrolling back up brings the nav straight back, at any depth — the
+    // alternative is making someone scroll to the top of a video feed to reach
+    // their own navigation.
+    const scrollingUp = y < lastScrollY;
+    if (nav) nav.classList.toggle('hidden', y > 100 && !scrollingUp);
+
+    const firstCard = document.querySelector('#feed-container .feed-card');
+    const threshold = firstCard ? firstCard.offsetHeight : 400;
+    if (backToTop) backToTop.classList.toggle('visible', y > threshold);
+
+    lastScrollY = y;
 }
 
 // ===== Category Filter =====
@@ -1778,11 +2193,73 @@ function setCategory(category) {
     // Update map pins + swim lane if map is visible
     if (map) {
         renderMapPins();
+        renderPostPins();
         renderVenueSwimLane();
     }
 }
 
+// ===== Sound =====
+//
+// Sound is a preference, not per-video state, and it is remembered per app.
+// applySoundState() is the ONLY writer of video.muted outside the observer's
+// "left the viewport" branch — muting an offscreen video is housekeeping, not
+// a change of preference, so the two must not share a code path.
+
+function loadSoundPreference() {
+    try {
+        feedSoundOn = localStorage.getItem(`${SOUND_PREF_KEY}_${appSlug}`) === '1';
+    } catch {
+        feedSoundOn = false;   // private mode; default to muted, like every feed
+    }
+}
+
+function applySoundState(video) {
+    if (!video) return;
+    video.muted = !feedSoundOn;
+}
+
+function soundIconMarkup() {
+    return feedSoundOn
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`
+        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
+}
+
+function refreshSoundButtons() {
+    const label = feedSoundOn ? 'Mute' : 'Unmute';
+    document.querySelectorAll('.video-sound-btn').forEach(btn => {
+        btn.innerHTML = soundIconMarkup();
+        btn.setAttribute('aria-label', label);
+        btn.classList.toggle('on', feedSoundOn);
+    });
+}
+
+// Bound inline on the button so the unmute happens inside the user's own click
+// handler. iOS Safari blocks play() on an unmuted video with no user gesture,
+// and a gesture laundered through a promise or a timeout no longer counts.
+function toggleFeedSound(event, btn) {
+    if (event) event.stopPropagation();
+
+    feedSoundOn = !feedSoundOn;
+    try {
+        localStorage.setItem(`${SOUND_PREF_KEY}_${appSlug}`, feedSoundOn ? '1' : '0');
+    } catch { /* preference is non-essential */ }
+
+    // Only the video the user is actually looking at gets the new state
+    // applied immediately; the rest pick it up when the observer plays them.
+    const media = btn ? btn.closest('.feed-media') : null;
+    const video = media ? media.querySelector('video') : null;
+    if (video) {
+        applySoundState(video);
+        if (video.paused) video.play().catch(() => { /* still blocked; play btn stays */ });
+    }
+
+    refreshSoundButtons();
+}
+
 // ===== Video Handling =====
+// Tapping the frame plays/pauses. It does NOT change sound — that used to be
+// an unconditional `video.muted = false`, which meant every tap-to-play blared
+// audio regardless of what the user had chosen.
 function toggleVideoPlay(mediaEl) {
     const video = mediaEl.querySelector('video');
     if (!video) return;
@@ -1794,8 +2271,10 @@ function toggleVideoPlay(mediaEl) {
         document.querySelectorAll('.feed-media video').forEach(v => {
             if (v !== video) { v.pause(); v.muted = true; }
         });
-        video.play();
-        video.muted = false;
+        applySoundState(video);
+        video.play().catch(() => {
+            if (playBtn) playBtn.style.display = 'flex';
+        });
         if (playBtn) playBtn.style.display = 'none';
     } else {
         video.pause();
@@ -1803,13 +2282,21 @@ function toggleVideoPlay(mediaEl) {
     }
 }
 
+// One observer for the main feed, rebuilt on every render. Rebuilding is fine;
+// LEAKING is not — this used to create a new IntersectionObserver per
+// renderFeed() and never disconnect the old one, so after five pages of
+// infinite scroll five observers were racing to play and pause the same
+// elements.
 function setupVideoObserver() {
-    const observer = new IntersectionObserver((entries) => {
+    if (feedVideoObserver) feedVideoObserver.disconnect();
+
+    feedVideoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (!video) return;
 
             if (entry.isIntersecting) {
+                applySoundState(video);
                 video.play().catch(() => {
                     // Autoplay blocked — show play button so user can tap to play
                     const playBtn = entry.target.querySelector('.video-play-btn');
@@ -1824,8 +2311,8 @@ function setupVideoObserver() {
         });
     }, { threshold: 0.6 });
 
-    document.querySelectorAll('.feed-media').forEach(el => {
-        if (el.querySelector('video')) observer.observe(el);
+    document.querySelectorAll('#feed-container .feed-media').forEach(el => {
+        if (el.querySelector('video')) feedVideoObserver.observe(el);
     });
 }
 
@@ -1929,11 +2416,27 @@ function setupEventListeners() {
         venuePageBackdrop.addEventListener('click', closeVenuePage);
     }
 
-    // Create post button + modal
+    // Create post button + modal.
+    // Wrapped, not passed by reference: addEventListener hands the handler a
+    // MouseEvent, which openCreatePost(venueId) would have taken as a venue id.
     const postBtn = document.querySelector('.post-btn');
     if (postBtn) {
-        postBtn.addEventListener('click', openCreatePost);
+        postBtn.addEventListener('click', () => openCreatePost());
     }
+
+    // "Post here" on a venue page attaches that venue.
+    const venuePostHere = document.getElementById('venue-post-here-btn');
+    if (venuePostHere) {
+        venuePostHere.addEventListener('click', () => openCreatePost(venuePageVenueId));
+    }
+
+    // Post options sheet
+    document.getElementById('post-options-close')?.addEventListener('click', closePostOptions);
+    document.getElementById('post-options-backdrop')?.addEventListener('click', closePostOptions);
+
+    // Post preview (map pin)
+    document.getElementById('post-preview-close')?.addEventListener('click', closePostPreview);
+    document.getElementById('post-preview-backdrop')?.addEventListener('click', closePostPreview);
 
     const postBackdrop = document.getElementById('create-post-backdrop');
     if (postBackdrop) {
@@ -1992,6 +2495,9 @@ function setupEventListeners() {
     // Infinite scroll
     setupInfiniteScroll();
 
+    // Nav hide-on-scroll + back-to-top
+    setupScrollChrome();
+
     // Re-measure the sticky offset when the header can change height
     window.addEventListener('resize', pinCategoryPills);
     window.addEventListener('orientationchange', pinCategoryPills);
@@ -2025,8 +2531,181 @@ function handleMapSearch(query) {
     dropdown.classList.add('visible');
 }
 
-function showVenueOptions(venueId) {
-    openVenuePage(venueId);
+// ===== Post options (3-dots) =====
+//
+// This replaces showVenueOptions(), which was a two-line alias for
+// openVenuePage() with no menu behind it — the 3-dots button looked like a menu
+// and opened a venue page, which is why Jay reported it as "does nothing".
+
+// The sheet is opened from three different lists, so the post is resolved from
+// whichever one has it.
+function findPostById(mediaId) {
+    return feedItems.find(i => i.id === mediaId)
+        || venuePageFeed.find(i => i.id === mediaId)
+        || postPins.find(i => i.id === mediaId)
+        || null;
+}
+
+function showPostOptions(mediaId) {
+    const sheet = document.getElementById('post-options-sheet');
+    const backdrop = document.getElementById('post-options-backdrop');
+    const body = document.getElementById('post-options-body');
+    if (!sheet || !backdrop || !body) return;
+
+    optionsMediaId = mediaId;
+    renderPostOptionsMain();
+
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePostOptions() {
+    document.getElementById('post-options-sheet')?.classList.remove('visible');
+    document.getElementById('post-options-backdrop')?.classList.remove('visible');
+    document.body.style.overflow = '';
+    optionsMediaId = null;
+}
+
+function renderPostOptionsMain() {
+    const body = document.getElementById('post-options-body');
+    if (!body) return;
+
+    const item = findPostById(optionsMediaId);
+
+    // ⚠️ Every post that predates this release has uploaded_by_user_id = NULL —
+    // the column has never been written. So for members, all pre-existing posts
+    // (including Jay's test post) offer Report only; the isOwner branch is what
+    // still lets Jay delete his own. No backfill is possible: the authorship was
+    // never recorded, and guessing it would be worse than admitting it.
+    const canDelete = isOwner ||
+        (!!currentUserId && !!item && item.uploaded_by_user_id === currentUserId);
+
+    body.innerHTML = `
+        ${canDelete ? `
+            <button class="post-option post-option-danger" type="button" onclick="confirmDeletePost()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span data-i18n="social.deletePost">Delete post</span>
+            </button>
+        ` : `
+            <button class="post-option" type="button" onclick="renderPostOptionsReasons()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                </svg>
+                <span data-i18n="social.reportPost">Report post</span>
+            </button>
+        `}
+        <button class="post-option post-option-cancel" type="button" onclick="closePostOptions()">
+            <span data-i18n="social.cancel">Cancel</span>
+        </button>
+    `;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+function renderPostOptionsReasons() {
+    const body = document.getElementById('post-options-body');
+    if (!body) return;
+
+    body.innerHTML = `
+        <p class="post-options-blurb" data-i18n="social.reportBlurb">What is wrong with this post?</p>
+        ${REPORT_REASONS.map(r => `
+            <button class="post-option" type="button" onclick="submitReport('${r.value}')">
+                <span data-i18n="${r.key}">${escapeHtml(r.label)}</span>
+            </button>
+        `).join('')}
+        <button class="post-option post-option-cancel" type="button" onclick="renderPostOptionsMain()">
+            <span data-i18n="social.cancel">Cancel</span>
+        </button>
+    `;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+function confirmDeletePost() {
+    const mediaId = optionsMediaId;
+    closePostOptions();
+
+    showConfirm({
+        title: 'Delete this post?',
+        body: 'This removes the video permanently. It cannot be undone.',
+        acceptLabel: 'Delete',
+        onAccept: () => deletePost(mediaId)
+    });
+}
+
+async function deletePost(mediaId) {
+    if (!mediaId) return;
+
+    const { data, error } = await supabaseClient.rpc('delete_social_post', {
+        p_media_id: mediaId
+    });
+
+    // A SECURITY DEFINER function that returns success:false does NOT set
+    // `error`. Checking only `error` here would report "Post deleted" over a
+    // rejected delete and leave the card on screen until the next reload.
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row || row.success === false) {
+        showToast(row?.error_message || error?.message || 'Could not delete that post');
+        return;
+    }
+
+    // Drop it from every list that could still be showing it, rather than
+    // refetching — the feed is paginated and a reload would jump the scroll
+    // position back to the top.
+    feedItems = feedItems.filter(i => i.id !== mediaId);
+    venuePageFeed = venuePageFeed.filter(i => i.id !== mediaId);
+    postPins = postPins.filter(i => i.id !== mediaId);
+
+    renderFeed();
+    if (venuePageVenueId) renderVenuePageFeed();
+    if (map) renderPostPins();
+
+    showToast('Post deleted');
+}
+
+async function submitReport(reason) {
+    const mediaId = optionsMediaId;
+    closePostOptions();
+    if (!mediaId || !currentApp) return;
+
+    // A signed-in reporter is recorded; a signed-out one is not. Reporting bad
+    // content must never require an account, so the anon key is a valid bearer
+    // here — report-content resolves identity only when the token is a real
+    // user's.
+    const session = await SocialAuth.getSession();
+    const bearer = session?.access_token || SUPABASE_ANON_KEY;
+
+    try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/report-content`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${bearer}`
+            },
+            body: JSON.stringify({
+                app_id: currentApp.id,
+                media_id: mediaId,
+                reason
+            })
+        });
+
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || 'Could not send your report');
+        }
+
+        showToast('Thanks, we will review this.');
+    } catch (err) {
+        showToast(err.message || 'Could not send your report. Try again.');
+    }
 }
 
 // ===== Utility Functions =====
@@ -2194,17 +2873,23 @@ function getCurrentCoords() {
     });
 }
 
-async function openCreatePost() {
-    // Signed-out visitors get the signup prompt rather than a silent no-op.
-    // Hiding the button is presentation, not authorization — this function is
-    // also reachable directly, and it becomes the member path in Phase 3.
-    if (!(await requireAccount('Create an account to post a Viibe'))) return;
+/**
+ * @param venueId  attach the post to this venue (from a venue page's "Post
+ *                 here"), or omit for an unattached Viibe credited to its
+ *                 author. There is no longer an owner-only gate: any signed-in
+ *                 member can post, and create_social_post re-checks membership
+ *                 server-side.
+ */
+async function openCreatePost(venueId) {
+    const targetVenueId = venueId || null;
 
-    // Posting is still owner-only until Phase 3 opens UGC to members.
-    if (!isOwner) {
-        showToast('Posting opens to members soon');
-        return;
-    }
+    // Signed-out visitors get the signup prompt, then the composer opens by
+    // itself — the intent is remembered, the recording is not. Holding a
+    // recording across an email-confirmation redirect is not possible, so the
+    // composer deliberately reopens empty.
+    if (!(await requireAccount('Create an account to post a Viibe', { pendingVenueId: targetVenueId }))) return;
+
+    composerVenueId = targetVenueId;
 
     const modal = document.getElementById('create-post-modal');
     const backdrop = document.getElementById('create-post-backdrop');
@@ -2239,9 +2924,40 @@ async function openCreatePost() {
     const recordBtn = document.getElementById('record-btn');
     if (recordBtn) recordBtn.classList.remove('recording');
 
+    renderComposerVenueRow();
+
     modal.classList.add('visible');
     backdrop.classList.add('visible');
     document.body.style.overflow = 'hidden';
+}
+
+// "Posting to {venue}" — shown only when the composer was opened from a venue
+// page. An unattached post says nothing, because there is nothing to say: it is
+// credited to the poster.
+function renderComposerVenueRow() {
+    const row = document.getElementById('create-post-venue');
+    if (!row) return;
+
+    if (!composerVenueId) {
+        row.style.display = 'none';
+        row.innerHTML = '';
+        return;
+    }
+
+    // `venues` is get_venues_for_map()'s output, which drops anything without
+    // coordinates — so a venue page can be open for a venue that is not in it.
+    // The page's own title is the authoritative name in that case.
+    const venue = getVenueById(composerVenueId);
+    const pageTitle = composerVenueId === venuePageVenueId
+        ? document.getElementById('venue-page-title')?.textContent
+        : null;
+    const name = venue?.name || pageTitle || 'this venue';
+    row.innerHTML = `<span data-i18n="social.postingTo">Posting to</span> <strong>${escapeHtml(name)}</strong>`;
+    row.style.display = '';
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
 }
 
 function closeCreatePost() {
@@ -2253,6 +2969,7 @@ function closeCreatePost() {
     selectedPostFile = null;
     recordedChunks = [];
     recordedDurationSeconds = null;
+    composerVenueId = null;
     stopCamera();
 }
 
@@ -2433,8 +3150,72 @@ function updatePostSubmitState() {
     if (submitBtn) submitBtn.disabled = !selectedPostFile;
 }
 
+/**
+ * Grabs a poster frame from the recorded clip.
+ *
+ * thumbnail_url has never been written — before this it existed only in
+ * migrations — so every feed card fell back to a grey block until the video
+ * decoded. Resolves to null on any failure: a missing poster is cosmetic, and
+ * a failed thumbnail must never fail the post.
+ */
+function generateThumbnail(file) {
+    return new Promise((resolve) => {
+        let settled = false;
+        let objectUrl = null;
+
+        const finish = (blob) => {
+            if (settled) return;
+            settled = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            resolve(blob || null);
+        };
+
+        try {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+
+            // Some browsers never fire seeked for a MediaRecorder blob whose
+            // duration metadata is Infinity. Cap the wait rather than leaving
+            // the composer stuck on "Preparing…".
+            const timer = setTimeout(() => finish(null), 6000);
+
+            video.onloadeddata = () => {
+                try {
+                    const d = Number.isFinite(video.duration) ? video.duration : 0;
+                    video.currentTime = d > 0.2 ? 0.1 : 0;
+                } catch {
+                    clearTimeout(timer);
+                    finish(null);
+                }
+            };
+
+            video.onseeked = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 720;
+                    canvas.height = video.videoHeight || 1280;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((blob) => { clearTimeout(timer); finish(blob); }, 'image/jpeg', 0.7);
+                } catch {
+                    clearTimeout(timer);
+                    finish(null);
+                }
+            };
+
+            video.onerror = () => { clearTimeout(timer); finish(null); };
+
+            objectUrl = URL.createObjectURL(file);
+            video.src = objectUrl;
+        } catch {
+            finish(null);
+        }
+    });
+}
+
 async function submitPost() {
-    if (!selectedPostFile || !isOwner || !ownerOrgId) return;
+    if (!selectedPostFile) return;
 
     const submitBtn = document.getElementById('create-post-submit');
     const progress = document.getElementById('create-post-progress');
@@ -2447,16 +3228,33 @@ async function submitPost() {
     if (progressText) progressText.textContent = 'Preparing...';
 
     try {
-        // Get or create a default venue automatically
-        const venue = await getOrCreateDefaultVenue();
-        const venueId = venue.id;
+        const session = await SocialAuth.getSession();
+        const userId = session?.user?.id;
+        if (!userId) throw new Error('Sign in to post a Viibe');
+
+        // Which venue, if any.
+        //   - opened from a venue page  -> that venue
+        //   - owner posting from the header -> their default venue, as before
+        //   - member posting from the header -> none. venue_id is nullable now,
+        //     so there is nothing left to invent a "General" venue for.
+        let venueId = composerVenueId;
+        if (!venueId && isOwner && ownerOrgId) {
+            const venue = await getOrCreateDefaultVenue();
+            venueId = venue.id;
+        }
 
         if (progressFill) progressFill.style.width = '20%';
         if (progressText) progressText.textContent = 'Uploading...';
 
         const timestamp = Date.now();
         const safeFilename = selectedPostFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const path = `${ownerOrgId}/${venueId}/${timestamp}-${safeFilename}`;
+
+        // Owners keep {orgId}/{venueId}/… — that policy and that path are
+        // untouched. Members get their own prefix, which is what the new
+        // "Members can upload their own venue media" policy authorizes.
+        const path = (isOwner && ownerOrgId && venueId)
+            ? `${ownerOrgId}/${venueId}/${timestamp}-${safeFilename}`
+            : `members/${userId}/${timestamp}-${safeFilename}`;
 
         if (progressFill) progressFill.style.width = '40%';
 
@@ -2466,30 +3264,63 @@ async function submitPost() {
 
         if (uploadError) throw uploadError;
 
-        if (progressFill) progressFill.style.width = '70%';
-        if (progressText) progressText.textContent = 'Saving...';
-
         const { data: urlData } = supabaseClient.storage
             .from('venue-media')
             .getPublicUrl(path);
 
+        if (progressFill) progressFill.style.width = '60%';
+
+        // Poster frame. Everything about it is best-effort.
+        let thumbnailUrl = null;
+        try {
+            const thumbBlob = await generateThumbnail(selectedPostFile);
+            if (thumbBlob) {
+                const thumbPath = `${path.replace(/\.[^.]+$/, '')}-thumb.jpg`;
+                const { error: thumbError } = await supabaseClient.storage
+                    .from('venue-media')
+                    .upload(thumbPath, thumbBlob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+
+                if (!thumbError) {
+                    thumbnailUrl = supabaseClient.storage
+                        .from('venue-media')
+                        .getPublicUrl(thumbPath).data.publicUrl;
+                }
+            }
+        } catch (thumbErr) {
+            console.warn('Thumbnail generation failed, posting without one:', thumbErr);
+        }
+
+        if (progressFill) progressFill.style.width = '80%';
+        if (progressText) progressText.textContent = 'Saving...';
+
+        // Where the clip was actually recorded. Null when location was refused;
+        // the post is still perfectly valid, it just gets no pin of its own.
+        const coords = await getCurrentCoords();
+
         const caption = document.getElementById('post-caption')?.value.trim() || null;
 
-        const { error: insertError } = await supabaseClient
-            .from('venue_media')
-            .insert({
-                venue_id: venueId,
-                app_id: currentApp.id,
-                url: urlData.publicUrl,
-                media_type: 'video',
-                caption: caption,
-                status: 'approved',
-                storage_path: path,
-                duration_seconds: recordedDurationSeconds,
-                file_size_bytes: selectedPostFile.size
-            });
+        const { data: postData, error: postError } = await supabaseClient.rpc('create_social_post', {
+            p_app_id: currentApp.id,
+            p_storage_path: path,
+            p_url: urlData.publicUrl,
+            p_venue_id: venueId || null,
+            p_caption: caption,
+            p_thumbnail_url: thumbnailUrl,
+            p_duration_seconds: recordedDurationSeconds,
+            p_file_size_bytes: selectedPostFile.size,
+            p_latitude: coords ? coords.lat : null,
+            p_longitude: coords ? coords.lng : null
+        });
 
-        if (insertError) throw insertError;
+        // ⚠️ A SECURITY DEFINER function returning success:false does NOT set
+        // `error`. Testing only postError would swallow every server-side
+        // rejection — rate limit, wrong app's venue, not a member — and show
+        // "Posted!" over a post that does not exist.
+        const row = Array.isArray(postData) ? postData[0] : postData;
+        if (postError) throw postError;
+        if (!row || row.success === false) {
+            throw new Error(row?.error_message || 'Could not publish your Viibe');
+        }
 
         // venues.media_count is maintained by the trg_venue_media_count trigger
         // (migration 20260821000001). The client used to do a read-modify-write
@@ -2504,6 +3335,9 @@ async function submitPost() {
             // Small delay to ensure DB propagation, then reload + scroll to top
             await new Promise(r => setTimeout(r, 300));
             await loadFeed(false);
+            await loadPostPins();
+            if (map) renderPostPins();
+            if (venuePageVenueId) await loadVenuePageFeed(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 500);
 

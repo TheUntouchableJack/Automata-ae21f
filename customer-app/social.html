@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=3">
+    <link rel="stylesheet" href="/customer-app/social.css?v=4">
 </head>
 <body>
 
@@ -36,7 +36,11 @@
             <span class="header-app-name" id="header-app-name" data-i18n="social.appName">Discover</span>
         </div>
 
-        <button class="header-btn post-btn" aria-label="Create post" data-i18n-aria="social.postBtn" style="display:none;">
+        <!-- Visible to everyone, signed in or not. It used to ship
+             style="display:none" that only checkOwnerAccess() removed, which is
+             why a member never saw any way to post. Tapping it while signed out
+             opens the auth overlay; openCreatePost() owns that gate. -->
+        <button class="header-btn post-btn" aria-label="Create post" data-i18n-aria="social.postBtn">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
@@ -366,9 +370,15 @@
                     <div class="auth-field-error" id="signup-email-error"></div>
                 </div>
 
+                <!-- Phone is required now. The country select is populated from
+                     /js/country-dial-codes.js and defaults from navigator.language,
+                     so a non-US member is not forced through a 10-digit US mask. -->
                 <div class="auth-field">
-                    <label for="signup-phone" data-i18n="social.phoneOptional">Phone (optional)</label>
-                    <input type="tel" id="signup-phone" autocomplete="tel" inputmode="tel" placeholder="(310) 555-0101">
+                    <label for="signup-phone" data-i18n="social.phone">Phone</label>
+                    <div class="auth-phone-row">
+                        <select id="signup-country" class="auth-phone-country" aria-label="Country calling code" data-i18n-aria="social.countryCode"></select>
+                        <input type="tel" id="signup-phone" autocomplete="tel" inputmode="tel" placeholder="(310) 555-0101" required>
+                    </div>
                     <div class="auth-field-error" id="signup-phone-error"></div>
                 </div>
 
@@ -548,6 +558,12 @@
         </div>
 
         <div class="create-post-body">
+            <!-- Which venue this Viibe attaches to, when the composer was
+                 opened from a venue page. Hidden for an unattached post — the
+                 post is then attributed to its author, not to an invented
+                 "General" venue. Written by openCreatePost(). -->
+            <div class="create-post-venue" id="create-post-venue" style="display:none;"></div>
+
             <!-- Camera / recording area -->
             <div class="create-post-upload" id="create-post-upload">
                 <!-- Placeholder shown before camera starts -->
@@ -632,7 +648,10 @@
 
             <!-- Feed header -->
             <div class="venue-page-feed-header">
-                <h4>Recent Posts</h4>
+                <h4 data-i18n="social.recentPosts">Recent Posts</h4>
+                <!-- Posting from here attaches the venue, so the card shows the
+                     venue handle rather than the poster's name. -->
+                <button class="venue-post-here-btn" id="venue-post-here-btn" type="button" data-i18n="social.postHere">Post here</button>
             </div>
 
             <!-- Venue-specific feed -->
@@ -654,6 +673,42 @@
         </div>
     </section>
 
+    <!-- ===== Post options (delete / report) =====
+         Reuses the .sheet-backdrop + .app-sheet pattern from Contact Us. The
+         body is rendered by showPostOptions(): Delete for your own post (or an
+         org member's view of any post), Report for everyone else. -->
+    <div class="sheet-backdrop" id="post-options-backdrop"></div>
+    <div class="app-sheet post-options-sheet" id="post-options-sheet" role="dialog" aria-modal="true" aria-label="Post options">
+        <div class="app-sheet-header">
+            <h3 id="post-options-title" data-i18n="social.postOptions">Post options</h3>
+            <button class="app-sheet-close" id="post-options-close" aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="post-options-body" id="post-options-body"></div>
+    </div>
+
+    <!-- ===== Post preview (map pin tap) =====
+         Layers over the map rather than replacing it — tapping a post pin must
+         not unmount the map or open the venue page. -->
+    <div class="sheet-backdrop" id="post-preview-backdrop"></div>
+    <div class="post-preview-modal" id="post-preview-modal" role="dialog" aria-modal="true" aria-label="Post preview">
+        <button class="post-preview-close" id="post-preview-close" aria-label="Close">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <div class="post-preview-media" id="post-preview-media"></div>
+        <div class="post-preview-info" id="post-preview-info"></div>
+    </div>
+
+    <!-- ===== Back to top ===== -->
+    <!-- z-index sits below .bottom-nav (1000) so it never covers the nav as the
+         nav slides back in. -->
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top" data-i18n-aria="social.backToTop">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+        </svg>
+    </button>
+
     <!-- ===== Scripts ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
@@ -661,13 +716,16 @@
          attributes that were inert until now because it was never included. -->
     <script src="/i18n/i18n.js?v=1"></script>
     <script src="/js/venue-categories.js?v=1"></script>
+    <!-- Full ISO dial-code list for the signup phone field. Must load before
+         social.js, which renders it into #signup-country. -->
+    <script src="/js/country-dial-codes.js?v=1"></script>
     <!-- venue-hours must load before social.js: it owns every venues.hours
          shape decision, shared with app/venues.html. -->
     <script src="/js/venue-hours.js?v=1"></script>
-    <script src="/customer-app/social-auth.js?v=1"></script>
+    <script src="/customer-app/social-auth.js?v=2"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=5"></script>
+    <script src="/customer-app/social.js?v=6"></script>
 
 </body>
 </html>

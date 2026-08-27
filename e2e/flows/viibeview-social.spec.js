@@ -118,6 +118,9 @@ test.describe('ViibeView social app', () => {
     });
 
     test('tapping a map pin opens the venue page', async ({ page }) => {
+        // Post pins share the map but NOT this class — see the sibling test.
+        // If they ever did, this would click a post pin and fail on a change
+        // that is perfectly correct.
         await loadApp(page);
         await page.click('.nav-item[data-tab="map"]');
         await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
@@ -127,6 +130,46 @@ test.describe('ViibeView social app', () => {
 
         await expect(page.locator('#venue-page')).toHaveClass(/visible/);
         await expect(page.locator('#venue-page-title')).not.toBeEmpty();
+    });
+
+    test('tapping a post pin opens the preview without leaving the map', async ({ page }) => {
+        await loadApp(page);
+        await page.click('.nav-item[data-tab="map"]');
+        await page.waitForTimeout(2000);
+
+        const postPins = page.locator('.map-post-pin-wrapper');
+        const count = await postPins.count();
+
+        // Not vacuous: an app with no posted Viibes has no post pins, and the
+        // assertion below would pass against zero of them. Say so out loud
+        // rather than reporting a green test that checked nothing.
+        test.skip(count === 0, 'no posts with coordinates in this app yet');
+
+        await postPins.first().click({ force: true });
+        await page.waitForTimeout(600);
+
+        await expect(page.locator('#post-preview-modal')).toHaveClass(/visible/);
+        // The map must still be mounted underneath — no switchTab, no
+        // openVenuePage.
+        await expect(page.locator('#tab-map')).toHaveClass(/active/);
+        await expect(page.locator('#venue-page')).not.toHaveClass(/visible/);
+
+        await page.click('#post-preview-close');
+        await expect(page.locator('#post-preview-modal')).not.toHaveClass(/visible/);
+    });
+
+    test('search opens on the full venue list, not an empty hint', async ({ page }) => {
+        await loadApp(page);
+        await page.click('.nav-item[data-tab="search"]');
+        await page.waitForTimeout(500);
+
+        const cards = page.locator('#search-results .search-result-card');
+        const total = await cards.count();
+        expect(total, 'browse list rendered no venues').toBeGreaterThan(0);
+
+        // The hint is now reserved for an app that genuinely has no venues.
+        await expect(page.locator('#search-empty')).toBeHidden();
+        await expect(page.locator('.search-section-title')).toBeVisible();
     });
 
     test('search matches a category by its display label', async ({ page }) => {
@@ -139,6 +182,72 @@ test.describe('ViibeView social app', () => {
         await expect(page.locator('#search-results .search-result-card').first()).toBeVisible();
         // The "Search for venues nearby" hint used to stay visible under results
         await expect(page.locator('#search-empty')).toBeHidden();
+    });
+
+    test('the feed hides the nav on scroll and offers a way back up', async ({ page }) => {
+        await loadApp(page);
+        await page.waitForTimeout(2000);
+
+        const cards = page.locator('#feed-container .feed-card');
+        const count = await cards.count();
+        test.skip(count === 0, 'no posts in this app yet — nothing to scroll');
+
+        await expect(page.locator('.bottom-nav')).not.toHaveClass(/hidden/);
+
+        // Nav hides past 100px. Back-to-top appears past one full card, so the
+        // two are asserted at their own thresholds rather than at one arbitrary
+        // offset that may be past neither on a short feed.
+        await page.evaluate(() => window.scrollTo(0, 300));
+        await page.waitForTimeout(400);
+        await expect(page.locator('.bottom-nav')).toHaveClass(/hidden/);
+
+        const reach = await page.evaluate(() => {
+            const card = document.querySelector('#feed-container .feed-card');
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            const threshold = card ? card.offsetHeight : 400;
+            if (maxScroll <= threshold) return { ok: false, maxScroll, threshold };
+            window.scrollTo(0, threshold + 50);
+            return { ok: true, maxScroll, threshold };
+        });
+
+        // Not vacuous: on a feed too short to scroll past one card there is
+        // nothing to assert, and pretending otherwise is how a test starts
+        // passing against a state it never reached.
+        if (reach.ok) {
+            await page.waitForTimeout(400);
+            await expect(page.locator('#back-to-top')).toHaveClass(/visible/);
+        }
+
+        // Scrolling back up returns the nav immediately, at any depth.
+        await page.evaluate(() => window.scrollBy(0, -200));
+        await page.waitForTimeout(400);
+        await expect(page.locator('.bottom-nav')).not.toHaveClass(/hidden/);
+    });
+
+    test('every feed card is attributable and has a working options menu', async ({ page }) => {
+        await loadApp(page);
+        await page.waitForTimeout(2000);
+
+        const cards = page.locator('#feed-container .feed-card');
+        const count = await cards.count();
+        test.skip(count === 0, 'no posts in this app yet');
+
+        // Nothing may render as an empty byline. Before venue_id was nullable,
+        // every member post was forced onto an auto-created "General" venue —
+        // the card read "General / General" and linked to a venue nobody made.
+        const handles = await page.locator('#feed-container .venue-handle').allTextContents();
+        expect(handles.length).toBe(count);
+        handles.forEach(h => expect(h.trim().length, 'a card rendered a blank byline').toBeGreaterThan(0));
+
+        // The 3-dots used to be a two-line alias for openVenuePage() with no
+        // menu behind it, which is why it read as "does nothing".
+        await page.locator('#feed-container .feed-more-btn').first().click();
+        await expect(page.locator('#post-options-sheet')).toHaveClass(/visible/);
+        await expect(page.locator('#post-options-body .post-option')).not.toHaveCount(0);
+        await expect(page.locator('#venue-page')).not.toHaveClass(/visible/);
+
+        await page.click('#post-options-close');
+        await expect(page.locator('#post-options-sheet')).not.toHaveClass(/visible/);
     });
 
     test('dead UI is gone and the rest is bound', async ({ page }) => {

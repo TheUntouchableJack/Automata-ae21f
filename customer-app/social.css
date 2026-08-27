@@ -398,17 +398,59 @@ body {
     transform: translate(-50%, -50%) scale(1.08);
 }
 
-/* JS: <span class="video-duration"> */
+/* JS: <span class="video-duration">
+   Bottom-LEFT. Bottom-right now belongs to .video-sound-btn, which is
+   interactive and therefore has the stronger claim on the thumb's reach. */
 .video-duration {
     position: absolute;
     bottom: var(--spacing-sm);
-    right: var(--spacing-sm);
+    left: var(--spacing-sm);
     padding: 2px 8px;
     background: rgba(0, 0, 0, 0.7);
     color: #ffffff;
     font-size: 0.6875rem;
     font-weight: 500;
     border-radius: var(--radius-sm);
+}
+
+/* JS: <button class="video-sound-btn"> — bottom-right of the media frame.
+   Its own click handler flips the sound preference; iOS Safari will only
+   unmute inside a real user gesture, so this must never be driven from a
+   timeout or a promise chain. */
+.video-sound-btn {
+    position: absolute;
+    bottom: var(--spacing-sm);
+    right: var(--spacing-sm);
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.video-sound-btn:hover {
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.video-sound-btn:active {
+    transform: scale(0.94);
+}
+
+.video-sound-btn.on {
+    background: var(--app-primary, #6366f1);
+}
+
+/* JS: venue-page cards carry only the 3-dots button, no identity row —
+   the whole page is already one venue. */
+.feed-card-header-compact {
+    justify-content: flex-end;
+    padding-bottom: 0;
 }
 
 /* JS: <div class="feed-caption"> */
@@ -549,6 +591,30 @@ body {
     border: 2px solid #ffffff;
     cursor: pointer;
     transition: transform 0.2s;
+}
+
+/* Leaflet post pin: L.divIcon with class "map-post-pin-wrapper".
+   ⚠️ Deliberately NOT .map-pin-wrapper. viibeview-social.spec.js clicks that
+   class and asserts a venue page opens; sharing it would make the test click a
+   post pin instead and fail on a correct change. */
+.map-post-pin-wrapper {
+    background: transparent !important;
+    border: none !important;
+}
+
+.map-post-pin {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background: var(--app-primary, #6366f1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    border: 2px solid #ffffff;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.map-post-pin:hover {
+    transform: scale(1.2);
 }
 
 .map-pin:hover {
@@ -919,6 +985,28 @@ body {
     font-size: 0.75rem;
 }
 
+/* JS: <span class="search-result-place"> — city, state.
+   Blank until get_venues_for_map started returning them (migration
+   20260828000003); the same two fields also drive search-by-city. */
+.search-result-place {
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* JS: <h4 class="search-section-title"> above the browse list. The Search tab
+   opens on every venue now, not on a hint that told a first-time visitor
+   nothing about what is in the app. */
+.search-section-title {
+    margin: var(--spacing-sm) 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
 .search-result-category {
     color: var(--color-text-secondary);
     text-transform: capitalize;
@@ -1122,6 +1210,19 @@ body {
     align-items: center;
     justify-content: space-around;
     z-index: 1000;
+}
+
+/* Hidden while scrolling down the feed. transform, NOT display: body carries
+   padding-bottom: calc(var(--nav-height) + …), so taking the nav out of flow
+   would jump the page by its own height on every scroll direction change.
+   Scoped to the feed tab in JS — #map-container's height subtracts
+   var(--nav-height), so hiding it on the map leaves a dead strip. */
+.bottom-nav {
+    transition: transform 0.25s ease;
+}
+
+.bottom-nav.hidden {
+    transform: translateY(100%);
 }
 
 .nav-item {
@@ -1382,6 +1483,24 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+/* HTML: <div class="create-post-venue" id="create-post-venue">
+   "Posting to {venue}" — only when the composer was opened from a venue page.
+   An unattached post shows nothing, because there is nothing to say: it is
+   credited to the poster. */
+.create-post-venue {
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.create-post-venue strong {
+    color: var(--color-text);
+    font-weight: 600;
 }
 
 .create-post-field label {
@@ -1948,6 +2067,10 @@ body {
 /* Feed header */
 .venue-page-feed-header {
     padding: 16px 16px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
 }
 
 .venue-page-feed-header h4 {
@@ -1955,6 +2078,27 @@ body {
     font-size: 16px;
     font-weight: 600;
     color: #1e293b;
+}
+
+/* HTML: <button class="venue-post-here-btn" id="venue-post-here-btn">
+   Posting from here attaches the venue, so the card shows the venue handle
+   instead of the poster's name. */
+.venue-post-here-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--app-primary, #6366f1);
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.venue-post-here-btn:hover {
+    opacity: 0.9;
 }
 
 /* Feed — reuses .feed-card styles from main feed */
@@ -2183,6 +2327,39 @@ body {
 
 .auth-field input.invalid {
     border-color: var(--color-error);
+}
+
+/* HTML: <div class="auth-phone-row"> wrapping #signup-country + #signup-phone.
+   The select is sized to its content (flag + dial code) so the number itself
+   keeps the full remaining width — the part people actually type into. */
+.auth-phone-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: stretch;
+}
+
+.auth-phone-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.auth-phone-country {
+    flex: 0 0 auto;
+    max-width: 42%;
+    padding: var(--spacing-sm);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: 'Outfit', sans-serif;
+    /* 16px min — anything smaller makes iOS Safari zoom on focus */
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.auth-phone-country:focus {
+    outline: none;
+    border-color: var(--app-primary);
 }
 
 .auth-field-hint {
@@ -2427,6 +2604,164 @@ body {
     justify-content: center;
     cursor: pointer;
     border-radius: var(--radius-full);
+}
+
+/* ===== Post options sheet ===== */
+/* HTML: <div class="app-sheet post-options-sheet" id="post-options-sheet"> */
+.post-options-body {
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.post-options-blurb {
+    padding: var(--spacing-sm) 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+/* JS-generated: <button class="post-option"> */
+.post-option {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    width: 100%;
+    padding: var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.post-option:hover {
+    background: var(--color-border);
+}
+
+.post-option-danger {
+    color: var(--color-error);
+}
+
+.post-option-cancel {
+    justify-content: center;
+    background: transparent;
+    color: var(--color-text-secondary);
+}
+
+/* ===== Post preview (map pin tap) ===== */
+/* HTML: <div class="post-preview-modal" id="post-preview-modal">
+   Layers over the map; the map stays mounted underneath. */
+.post-preview-modal {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--nav-height) + var(--safe-area-bottom) + var(--spacing-md));
+    transform: translate(-50%, 16px);
+    z-index: 2200;
+    width: calc(100% - 32px);
+    max-width: 320px;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.post-preview-modal.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+}
+
+.post-preview-close {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.post-preview-media {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    background: var(--color-border);
+}
+
+.post-preview-media video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.post-preview-info {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.post-preview-byline {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.post-preview-caption {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+.post-preview-venue-btn {
+    margin-top: var(--spacing-xs);
+}
+
+/* ===== Back to top ===== */
+/* HTML: <button class="back-to-top" id="back-to-top">
+   z-index below .bottom-nav's 1000, so it never covers the nav sliding back. */
+.back-to-top {
+    position: fixed;
+    right: var(--spacing-md);
+    bottom: calc(var(--nav-height) + var(--safe-area-bottom) + var(--spacing-md));
+    z-index: 900;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
 }
 
 /* ===== Confirm dialog ===== */

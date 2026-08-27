@@ -69,7 +69,15 @@
 
     // ===== Phone =====
 
-    /** Progressive US formatting: 3105550101 -> (310) 555-0101. */
+    // The North American Numbering Plan is the only dial code with a fixed
+    // 10-digit national number, and the only one the (310) 555-0101 mask makes
+    // sense for. Everywhere else, national number length varies (4 in Niue, 14
+    // in parts of Austria), so the rule is a range, not an exact count.
+    const NANP_DIAL = '1';
+    const INTL_MIN_DIGITS = 4;
+    const INTL_MAX_DIGITS = 14;
+
+    /** Progressive US formatting: 3105550101 -> (310) 555-0101. +1 only. */
     function formatPhone(value) {
         const digits = (value || '').replace(/\D/g, '').slice(0, 10);
         if (digits.length === 0) return '';
@@ -78,12 +86,39 @@
         return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
     }
 
-    /** Phone is optional; only validate when something was typed. */
-    function validatePhone(value, { required = false } = {}) {
+    /**
+     * @param value  what the user typed, in any formatting
+     * @param required   phone became required at signup (Aug 2026)
+     * @param dial       calling code without '+', e.g. '1', '44', '212'.
+     *                   Defaults to '1' so existing callers keep US rules.
+     */
+    function validatePhone(value, { required = false, dial = NANP_DIAL } = {}) {
         const digits = (value || '').replace(/\D/g, '');
         if (!digits) return required ? 'Enter your phone number' : null;
-        if (digits.length !== 10) return 'Enter a 10-digit phone number';
+
+        if (String(dial) === NANP_DIAL) {
+            if (digits.length !== 10) return 'Enter a 10-digit phone number';
+            return null;
+        }
+
+        if (digits.length < INTL_MIN_DIGITS || digits.length > INTL_MAX_DIGITS) {
+            return `Enter a phone number between ${INTL_MIN_DIGITS} and ${INTL_MAX_DIGITS} digits`;
+        }
         return null;
+    }
+
+    /**
+     * '+{dial}{digits}'. app_members.phone / customers.phone are plain TEXT, so
+     * nothing forces a format — which is exactly why one has to be chosen and
+     * stuck to. E.164 is the only representation that stays unambiguous once
+     * members exist outside +1, and it is what Twilio expects when Royal AI
+     * starts texting them.
+     */
+    function toE164(value, dial) {
+        const digits = (value || '').replace(/\D/g, '');
+        if (!digits) return null;
+        const code = String(dial || NANP_DIAL).replace(/\D/g, '') || NANP_DIAL;
+        return `+${code}${digits}`;
     }
 
     // ===== Error mapping =====
@@ -158,12 +193,12 @@
 
     // ===== Actions =====
 
-    async function signUp({ email, password, confirmPassword, firstName, lastName, phone, acceptedTerms }) {
+    async function signUp({ email, password, confirmPassword, firstName, lastName, phone, dialCode, acceptedTerms }) {
         const problem =
             validateEmail(email) ||
             validatePassword(password) ||
             validatePasswordMatch(password, confirmPassword) ||
-            validatePhone(phone) ||
+            validatePhone(phone, { required: true, dial: dialCode }) ||
             (!firstName?.trim() ? 'Enter your first name' : null) ||
             (!acceptedTerms ? 'Accept the Terms & Conditions to continue' : null);
 
@@ -189,10 +224,10 @@
         // Email confirmation is on: there is no session yet, so the membership
         // row gets created on first login instead.
         if (!data.session) {
-            return { ok: true, needsConfirmation: true, pendingProfile: { firstName, lastName, phone } };
+            return { ok: true, needsConfirmation: true, pendingProfile: { firstName, lastName, phone, dialCode } };
         }
 
-        const linked = await linkMembership({ firstName, lastName, phone });
+        const linked = await linkMembership({ firstName, lastName, phone, dialCode });
         if (!linked.ok) return linked;
 
         return { ok: true, needsConfirmation: false };
@@ -217,15 +252,31 @@
     }
 
     /** Creates or refreshes the app_members row for the signed-in user. */
-    async function linkMembership({ firstName, lastName, phone }) {
+    async function linkMembership({ firstName, lastName, phone, dialCode }) {
         const { data, error } = await client.rpc('social_member_signup', {
             p_app_id: currentAppId,
             p_first_name: firstName?.trim() || null,
             p_last_name: lastName?.trim() || null,
-            p_phone: phone ? phone.replace(/\D/g, '') : null
+            // E.164, not bare digits. social_member_signup writes this straight
+            // into app_members.phone and customers.phone, and bare digits from
+            // two different countries can collide into the same string.
+            p_phone: toE164(phone, dialCode)
         });
 
-        if (error) return { ok: false, error: friendlyAuthError(error, 'finish setting up your account') };
+        if (error) {
+            // app_members has UNIQUE(app_id, phone) (customer-apps-migration.sql:149).
+            // A number already registered in this app raises 23505, which is a
+            // field problem the user can fix — not the generic "could not finish
+            // setting up your account" the default mapping would produce.
+            if (error.code === '23505' || /duplicate key|app_members_phone_unique/i.test(error.message || '')) {
+                return {
+                    ok: false,
+                    field: 'phone',
+                    error: 'That phone number is already registered in this app.'
+                };
+            }
+            return { ok: false, error: friendlyAuthError(error, 'finish setting up your account') };
+        }
 
         const row = Array.isArray(data) ? data[0] : data;
         if (row && row.success === false) {
@@ -349,7 +400,7 @@
         requestPasswordReset, updatePassword, deleteAccount,
         // helpers
         validateEmail, validatePassword, validatePasswordMatch, validatePhone,
-        passwordStrength, formatPhone, friendlyAuthError, isRecoveryRedirect,
-        PASSWORD_MIN
+        passwordStrength, formatPhone, toE164, friendlyAuthError, isRecoveryRedirect,
+        PASSWORD_MIN, NANP_DIAL
     };
 })(window);

@@ -33,7 +33,16 @@
     # recording is ever produced. The previous GA4 install died exactly this way
     # (googletagmanager.com was never in script-src), so verify with:
     #   curl -sI https://royaltyapp.ai | grep -i content-security-policy
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://cdnjs.cloudflare.com https://www.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://fcm.googleapis.com https://fcmregistrations.googleapis.com; frame-src https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'"
+    #
+    # media-src blob: is required by the ViibeView composer. Two <video> elements
+    # are pointed at a MediaRecorder blob the page just created: the recording
+    # preview (showRecordingPreview) and the offscreen frame-grab that produces
+    # venue_media.thumbnail_url (generateThumbnail). Without it BOTH fail
+    # silently in production while working perfectly under `npm run dev`, which
+    # sets no CSP at all — the preview shows an empty box and thumbnail_url stays
+    # NULL forever. blob: is same-origin content this page authored; it adds no
+    # third-party origin.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://cdnjs.cloudflare.com https://www.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://fcm.googleapis.com https://fcmregistrations.googleapis.com; frame-src https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'"
 
 # Belt-and-braces for the repo paths 404'd below: if a path ever slips through a
 # redirect, it still must not be indexed.
