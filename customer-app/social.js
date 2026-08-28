@@ -1210,9 +1210,6 @@ function renderFeedCard(item) {
                          the first frame instead of a grey block. No data
                          migration is possible — the column was never written. -->
                     <video src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="metadata" loop></video>
-                    <div class="video-play-btn">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
                     ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
                     <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
                 ` : `
@@ -1997,9 +1994,6 @@ function renderVenuePageFeed() {
                 <div class="feed-media" onclick="toggleVideoPlay(this)">
                     ${isVideo ? `
                         <video src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="metadata" loop></video>
-                        <div class="video-play-btn">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
                         ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
                         <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
                     ` : `
@@ -2026,15 +2020,12 @@ function setupVideoObserverIn(container) {
             if (!video) return;
             if (entry.isIntersecting) {
                 applySoundState(video);
-                video.play().catch(() => {
-                    const playBtn = entry.target.querySelector('.video-play-btn');
-                    if (playBtn) playBtn.style.display = 'flex';
-                });
+                // Autoplay blocked leaves the poster frame showing and the card
+                // tappable, which is the whole affordance now.
+                video.play().catch(() => {});
             } else {
                 video.pause();
                 video.muted = true;
-                const playBtn = entry.target.querySelector('.video-play-btn');
-                if (playBtn) playBtn.style.display = 'flex';
             }
         });
     }, { threshold: 0.6 });
@@ -2285,21 +2276,18 @@ function toggleVideoPlay(mediaEl) {
     const video = mediaEl.querySelector('video');
     if (!video) return;
 
-    const playBtn = mediaEl.querySelector('.video-play-btn');
-
     if (video.paused) {
         // Pause all other videos
         document.querySelectorAll('.feed-media video').forEach(v => {
             if (v !== video) { v.pause(); v.muted = true; }
         });
         applySoundState(video);
-        video.play().catch(() => {
-            if (playBtn) playBtn.style.display = 'flex';
-        });
-        if (playBtn) playBtn.style.display = 'none';
+        // Rejects when autoplay policy blocks it; this call came from a real
+        // tap, so that is not expected here and there is nothing to fall back
+        // to now that the button is gone — the frame IS the control.
+        video.play().catch(() => {});
     } else {
         video.pause();
-        if (playBtn) playBtn.style.display = 'flex';
     }
 }
 
@@ -2318,16 +2306,12 @@ function setupVideoObserver() {
 
             if (entry.isIntersecting) {
                 applySoundState(video);
-                video.play().catch(() => {
-                    // Autoplay blocked — show play button so user can tap to play
-                    const playBtn = entry.target.querySelector('.video-play-btn');
-                    if (playBtn) playBtn.style.display = 'flex';
-                });
+                // Autoplay blocked leaves the poster frame showing and the card
+                // tappable, which is the whole affordance now.
+                video.play().catch(() => {});
             } else {
                 video.pause();
                 video.muted = true;
-                const playBtn = entry.target.querySelector('.video-play-btn');
-                if (playBtn) playBtn.style.display = 'flex';
             }
         });
     }, { threshold: 0.6 });

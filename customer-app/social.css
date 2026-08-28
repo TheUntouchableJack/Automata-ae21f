@@ -374,30 +374,6 @@ body {
     display: block;
 }
 
-/* JS: <div class="video-play-btn"> */
-.video-play-btn {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 64px;
-    height: 64px;
-    border-radius: var(--radius-full);
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-}
-
-.video-play-btn:hover {
-    background: rgba(0, 0, 0, 0.65);
-    transform: translate(-50%, -50%) scale(1.08);
-}
-
 /* JS: <span class="video-duration">
    Bottom-LEFT. Bottom-right now belongs to .video-sound-btn, which is
    interactive and therefore has the stronger claim on the thumb's reach. */
@@ -2813,7 +2789,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .venue-page,
     .swim-card,
-    .video-play-btn,
     .map-pin,
     .shimmer-card,
     .app-sheet,
