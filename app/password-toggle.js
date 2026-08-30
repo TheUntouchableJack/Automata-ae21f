@@ -1,10 +1,10 @@
 // ===== Show/hide password toggle =====
 //
-// Added after a real login failure that took several minutes to diagnose: the
-// account's email and its password spell "vibe" with a different number of i's
-// (pahkie@viibeview.com / VibeView'26!), and with the field masked there was no
-// way to tell a typo from a genuinely wrong credential. GoTrue answers both
-// with the same "Invalid login credentials".
+// Added after a real login failure that took several minutes to diagnose: an
+// account whose email and password differed by one easily-miscounted repeated
+// letter, and with the field masked there was no way to tell a typo from a
+// genuinely wrong credential. GoTrue answers both with the same "Invalid login
+// credentials".
 //
 // Applies itself to EVERY input[type="password"] on the page rather than being
 // wired up per field, so login, signup, reset-password and settings all get it

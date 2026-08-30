@@ -1,9 +1,9 @@
 /**
  * E2E: show/hide password toggle.
  *
- * Exists because a real login failure was indistinguishable from a typo — the
- * account's email and password spell "vibe" with a different number of i's,
- * and GoTrue answers a mistyped password and a wrong one with the same
+ * Exists because a real login failure was indistinguishable from a typo — an
+ * account's email and password differed by one easily-miscounted repeated
+ * letter, and GoTrue answers a mistyped password and a wrong one with the same
  * "Invalid login credentials".
  *
  * app/password-toggle.js applies itself to every input[type="password"] on the
@@ -19,6 +19,10 @@
  */
 
 import { test, expect } from '@playwright/test';
+
+// Nothing here signs in, so this is an arbitrary fixture — but it keeps the
+// apostrophe, which is the character most likely to break value round-tripping.
+const TYPED = "Fixture'26!";
 
 const PAGES = [
   ['/app/login.html',          ['#password']],
@@ -49,18 +53,18 @@ for (const [url, ids] of PAGES) {
       // Must not submit the form.
       await expect(btn).toHaveAttribute('type', 'button');
 
-      await input.fill('VibeView\'26!');
+      await input.fill(TYPED);
       await btn.click();
       await expect(input).toHaveAttribute('type', 'text');
       await expect(btn).toHaveAttribute('aria-label', 'Hide password');
       await expect(btn).toHaveAttribute('aria-pressed', 'true');
       // The whole point: the value is readable.
-      expect(await input.inputValue()).toBe("VibeView'26!");
+      expect(await input.inputValue()).toBe(TYPED);
 
       await btn.click();
       await expect(input).toHaveAttribute('type', 'password');
       await expect(btn).toHaveAttribute('aria-pressed', 'false');
-      expect(await input.inputValue()).toBe("VibeView'26!");
+      expect(await input.inputValue()).toBe(TYPED);
     }
 
     // Clicking the eye must not have navigated / submitted.
