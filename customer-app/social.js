@@ -21,6 +21,11 @@ let feedOffset = 0;
 let feedLoading = false;
 let feedHasMore = true;
 let activeCategory = null;
+// Second, independent filter axis. Applied SERVER-SIDE for the feed (a
+// get_venue_feed argument) and CLIENT-SIDE for the map pins, swim lane and
+// search — the same split setCategory() already uses, for the same reason:
+// the feed is paginated in the database and the venue list is not.
+let activeGenre = null;
 let activeTab = 'feed';
 let userLocation = null;
 let map = null;
@@ -37,6 +42,10 @@ let recordingTimerInterval = null;
 let recordingStartTime = 0;
 let recordedDurationSeconds = null;
 let venuePageVenueId = null;
+// The venue row currently rendered by the venue page. Held because the admin
+// genre editor toggles against the CURRENT genre list and re-renders in place —
+// re-reading get_venue_detail on every chip tap would be a round trip per tap.
+let venuePageVenue = null;
 let venuePageFeed = [];
 let venuePageOffset = 0;
 let venuePageHasMore = true;
@@ -85,8 +94,46 @@ let lastScrollY = 0;
 // Which post the options sheet is acting on.
 let optionsMediaId = null;
 
+// Venue picker (composer). The sheet is a filtered view over `venues`, so the
+// only state it needs is the query the user has typed.
+let venuePickerQuery = '';
+
+// Mobile venue admin (org members only). `placeResults` is the last Nominatim
+// response; `pendingPlace` is the row the owner tapped, held while they confirm
+// and classify it.
+let placeResults = [];
+let pendingPlace = null;
+let pendingPlaceGenres = [];
+let placeSearchTimeout = null;
+
+// PWA install. `deferredInstallPrompt` is Chrome's beforeinstallprompt event,
+// captured and stashed — it can only be used once, and only from inside a user
+// gesture.
+//
+// ⚠️ The listener for it is registered at the BOTTOM of this file, at parse
+// time, not inside setupInstallPrompt(). Chrome fires beforeinstallprompt as
+// soon as its install criteria are met, which can be before init() has
+// finished awaiting the app row, the venues and the first feed page — and the
+// event does not replay for a listener that registers late. Missing it means
+// the Add button silently falls through to the iOS instructions on Android.
+let deferredInstallPrompt = null;
+// Flips true once setupInstallPrompt() has run, so an event that arrives first
+// is stashed rather than dropped and the banner appears when the UI is ready.
+let installUiReady = false;
+
 const FEED_PAGE_SIZE = 20;
 const SOUND_PREF_KEY = 'viibe_sound_on';
+const INSTALL_DISMISSED_KEY = 'viibe_install_dismissed';
+// How long a dismissal sticks. Long enough that the banner is not nagging,
+// short enough that someone who dismissed it in a hurry sees it again.
+const INSTALL_DISMISS_DAYS = 14;
+// "Here tonight" counts posts from the last 4 hours (see the here_now
+// expression in migration 20260901000001). Nothing client-side recomputes it;
+// this is only here so the copy and the SQL cannot drift silently.
+const HERE_NOW_WINDOW_HOURS = 4;
+// How close a venue has to be before the composer preselects it. A night out,
+// not a country — see defaultComposerVenueId().
+const NEAREST_VENUE_RADIUS_MILES = 25;
 const REPORT_REASONS = [
     { value: 'inappropriate', key: 'social.reportInappropriate', label: 'Inappropriate content' },
     { value: 'spam',          key: 'social.reportSpam',          label: 'Spam or misleading' },
@@ -112,6 +159,7 @@ const DEMO_VENUES = [
         is_featured: true,
         description: 'Elevated cocktails with panoramic ocean views. Live DJ sets every Friday & Saturday.',
         tags: ['rooftop', 'cocktails', 'ocean view', 'live dj'],
+        music_genres: ['house', 'open_format', 'dj_set'],
         phone: '(310) 555-0101',
         website: 'https://example.com',
         hours: {
@@ -143,6 +191,7 @@ const DEMO_VENUES = [
         review_count: 256,
         description: 'Downtown LA\'s premier underground club. House & techno nights.',
         tags: ['club', 'techno', 'house music', 'downtown'],
+        music_genres: ['techno', 'house'],
         hours: {
             monday: null,
             tuesday: null,
@@ -172,6 +221,7 @@ const DEMO_VENUES = [
         review_count: 89,
         description: 'Craft cocktails and local brews in a cozy neighborhood setting.',
         tags: ['craft cocktails', 'beer', 'casual'],
+        music_genres: ['rock', 'funk_soul'],
         hours: {
             monday: { open: '17:00', close: '00:00' },
             tuesday: { open: '17:00', close: '00:00' },
@@ -202,6 +252,7 @@ const DEMO_VENUES = [
         is_featured: true,
         description: 'World-renowned Japanese cuisine with oceanfront dining.',
         tags: ['japanese', 'sushi', 'fine dining', 'oceanfront'],
+        music_genres: ['jazz'],
         phone: '(310) 555-0104',
         website: 'https://example.com',
         hours: {
@@ -233,6 +284,7 @@ const DEMO_VENUES = [
         review_count: 67,
         description: 'Ambient lounge with craft cocktails, hookah, and weekend live music.',
         tags: ['lounge', 'hookah', 'live music', 'cocktails'],
+        music_genres: ['live_band', 'rnb', 'latin'],
         hours: {
             monday: null,
             tuesday: { open: '18:00', close: '00:00' },
@@ -311,8 +363,11 @@ async function init() {
             supabaseAnonKey: SUPABASE_ANON_KEY
         });
 
-        // Pills must exist before anything reads or highlights them
+        // Pills must exist before anything reads or highlights them.
+        // Genres second, because pinCategoryPills() measures the category
+        // row's rendered height to position the genre row beneath it.
         renderCategoryPills();
+        renderGenrePills();
 
         // The country <select> has to exist before the signup form can be
         // opened, and the overlay can be opened from the very first tap.
@@ -425,6 +480,35 @@ function applyFeatureFlags() {
         const pills = document.getElementById('category-pills');
         if (pills) pills.style.display = 'none';
     }
+
+    // Genres get their own flag rather than riding on categories_enabled: a
+    // tenant may well want music filtering without venue-type filtering, or
+    // the reverse. Default on, like every other toggle here.
+    if (!enabled('genres_enabled')) {
+        const genrePills = document.getElementById('genre-pills');
+        if (genrePills) genrePills.style.display = 'none';
+    }
+}
+
+// Both pill rows follow the same rule: show them only on the tabs where they
+// filter something. Kept in one place so the two rows cannot disagree about
+// which tabs they belong on.
+function updatePillVisibility() {
+    const onFilterTab = CATEGORY_TABS.includes(activeTab);
+
+    const pills = document.getElementById('category-pills');
+    if (pills && appFeatures.categories_enabled !== false) {
+        pills.style.display = onFilterTab ? '' : 'none';
+    }
+
+    const genrePills = document.getElementById('genre-pills');
+    if (genrePills && appFeatures.genres_enabled !== false) {
+        genrePills.style.display = onFilterTab ? '' : 'none';
+    }
+
+    // The genre row's sticky offset depends on whether the category row is
+    // rendered at all, so re-measure after any visibility change.
+    pinCategoryPills();
 }
 
 // Max recording length, in seconds. Read from the app row so the App Builder
@@ -995,6 +1079,24 @@ async function checkOwnerAccess() {
     } catch (e) {
         // Not an owner — that's fine, they post through the member path
     }
+
+    applyOwnerAffordances();
+}
+
+// The admin-only entry points. Called from checkOwnerAccess() rather than
+// rendered conditionally, because that runs both at startup and again after
+// sign-in — an org member who signs in mid-session must get the button without
+// a reload, and a member who signs out must lose it.
+//
+// This is presentation only. The actual authority is the "Org members can
+// manage venues" RLS policy, which is FOR ALL and tests for an
+// organization_members row; hiding a button is not a security control and is
+// not relied on as one.
+function applyOwnerAffordances() {
+    ['add-venue-btn', 'search-add-venue-btn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isOwner ? '' : 'none';
+    });
 }
 
 // ===== Geolocation =====
@@ -1048,7 +1150,11 @@ async function loadVenues() {
     // everything looked populated and working.
     usingDemoVenues = venues.length === 0;
     if (usingDemoVenues) {
-        venues = DEMO_VENUES;
+        // COPY, not the array itself. `venues` is pushed to when an org member
+        // adds a venue from their phone, and assigning the const DEMO_VENUES
+        // directly would make that push mutate the demo data for the rest of
+        // the session — a sixth "sample" venue that is actually real.
+        venues = [...DEMO_VENUES];
         showSampleDataNotice();
     }
 }
@@ -1071,16 +1177,57 @@ function showSampleDataNotice() {
     notice.querySelector('.sample-data-notice-close')
         .addEventListener('click', () => notice.remove());
 
-    const pills = document.getElementById('category-pills');
-    if (pills && pills.parentNode) {
-        pills.parentNode.insertBefore(notice, pills.nextSibling);
+    insertBelowFilterRows(notice);
+}
+
+// Notice bars sit BELOW both sticky pill rows, never between them. They used to
+// anchor on #category-pills alone, which put them in the gap the genre row now
+// occupies — a banner wedged between two sticky rows that scroll together.
+function insertBelowFilterRows(node) {
+    const anchor = document.getElementById('genre-pills')
+        || document.getElementById('category-pills');
+    if (anchor && anchor.parentNode) {
+        anchor.parentNode.insertBefore(node, anchor.nextSibling);
     } else {
-        document.body.appendChild(notice);
+        document.body.appendChild(node);
     }
 }
 
 function getVenueById(id) {
     return venues.find(v => v.id === id);
+}
+
+// A venue id that create_social_post will actually accept.
+//
+// ⚠️ DEMO_VENUES ids are the strings 'demo-1'..'demo-5', not UUIDs. Posting to
+// one fails create_social_post's venue-belongs-to-app check
+// (20260828000002:114-124) — and fails it as success:false, which is the shape
+// that used to be swallowed silently. The picker, the composer default and the
+// "here tonight" badge all exclude them.
+function isDemoVenueId(id) {
+    return String(id || '').startsWith('demo-');
+}
+
+function realVenues() {
+    return venues.filter(v => !isDemoVenueId(v.id));
+}
+
+function venueGenres(venue) {
+    return Array.isArray(venue?.music_genres) ? venue.music_genres : [];
+}
+
+// The client-side half of the two filter axes. The feed applies both in SQL;
+// the map pins, swim lane and search list apply them here, over the `venues`
+// array that get_venues_for_map already returned.
+function venueMatchesFilters(venue) {
+    if (!venue) return false;
+    if (activeCategory && venue.category !== activeCategory) return false;
+    if (activeGenre && !venueGenres(venue).includes(activeGenre)) return false;
+    return true;
+}
+
+function filteredVenues() {
+    return venues.filter(venueMatchesFilters);
 }
 
 // ===== Feed =====
@@ -1100,9 +1247,15 @@ async function loadFeed(append = false) {
 
     showFeedLoading(true);
 
+    // Named arguments, so the new p_genre parameter landing in the middle of
+    // the signature (migration 20260901000001) does not shift anything.
+    // activeCategory and activeGenre are already normalized to null by
+    // normalizeCategory()/normalizeGenre() — the literal strings 'all' would
+    // filter on a value no row has and empty the feed silently.
     const { data, error } = await supabaseClient.rpc('get_venue_feed', {
         p_app_id: currentApp.id,
         p_category: activeCategory,
+        p_genre: activeGenre,
         p_limit: FEED_PAGE_SIZE,
         p_offset: feedOffset
     });
@@ -1164,7 +1317,10 @@ function postIdentity(item) {
             subtitle: [item.venue_name, item.venue_city].filter(Boolean).join(', '),
             imageUrl: item.venue_profile_image_url || null,
             letter: (item.venue_name || '?').charAt(0).toUpperCase(),
-            venueId: item.venue_id
+            venueId: item.venue_id,
+            // get_venue_feed returns the venue's genres on every row, so the
+            // card header can say what was playing without a second lookup.
+            genres: Array.isArray(item.venue_music_genres) ? item.venue_music_genres : []
         };
     }
 
@@ -1176,7 +1332,8 @@ function postIdentity(item) {
         subtitle: '',
         imageUrl: null,
         letter: (name || '?').charAt(0).toUpperCase(),
-        venueId: null
+        venueId: null,
+        genres: []
     };
 }
 
@@ -1196,6 +1353,7 @@ function renderFeedCard(item) {
                     <div class="venue-meta">
                         <div class="venue-handle">${escapeHtml(identity.title)}</div>
                         ${identity.subtitle ? `<div class="venue-location">${escapeHtml(identity.subtitle)}</div>` : ''}
+                        ${genreChipsMarkup({ music_genres: identity.genres }, 2)}
                     </div>
                 </div>
                 <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
@@ -1292,11 +1450,9 @@ function renderMapPins() {
     markers.forEach(m => map.removeLayer(m));
     markers = [];
 
-    const filteredVenues = activeCategory
-        ? venues.filter(v => v.category === activeCategory)
-        : venues;
+    const shown = filteredVenues();
 
-    filteredVenues.forEach((venue, index) => {
+    shown.forEach((venue, index) => {
         if (!venue.latitude || !venue.longitude) return;
 
         const icon = L.divIcon({
@@ -1322,7 +1478,7 @@ function renderMapPins() {
     // Fit bounds if we have venues with valid coordinates.
     // Skipped when there are post pins: initMap deliberately centred on the
     // newest post, and fitting every venue would immediately throw that away.
-    const geoVenues = filteredVenues.filter(v => v.latitude && v.longitude);
+    const geoVenues = shown.filter(v => v.latitude && v.longitude);
     if (geoVenues.length > 0 && !userLocation && postPins.length === 0) {
         const bounds = L.latLngBounds(geoVenues.map(v => [v.latitude, v.longitude]));
         map.fitBounds(bounds, { padding: [40, 40] });
@@ -1369,17 +1525,16 @@ function renderPostPins() {
 // venue with fifty posts would stack fifty pins on one point. Such a post is
 // already represented by its venue pin and reachable through the venue page.
 //
-// Then the category rule: pills filter venues, and a post inherits its venue's
-// category. A post with no venue has no category, so it shows under "All" only —
-// the same rule get_venue_feed applies.
+// Then the filter rule: pills filter venues, and a post inherits its venue's
+// category and genres. A post with no venue has neither, so it shows under
+// "All / All" only — the same rule get_venue_feed applies.
 function visiblePostPins() {
     const located = postPins.filter(pin => pin.has_own_coords);
-    if (!activeCategory) return located;
+    if (!activeCategory && !activeGenre) return located;
 
     return located.filter(pin => {
         if (!pin.venue_id) return false;
-        const venue = getVenueById(pin.venue_id);
-        return !!venue && venue.category === activeCategory;
+        return venueMatchesFilters(getVenueById(pin.venue_id));
     });
 }
 
@@ -1461,12 +1616,8 @@ function renderVenueSwimLane() {
     const lane = document.getElementById('venue-swim-lane');
     if (!lane) return;
 
-    const filteredVenues = activeCategory
-        ? venues.filter(v => v.category === activeCategory)
-        : venues;
-
     // Only show venues with coordinates
-    const geoVenues = filteredVenues.filter(v => v.latitude && v.longitude);
+    const geoVenues = filteredVenues().filter(v => v.latitude && v.longitude);
 
     if (geoVenues.length === 0) {
         lane.innerHTML = '';
@@ -1488,10 +1639,12 @@ function renderVenueSwimLane() {
                 <div class="swim-card-info">
                     <div class="swim-card-name">${escapeHtml(venue.name)}</div>
                     <div class="swim-card-address">${escapeHtml([venue.city, venue.state].filter(Boolean).join(', '))}${distanceText}</div>
+                    ${genreChipsMarkup(venue, 2)}
                     <div class="swim-card-rating">
                         ${renderStars(venue.average_rating || 0)}
                         <span class="swim-card-rating-text">${venue.average_rating || 0}</span>
                         ${venue.review_count ? `<span class="swim-card-reviews">&middot; ${venue.review_count}</span>` : ''}
+                        ${hereNowBadge(venue)}
                     </div>
                 </div>
             </div>
@@ -1572,17 +1725,53 @@ function renderRecentSearches() {
 
 // Shared by the Search tab and the map's floating search. Matches the display
 // label as well as the raw slug, so typing "Bars" still finds a venue whose
-// category column reads "bar".
+// category column reads "bar" — and, now, so typing "techno" finds a venue by
+// what it plays rather than only by what it is called.
 function matchesQuery(v, q) {
     if (!v || !q) return false;
+    const genres = venueGenres(v);
     const haystack = [
         v.name,
         v.handle,
         v.category,
         categoryLabel(v.category),
-        v.city
+        v.city,
+        ...genres,
+        ...genres.map(g => genreLabel(g))
     ].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(q);
+}
+
+// ===== "Here tonight" =====
+//
+// here_now is a derived count from get_venues_for_map / get_venue_detail: the
+// number of DISTINCT people who posted an approved Viibe at this venue in the
+// last few hours. There is no check-in button — choosing a venue when you post
+// IS the check-in — so nothing writes this and nothing can get out of sync.
+//
+// Hidden entirely at zero. A venue that says "0 here tonight" is advertising
+// that it is empty, which is worse than saying nothing; and demo venues have no
+// real posts behind them, so the number would be a fiction.
+function hereNowCount(venue) {
+    if (!venue || isDemoVenueId(venue.id)) return 0;
+    const n = parseInt(venue.here_now, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function hereNowBadge(venue) {
+    const n = hereNowCount(venue);
+    if (!n) return '';
+    return `<span class="here-now-badge"><span class="here-now-dot"></span>${n} <span data-i18n="social.hereTonight">here tonight</span></span>`;
+}
+
+// Read-only genre chips, for the feed card header / venue page / picker rows.
+function genreChipsMarkup(venue, limit) {
+    const genres = venueGenres(venue);
+    if (genres.length === 0) return '';
+    const shown = limit ? genres.slice(0, limit) : genres;
+    return `<span class="genre-chip-row">${shown
+        .map(g => `<span class="genre-chip">${escapeHtml(genreLabel(g))}</span>`)
+        .join('')}</span>`;
 }
 
 // One template for both the browse list and the results list, so the two
@@ -1610,7 +1799,9 @@ function renderVenueCards(list) {
                         <span class="search-result-category">${escapeHtml(categoryLabel(venue.category))}</span>
                         ${place ? `<span class="search-result-place">${escapeHtml(place)}</span>` : ''}
                         ${distanceText ? `<span class="search-result-distance">${distanceText}</span>` : ''}
+                        ${hereNowBadge(venue)}
                     </div>
+                    ${genreChipsMarkup(venue, 3)}
                 </div>
             </div>
         `;
@@ -1721,6 +1912,8 @@ async function openVenuePage(venueId) {
         }
     }
 
+    venuePageVenue = venue;
+
     // Set header title
     const titleEl = document.getElementById('venue-page-title');
     if (titleEl) titleEl.textContent = venue.name;
@@ -1762,7 +1955,8 @@ async function openVenuePage(venueId) {
                         ${venue.review_count ? `<span style="color:#94a3b8">(${venue.review_count})</span>` : ''}
                     </div>
                 ` : ''}
-                ${venue.category ? `<span class="venue-page-category">${escapeHtml(venue.category)}</span>` : ''}
+                ${venue.category ? `<span class="venue-page-category">${escapeHtml(categoryLabel(venue.category))}</span>` : ''}
+                ${hereNowBadge(venue)}
                 ${locationParts ? `
                     <span class="venue-page-location">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -1881,18 +2075,28 @@ async function openVenuePage(venueId) {
         }
     }
 
-    // Render about
+    // Render about — description, "tonight's sound", then the freeform tags.
+    //
+    // Genres sit ABOVE tags and are visually distinct from them on purpose:
+    // they are a controlled vocabulary the app filters on, tags are whatever
+    // the owner typed. Conflating the two is what would have happened had this
+    // been built on venues.tags.
     const aboutEl = document.getElementById('venue-page-about');
     if (aboutEl) {
         let about = '';
         if (venue.description) {
             about += `<p class="venue-page-description">${escapeHtml(venue.description)}</p>`;
         }
+        about += renderVenueGenreSection(venue);
         if (venue.tags && venue.tags.length > 0) {
             about += `<div class="venue-page-tags">${venue.tags.map(t => `<span class="venue-page-tag">${escapeHtml(t)}</span>`).join('')}</div>`;
         }
         aboutEl.innerHTML = about;
         aboutEl.style.display = about ? 'block' : 'none';
+
+        if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+            window.I18n.applyTranslations();
+        }
     }
 
     // Load venue feed
@@ -1909,6 +2113,110 @@ async function openVenuePage(venueId) {
             }
         };
         scrollEl.addEventListener('scroll', venuePageScrollHandler);
+    }
+}
+
+// ===== Tonight's sound (venue page) =====
+//
+// Read-only chips for everyone; for an org member, every genre in the
+// vocabulary is rendered as a tappable chip that writes immediately.
+//
+// On "real time": there is no Supabase Realtime subscription anywhere in this
+// repo and none is added here. A tap writes straight away and the next
+// loadFeed()/loadVenues() picks it up, so a venue switching from hip-hop to
+// house at 1am is reflected for the next person who opens or refreshes the
+// app. A postgres_changes channel would add a new failure mode for a value
+// that changes a handful of times a night.
+function renderVenueGenreSection(venue) {
+    const genres = venueGenres(venue);
+
+    // Demo venues have no row behind them — an UPDATE would match nothing and
+    // report success. Show what they "play" and nothing more.
+    const editable = isOwner && !isDemoVenueId(venue.id);
+
+    if (!editable) {
+        if (genres.length === 0) return '';
+        return `
+            <div class="venue-page-genres">
+                <h4 class="venue-page-genres-title" data-i18n="social.tonightsSound">Tonight's sound</h4>
+                <div class="genre-chips">
+                    ${genres.map(g => `<span class="genre-chip on">${escapeHtml(genreLabel(g))}</span>`).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    const all = window.MUSIC_GENRES || [];
+    return `
+        <div class="venue-page-genres">
+            <h4 class="venue-page-genres-title" data-i18n="social.tonightsSound">Tonight's sound</h4>
+            <p class="venue-page-genres-hint" data-i18n="social.tonightsSoundHint">Tap to change what is playing. Saves instantly.</p>
+            <div class="genre-chips" id="venue-genre-chips">
+                ${all.map(g => `
+                    <button class="genre-chip genre-chip-btn ${genres.includes(g.slug) ? 'on' : ''}"
+                            type="button" aria-pressed="${genres.includes(g.slug) ? 'true' : 'false'}"
+                            onclick="toggleVenueGenre('${escapeHtml(g.slug)}')"
+                            data-i18n="${g.labelKey}">${escapeHtml(g.label)}</button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+async function toggleVenueGenre(slug) {
+    if (!venuePageVenue || !isValidGenre(slug)) return;
+    if (isDemoVenueId(venuePageVenue.id)) return;
+
+    const current = venueGenres(venuePageVenue);
+    const next = current.includes(slug)
+        ? current.filter(g => g !== slug)
+        : sanitizeGenres([...current, slug]);
+
+    // Optimistic: repaint first so a tap feels instant, then reconcile. On
+    // failure the old list is restored, because a chip that stays lit over a
+    // rejected write is the same class of lie as a "Posted!" toast over a post
+    // that was never created.
+    const previous = current;
+    venuePageVenue.music_genres = next;
+    repaintVenueGenres();
+
+    const { error } = await supabaseClient
+        .from('venues')
+        .update({ music_genres: next })
+        .eq('id', venuePageVenue.id);
+
+    if (error) {
+        venuePageVenue.music_genres = previous;
+        repaintVenueGenres();
+        // 42501 is RLS: an org member's session expired, or this is not their
+        // org. 23514 is the CHECK constraint, i.e. music-genres.js has drifted
+        // from the migration.
+        console.error('Failed to save genres:', error);
+        showToast(error.code === '42501'
+            ? 'You do not have permission to edit this venue'
+            : 'Could not save that. Try again.');
+        return;
+    }
+
+    // Keep the map/search copy of this venue in step, so the genre pills and
+    // the swim lane reflect the change without a reload.
+    const cached = getVenueById(venuePageVenue.id);
+    if (cached) cached.music_genres = next;
+
+    renderVenueSwimLane();
+    if (map) renderMapPins();
+}
+
+// Re-renders only the genre block, so an edit does not blow away the hours
+// table or scroll the page.
+function repaintVenueGenres() {
+    const aboutEl = document.getElementById('venue-page-about');
+    const block = aboutEl?.querySelector('.venue-page-genres');
+    if (!block || !venuePageVenue) return;
+
+    block.outerHTML = renderVenueGenreSection(venuePageVenue);
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
     }
 }
 
@@ -2056,6 +2364,7 @@ function closeVenuePage() {
     }
 
     venuePageVenueId = null;
+    venuePageVenue = null;
     venuePageFeed = [];
 }
 
@@ -2074,10 +2383,7 @@ function switchTab(tabId) {
     });
 
     // Show the pills only where they mean something
-    const pills = document.getElementById('category-pills');
-    if (pills && appFeatures.categories_enabled !== false) {
-        pills.style.display = CATEGORY_TABS.includes(tabId) ? '' : 'none';
-    }
+    updatePillVisibility();
 
     // Update views
     document.querySelectorAll('.tab-view').forEach(view => {
@@ -2172,13 +2478,49 @@ function renderCategoryPills() {
     pinCategoryPills();
 }
 
-// The pills stick beneath the header, whose height varies with the safe-area
-// inset, so the offset has to be measured rather than hardcoded.
+// Genre pills, rendered from the shared MUSIC_GENRES list for exactly the same
+// reason the category pills are: a slug typed twice is a slug that will drift,
+// and a filter that matches nothing fails silently.
+function renderGenrePills() {
+    const container = document.getElementById('genre-pills');
+    if (!container) return;
+
+    const genres = window.MUSIC_GENRES || [];
+    container.innerHTML = `
+        <button class="pill active" data-genre="${window.ALL_GENRE || 'all'}" role="tab" aria-selected="true" data-i18n="social.genreAll">Any music</button>
+        ${genres.map(g => `
+            <button class="pill" data-genre="${g.slug}" role="tab" aria-selected="false" data-i18n="${g.labelKey}">${escapeHtml(g.label)}</button>
+        `).join('')}
+    `;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+
+    pinCategoryPills();
+}
+
+// Both pill rows stick beneath the header, and the genre row sticks beneath the
+// category row. The header's height varies with the safe-area inset and the
+// pill rows wrap at narrow widths, so every offset is measured rather than
+// hardcoded — and the genre row's offset depends on the category row's actual
+// rendered height, not an assumed one.
 function pinCategoryPills() {
     const header = document.querySelector('.social-header');
     const pills = document.getElementById('category-pills');
-    if (!header || !pills) return;
-    pills.style.top = `${header.offsetHeight}px`;
+    const genrePills = document.getElementById('genre-pills');
+    if (!header) return;
+
+    const headerH = header.offsetHeight;
+    if (pills) pills.style.top = `${headerH}px`;
+
+    if (genrePills) {
+        // A hidden category row (categories_enabled === false) contributes no
+        // height, so offsetHeight is 0 and the genre row lands directly under
+        // the header. That falls out correctly without a special case.
+        const pillsH = pills && pills.style.display !== 'none' ? pills.offsetHeight : 0;
+        genrePills.style.top = `${headerH + pillsH}px`;
+    }
 }
 
 function setCategory(category) {
@@ -2189,8 +2531,13 @@ function setCategory(category) {
         ? window.normalizeCategory(category)
         : (category && category !== 'all' ? category : null);
 
-    // Update pill active state (aria-selected too — it used to never update)
-    document.querySelectorAll('.pill').forEach(pill => {
+    // Update pill active state (aria-selected too — it used to never update).
+    //
+    // ⚠️ Scoped to #category-pills. An unscoped '.pill' also matches the genre
+    // row, where dataset.category is undefined — and normalizeCategory(undefined)
+    // is null, which equals activeCategory whenever "All" is selected. Every
+    // genre pill would light up at once.
+    document.querySelectorAll('#category-pills .pill').forEach(pill => {
         const pillCat = window.normalizeCategory
             ? window.normalizeCategory(pill.dataset.category)
             : (pill.dataset.category || null);
@@ -2201,13 +2548,36 @@ function setCategory(category) {
 
     // Reload feed with new category
     loadFeed(false);
+    refreshVenueSurfaces();
+}
 
-    // Update map pins + swim lane if map is visible
-    if (map) {
-        renderMapPins();
-        renderPostPins();
-        renderVenueSwimLane();
-    }
+function setGenre(genre) {
+    // Same trap as setCategory: "Any music" must reach get_venue_feed as SQL
+    // NULL, never the literal 'all', or the filter matches a value no row has.
+    activeGenre = window.normalizeGenre
+        ? window.normalizeGenre(genre)
+        : (genre && genre !== 'all' ? genre : null);
+
+    document.querySelectorAll('#genre-pills .pill').forEach(pill => {
+        const pillGenre = window.normalizeGenre
+            ? window.normalizeGenre(pill.dataset.genre)
+            : (pill.dataset.genre || null);
+        const isActive = pillGenre === activeGenre;
+        pill.classList.toggle('active', isActive);
+        pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    loadFeed(false);
+    refreshVenueSurfaces();
+}
+
+// The three client-side-filtered surfaces. Both pill rows go through here so
+// they cannot fall out of step with each other.
+function refreshVenueSurfaces() {
+    if (!map) return;
+    renderMapPins();
+    renderPostPins();
+    renderVenueSwimLane();
 }
 
 // ===== Sound =====
@@ -2362,6 +2732,15 @@ function setupEventListeners() {
         });
     }
 
+    // Genre pills — same delegation, same reason.
+    const genrePillsContainer = document.getElementById('genre-pills');
+    if (genrePillsContainer) {
+        genrePillsContainer.addEventListener('click', (e) => {
+            const pill = e.target.closest('.pill');
+            if (pill) setGenre(pill.dataset.genre);
+        });
+    }
+
     // Search input
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
@@ -2497,13 +2876,62 @@ function setupEventListeners() {
         });
     }
 
+    // Composer venue picker
+    document.getElementById('create-post-venue')?.addEventListener('click', openVenuePicker);
+    document.getElementById('venue-picker-close')?.addEventListener('click', closeVenuePicker);
+    document.getElementById('venue-picker-backdrop')?.addEventListener('click', closeVenuePicker);
+
+    const pickerFilter = document.getElementById('venue-picker-filter');
+    if (pickerFilter) {
+        // No debounce: this filters an in-memory array, it does not hit the
+        // network. Debouncing would only add latency to typing.
+        pickerFilter.addEventListener('input', (e) => {
+            venuePickerQuery = e.target.value;
+            renderVenuePickerList();
+        });
+    }
+
+    // Add a venue (org members only — the buttons are hidden otherwise, and
+    // openAddVenue() re-checks isOwner rather than trusting the DOM).
+    ['add-venue-btn', 'search-add-venue-btn'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', openAddVenue);
+    });
+    document.getElementById('add-venue-close')?.addEventListener('click', closeAddVenue);
+    document.getElementById('add-venue-backdrop')?.addEventListener('click', closeAddVenue);
+    document.getElementById('add-venue-back')?.addEventListener('click', () => showAddVenueStep('search'));
+    document.getElementById('add-venue-save')?.addEventListener('click', saveNewVenue);
+
+    const placeInput = document.getElementById('place-search-input');
+    if (placeInput) {
+        // Debounced hard, and longer than the 300ms used elsewhere: every
+        // keystroke that gets through is a request to a third party that
+        // allows roughly one per second.
+        placeInput.addEventListener('input', (e) => {
+            clearTimeout(placeSearchTimeout);
+            const value = e.target.value;
+            placeSearchTimeout = setTimeout(() => runPlaceSearch(value), 600);
+        });
+        // Enter searches immediately — waiting out a debounce after an
+        // explicit submit reads as the app ignoring you.
+        placeInput.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            clearTimeout(placeSearchTimeout);
+            runPlaceSearch(e.target.value);
+        });
+    }
+
     // Infinite scroll
     setupInfiniteScroll();
 
     // Nav hide-on-scroll + back-to-top
     setupScrollChrome();
 
-    // Re-measure the sticky offset when the header can change height
+    // Add to Home Screen
+    setupInstallPrompt();
+
+    // Re-measure the sticky offsets when the header or the pill rows can change
+    // height. Both rows wrap, so a rotation changes the genre row's offset.
     window.addEventListener('resize', pinCategoryPills);
     window.addEventListener('orientationchange', pinCategoryPills);
 }
@@ -2773,88 +3201,14 @@ function showEmptyState(msg) {
 
 // ===== Create Post =====
 
-async function getOrCreateDefaultVenue() {
-    // Use existing real venue if available (skip demo venues)
-    const realVenues = venues.filter(v => !String(v.id).startsWith('demo-'));
-    if (realVenues.length > 0) return realVenues[0];
-
-    // `venues` is get_venues_for_map()'s output, which drops anything without
-    // coordinates or with is_active = false. So an empty array does NOT mean
-    // "this app has no venues" — it means none are on the map. Creating one on
-    // that basis mints a fresh "General" every session and posts scatter across
-    // them. Ask the table directly before writing anything.
-    const existing = await findAnyOwnedVenue();
-    if (existing) {
-        venues.push(existing);
-        return existing;
-    }
-
-    // venues_active_requires_coordinates (migration 20260823000002) rejects an
-    // active venue with no lat/lng, and get_venue_feed() requires is_active —
-    // so an inactive fallback would swallow the post silently. Coordinates are
-    // genuinely required here; the owner is posting from somewhere, so ask.
-    // The permission prompt can sit open for 10s; don't leave "Preparing..."
-    // on screen with no explanation for why nothing is happening.
-    const progressText = document.getElementById('post-progress-text');
-    if (progressText) progressText.textContent = 'Finding your location...';
-
-    const coords = await getCurrentCoords();
-    if (!coords) {
-        throw new Error(
-            'Turn on location to post your first Viibe, or add a venue with an address in your admin first.'
-        );
-    }
-
-    // Auto-create a "General" venue for the org
-    const { data, error } = await supabaseClient
-        .from('venues')
-        .insert({
-            name: 'General',
-            slug: 'general-' + Date.now().toString(36),
-            organization_id: ownerOrgId,
-            app_id: currentApp.id,
-            // Must be a real slug from VENUE_CATEGORIES, otherwise this venue's
-            // posts only ever surface under "All" and vanish behind every pill.
-            category: 'nightlife',
-            is_active: true,
-            latitude: coords.lat,
-            longitude: coords.lng,
-            media_count: 0
-        })
-        .select()
-        .single();
-
-    if (error) throw new Error('Failed to create default venue: ' + error.message);
-
-    // Add to local venues array so subsequent posts reuse it
-    venues.push(data);
-    return data;
-}
-
-// The owner's own venues, coordinates or not — "Org members can manage venues"
-// (migration 20260225000001) is FOR ALL, so this sees rows the public map RPC
-// filters out. Oldest first, to match app/venues.html's own resolve order.
-async function findAnyOwnedVenue() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('venues')
-            .select('*')
-            .eq('app_id', currentApp.id)
-            .is('deleted_at', null)
-            .order('created_at', { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-        if (error) {
-            console.warn('Could not look up existing venues:', error);
-            return null;
-        }
-        return data || null;
-    } catch (e) {
-        console.warn('Could not look up existing venues:', e);
-        return null;
-    }
-}
+// getOrCreateDefaultVenue() and findAnyOwnedVenue() used to live here.
+//
+// They existed because venue_media.venue_id was NOT NULL, so every owner post
+// needed *some* venue and the composer invented one named "General" — which is
+// why the feed showed "General / General" linking to a venue nobody created on
+// purpose. venue_id has been nullable since 20260828000001, and the composer
+// now has an explicit venue picker, so both the invention and the fallback are
+// gone. Owners choose a venue the same way everyone else does.
 
 // requestLocation() runs at startup and is fire-and-forget, so userLocation is
 // null both when permission was refused AND when the prompt is still open.
@@ -2878,12 +3232,53 @@ function getCurrentCoords() {
     });
 }
 
+// The composer's opening venue selection, recomputed on EVERY openCreatePost()
+// call rather than remembered — someone who posts from one bar and walks to the
+// next must not get the first bar preselected an hour later.
+//
+//   opened from a venue page  -> that venue, preselected and changeable
+//   otherwise, location known -> the nearest real venue
+//   otherwise                 -> no venue; the picker opens sorted by name
+//
+// Uses the CACHED userLocation and deliberately does not re-prompt: opening the
+// composer must not block for up to 10 seconds behind a permission dialog.
+// submitPost() still calls getCurrentCoords() for the post's own fix, which is
+// the place where waiting is justified.
+function defaultComposerVenueId(explicitVenueId) {
+    if (explicitVenueId) return explicitVenueId;
+    if (!userLocation) return null;
+
+    const candidates = realVenues().filter(v => v.latitude && v.longitude);
+    if (candidates.length === 0) return null;
+
+    let best = null;
+    let bestDistance = Infinity;
+    candidates.forEach(v => {
+        const d = calcDistance(userLocation.lat, userLocation.lng, v.latitude, v.longitude);
+        if (d !== null && d < bestDistance) {
+            bestDistance = d;
+            best = v;
+        }
+    });
+
+    // ⚠️ "Nearest" is only a useful default if it is actually near. Without the
+    // radius check, someone opening the composer in another city gets the
+    // closest venue in the app PRESELECTED — so a post they never meant to
+    // attach lands on a venue they have never been to, and inflates that
+    // venue's "here tonight" count with a person who is 400 miles away.
+    // Beyond the radius the composer defaults to no venue; every venue is
+    // still one tap away in the picker.
+    return best && bestDistance <= NEAREST_VENUE_RADIUS_MILES ? best.id : null;
+}
+
 /**
  * @param venueId  attach the post to this venue (from a venue page's "Post
- *                 here"), or omit for an unattached Viibe credited to its
- *                 author. There is no longer an owner-only gate: any signed-in
- *                 member can post, and create_social_post re-checks membership
- *                 server-side.
+ *                 here"), or omit to let the picker default to the nearest
+ *                 one. Either way the selection is changeable, and "Don't
+ *                 attach a venue" is always available — an unattached Viibe is
+ *                 credited to its author and is a supported outcome.
+ *                 There is no owner-only gate: any signed-in member can post,
+ *                 and create_social_post re-checks membership server-side.
  */
 async function openCreatePost(venueId) {
     const targetVenueId = venueId || null;
@@ -2894,7 +3289,8 @@ async function openCreatePost(venueId) {
     // composer deliberately reopens empty.
     if (!(await requireAccount('Create an account to post a Viibe', { pendingVenueId: targetVenueId }))) return;
 
-    composerVenueId = targetVenueId;
+    composerVenueId = defaultComposerVenueId(targetVenueId);
+    venuePickerQuery = '';
 
     const modal = document.getElementById('create-post-modal');
     const backdrop = document.getElementById('create-post-backdrop');
@@ -2936,33 +3332,429 @@ async function openCreatePost(venueId) {
     document.body.style.overflow = 'hidden';
 }
 
-// "Posting to {venue}" — shown only when the composer was opened from a venue
-// page. An unattached post says nothing, because there is nothing to say: it is
-// credited to the poster.
+// The composer's venue row. ALWAYS visible now, and always a button.
+//
+// It used to be a read-only label, hidden entirely when composerVenueId was
+// null — so a post made from the header + button had no way to name where it
+// was, and there was no venue selector anywhere in the composer at all.
 function renderComposerVenueRow() {
     const row = document.getElementById('create-post-venue');
     if (!row) return;
 
-    if (!composerVenueId) {
-        row.style.display = 'none';
-        row.innerHTML = '';
-        return;
-    }
+    const label = composerVenueId
+        ? `<span data-i18n="social.postingTo">Posting to</span> <strong>${escapeHtml(composerVenueName())}</strong>`
+        : `<span data-i18n="social.noVenueSelected">No venue &mdash; posting as yourself</span>`;
 
-    // `venues` is get_venues_for_map()'s output, which drops anything without
-    // coordinates — so a venue page can be open for a venue that is not in it.
-    // The page's own title is the authoritative name in that case.
-    const venue = getVenueById(composerVenueId);
-    const pageTitle = composerVenueId === venuePageVenueId
-        ? document.getElementById('venue-page-title')?.textContent
-        : null;
-    const name = venue?.name || pageTitle || 'this venue';
-    row.innerHTML = `<span data-i18n="social.postingTo">Posting to</span> <strong>${escapeHtml(name)}</strong>`;
+    row.innerHTML = `
+        <span class="create-post-venue-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+        </span>
+        <span class="create-post-venue-label">${label}</span>
+        <span class="create-post-venue-change" data-i18n="social.change">Change</span>
+    `;
     row.style.display = '';
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
     }
+}
+
+// `venues` is get_venues_for_map()'s output, which drops anything without
+// coordinates — so a venue page can be open for a venue that is not in it. The
+// page's own title is the authoritative name in that case.
+function composerVenueName() {
+    const venue = getVenueById(composerVenueId);
+    if (venue?.name) return venue.name;
+    if (composerVenueId && composerVenueId === venuePageVenueId) {
+        return document.getElementById('venue-page-title')?.textContent || 'this venue';
+    }
+    return 'this venue';
+}
+
+// ===== Venue picker sheet =====
+
+function openVenuePicker() {
+    const sheet = document.getElementById('venue-picker-sheet');
+    const backdrop = document.getElementById('venue-picker-backdrop');
+    if (!sheet || !backdrop) return;
+
+    const filter = document.getElementById('venue-picker-filter');
+    if (filter) filter.value = venuePickerQuery;
+
+    renderVenuePickerList();
+
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+}
+
+function closeVenuePicker() {
+    document.getElementById('venue-picker-sheet')?.classList.remove('visible');
+    document.getElementById('venue-picker-backdrop')?.classList.remove('visible');
+    // Deliberately NOT restoring body overflow: the composer is still open
+    // underneath and owns it. Clearing it here would let the page behind the
+    // composer scroll.
+}
+
+// Nearest-first when we know where the user is, alphabetical when we do not.
+// Demo venues are excluded outright — see isDemoVenueId.
+function pickableVenues() {
+    const q = venuePickerQuery.trim().toLowerCase();
+    const list = realVenues().filter(v => !q || matchesQuery(v, q));
+
+    if (!userLocation) {
+        return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    return list
+        .map(v => ({
+            venue: v,
+            distance: v.latitude && v.longitude
+                ? calcDistance(userLocation.lat, userLocation.lng, v.latitude, v.longitude)
+                : null
+        }))
+        // A venue with no coordinates sorts last rather than first, which is
+        // what `null` would do in a naive numeric comparison.
+        .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
+        .map(entry => entry.venue);
+}
+
+function renderVenuePickerList() {
+    const list = document.getElementById('venue-picker-list');
+    if (!list) return;
+
+    const options = pickableVenues();
+
+    // "Don't attach a venue" is a first-class choice, not an escape hatch, so
+    // it sits at the top of the list and is styled like the other rows.
+    const noVenueRow = `
+        <button class="venue-picker-row ${composerVenueId ? '' : 'selected'}" type="button"
+                onclick="selectComposerVenue(null)">
+            <span class="venue-picker-row-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+            </span>
+            <span class="venue-picker-row-body">
+                <span class="venue-picker-row-name" data-i18n="social.noVenue">Don't attach a venue</span>
+                <span class="venue-picker-row-meta" data-i18n="social.noVenueHint">Posted as yourself</span>
+            </span>
+        </button>
+    `;
+
+    const rows = options.map(venue => {
+        const distance = userLocation && venue.latitude && venue.longitude
+            ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude)
+            : null;
+        const meta = [
+            categoryLabel(venue.category),
+            distance !== null ? `${distance.toFixed(1)} mi` : ''
+        ].filter(Boolean).join(' · ');
+
+        return `
+            <button class="venue-picker-row ${venue.id === composerVenueId ? 'selected' : ''}" type="button"
+                    onclick="selectComposerVenue('${escapeHtml(venue.id)}')">
+                <span class="venue-picker-row-icon" aria-hidden="true">
+                    ${venue.profile_image_url
+                        ? `<img src="${escapeHtml(venue.profile_image_url)}" alt="">`
+                        : escapeHtml((venue.name || '?')[0].toUpperCase())}
+                </span>
+                <span class="venue-picker-row-body">
+                    <span class="venue-picker-row-name">${escapeHtml(venue.name)}</span>
+                    <span class="venue-picker-row-meta">${escapeHtml(meta)}</span>
+                    ${genreChipsMarkup(venue, 2)}
+                </span>
+                ${hereNowBadge(venue)}
+            </button>
+        `;
+    }).join('');
+
+    // An app with no real venues is a real state — ViibeView had exactly one
+    // for months — and the picker has to say so rather than render an empty box.
+    const emptyNote = options.length === 0
+        ? `<p class="venue-picker-empty" data-i18n="${venuePickerQuery ? 'social.noVenuesMatch' : 'social.noVenuesYet'}">${
+              venuePickerQuery ? 'No venues match that' : 'No venues have been added yet'
+          }</p>`
+        : '';
+
+    list.innerHTML = noVenueRow + rows + emptyNote;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+function selectComposerVenue(venueId) {
+    composerVenueId = venueId || null;
+    renderComposerVenueRow();
+    closeVenuePicker();
+}
+
+// ===== Add a venue, from a phone (org members only) =====
+//
+// Why there is no Maps API here: the app is already Leaflet + raw OpenStreetMap
+// tiles, and netlify.toml's connect-src already whitelists BOTH
+// tile.openstreetmap.org and nominatim.openstreetmap.org. Nominatim's /search
+// returns OSM POIs — bars, nightclubs and restaurants come back with a name, a
+// structured address and coordinates. That is the whole "search maps, get a
+// list, pick one" flow with zero new infrastructure and no key to leak.
+//
+// Google Places has better POI coverage but needs a key that must never reach
+// the client, which would mean a new edge-function proxy. searchPlaces() in
+// /js/venue-places.js is the single seam where that swap would happen, so it
+// stays a one-file change if OSM coverage disappoints. Not built now.
+
+function openAddVenue() {
+    if (!isOwner) return;   // presentation guard; RLS is the real one
+
+    const sheet = document.getElementById('add-venue-sheet');
+    const backdrop = document.getElementById('add-venue-backdrop');
+    if (!sheet || !backdrop) return;
+
+    placeResults = [];
+    pendingPlace = null;
+    pendingPlaceGenres = [];
+
+    const input = document.getElementById('place-search-input');
+    if (input) input.value = '';
+    const results = document.getElementById('place-results');
+    if (results) results.innerHTML = '';
+    setFormMessage('add-venue', '');
+
+    showAddVenueStep('search');
+
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+
+    if (input && !('ontouchstart' in window)) setTimeout(() => input.focus(), 50);
+}
+
+function closeAddVenue() {
+    document.getElementById('add-venue-sheet')?.classList.remove('visible');
+    document.getElementById('add-venue-backdrop')?.classList.remove('visible');
+    document.body.style.overflow = '';
+    pendingPlace = null;
+}
+
+function showAddVenueStep(step) {
+    const search = document.getElementById('add-venue-step-search');
+    const confirm = document.getElementById('add-venue-step-confirm');
+    if (search) search.style.display = step === 'search' ? '' : 'none';
+    if (confirm) confirm.style.display = step === 'confirm' ? '' : 'none';
+}
+
+async function runPlaceSearch(query) {
+    const container = document.getElementById('place-results');
+    if (!container) return;
+
+    if (!query || query.trim().length < 2) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `<p class="place-results-status" data-i18n="social.searchingPlaces">Searching…</p>`;
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+
+    // Biased around the user when we have a fix, but NOT bounded to it — an
+    // owner in Perpignan adding their second venue in Barcelona must still
+    // find it. See searchPlaces()'s viewbox handling.
+    placeResults = await window.VenuePlaces.searchPlaces(query, { near: userLocation });
+
+    if (placeResults.length === 0) {
+        container.innerHTML = `<p class="place-results-status" data-i18n="social.noPlacesFound">Nothing found. Try the street name too.</p>`;
+        if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+            window.I18n.applyTranslations();
+        }
+        return;
+    }
+
+    container.innerHTML = placeResults.map((place, i) => {
+        const distance = userLocation
+            ? calcDistance(userLocation.lat, userLocation.lng, place.lat, place.lng)
+            : null;
+        const where = [place.address_line1, place.city, place.country].filter(Boolean).join(', ');
+
+        return `
+            <button class="place-result" type="button" onclick="choosePlace(${i})">
+                <span class="place-result-body">
+                    <span class="place-result-name">${escapeHtml(place.name)}</span>
+                    <span class="place-result-address">${escapeHtml(where)}</span>
+                </span>
+                ${distance !== null ? `<span class="place-result-distance">${distance.toFixed(1)} mi</span>` : ''}
+            </button>
+        `;
+    }).join('');
+}
+
+function choosePlace(index) {
+    const place = placeResults[index];
+    if (!place) return;
+
+    pendingPlace = place;
+    // A guess from the OSM tag, not a decision — the owner sees it in the
+    // select and can change it before saving.
+    pendingPlaceGenres = [];
+
+    const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+    };
+    set('add-venue-name', place.name);
+    set('add-venue-address', place.address_line1);
+    set('add-venue-city', place.city);
+    set('add-venue-state', place.state);
+    set('add-venue-postal', place.postal_code);
+    set('add-venue-country', place.country);
+
+    const coords = document.getElementById('add-venue-coords');
+    if (coords) {
+        coords.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}</span>
+        `;
+    }
+
+    renderAddVenueCategoryOptions(window.VenuePlaces.guessCategory(place));
+    renderAddVenueGenreChips();
+    setFormMessage('add-venue', '');
+    showAddVenueStep('confirm');
+}
+
+function renderAddVenueCategoryOptions(selected) {
+    const select = document.getElementById('add-venue-category');
+    if (!select) return;
+    const cats = window.VENUE_CATEGORIES || [];
+    select.innerHTML = cats
+        .map(c => `<option value="${escapeHtml(c.slug)}"${c.slug === selected ? ' selected' : ''}>${escapeHtml(c.label)}</option>`)
+        .join('');
+}
+
+function renderAddVenueGenreChips() {
+    const wrap = document.getElementById('add-venue-genres');
+    if (!wrap) return;
+    const all = window.MUSIC_GENRES || [];
+    wrap.innerHTML = all.map(g => `
+        <button class="genre-chip genre-chip-btn ${pendingPlaceGenres.includes(g.slug) ? 'on' : ''}"
+                type="button" aria-pressed="${pendingPlaceGenres.includes(g.slug) ? 'true' : 'false'}"
+                onclick="toggleNewVenueGenre('${escapeHtml(g.slug)}')"
+                data-i18n="${g.labelKey}">${escapeHtml(g.label)}</button>
+    `).join('');
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+function toggleNewVenueGenre(slug) {
+    if (!isValidGenre(slug)) return;
+    pendingPlaceGenres = pendingPlaceGenres.includes(slug)
+        ? pendingPlaceGenres.filter(g => g !== slug)
+        : sanitizeGenres([...pendingPlaceGenres, slug]);
+    renderAddVenueGenreChips();
+}
+
+// Slug: same rule as app/venues.html's saveVenue() — slugify the name and
+// append a base-36 timestamp. venues_slug_app_unique is per app, and the
+// timestamp is what makes a second "Le Bungalow" saveable rather than a 23505
+// the owner cannot act on.
+function slugifyVenueName(name) {
+    const base = String(name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    return `${base || 'venue'}-${Date.now().toString(36)}`;
+}
+
+async function saveNewVenue() {
+    if (!pendingPlace || !currentApp) return;
+
+    const name = document.getElementById('add-venue-name')?.value.trim();
+    if (!name) {
+        setFormMessage('add-venue', 'Give the venue a name');
+        return;
+    }
+
+    const category = document.getElementById('add-venue-category')?.value;
+    // venues_category_valid rejects anything outside the seven slugs, and a
+    // venue with a bogus category only ever surfaces under "All" — invisible
+    // behind every pill. Fail here, where the message can say so.
+    if (!isValidCategory(category)) {
+        setFormMessage('add-venue', 'Choose a category');
+        return;
+    }
+
+    setSubmitting('add-venue-save', true, 'Saving…');
+    setFormMessage('add-venue', '');
+
+    // Every required column, named explicitly:
+    //   organization_id + app_id — what the RLS policy and the app scope check
+    //   latitude/longitude       — venues_active_requires_coordinates (20260823000002)
+    //                              rejects an ACTIVE venue without both
+    //   category                 — venues_category_valid
+    //   slug                     — venues_slug_app_unique, per app
+    const { data, error } = await supabaseClient
+        .from('venues')
+        .insert({
+            organization_id: ownerOrgId,
+            app_id: currentApp.id,
+            name,
+            slug: slugifyVenueName(name),
+            category,
+            music_genres: sanitizeGenres(pendingPlaceGenres),
+            address_line1: document.getElementById('add-venue-address')?.value.trim() || null,
+            city: document.getElementById('add-venue-city')?.value.trim() || null,
+            state: document.getElementById('add-venue-state')?.value.trim() || null,
+            postal_code: document.getElementById('add-venue-postal')?.value.trim() || null,
+            latitude: pendingPlace.lat,
+            longitude: pendingPlace.lng,
+            is_active: true,
+            media_count: 0
+        })
+        .select()
+        .single();
+
+    setSubmitting('add-venue-save', false);
+
+    if (error) {
+        console.error('Failed to add venue:', error);
+        setFormMessage('add-venue', error.code === '42501'
+            ? 'Your account cannot add venues to this app.'
+            : (error.message || 'Could not save that venue'));
+        return;
+    }
+
+    // Push onto the local array so the venue is immediately pickable in the
+    // composer, searchable, and on the map — without a reload. It came back
+    // from .select(), so it has every column the RPC would have returned
+    // except here_now, which is 0 for a venue nobody has posted at yet.
+    // here_now is 0 for a venue nobody has posted at yet; every other column
+    // comes back from .select(). Adding it locally makes it immediately
+    // pickable in the composer, searchable and mapped, with no reload.
+    const created = { ...data, here_now: 0 };
+    if (usingDemoVenues) {
+        // The first real venue REPLACES the sample set. Appending would leave
+        // one real venue sitting among five fictional ones, which is worse
+        // than either state on its own.
+        venues = [created];
+        usingDemoVenues = false;
+        document.getElementById('sample-data-notice')?.remove();
+    } else {
+        venues.push(created);
+    }
+
+    closeAddVenue();
+    showToast(`${name} added`);
+
+    renderVenueSwimLane();
+    if (map) renderMapPins();
+    const searchInput = document.getElementById('search-input');
+    if (activeTab === 'search') handleSearch((searchInput?.value || '').trim());
 }
 
 function closeCreatePost() {
@@ -3262,16 +4054,13 @@ async function submitPost() {
         const userId = session?.user?.id;
         if (!userId) throw new Error('Sign in to post a Viibe');
 
-        // Which venue, if any.
-        //   - opened from a venue page  -> that venue
-        //   - owner posting from the header -> their default venue, as before
-        //   - member posting from the header -> none. venue_id is nullable now,
-        //     so there is nothing left to invent a "General" venue for.
-        let venueId = composerVenueId;
-        if (!venueId && isOwner && ownerOrgId) {
-            const venue = await getOrCreateDefaultVenue();
-            venueId = venue.id;
-        }
+        // Which venue, if any — whatever the picker holds, for everyone.
+        //
+        // There used to be an owner-only branch here that called
+        // getOrCreateDefaultVenue() and auto-minted a venue named "General".
+        // It is gone: venue_id is nullable, the picker is explicit, and an
+        // owner who wants no venue gets no venue, same as a member.
+        const venueId = composerVenueId;
 
         if (progressFill) progressFill.style.width = '20%';
         if (progressText) progressText.textContent = 'Uploading...';
@@ -3402,12 +4191,7 @@ function showLocationBanner() {
     banner.querySelector('.location-banner-close')
         .addEventListener('click', () => banner.remove());
 
-    const pills = document.getElementById('category-pills');
-    if (pills && pills.parentNode) {
-        pills.parentNode.insertBefore(banner, pills.nextSibling);
-    } else {
-        document.body.appendChild(banner);
-    }
+    insertBelowFilterRows(banner);
 }
 
 // ===== Toast Notifications =====
@@ -3418,13 +4202,168 @@ function showToast(message) {
     const toast = document.createElement('div');
     toast.className = 'social-toast';
     toast.textContent = message;
-    toast.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;max-width:90%;text-align:center;';
+    // max-width is capped in absolute terms as well as proportionally: 90% of
+    // a 1440px desktop viewport is a 1300px-wide toast floating outside the
+    // app column.
+    toast.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;max-width:min(90%,360px);text-align:center;';
     document.body.appendChild(toast);
     requestAnimationFrame(() => { toast.style.opacity = '1'; });
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// ===== Add to Home Screen =====
+//
+// What is actually possible, per platform:
+//   Android / Chrome / Edge — capture beforeinstallprompt, preventDefault() it,
+//     stash the event, and call .prompt() from a real tap. One-tap install.
+//   iOS Safari — there is NO programmatic install. Apple provides no API at
+//     all, so the only honest thing to do is show the Share → Add to Home
+//     Screen instructions.
+// Neither can be forced, on either platform.
+
+function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+}
+
+function isIosSafari() {
+    const ua = navigator.userAgent || '';
+    const iOS = /iPad|iPhone|iPod/.test(ua)
+        // iPadOS 13+ reports as a Mac; the touch points give it away.
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // Chrome and Firefox on iOS are Safari underneath but have no Add to Home
+    // Screen item in their share sheets, so the instructions would be wrong.
+    const realSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+    return iOS && realSafari;
+}
+
+// Dismissals persist per app, matching the viibe_recent_searches_${appSlug} /
+// viibe_sound_on_${appSlug} convention already in this file.
+function installDismissedRecently() {
+    try {
+        const raw = localStorage.getItem(`${INSTALL_DISMISSED_KEY}_${appSlug}`);
+        if (!raw) return false;
+        const at = parseInt(raw, 10);
+        if (!Number.isFinite(at)) return false;
+        return (Date.now() - at) < INSTALL_DISMISS_DAYS * 24 * 60 * 60 * 1000;
+    } catch {
+        return false;   // private mode; showing it once is better than never
+    }
+}
+
+function recordInstallDismissal() {
+    try {
+        localStorage.setItem(`${INSTALL_DISMISSED_KEY}_${appSlug}`, String(Date.now()));
+    } catch { /* preference is non-essential */ }
+}
+
+// Second visit, not first. Chrome only fires beforeinstallprompt once its own
+// engagement heuristic is met anyway, so this mainly governs the iOS banner —
+// and asking someone to install an app they have looked at for four seconds is
+// how you teach them to dismiss banners.
+const INSTALL_VISITS_KEY = 'viibe_visits';
+
+function recordVisit() {
+    try {
+        const key = `${INSTALL_VISITS_KEY}_${appSlug}`;
+        const n = parseInt(localStorage.getItem(key) || '0', 10);
+        const next = (Number.isFinite(n) ? n : 0) + 1;
+        localStorage.setItem(key, String(next));
+        return next;
+    } catch {
+        return 1;
+    }
+}
+
+// Read without incrementing — maybeShowInstallBanner() can run more than once
+// per page load and must not inflate the count.
+function recordedVisits() {
+    try {
+        const n = parseInt(localStorage.getItem(`${INSTALL_VISITS_KEY}_${appSlug}`) || '0', 10);
+        return Number.isFinite(n) ? n : 1;
+    } catch {
+        return 1;
+    }
+}
+
+// Shows the banner if every condition is met. Safe to call from either side of
+// the race between beforeinstallprompt and init().
+function maybeShowInstallBanner() {
+    if (!installUiReady) return;
+    if (isStandalone() || installDismissedRecently()) return;
+    if (recordedVisits() < 2) return;
+    document.getElementById('install-banner')?.classList.add('visible');
+}
+
+function setupInstallPrompt() {
+    const banner = document.getElementById('install-banner');
+    if (!banner) return;
+
+    const visits = recordVisit();
+
+    // Brand the banner's tile the same way the header and auth splash do.
+    const icon = document.getElementById('install-banner-icon');
+    if (icon && currentApp) {
+        const logo = currentApp.branding?.logo_url;
+        icon.innerHTML = logo
+            ? `<img src="${escapeHtml(logo)}" alt="">`
+            : escapeHtml((currentApp.name || 'V').charAt(0).toUpperCase());
+    }
+
+    document.getElementById('install-banner-dismiss')?.addEventListener('click', () => {
+        banner.classList.remove('visible');
+        recordInstallDismissal();
+    });
+
+    document.getElementById('ios-install-close')?.addEventListener('click', closeIosInstall);
+    document.getElementById('ios-install-backdrop')?.addEventListener('click', closeIosInstall);
+
+    // Already installed — nothing to offer.
+    if (isStandalone()) return;
+
+    window.addEventListener('appinstalled', () => {
+        banner.classList.remove('visible');
+        deferredInstallPrompt = null;
+    });
+
+    document.getElementById('install-banner-btn')?.addEventListener('click', async () => {
+        if (deferredInstallPrompt) {
+            banner.classList.remove('visible');
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            // The event is single-use whatever the answer.
+            deferredInstallPrompt = null;
+            if (outcome === 'dismissed') recordInstallDismissal();
+            return;
+        }
+        // iOS: no event to replay, so explain instead.
+        openIosInstall();
+    });
+
+    installUiReady = true;
+
+    // Two ways in:
+    //   Android/Chrome — beforeinstallprompt has already fired (it is captured
+    //     at parse time, below) or will fire shortly and call this itself.
+    //   iOS Safari — that event NEVER fires, so the banner is offered on visit
+    //     count alone and the Add button opens the instructions instead.
+    if (deferredInstallPrompt || isIosSafari()) maybeShowInstallBanner();
+    if (visits < 2) return;   // nothing further; the next visit will qualify
+}
+
+function openIosInstall() {
+    document.getElementById('ios-install-sheet')?.classList.add('visible');
+    document.getElementById('ios-install-backdrop')?.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeIosInstall() {
+    document.getElementById('ios-install-sheet')?.classList.remove('visible');
+    document.getElementById('ios-install-backdrop')?.classList.remove('visible');
+    document.body.style.overflow = '';
 }
 
 // ===== Service Worker =====
@@ -3437,6 +4376,17 @@ function registerServiceWorker() {
     navigator.serviceWorker.register('/customer-app/sw.js', { scope: '/customer-app/' })
         .catch(err => console.warn('Service worker registration failed:', err));
 }
+
+// ⚠️ Registered at PARSE time, deliberately outside setupInstallPrompt().
+// Chrome fires beforeinstallprompt as soon as its criteria are met, which can
+// beat init()'s awaits, and the event is not replayed for a late listener.
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Without preventDefault the browser shows its own mini-infobar and the
+    // event cannot be replayed later from our own button.
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    maybeShowInstallBanner();   // no-op until setupInstallPrompt() has run
+});
 
 // ===== Start =====
 document.addEventListener('DOMContentLoaded', () => {

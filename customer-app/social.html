@@ -8,21 +8,31 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Discover - Royalty</title>
-    <!-- Social app type has its own manifest. The shared manifest.json is
-         loyalty-branded ("Royalty Rewards", start_url /customer-app/app.html,
-         "Scan to Earn" shortcuts) and described the wrong app entirely.
-         KNOWN LIMIT: start_url has no ?slug, so an installed shortcut opens
-         the app chrome without a tenant. Per-tenant install needs a generated
-         manifest — deferred, tracked for Phase 6. -->
-    <link rel="manifest" href="/customer-app/social-manifest.json">
+    <!-- ViibeView's own manifest, replacing the generic social one.
+         social-manifest.json was branded "Discover", pointed at Royalty's crown
+         icons, and — the actual bug — had start_url /customer-app/social.html
+         with NO ?slug, so an installed shortcut opened the app chrome with no
+         tenant and showed "App not found".
+
+         ⚠️ start_url MUST stay inside `scope`, and `scope` must stay inside the
+         service worker's scope (/customer-app/, registered in social.js), or
+         Chrome will not offer the install prompt at all. That rules out the
+         prettier /a/viibeview/social — it is a server-side rewrite the SW does
+         not control.
+
+         ViibeView is the only social tenant today. A generated per-tenant
+         manifest is the scalable version and stays deferred. -->
+    <link rel="manifest" href="/customer-app/viibeview-manifest.json">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <!-- iOS ignores the manifest's icons entirely and uses this tag for the
+         home-screen icon, so it has to be ViibeView's, not Royalty's crown. -->
+    <link rel="apple-touch-icon" href="/icons/viibeview/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=6">
+    <link rel="stylesheet" href="/customer-app/social.css?v=7">
 </head>
 <body>
 
@@ -52,6 +62,13 @@
     <!-- Rendered from window.VENUE_CATEGORIES (/js/venue-categories.js) so the
          slugs can never drift from venues.category again. See renderCategoryPills(). -->
     <div class="category-pills" id="category-pills" role="tablist" aria-label="Venue categories"></div>
+
+    <!-- ===== Genre Pills ===== -->
+    <!-- Second filter row, rendered from window.MUSIC_GENRES (/js/music-genres.js).
+         Sticks directly beneath the category pills; pinCategoryPills() measures
+         both offsets rather than hardcoding them, because the header height
+         varies with the safe-area inset. -->
+    <div class="genre-pills" id="genre-pills" role="tablist" aria-label="Music genres"></div>
 
     <!-- ===== Tab Content: Feed ===== -->
     <section id="tab-feed" class="tab-view active" role="tabpanel" aria-label="Feed">
@@ -214,6 +231,10 @@
                     </svg>
                 </div>
                 <p data-i18n="social.searchEmptyHint">Search for venues nearby</p>
+                <!-- The one place an org member is guaranteed to hit when the
+                     app has no venues yet. Unhidden by checkOwnerAccess(). -->
+                <button class="auth-btn auth-btn-primary search-empty-add-venue" id="search-add-venue-btn"
+                        type="button" style="display:none;" data-i18n="social.addVenue">Add a venue</button>
             </div>
         </div>
     </section>
@@ -265,6 +286,15 @@
 
             <!-- Full profile editing, follows and check-ins arrive in Phase 2 -->
             <div class="profile-menu">
+                <!-- Org members only. checkOwnerAccess() unhides it; a plain
+                     member never sees it, and RLS would reject the insert
+                     behind it anyway. -->
+                <button class="profile-menu-item profile-menu-item-admin" id="add-venue-btn" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="9" y1="10" x2="15" y2="10"/>
+                    </svg>
+                    <span data-i18n="social.addVenue">Add a venue</span>
+                </button>
                 <button class="profile-menu-item" id="contact-us-btn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -558,11 +588,14 @@
         </div>
 
         <div class="create-post-body">
-            <!-- Which venue this Viibe attaches to, when the composer was
-                 opened from a venue page. Hidden for an unattached post — the
-                 post is then attributed to its author, not to an invented
-                 "General" venue. Written by openCreatePost(). -->
-            <div class="create-post-venue" id="create-post-venue" style="display:none;"></div>
+            <!-- Which venue this Viibe attaches to. Always visible and always
+                 changeable: it used to be a read-only label that appeared only
+                 when the composer was opened from a venue page, which meant
+                 every post from the header + button landed with no venue at
+                 all (members) or in an auto-minted venue named "General"
+                 (owners). Written by renderComposerVenueRow(); tapping it opens
+                 #venue-picker-sheet. -->
+            <button class="create-post-venue" id="create-post-venue" type="button"></button>
 
             <!-- Camera / recording area -->
             <div class="create-post-upload" id="create-post-upload">
@@ -688,6 +721,170 @@
         <div class="post-options-body" id="post-options-body"></div>
     </div>
 
+    <!-- ===== Venue picker (composer) =====
+         Opened from #create-post-venue. Lists real venues nearest-first with
+         distance and "here tonight", plus an explicit "Don't attach a venue"
+         row — venue_media.venue_id is nullable by design and an unattached
+         street Viibe is a supported outcome, not a fallback.
+
+         ⚠️ z-index must clear .create-post-modal (3001), which is what opened
+         it. Sheets default to 2200 and would render behind the composer. -->
+    <div class="sheet-backdrop venue-picker-backdrop" id="venue-picker-backdrop"></div>
+    <div class="app-sheet venue-picker-sheet" id="venue-picker-sheet" role="dialog" aria-modal="true" aria-label="Choose a venue">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.chooseVenue">Where are you?</h3>
+            <button class="app-sheet-close" id="venue-picker-close" aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="venue-picker-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="search" id="venue-picker-filter" autocomplete="off"
+                   placeholder="Filter venues..." data-i18n-placeholder="social.filterVenues"
+                   aria-label="Filter venues">
+        </div>
+        <div class="venue-picker-list" id="venue-picker-list"></div>
+    </div>
+
+    <!-- ===== Add venue (admin, mobile) =====
+         Gated on isOwner. The existing "Org members can manage venues" RLS
+         policy is FOR ALL and only tests for an organization_members row — it
+         never inspects role — so an org member signing in on their phone can
+         insert here with no new table, RPC or policy. A plain member is denied
+         by that same policy, and this sheet never renders for them. -->
+    <div class="sheet-backdrop" id="add-venue-backdrop"></div>
+    <div class="app-sheet add-venue-sheet" id="add-venue-sheet" role="dialog" aria-modal="true" aria-label="Add a venue">
+        <div class="app-sheet-header">
+            <h3 id="add-venue-title" data-i18n="social.addVenue">Add a venue</h3>
+            <button class="app-sheet-close" id="add-venue-close" aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Step 1: search OpenStreetMap for the place -->
+        <div class="add-venue-step" id="add-venue-step-search">
+            <p class="add-venue-blurb" data-i18n="social.addVenueBlurb">Search for the place by name. Results come from OpenStreetMap.</p>
+            <div class="venue-picker-search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="search" id="place-search-input" autocomplete="off"
+                       placeholder="e.g. Le Bungalow, Perpignan" data-i18n-placeholder="social.placeSearchPlaceholder"
+                       aria-label="Search for a place">
+            </div>
+            <div class="place-results" id="place-results"></div>
+        </div>
+
+        <!-- Step 2: confirm and classify -->
+        <div class="add-venue-step" id="add-venue-step-confirm" style="display:none;">
+            <button class="add-venue-back" id="add-venue-back" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
+                <span data-i18n="social.backToResults">Back to results</span>
+            </button>
+
+            <div class="add-venue-field">
+                <label for="add-venue-name" data-i18n="social.venueName">Name</label>
+                <input type="text" id="add-venue-name" autocomplete="off" required>
+            </div>
+            <div class="add-venue-field">
+                <label for="add-venue-address" data-i18n="social.venueAddress">Address</label>
+                <input type="text" id="add-venue-address" autocomplete="off">
+            </div>
+            <div class="add-venue-row">
+                <div class="add-venue-field">
+                    <label for="add-venue-city" data-i18n="social.venueCity">City</label>
+                    <input type="text" id="add-venue-city" autocomplete="off">
+                </div>
+                <div class="add-venue-field">
+                    <label for="add-venue-postal" data-i18n="social.venuePostal">Postal code</label>
+                    <input type="text" id="add-venue-postal" autocomplete="off">
+                </div>
+            </div>
+            <div class="add-venue-row">
+                <div class="add-venue-field">
+                    <label for="add-venue-state" data-i18n="social.venueState">Region</label>
+                    <input type="text" id="add-venue-state" autocomplete="off">
+                </div>
+                <div class="add-venue-field">
+                    <label for="add-venue-country" data-i18n="social.venueCountry">Country</label>
+                    <input type="text" id="add-venue-country" autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Coordinates come from the chosen OSM result and are required:
+                 venues_active_requires_coordinates rejects an active venue
+                 without them. Shown read-only so the owner can see the venue
+                 will land on the map, and can go back if it looks wrong. -->
+            <div class="add-venue-coords" id="add-venue-coords"></div>
+
+            <div class="add-venue-field">
+                <label for="add-venue-category" data-i18n="social.venueCategory">Category</label>
+                <select id="add-venue-category"></select>
+            </div>
+
+            <div class="add-venue-field">
+                <label data-i18n="social.venueGenres">Music</label>
+                <div class="genre-chips" id="add-venue-genres"></div>
+            </div>
+
+            <button class="auth-btn auth-btn-primary" id="add-venue-save" type="button" data-i18n="social.saveVenue">Save venue</button>
+            <div class="auth-form-error" id="add-venue-error"></div>
+        </div>
+    </div>
+
+    <!-- ===== Install prompts =====
+         Android/Chrome gets a real one-tap install via the stashed
+         beforeinstallprompt event. iOS Safari has no such API — Apple provides
+         no programmatic install — so it gets instructions instead. Both are
+         suppressed once the app is already running standalone. -->
+    <div class="install-banner" id="install-banner" role="region" aria-label="Install app">
+        <div class="install-banner-icon" id="install-banner-icon">V</div>
+        <div class="install-banner-text">
+            <strong data-i18n="social.installTitle">Add to your home screen</strong>
+            <span data-i18n="social.installBody">Open ViibeView in one tap, full screen.</span>
+        </div>
+        <button class="install-banner-btn" id="install-banner-btn" type="button" data-i18n="social.installAction">Add</button>
+        <button class="install-banner-dismiss" id="install-banner-dismiss" type="button" aria-label="Dismiss">&times;</button>
+    </div>
+
+    <div class="sheet-backdrop" id="ios-install-backdrop"></div>
+    <div class="app-sheet ios-install-sheet" id="ios-install-sheet" role="dialog" aria-modal="true" aria-label="Add to Home Screen">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.iosInstallTitle">Add to Home Screen</h3>
+            <button class="app-sheet-close" id="ios-install-close" aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <ol class="ios-install-steps">
+            <li>
+                <span class="ios-install-glyph" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                </span>
+                <span data-i18n="social.iosStep1">Tap the Share button in Safari's toolbar.</span>
+            </li>
+            <li>
+                <span class="ios-install-glyph" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                </span>
+                <span data-i18n="social.iosStep2">Scroll down and choose "Add to Home Screen".</span>
+            </li>
+            <li>
+                <span class="ios-install-glyph" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </span>
+                <span data-i18n="social.iosStep3">Tap Add. ViibeView opens full screen from then on.</span>
+            </li>
+        </ol>
+    </div>
+
     <!-- ===== Post preview (map pin tap) =====
          Layers over the map rather than replacing it — tapping a post pin must
          not unmount the map or open the venue page. -->
@@ -716,16 +913,22 @@
          attributes that were inert until now because it was never included. -->
     <script src="/i18n/i18n.js?v=1"></script>
     <script src="/js/venue-categories.js?v=1"></script>
+    <!-- Same contract as venue-categories.js, for venues.music_genres. Must
+         load before social.js, which renders the genre pills from it. -->
+    <script src="/js/music-genres.js?v=1"></script>
     <!-- Full ISO dial-code list for the signup phone field. Must load before
          social.js, which renders it into #signup-country. -->
     <script src="/js/country-dial-codes.js?v=1"></script>
     <!-- venue-hours must load before social.js: it owns every venues.hours
          shape decision, shared with app/venues.html. -->
     <script src="/js/venue-hours.js?v=1"></script>
+    <!-- The Nominatim client behind the mobile "Add venue" flow, shared with
+         app/venues.html so there is one rate-limit queue for the whole site. -->
+    <script src="/js/venue-places.js?v=1"></script>
     <script src="/customer-app/social-auth.js?v=3"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=10"></script>
+    <script src="/customer-app/social.js?v=11"></script>
 
 </body>
 </html>

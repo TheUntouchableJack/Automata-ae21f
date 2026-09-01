@@ -130,6 +130,58 @@
             gap: 4px;
         }
 
+        /* Music genres on the card, so the owner can see at a glance which
+           venues are still unclassified — an empty list means that venue is
+           invisible behind every genre filter in the customer app. */
+        .venue-card-genres {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .venue-card-genre {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.08);
+            color: var(--color-primary, #6366f1);
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        /* The multi-select in the venue modal. Chips rather than a native
+           <select multiple>, which is close to unusable with a mouse. */
+        .genre-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .genre-option {
+            padding: 6px 12px;
+            border: 1.5px solid var(--color-border);
+            border-radius: 999px;
+            background: transparent;
+            color: var(--color-text-muted);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .genre-option:hover {
+            border-color: var(--color-primary, #6366f1);
+            color: var(--color-primary, #6366f1);
+        }
+
+        .genre-option.selected {
+            background: var(--color-primary, #6366f1);
+            border-color: var(--color-primary, #6366f1);
+            color: #fff;
+        }
+
         .venue-card-menu {
             position: relative;
             flex-shrink: 0;
@@ -1225,6 +1277,16 @@
                         </div>
                     </div>
 
+                    <!-- Music, as a controlled vocabulary from
+                         /js/music-genres.js — NOT the freeform Tags field
+                         below. The customer app filters on these slugs, so a
+                         typo here would be a genre nobody can ever find. -->
+                    <div class="form-group">
+                        <label>Music</label>
+                        <div class="genre-select" id="venue-genres"></div>
+                        <div class="hint">What this venue plays. Members filter by it.</div>
+                    </div>
+
                     <div class="form-group">
                         <label for="venue-description">Description</label>
                         <textarea id="venue-description" placeholder="Describe the venue..." rows="3"></textarea>
@@ -1447,9 +1509,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/venue-categories.js?v=1"></script>
+    <!-- Same contract as venue-categories.js, for venues.music_genres. The
+         slugs must match the DB CHECK constraint exactly. -->
+    <script src="/js/music-genres.js?v=1"></script>
     <!-- Shared with customer-app/social.html. Owns every venues.hours shape
          decision, so the admin and the customer app cannot drift again. -->
     <script src="/js/venue-hours.js?v=1"></script>
+    <!-- The Nominatim client, shared with the customer app's mobile venue
+         admin. One promise queue for the whole site — see the file header. -->
+    <script src="/js/venue-places.js?v=1"></script>
     <script src="../i18n/i18n.js?v=1"></script>
     <script src="workspace.js?v=1"></script>
     <script src="auth.js?v=14"></script>
@@ -1515,10 +1583,17 @@
     function filterVenues(venues, query) {
         const q = (query || '').trim().toLowerCase();
         if (!q) return venues;
-        return venues.filter(v => [
-            v.name, v.handle, v.city, v.state,
-            CATEGORY_LABELS[v.category], v.category
-        ].filter(Boolean).join(' ').toLowerCase().includes(q));
+        return venues.filter(v => {
+            const genres = window.sanitizeGenres(v.music_genres);
+            return [
+                v.name, v.handle, v.city, v.state,
+                CATEGORY_LABELS[v.category], v.category,
+                // Both the slug and the label, so "hip_hop" and "Hip-Hop" both
+                // match — same rule the customer app's matchesQuery() follows.
+                ...genres,
+                ...genres.map(g => window.genreLabel(g))
+            ].filter(Boolean).join(' ').toLowerCase().includes(q);
+        });
     }
 
     // ===== Members =====
@@ -1656,6 +1731,37 @@
         const cats = window.VENUE_CATEGORIES || [];
         select.innerHTML = '<option value="">Select category...</option>' +
             cats.map(c => `<option value="${c.slug}">${AppUtils.escapeHtml(c.label)}</option>`).join('');
+    }
+
+    // ===== Music genres =====
+    //
+    // The parallel of renderCategoryOptions(), but a multi-select rather than a
+    // <select>: a venue plays several things. Rendered as chips because the
+    // native multiple-select is close to unusable with a mouse.
+    //
+    // Held in a module-level array rather than read out of the DOM at save
+    // time, so form.reset() — which does not touch JS-built controls, exactly
+    // like the hours grid above — cannot leave a stale selection behind.
+    let editingVenueGenres = [];
+
+    function renderGenreOptions() {
+        const wrap = document.getElementById('venue-genres');
+        if (!wrap) return;
+        const genres = window.MUSIC_GENRES || [];
+        wrap.innerHTML = genres.map(g => `
+            <button type="button"
+                    class="genre-option${editingVenueGenres.includes(g.slug) ? ' selected' : ''}"
+                    aria-pressed="${editingVenueGenres.includes(g.slug) ? 'true' : 'false'}"
+                    onclick="toggleVenueGenre('${g.slug}')">${AppUtils.escapeHtml(g.label)}</button>
+        `).join('');
+    }
+
+    function toggleVenueGenre(slug) {
+        if (!window.isValidGenre || !window.isValidGenre(slug)) return;
+        editingVenueGenres = editingVenueGenres.includes(slug)
+            ? editingVenueGenres.filter(g => g !== slug)
+            : window.sanitizeGenres([...editingVenueGenres, slug]);
+        renderGenreOptions();
     }
 
     // Dead-ends that used to be `location.href = 'apps.html'`.
@@ -1860,6 +1966,7 @@
             // coordinates is invisible in BOTH the map and search, with no
             // indication anywhere that it exists. Surface it here.
             const missingCoords = venue.latitude == null || venue.longitude == null;
+            const genres = window.sanitizeGenres(venue.music_genres);
 
             return `
                 <div class="venue-card" data-venue-id="${venue.id}" onclick="openEditVenue('${venue.id}', event)">
@@ -1872,6 +1979,9 @@
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 ${AppUtils.escapeHtml(cityState)}
                             </div>` : ''}
+                            ${genres.length ? `<div class="venue-card-genres">${genres
+                                .map(g => `<span class="venue-card-genre">${AppUtils.escapeHtml(window.genreLabel(g))}</span>`)
+                                .join('')}</div>` : ''}
                         </div>
                         <div class="venue-card-menu">
                             <button class="venue-menu-btn" onclick="toggleVenueMenu(event, '${venue.id}')" aria-label="Venue menu">
@@ -1993,6 +2103,10 @@
         uploadedProfileImageUrl = null;
         uploadedCoverImageUrl = null;
         editingVenueOriginalHours = venue ? (venue.hours ?? null) : null;
+        // sanitizeGenres drops anything the DB CHECK would reject, so a row
+        // written before a slug was renamed opens with the valid subset rather
+        // than failing the whole save later.
+        editingVenueGenres = window.sanitizeGenres(venue ? venue.music_genres : []);
 
         const modal = document.getElementById('venue-modal');
         const title = document.getElementById('venue-modal-title');
@@ -2039,8 +2153,10 @@
             }
         }
 
-        // After form.reset(), which does not touch the JS-built hours grid.
+        // After form.reset(), which touches neither the JS-built hours grid nor
+        // the genre chips.
         populateHoursForm(editingVenueOriginalHours);
+        renderGenreOptions();
 
         modal.classList.add('active');
     }
@@ -2053,6 +2169,7 @@
         uploadedProfileImageUrl = null;
         uploadedCoverImageUrl = null;
         editingVenueOriginalHours = null;
+        editingVenueGenres = [];
         legacyHoursDismissed = false;
     }
 
@@ -2440,6 +2557,7 @@
                 slug: venueName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36),
                 handle: document.getElementById('venue-handle').value.trim() || null,
                 category: document.getElementById('venue-category').value || null,
+                music_genres: window.sanitizeGenres(editingVenueGenres),
                 description: document.getElementById('venue-description').value.trim() || null,
                 address_line1: document.getElementById('venue-address').value.trim() || null,
                 city: document.getElementById('venue-city').value.trim() || null,
@@ -2610,10 +2728,17 @@
     }
 
     // ===== Geocoding =====
-    let geocodeQueue = Promise.resolve();
-    let lastGeocodeAt = 0;
-    const GEOCODE_MIN_INTERVAL_MS = 1100;
-
+    //
+    // The Nominatim client used to be inlined here, with its own promise queue
+    // and its own rate limit. It now lives in /js/venue-places.js, shared with
+    // the customer app's mobile "Add venue" flow — two independent queues
+    // against a service that allows ~1 req/sec from one source is how you get
+    // rate-limited on both surfaces at once.
+    //
+    // ⚠️ The extracted client dropped `countrycodes=us`. That filter is why
+    // this button could never find ViibeView's only real venue, which is in
+    // Perpignan, France. It failed as "Address not found", so it read like bad
+    // input rather than a geocoder that could not leave the United States.
     async function geocodeAddress() {
         const parts = [
             document.getElementById('venue-address').value,
@@ -2627,7 +2752,7 @@
             return false;
         }
 
-        const result = await runGeocode(parts.join(', '));
+        const result = await window.VenuePlaces.geocodeAddress(parts.join(', '));
         if (result) {
             document.getElementById('venue-lat').value = result.lat.toFixed(6);
             document.getElementById('venue-lng').value = result.lng.toFixed(6);
@@ -2637,34 +2762,6 @@
 
         showToast('Address not found. Try adding more detail.', 'error');
         return false;
-    }
-
-    // Serializes calls so concurrent geocode requests respect Nominatim's ~1 req/sec policy.
-    function runGeocode(addressText) {
-        const task = geocodeQueue.then(async () => {
-            const wait = Math.max(0, GEOCODE_MIN_INTERVAL_MS - (Date.now() - lastGeocodeAt));
-            if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
-            lastGeocodeAt = Date.now();
-
-            const query = encodeURIComponent(addressText);
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=us`, {
-                    signal: AbortSignal.timeout(10000)
-                });
-                const data = await res.json();
-
-                if (data && data.length > 0) {
-                    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                }
-                return null;
-            } catch (err) {
-                console.error('Geocoding error:', err);
-                return null;
-            }
-        });
-
-        geocodeQueue = task.catch(() => {});
-        return task;
     }
 
     // ===== Venue Actions =====

@@ -32,6 +32,13 @@
     --nav-height: 56px;
     --safe-area-top: env(safe-area-inset-top, 0px);
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* The app column's ceiling on desktop, applied to <body> AND to every
+       position:fixed overlay. The overlays are the reason this is a variable:
+       they are `inset: 0`, so they escape body's max-width entirely and used
+       to render full-bleed across a 1440px viewport — which is why a 15-second
+       phone video played back the width of the screen. Twelve of them. */
+    --app-max-width: 720px;
 }
 
 /* ===== Base ===== */
@@ -46,7 +53,7 @@ body {
     background: var(--color-bg);
     color: var(--color-text);
     -webkit-font-smoothing: antialiased;
-    max-width: 480px;
+    max-width: var(--app-max-width);
     margin: 0 auto;
     min-height: 100vh;
     min-height: 100dvh;
@@ -1176,7 +1183,7 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    max-width: 480px;
+    max-width: var(--app-max-width);
     margin: 0 auto;
     height: calc(var(--nav-height) + var(--safe-area-bottom));
     padding-bottom: var(--safe-area-bottom);
@@ -1340,6 +1347,8 @@ body {
 .video-fullscreen-overlay {
     position: fixed;
     inset: 0;
+    max-width: var(--app-max-width);
+    margin-inline: auto;
     z-index: 3000;
     background: #000;
     display: flex;
@@ -1368,7 +1377,7 @@ body {
 }
 
 /* ===== Responsive (desktop wrapper) ===== */
-@media (min-width: 480px) {
+@media (min-width: 720px) {
     body {
         border-left: 1px solid var(--color-border);
         border-right: 1px solid var(--color-border);
@@ -1397,9 +1406,19 @@ body {
     visibility: visible;
 }
 
+/* inset:0 + max-width + auto side margins centres the panel WITHOUT touching
+   `transform`, which this element uses for its slide-in. A
+   `left: 50%; translateX(-50%)` centring would fight the translateY animation
+   below — that is why margin-inline is the mechanism here.
+
+   The dim backdrops are deliberately NOT capped: a modal that dims only the
+   middle 720px of a 1440px screen looks broken, and a full-bleed backdrop
+   keeps "click anywhere outside to dismiss" working. */
 .create-post-modal {
     position: fixed;
     inset: 0;
+    max-width: var(--app-max-width);
+    margin-inline: auto;
     background: #fff;
     z-index: 3001;
     display: flex;
@@ -1465,18 +1484,52 @@ body {
    "Posting to {venue}" — only when the composer was opened from a venue page.
    An unattached post shows nothing, because there is nothing to say: it is
    credited to the poster. */
+/* Now a full-width button, not a label. It is always present — the venue is a
+   decision every post makes, including the decision not to attach one. */
 .create-post-venue {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
     padding: 10px 12px;
     border-radius: var(--radius-md);
     background: var(--color-bg);
     border: 1px solid var(--color-border);
+    font-family: 'Outfit', sans-serif;
     font-size: 0.8125rem;
     color: var(--color-text-secondary);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.create-post-venue:hover {
+    border-color: var(--app-primary);
 }
 
 .create-post-venue strong {
     color: var(--color-text);
     font-weight: 600;
+}
+
+.create-post-venue-icon {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--app-primary);
+}
+
+.create-post-venue-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.create-post-venue-change {
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--app-primary);
 }
 
 .create-post-field label {
@@ -1698,9 +1751,15 @@ body {
     visibility: visible;
 }
 
+/* The element in the screenshot: `inset: 0` escaped body's max-width entirely,
+   so on a 1440px desktop the venue page — and the 15-second portrait video
+   inside it — spanned the whole viewport. Same margin-inline treatment, same
+   reason (it animates translateY). */
 .venue-page {
     position: fixed;
     inset: 0;
+    max-width: var(--app-max-width);
+    margin-inline: auto;
     background: #fff;
     z-index: 2500;
     display: flex;
@@ -2111,7 +2170,7 @@ body {
     inset: 0;
     z-index: 2000;
     background: var(--color-surface);
-    max-width: 480px;
+    max-width: var(--app-max-width);
     margin: 0 auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -2543,7 +2602,7 @@ body {
     right: 0;
     bottom: 0;
     z-index: 2200;
-    max-width: 480px;
+    max-width: var(--app-max-width);
     margin: 0 auto;
     background: var(--color-surface);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -2716,7 +2775,9 @@ body {
    z-index below .bottom-nav's 1000, so it never covers the nav sliding back. */
 .back-to-top {
     position: fixed;
-    right: var(--spacing-md);
+    /* max() keeps it at the viewport edge on phones and at the app column's
+       edge once the viewport is wider than --app-max-width. */
+    right: max(var(--spacing-md), calc(50% - var(--app-max-width) / 2 + var(--spacing-md)));
     bottom: calc(var(--nav-height) + var(--safe-area-bottom) + var(--spacing-md));
     z-index: 900;
     width: 44px;
@@ -2796,4 +2857,524 @@ body {
         animation: none !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ===== Genre Pills ===== */
+/* HTML: <div class="genre-pills" id="genre-pills"> — a second filter row that
+   sticks directly beneath .category-pills. Its `top` is set in JS by
+   pinCategoryPills(), which MEASURES the header and the category row rather
+   than assuming their heights: both vary with the safe-area inset and both
+   wrap at narrow widths. */
+.genre-pills {
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    /* Below .category-pills' 99 so the two rows overlap correctly while the
+       page scrolls under them. */
+    z-index: 98;
+}
+
+.genre-pills::-webkit-scrollbar {
+    display: none;
+}
+
+/* ===== Genre chips ===== */
+/* Read-only chips on cards and the venue page; .genre-chip-btn makes them
+   tappable for an org member editing what is playing tonight. */
+.genre-chip-row,
+.genre-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.genre-chips {
+    gap: 6px;
+    margin-top: var(--spacing-sm);
+}
+
+.genre-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--app-primary);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.genre-chip-btn {
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: 'Outfit', sans-serif;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.genre-chip-btn:hover {
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+}
+
+.genre-chip-btn.on {
+    background: var(--app-primary);
+    border-color: var(--app-primary);
+    color: #fff;
+}
+
+/* ===== "Here tonight" ===== */
+/* Rendered only when the count is non-zero — see hereNowBadge(). A venue that
+   announces "0 here tonight" is advertising that it is empty. */
+.here-now-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.here-now-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: here-now-pulse 2s ease-in-out infinite;
+}
+
+@keyframes here-now-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+}
+
+/* ===== Venue picker (composer) ===== */
+/* ⚠️ Opened FROM .create-post-modal (z-index 3001), so both the sheet and its
+   backdrop have to clear it. Inheriting .app-sheet's 2200 would render the
+   picker behind the composer that opened it — visible as "the button does
+   nothing". */
+.venue-picker-sheet {
+    z-index: 3300;
+}
+
+.venue-picker-backdrop {
+    z-index: 3200;
+}
+
+.venue-picker-search {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin: 0 var(--spacing-md) var(--spacing-sm);
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+}
+
+.venue-picker-search input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 10px 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    outline: none;
+    /* 16px on focus is what stops iOS Safari zooming the whole page in. */
+}
+
+.venue-picker-search input:focus {
+    font-size: 16px;
+}
+
+.venue-picker-list {
+    padding: 0 var(--spacing-md) var(--spacing-md);
+}
+
+.venue-picker-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 6px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    font-family: 'Outfit', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.venue-picker-row:hover {
+    border-color: var(--app-primary);
+}
+
+.venue-picker-row.selected {
+    border-color: var(--app-primary);
+    background: rgba(99, 102, 241, 0.06);
+}
+
+.venue-picker-row-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    font-weight: 700;
+    overflow: hidden;
+}
+
+.venue-picker-row-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.venue-picker-row-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.venue-picker-row-name {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.venue-picker-row-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.venue-picker-empty {
+    padding: var(--spacing-lg) var(--spacing-md);
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+/* ===== Add a venue (mobile admin) ===== */
+.add-venue-sheet {
+    z-index: 2200;
+}
+
+.add-venue-step {
+    padding: 0 var(--spacing-md) var(--spacing-lg);
+}
+
+.add-venue-blurb {
+    padding: 0 var(--spacing-md) var(--spacing-sm);
+    margin: 0 calc(-1 * var(--spacing-md));
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.add-venue-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: var(--spacing-sm);
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--app-primary);
+    cursor: pointer;
+}
+
+.add-venue-field {
+    margin-bottom: var(--spacing-sm);
+}
+
+.add-venue-field label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.add-venue-field input,
+.add-venue-field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    font-family: 'Outfit', sans-serif;
+    /* 16px, not 14px: anything smaller makes iOS Safari zoom on focus, and the
+       zoom does not undo itself when the field blurs. */
+    font-size: 16px;
+    color: var(--color-text);
+}
+
+.add-venue-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+}
+
+/* Read-only, because they come from the chosen OSM result. Shown rather than
+   hidden so the owner can see the venue will actually land on the map —
+   venues_active_requires_coordinates rejects an active venue without them. */
+.add-venue-coords {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: var(--spacing-sm);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.place-results {
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.place-result {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 6px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    font-family: 'Outfit', sans-serif;
+    text-align: left;
+    cursor: pointer;
+}
+
+.place-result:hover {
+    border-color: var(--app-primary);
+}
+
+.place-result-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.place-result-name {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.place-result-address {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.place-result-distance {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.place-results-status {
+    padding: var(--spacing-md) 0;
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.search-empty-add-venue {
+    max-width: 220px;
+    margin: var(--spacing-md) auto 0;
+}
+
+.profile-menu-item-admin span {
+    font-weight: 600;
+}
+
+/* ===== Install banner ===== */
+/* Sits above the bottom nav, below the composer. Hidden until
+   setupInstallPrompt() decides it has earned the right to appear: second visit
+   or later, not already installed, not dismissed in the last two weeks. */
+.install-banner {
+    position: fixed;
+    left: var(--spacing-sm);
+    right: var(--spacing-sm);
+    bottom: calc(var(--nav-height) + var(--safe-area-bottom) + var(--spacing-sm));
+    max-width: calc(var(--app-max-width) - var(--spacing-md));
+    margin-inline: auto;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.25s, transform 0.25s;
+}
+
+.install-banner.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.install-banner-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--app-primary);
+    color: #fff;
+    font-weight: 800;
+    overflow: hidden;
+}
+
+.install-banner-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.install-banner-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.install-banner-text strong {
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.install-banner-text span {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.install-banner-btn {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--app-primary);
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.install-banner-dismiss {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* ===== iOS install instructions ===== */
+/* Apple provides no programmatic install API, so this is the only thing an
+   iOS Safari visitor can be given. */
+.ios-install-sheet {
+    z-index: 2200;
+}
+
+.ios-install-steps {
+    margin: 0;
+    padding: 0 var(--spacing-md) var(--spacing-lg);
+    list-style: none;
+    counter-reset: ios-step;
+}
+
+.ios-install-steps li {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    counter-increment: ios-step;
+}
+
+.ios-install-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--app-primary);
+}
+
+/* ===== Tonight's sound (venue page) ===== */
+.venue-page-genres {
+    margin-top: var(--spacing-md);
+}
+
+.venue-page-genres-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.venue-page-genres-hint {
+    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
 }

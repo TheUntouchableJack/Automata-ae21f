@@ -32,11 +32,24 @@ fcmMessaging.onBackgroundMessage((payload) => {
  * Provides offline support and caching for the PWA
  */
 
-const CACHE_NAME = 'royalty-rewards-v4';
-const STATIC_CACHE = 'royalty-static-v4';
-const DYNAMIC_CACHE = 'royalty-dynamic-v4';
+// ⚠️ Bump this generation on every client release. The fetch handler serves
+// cache-first keyed on the FULL URL, so a returning PWA user keeps the old
+// social.js/social.css until the cache name changes and the old caches are
+// evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
+// cached.
+const CACHE_NAME = 'royalty-rewards-v5';
+const STATIC_CACHE = 'royalty-static-v5';
+const DYNAMIC_CACHE = 'royalty-dynamic-v5';
 
-// Static assets to cache on install
+// Static assets to cache on install.
+//
+// ⚠️ cache.addAll() is ALL-OR-NOTHING: one 404 in this list rejects the whole
+// install and the service worker never activates. Every entry must exist.
+//
+// The social app precached /customer-app/manifest.json — the LOYALTY manifest,
+// which describes a different app entirely ("Royalty Rewards", start_url
+// app.html, "Scan to Earn" shortcuts). ViibeView's own manifest is the one the
+// page links to and the one worth having offline.
 const STATIC_ASSETS = [
     '/customer-app/app.html',
     '/customer-app/app.css',
@@ -45,6 +58,7 @@ const STATIC_ASSETS = [
     '/customer-app/social.css',
     '/customer-app/social.js',
     '/customer-app/manifest.json',
+    '/customer-app/viibeview-manifest.json',
     '/customer-app/index.html'
 ];
 
