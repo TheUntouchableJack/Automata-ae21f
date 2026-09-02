@@ -145,14 +145,17 @@ body {
     letter-spacing: -0.01em;
 }
 
-/* ===== Category Pills ===== */
-/* HTML: <div class="category-pills"> with <button class="pill"> */
-/* Pinned directly beneath the sticky header so the filters stay reachable
+/* ===== Filter Pills ===== */
+/* HTML: <div class="filter-pills" id="filter-pills"> with <button class="pill">
+   ONE row carrying both axes — venue category and music genre. It was briefly
+   two stacked sticky rows, which cost ~90px of a phone screen before any
+   content appeared.
+   Pinned directly beneath the sticky header so the filters stay reachable
    without scrolling back to the top. The header is the only other sticky
    element, so together they form one persistent control strip.
-   `top` is set in JS (pinCategoryPills) from the header's measured height,
+   `top` is set in JS (pinFilterPills) from the header's measured height,
    because the header grows by the safe-area inset on notched devices. */
-.category-pills {
+.filter-pills {
     display: flex;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
@@ -166,7 +169,7 @@ body {
     z-index: 99; /* just under .social-header's 100 */
 }
 
-.category-pills::-webkit-scrollbar {
+.filter-pills::-webkit-scrollbar {
     display: none;
 }
 
@@ -2859,30 +2862,16 @@ body {
     }
 }
 
-/* ===== Genre Pills ===== */
-/* HTML: <div class="genre-pills" id="genre-pills"> — a second filter row that
-   sticks directly beneath .category-pills. Its `top` is set in JS by
-   pinCategoryPills(), which MEASURES the header and the category row rather
-   than assuming their heights: both vary with the safe-area inset and both
-   wrap at narrow widths. */
-.genre-pills {
-    display: flex;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-    position: sticky;
-    top: 0;
-    /* Below .category-pills' 99 so the two rows overlap correctly while the
-       page scrolls under them. */
-    z-index: 98;
-}
-
-.genre-pills::-webkit-scrollbar {
-    display: none;
+/* A hairline between the category chips and the genre chips inside the single
+   filter row. Purely a grouping cue — the chips behave identically, and only
+   one filter can be active at a time. */
+.pill-divider {
+    flex-shrink: 0;
+    align-self: center;
+    width: 1px;
+    height: 20px;
+    margin: 0 var(--spacing-xs);
+    background: var(--color-border);
 }
 
 /* ===== Genre chips ===== */

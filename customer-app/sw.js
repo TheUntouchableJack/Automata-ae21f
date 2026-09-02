@@ -37,9 +37,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
-const CACHE_NAME = 'royalty-rewards-v5';
-const STATIC_CACHE = 'royalty-static-v5';
-const DYNAMIC_CACHE = 'royalty-dynamic-v5';
+const CACHE_NAME = 'royalty-rewards-v6';
+const STATIC_CACHE = 'royalty-static-v6';
+const DYNAMIC_CACHE = 'royalty-dynamic-v6';
 
 // Static assets to cache on install.
 //

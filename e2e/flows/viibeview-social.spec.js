@@ -17,7 +17,7 @@ const QUERY_URL = '/customer-app/social.html?slug=viibeview';
 
 async function loadApp(page, url = PRETTY_URL) {
     await page.goto(url, { waitUntil: 'networkidle' });
-    await page.waitForSelector('#category-pills .pill', { timeout: 15000 });
+    await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
 }
 
 test.describe('ViibeView social app', () => {
@@ -56,11 +56,18 @@ test.describe('ViibeView social app', () => {
         await loadApp(page);
 
         const VALID = ['nightlife', 'bar', 'club', 'restaurant', 'lounge', 'rooftop', 'event_space'];
-        const pills = await page.$$('#category-pills .pill');
-        expect(pills.length).toBe(VALID.length + 1); // + "All"
+        const pills = await page.$$('#filter-pills .pill');
+
+        // The chip list is DERIVED from the venues this app has, so its length
+        // is not fixed. What must hold is that "All" is present and every
+        // category chip carries a real venues.category value.
+        expect(pills.length, 'no filter chips rendered at all').toBeGreaterThan(0);
 
         for (const pill of pills) {
-            const slug = await pill.getAttribute('data-category');
+            const kind = await pill.getAttribute('data-filter-kind');
+            const slug = await pill.getAttribute('data-filter-value');
+            if (kind === 'genre') continue;   // covered by the genre test below
+
             sent.length = 0;
             await pill.click();
             await page.waitForTimeout(600);
@@ -68,13 +75,46 @@ test.describe('ViibeView social app', () => {
             expect(sent.length, `"${slug}" triggered no feed reload`).toBeGreaterThan(0);
             const category = sent[sent.length - 1];
 
-            if (slug === 'all') {
+            if (kind === 'all') {
                 // Must be SQL NULL so `p_category IS NULL OR ...` short-circuits
                 expect(category, '"All" must clear the filter, not filter on "all"').toBeNull();
             } else {
                 expect(VALID, `pill "${slug}" is not a real venues.category value`).toContain(category);
             }
         }
+    });
+
+    test('a genre chip filters on p_genre and clears p_category', async ({ page }) => {
+        // One row, two axes, one active at a time: picking a genre must null
+        // out the category rather than combine with it.
+        const sent = [];
+        page.on('request', r => {
+            if (!r.url().includes('/rest/v1/rpc/get_venue_feed')) return;
+            try {
+                const b = JSON.parse(r.postData() || '{}');
+                sent.push({ category: b.p_category, genre: b.p_genre });
+            } catch { /* ignore */ }
+        });
+
+        await loadApp(page);
+
+        const genre = page.locator('#filter-pills .pill[data-filter-kind="genre"]').first();
+        if (await genre.count() === 0) {
+            // Legitimate: no venue in this app has any music set yet, so the
+            // row correctly offers no genre chips. Not a failure.
+            test.skip(true, 'no genre chips — no venue has music_genres set');
+            return;
+        }
+
+        const slug = await genre.getAttribute('data-filter-value');
+        sent.length = 0;
+        await genre.click();
+        await page.waitForTimeout(800);
+
+        const last = sent[sent.length - 1];
+        expect(last, `"${slug}" triggered no feed reload`).toBeTruthy();
+        expect(last.genre).toBe(slug);
+        expect(last.category, 'a genre chip must clear the category filter').toBeNull();
     });
 
     test('changing category still reloads after the feed is exhausted', async ({ page }) => {
@@ -89,7 +129,9 @@ test.describe('ViibeView social app', () => {
         await page.waitForTimeout(1500);
         const before = sent.length;
 
-        await page.click('#category-pills .pill[data-category="rooftop"]');
+        // Any chip other than "All" — the list is derived, so "rooftop" is not
+        // guaranteed to exist for every tenant.
+        await page.click('#filter-pills .pill:not([data-filter-kind="all"])');
         await page.waitForTimeout(800);
 
         expect(sent.length, 'category change did not refetch the feed').toBeGreaterThan(before);
@@ -97,7 +139,7 @@ test.describe('ViibeView social app', () => {
 
     test('category pills stay pinned below the header', async ({ page }) => {
         await loadApp(page);
-        const pills = page.locator('#category-pills');
+        const pills = page.locator('#filter-pills');
         await expect(pills).toHaveCSS('position', 'sticky');
 
         const headerHeight = await page.locator('.social-header').evaluate(el => el.offsetHeight);
@@ -113,8 +155,12 @@ test.describe('ViibeView social app', () => {
         await page.waitForTimeout(1500);
 
         // Clickable is the assertion that matters; this throws if intercepted.
-        await page.click('#category-pills .pill[data-category="bar"]', { timeout: 5000 });
-        await expect(page.locator('#category-pills .pill[data-category="bar"]')).toHaveClass(/active/);
+        // Uses whichever chip the app actually renders — hardcoding "bar" made
+        // this fail on any tenant without a bar, which is a data fact, not a
+        // regression.
+        const chip = page.locator('#filter-pills .pill:not([data-filter-kind="all"])').first();
+        await chip.click({ timeout: 5000 });
+        await expect(chip).toHaveClass(/active/);
     });
 
     test('tapping a map pin opens the venue page', async ({ page }) => {

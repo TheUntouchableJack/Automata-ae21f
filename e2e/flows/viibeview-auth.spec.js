@@ -14,7 +14,7 @@ const LIVE = process.env.SOCIAL_AUTH_LIVE === 'true';
 
 async function loadApp(page) {
     await page.goto(URL, { waitUntil: 'networkidle' });
-    await page.waitForSelector('#category-pills .pill', { timeout: 15000 });
+    await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
 }
 
 async function openProfileTab(page) {

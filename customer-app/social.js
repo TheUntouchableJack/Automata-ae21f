@@ -363,11 +363,10 @@ async function init() {
             supabaseAnonKey: SUPABASE_ANON_KEY
         });
 
-        // Pills must exist before anything reads or highlights them.
-        // Genres second, because pinCategoryPills() measures the category
-        // row's rendered height to position the genre row beneath it.
-        renderCategoryPills();
-        renderGenrePills();
+        // The pill row must exist before anything reads or highlights it. It
+        // renders empty until loadVenues() runs, because the chips are derived
+        // from the venue set; loadVenues() re-renders it.
+        renderFilterPills();
 
         // The country <select> has to exist before the signup form can be
         // opened, and the overlay can be opened from the very first tap.
@@ -476,39 +475,21 @@ function applyFeatureFlags() {
         document.querySelectorAll(selector).forEach(el => { el.style.display = 'none'; });
     });
 
+    // One row carries both axes now, so it rides on the one flag. A tenant
+    // that switched categories off was not asking for a music filter instead.
     if (!enabled('categories_enabled')) {
-        const pills = document.getElementById('category-pills');
+        const pills = document.getElementById('filter-pills');
         if (pills) pills.style.display = 'none';
-    }
-
-    // Genres get their own flag rather than riding on categories_enabled: a
-    // tenant may well want music filtering without venue-type filtering, or
-    // the reverse. Default on, like every other toggle here.
-    if (!enabled('genres_enabled')) {
-        const genrePills = document.getElementById('genre-pills');
-        if (genrePills) genrePills.style.display = 'none';
     }
 }
 
-// Both pill rows follow the same rule: show them only on the tabs where they
-// filter something. Kept in one place so the two rows cannot disagree about
-// which tabs they belong on.
+// Show the filter row only on the tabs where it filters something.
 function updatePillVisibility() {
-    const onFilterTab = CATEGORY_TABS.includes(activeTab);
-
-    const pills = document.getElementById('category-pills');
+    const pills = document.getElementById('filter-pills');
     if (pills && appFeatures.categories_enabled !== false) {
-        pills.style.display = onFilterTab ? '' : 'none';
+        pills.style.display = CATEGORY_TABS.includes(activeTab) ? '' : 'none';
     }
-
-    const genrePills = document.getElementById('genre-pills');
-    if (genrePills && appFeatures.genres_enabled !== false) {
-        genrePills.style.display = onFilterTab ? '' : 'none';
-    }
-
-    // The genre row's sticky offset depends on whether the category row is
-    // rendered at all, so re-measure after any visibility change.
-    pinCategoryPills();
+    pinFilterPills();
 }
 
 // Max recording length, in seconds. Read from the app row so the App Builder
@@ -1157,6 +1138,10 @@ async function loadVenues() {
         venues = [...DEMO_VENUES];
         showSampleDataNotice();
     }
+
+    // The chips are derived from this list, so they are rebuilt on every load
+    // rather than once at startup.
+    renderFilterPills();
 }
 
 // Shown only while DEMO_VENUES are standing in for real data.
@@ -1180,12 +1165,9 @@ function showSampleDataNotice() {
     insertBelowFilterRows(notice);
 }
 
-// Notice bars sit BELOW both sticky pill rows, never between them. They used to
-// anchor on #category-pills alone, which put them in the gap the genre row now
-// occupies — a banner wedged between two sticky rows that scroll together.
+// Notice bars sit BELOW the sticky filter row, never above or inside it.
 function insertBelowFilterRows(node) {
-    const anchor = document.getElementById('genre-pills')
-        || document.getElementById('category-pills');
+    const anchor = document.getElementById('filter-pills');
     if (anchor && anchor.parentNode) {
         anchor.parentNode.insertBefore(node, anchor.nextSibling);
     } else {
@@ -2203,6 +2185,10 @@ async function toggleVenueGenre(slug) {
     const cached = getVenueById(venuePageVenue.id);
     if (cached) cached.music_genres = next;
 
+    // A genre this venue is the only holder of has just appeared or vanished
+    // from the filter row.
+    refreshFilterPills();
+
     renderVenueSwimLane();
     if (map) renderMapPins();
 }
@@ -2455,118 +2441,131 @@ function updateScrollChrome() {
     lastScrollY = y;
 }
 
-// ===== Category Filter =====
+// ===== Filters =====
+//
+// ONE pill row, two axes. A chip is either a venue category or a music genre,
+// and at most one is active at a time — tapping "Techno" clears "Clubs".
+//
+// That is the cost of a single row and it is deliberate: two stacked sticky
+// rows ate roughly 90px of a phone screen before any content appeared, and
+// combined filtering ("clubs playing techno") is not what people were reaching
+// for. activeCategory and activeGenre both survive as state because the feed
+// RPC and the client-side venue filter each take both; setFilter() just
+// guarantees only one is ever non-null.
 
-// Pills are rendered from the shared VENUE_CATEGORIES list rather than hardcoded
-// in the HTML, so their slugs cannot drift from venues.category.
-function renderCategoryPills() {
-    const container = document.getElementById('category-pills');
+// Which chips to offer, derived from the venues this app actually has.
+//
+// Rendering all 8 categories and all 19 genres unconditionally meant 25 of 27
+// chips returned an empty feed for a tenant with one nightlife venue — a filter
+// bar that is mostly dead ends teaches people not to touch it. Admins populate
+// this row implicitly, by setting a venue's category and music.
+//
+// Order is taken from the shared vocabularies, not from the venue data, so the
+// row does not reshuffle when a venue is edited.
+function availableFilters() {
+    const cats = new Set();
+    const genres = new Set();
+
+    venues.forEach(v => {
+        if (v.category) cats.add(v.category);
+        venueGenres(v).forEach(g => genres.add(g));
+    });
+
+    return {
+        categories: (window.VENUE_CATEGORIES || []).filter(c => cats.has(c.slug)),
+        genres: (window.MUSIC_GENRES || []).filter(g => genres.has(g.slug))
+    };
+}
+
+function renderFilterPills() {
+    const container = document.getElementById('filter-pills');
     if (!container) return;
 
-    const cats = window.VENUE_CATEGORIES || [];
+    const { categories, genres } = availableFilters();
+    const allActive = !activeCategory && !activeGenre;
+
+    const chip = (kind, value, labelKey, label) => {
+        const isActive = kind === 'category'
+            ? activeCategory === value
+            : activeGenre === value;
+        return `
+            <button class="pill ${isActive ? 'active' : ''}" role="tab"
+                    aria-selected="${isActive ? 'true' : 'false'}"
+                    data-filter-kind="${kind}" data-filter-value="${escapeHtml(value)}"
+                    data-i18n="${labelKey}">${escapeHtml(label)}</button>
+        `;
+    };
+
     container.innerHTML = `
-        <button class="pill active" data-category="${window.ALL_CATEGORY || 'all'}" role="tab" aria-selected="true" data-i18n="social.catAll">All</button>
-        ${cats.map(c => `
-            <button class="pill" data-category="${c.slug}" role="tab" aria-selected="false" data-i18n="${c.labelKey}">${escapeHtml(c.label)}</button>
-        `).join('')}
+        <button class="pill ${allActive ? 'active' : ''}" role="tab"
+                aria-selected="${allActive ? 'true' : 'false'}"
+                data-filter-kind="all" data-filter-value="all"
+                data-i18n="social.catAll">All</button>
+        ${categories.map(c => chip('category', c.slug, c.labelKey, c.label)).join('')}
+        ${genres.length && categories.length
+            ? '<span class="pill-divider" aria-hidden="true"></span>' : ''}
+        ${genres.map(g => chip('genre', g.slug, g.labelKey, g.label)).join('')}
     `;
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
     }
 
-    pinCategoryPills();
+    pinFilterPills();
 }
 
-// Genre pills, rendered from the shared MUSIC_GENRES list for exactly the same
-// reason the category pills are: a slug typed twice is a slug that will drift,
-// and a filter that matches nothing fails silently.
-function renderGenrePills() {
-    const container = document.getElementById('genre-pills');
-    if (!container) return;
-
-    const genres = window.MUSIC_GENRES || [];
-    container.innerHTML = `
-        <button class="pill active" data-genre="${window.ALL_GENRE || 'all'}" role="tab" aria-selected="true" data-i18n="social.genreAll">Any music</button>
-        ${genres.map(g => `
-            <button class="pill" data-genre="${g.slug}" role="tab" aria-selected="false" data-i18n="${g.labelKey}">${escapeHtml(g.label)}</button>
-        `).join('')}
-    `;
-
-    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
-        window.I18n.applyTranslations();
-    }
-
-    pinCategoryPills();
-}
-
-// Both pill rows stick beneath the header, and the genre row sticks beneath the
-// category row. The header's height varies with the safe-area inset and the
-// pill rows wrap at narrow widths, so every offset is measured rather than
-// hardcoded — and the genre row's offset depends on the category row's actual
-// rendered height, not an assumed one.
-function pinCategoryPills() {
+// The row sticks beneath the header, whose height varies with the safe-area
+// inset, so the offset is measured rather than hardcoded.
+function pinFilterPills() {
     const header = document.querySelector('.social-header');
-    const pills = document.getElementById('category-pills');
-    const genrePills = document.getElementById('genre-pills');
-    if (!header) return;
+    const pills = document.getElementById('filter-pills');
+    if (!header || !pills) return;
+    pills.style.top = `${header.offsetHeight}px`;
+}
 
-    const headerH = header.offsetHeight;
-    if (pills) pills.style.top = `${headerH}px`;
+// Called whenever the venue set changes — a venue added from a phone, or an
+// admin toggling what a venue plays. Without this the new chip only appears on
+// the next full reload.
+//
+// If the active filter's chip has just disappeared (its last venue changed
+// category, say), the filter is cleared rather than left pointing at nothing.
+function refreshFilterPills() {
+    const { categories, genres } = availableFilters();
+    const stillThere = activeCategory
+        ? categories.some(c => c.slug === activeCategory)
+        : activeGenre
+            ? genres.some(g => g.slug === activeGenre)
+            : true;
 
-    if (genrePills) {
-        // A hidden category row (categories_enabled === false) contributes no
-        // height, so offsetHeight is 0 and the genre row lands directly under
-        // the header. That falls out correctly without a special case.
-        const pillsH = pills && pills.style.display !== 'none' ? pills.offsetHeight : 0;
-        genrePills.style.top = `${headerH + pillsH}px`;
+    if (!stillThere) {
+        activeCategory = null;
+        activeGenre = null;
+        loadFeed(false);
     }
+
+    renderFilterPills();
 }
 
-function setCategory(category) {
-    // 'all' means "no filter" and must reach the RPC as NULL — passing the
-    // literal string made get_venue_feed filter WHERE category = 'all',
-    // which returned nothing and emptied both the feed and the map.
-    activeCategory = window.normalizeCategory
-        ? window.normalizeCategory(category)
-        : (category && category !== 'all' ? category : null);
+function setFilter(kind, value) {
+    // "All" and any no-op value must reach the RPC as SQL NULL, never the
+    // literal string — filtering on a value no row has empties the feed
+    // silently, which this app has shipped twice already.
+    if (kind === 'category') {
+        activeCategory = window.normalizeCategory
+            ? window.normalizeCategory(value)
+            : (value && value !== 'all' ? value : null);
+        activeGenre = null;
+    } else if (kind === 'genre') {
+        activeGenre = window.normalizeGenre
+            ? window.normalizeGenre(value)
+            : (value && value !== 'all' ? value : null);
+        activeCategory = null;
+    } else {
+        activeCategory = null;
+        activeGenre = null;
+    }
 
-    // Update pill active state (aria-selected too — it used to never update).
-    //
-    // ⚠️ Scoped to #category-pills. An unscoped '.pill' also matches the genre
-    // row, where dataset.category is undefined — and normalizeCategory(undefined)
-    // is null, which equals activeCategory whenever "All" is selected. Every
-    // genre pill would light up at once.
-    document.querySelectorAll('#category-pills .pill').forEach(pill => {
-        const pillCat = window.normalizeCategory
-            ? window.normalizeCategory(pill.dataset.category)
-            : (pill.dataset.category || null);
-        const isActive = pillCat === activeCategory;
-        pill.classList.toggle('active', isActive);
-        pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    });
-
-    // Reload feed with new category
-    loadFeed(false);
-    refreshVenueSurfaces();
-}
-
-function setGenre(genre) {
-    // Same trap as setCategory: "Any music" must reach get_venue_feed as SQL
-    // NULL, never the literal 'all', or the filter matches a value no row has.
-    activeGenre = window.normalizeGenre
-        ? window.normalizeGenre(genre)
-        : (genre && genre !== 'all' ? genre : null);
-
-    document.querySelectorAll('#genre-pills .pill').forEach(pill => {
-        const pillGenre = window.normalizeGenre
-            ? window.normalizeGenre(pill.dataset.genre)
-            : (pill.dataset.genre || null);
-        const isActive = pillGenre === activeGenre;
-        pill.classList.toggle('active', isActive);
-        pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    });
-
+    renderFilterPills();
     loadFeed(false);
     refreshVenueSurfaces();
 }
@@ -2722,22 +2721,13 @@ function setupEventListeners() {
         });
     });
 
-    // Category pills — delegated, because the pills are rendered dynamically
-    // from VENUE_CATEGORIES and so don't exist when this runs.
-    const pillsContainer = document.getElementById('category-pills');
+    // Filter pills — delegated, because the chips are derived from the venue
+    // set and so do not exist when this runs.
+    const pillsContainer = document.getElementById('filter-pills');
     if (pillsContainer) {
         pillsContainer.addEventListener('click', (e) => {
             const pill = e.target.closest('.pill');
-            if (pill) setCategory(pill.dataset.category);
-        });
-    }
-
-    // Genre pills — same delegation, same reason.
-    const genrePillsContainer = document.getElementById('genre-pills');
-    if (genrePillsContainer) {
-        genrePillsContainer.addEventListener('click', (e) => {
-            const pill = e.target.closest('.pill');
-            if (pill) setGenre(pill.dataset.genre);
+            if (pill) setFilter(pill.dataset.filterKind, pill.dataset.filterValue);
         });
     }
 
@@ -2932,8 +2922,8 @@ function setupEventListeners() {
 
     // Re-measure the sticky offsets when the header or the pill rows can change
     // height. Both rows wrap, so a rotation changes the genre row's offset.
-    window.addEventListener('resize', pinCategoryPills);
-    window.addEventListener('orientationchange', pinCategoryPills);
+    window.addEventListener('resize', pinFilterPills);
+    window.addEventListener('orientationchange', pinFilterPills);
 }
 
 function handleMapSearch(query) {
@@ -3751,6 +3741,7 @@ async function saveNewVenue() {
     closeAddVenue();
     showToast(`${name} added`);
 
+    refreshFilterPills();
     renderVenueSwimLane();
     if (map) renderMapPins();
     const searchInput = document.getElementById('search-input');

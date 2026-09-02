@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=7">
+    <link rel="stylesheet" href="/customer-app/social.css?v=8">
 </head>
 <body>
 
@@ -58,17 +58,21 @@
         </button>
     </header>
 
-    <!-- ===== Category Pills ===== -->
-    <!-- Rendered from window.VENUE_CATEGORIES (/js/venue-categories.js) so the
-         slugs can never drift from venues.category again. See renderCategoryPills(). -->
-    <div class="category-pills" id="category-pills" role="tablist" aria-label="Venue categories"></div>
+    <!-- ===== Filter Pills ===== -->
+    <!-- ONE row carrying both axes: venue type (venues.category) and music
+         (venues.music_genres). They were briefly two stacked sticky rows, which
+         cost ~90px of a phone screen before any content.
 
-    <!-- ===== Genre Pills ===== -->
-    <!-- Second filter row, rendered from window.MUSIC_GENRES (/js/music-genres.js).
-         Sticks directly beneath the category pills; pinCategoryPills() measures
-         both offsets rather than hardcoding them, because the header height
-         varies with the safe-area inset. -->
-    <div class="genre-pills" id="genre-pills" role="tablist" aria-label="Music genres"></div>
+         The chips are DERIVED from the venues this app actually has — see
+         renderFilterPills(). An app whose venues are all nightlife with no
+         genres set shows [All] [Nightlife] and nothing else, rather than 27
+         chips of which 25 return an empty feed. Admins populate this row by
+         setting a venue's category and music; there is no separate list to
+         maintain.
+
+         Slugs still come from /js/venue-categories.js and /js/music-genres.js,
+         so they cannot drift from the columns they filter on. -->
+    <div class="filter-pills" id="filter-pills" role="tablist" aria-label="Filter venues"></div>
 
     <!-- ===== Tab Content: Feed ===== -->
     <section id="tab-feed" class="tab-view active" role="tabpanel" aria-label="Feed">
@@ -928,7 +932,7 @@
     <script src="/customer-app/social-auth.js?v=3"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=11"></script>
+    <script src="/customer-app/social.js?v=12"></script>
 
 </body>
 </html>

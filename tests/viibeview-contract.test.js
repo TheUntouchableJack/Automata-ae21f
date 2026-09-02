@@ -30,12 +30,17 @@ describe('ViibeView markup + vocabularies', () => {
     let dom, d, w;
     beforeEach(() => { dom = boot(); w = dom.window; d = w.document; });
 
-    it('has both filter rows, and the genre row is a sibling of the category row', () => {
-        const cat = d.getElementById('category-pills');
-        const gen = d.getElementById('genre-pills');
-        expect(cat).toBeTruthy();
-        expect(gen).toBeTruthy();
-        expect(gen.previousElementSibling).toBe(cat);
+    it('has exactly ONE filter row', () => {
+        expect(d.getElementById('filter-pills')).toBeTruthy();
+        // The two-row version cost ~90px of a phone screen before any content.
+        expect(d.getElementById('category-pills')).toBeNull();
+        expect(d.getElementById('genre-pills')).toBeNull();
+    });
+
+    it('ships the filter row empty — the chips are derived from the venue set', () => {
+        // Rendering all 8 categories and all 19 genres unconditionally meant
+        // 25 of 27 chips returned an empty feed for a one-venue tenant.
+        expect(d.getElementById('filter-pills').children.length).toBe(0);
     });
 
     it('the composer venue row is a real button, not a hidden label', () => {
