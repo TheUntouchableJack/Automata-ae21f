@@ -2955,11 +2955,14 @@ body {
     z-index: 3200;
 }
 
+/* Shared by the venue picker and the add-venue sheet. The top margin matters:
+   with `0` the input sat flush against the sheet header's bottom border and
+   read as part of the header rather than as the first row of content. */
 .venue-picker-search {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    margin: 0 var(--spacing-md) var(--spacing-sm);
+    margin: var(--spacing-md) var(--spacing-md) var(--spacing-md);
     padding: 0 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
