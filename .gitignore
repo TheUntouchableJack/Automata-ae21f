@@ -66,3 +66,8 @@ pdf-*.png
 /blog/*.html
 !/blog/index.html
 !/blog/post.html
+
+# Local visual-QA page. Lives at the repo root so Vite can serve it with the
+# real styles.css, but publish = "." means a committed root-level HTML file
+# would be live at royaltyapp.ai/<name>. Keep it out of git.
+preview-gallery.html
