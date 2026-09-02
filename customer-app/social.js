@@ -2798,10 +2798,12 @@ function setupEventListeners() {
         postBtn.addEventListener('click', () => openCreatePost());
     }
 
-    // "Post here" on a venue page attaches that venue.
-    const venuePostHere = document.getElementById('venue-post-here-btn');
-    if (venuePostHere) {
-        venuePostHere.addEventListener('click', () => openCreatePost(venuePageVenueId));
+    // The "+" in the venue page header attaches that venue. Same handler the
+    // old "Post here" button had; it just lives in the corner now, matching the
+    // main header, instead of below the fold next to "Recent Posts".
+    const venuePostBtn = document.getElementById('venue-page-post-btn');
+    if (venuePostBtn) {
+        venuePostBtn.addEventListener('click', () => openCreatePost(venuePageVenueId));
     }
 
     // Post options sheet

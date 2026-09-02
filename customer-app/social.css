@@ -2118,25 +2118,14 @@ body {
     color: #1e293b;
 }
 
-/* HTML: <button class="venue-post-here-btn" id="venue-post-here-btn">
-   Posting from here attaches the venue, so the card shows the venue handle
-   instead of the poster's name. */
-.venue-post-here-btn {
-    flex-shrink: 0;
-    padding: 6px 14px;
-    border: none;
-    border-radius: var(--radius-full);
-    background: var(--app-primary, #6366f1);
-    color: #ffffff;
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-
-.venue-post-here-btn:hover {
-    opacity: 0.9;
+/* HTML: <button class="header-btn venue-page-post-btn" id="venue-page-post-btn">
+   The venue page's own "+", in the header's top-right. It reuses .header-btn
+   wholesale so it is the same size, shape and hit target as the one in the
+   main header — the action is identical, so it must not look like a different
+   control. Replaces the old "Post here" pill, which sat next to "Recent Posts"
+   and was below the fold on any venue with a hero image. */
+.venue-page-post-btn {
+    color: var(--app-primary, #6366f1);
 }
 
 /* Feed — reuses .feed-card styles from main feed */
