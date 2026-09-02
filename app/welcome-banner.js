@@ -149,8 +149,17 @@ const WelcomeBanner = (function() {
 
     function renderCard(id, step, icon, progress) {
         const done = !!progress[id];
-        // Steps 2-4 stay locked until step 1 (ai) is completed.
-        const locked = id !== 'ai' && !done && !isStep1Complete();
+        // Nothing is locked any more.
+        //
+        // The lock's premise was that we know nothing about this business until
+        // they sit through the discovery questionnaire, so showing them the app
+        // and rewards cards first would be showing them empty rooms. That premise
+        // is now false: by the time this banner renders, the business knowledge,
+        // profile, recommendations, project, automations, loyalty app and its
+        // rewards all already exist — created during signup from the app the
+        // visitor was shown before they even had an account. Gating three of the
+        // four cards behind a questionnaire turned a finished setup into homework.
+        const locked = false;
 
         const icons = {
             zap: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',
@@ -395,12 +404,6 @@ const WelcomeBanner = (function() {
         } catch (err) {
             console.error('[WelcomeBanner] Failed to save progress:', err);
         }
-    }
-
-    // Step 1 (Teach Royal AI) counts as complete ONLY when the user saves their
-    // answers — skipping it does not unlock steps 2-4.
-    function isStep1Complete() {
-        return !!(currentProgress && currentProgress.ai === 'completed');
     }
 
     function markAiComplete() {

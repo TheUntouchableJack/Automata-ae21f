@@ -54,7 +54,7 @@
         "titlePart1": "用",
         "titleHighlight": "60秒",
         "titleLine2": "创建会员计划，永久运行。",
-        "subtitle": "Royalty是一款AI，60秒为您创建会员计划——然后永久运营。顾客赚取积分，您了解运营状况，AI精准告诉您如何增长。",
+        "subtitle": "用一句话描述您的业务。大约 20 秒后，您就能看到做好的会员应用——您的名称、您的配色、您的奖励。只有想保留它时才需要注册。",
         "joinWaitlist": "开始使用",
         "seeHowItWorks": "了解工作原理",
         "discoveryTitle": "描述您的生意",
@@ -69,9 +69,9 @@
         "ctaSubtitle": "描述您的生意，我们的AI完成其余一切——积分、等级、奖励，全部自动化。",
         "ctaButton": "免费开始",
         "promptTitle": "描述您的生意",
-        "promptSubtitle": "用几句话告诉我们您的生意——我们的AI将提取关键信息并为您打造会员计划。",
+        "promptSubtitle": "用几句话介绍您的业务——我们的 AI 会在您等待时构建您的会员应用。大约 20 秒。",
         "promptPlaceholder": "例如，我在上海经营一家叫「一碗拉面」的拉面店。我们有约300位常客，想奖励忠实顾客，并吸引好久没来的顾客回来...",
-        "analyzeButton": "分析我的生意",
+        "analyzeButton": "生成我的应用",
         "analyzingTitle": "正在分析您的生意...",
         "analyzingSubtitle": "我们的AI正在阅读您的描述并构建您的会员计划",
         "confirmTitle": "我们理解了您的生意",
@@ -83,7 +83,23 @@
         "loadingStep2": "正在识别您的行业...",
         "loadingStep3": "正在构建您的忠诚度计划...",
         "loadingStep4": "正在计算增长潜力...",
-        "loadingSubtext": "分析您的数据可能需要10到20秒"
+        "loadingSubtext": "分析您的数据可能需要10到20秒",
+        "previewTitle": "这是 {name} 的会员应用",
+        "previewClaim": "免费领取我的应用",
+        "previewClaimNote": "创建账户即可保留此应用。不收取任何费用。",
+        "previewEditToggle": "不太对？编辑详细信息",
+        "previewFallbackNote": "基于我们的{industry}模板创建——下一步中一切都可以修改",
+        "previewIndustryGeneric": "小型企业",
+        "previewChipPoints": "每次到店 {n} 积分",
+        "previewChipWelcome": "{n} 迎新积分",
+        "previewChipTiers": "{n} 个等级",
+        "previewChipRewards": "{n} 项奖励已就绪",
+        "previewPointsLabel": "积分",
+        "previewNavHome": "首页",
+        "previewNavRewards": "奖励",
+        "previewNavScan": "扫码",
+        "previewNavProfile": "我的",
+        "previewTitleGeneric": "这是您的会员应用"
     },
     "orbStatus": {
         "thinking": "思考中",
@@ -1974,11 +1990,11 @@
         "rewardsLink": "浏览奖励"
     },
     "ctaBand": {
-        "build1": "免费创建您的方案 — 60 秒内完成",
+        "build1": "免费创建您的方案——注册前先看看",
         "build2": "免费开始，其余交给 AI。",
         "build3": "您的忠诚度方案，60 秒内上线",
         "button": "免费开始 →",
-        "note": "60 秒内创建你的忠诚度计划 — 免费，无需信用卡"
+        "note": "注册前先看看您的应用——免费，无需信用卡"
     },
     "builder": {
         "domain": {
@@ -1992,7 +2008,9 @@
             "statusLabel": "状态：",
             "verify": "验证",
             "dnsIntro": "在您的域名注册商处添加这些记录，然后点击“验证”："
-        }
+        },
+        "onboardingBanner": "这是 Royal AI 根据您的描述生成的应用——请逐步检查，满意后即可发布。",
+        "publishAndQr": "发布并获取我的二维码"
     },
     "faq": {
         "tag": "常见问题",

@@ -54,7 +54,7 @@
         "titlePart1": "Crea il tuo programma fedeltà in ",
         "titleHighlight": "60 secondi",
         "titleLine2": "Funziona per sempre.",
-        "subtitle": "Royalty è un'IA che crea il tuo programma fedeltà in 60 secondi — poi lo gestisce per sempre. I clienti guadagnano punti, tu vedi cosa funziona, e l'IA ti dice esattamente come crescere.",
+        "subtitle": "Descrivi la tua attività in una frase. In circa 20 secondi vedrai la tua app fedeltà finita: il tuo nome, i tuoi colori, i tuoi premi. Registrati solo se vuoi tenerla.",
         "joinWaitlist": "Inizia",
         "seeHowItWorks": "Scopri Come Funziona",
         "discoveryTitle": "Descrivi la tua attività",
@@ -69,9 +69,9 @@
         "ctaSubtitle": "Descrivi la tua attività e la nostra IA fa il resto — punti, livelli, premi, tutto automatizzato.",
         "ctaButton": "Inizia Gratis",
         "promptTitle": "Descrivi la tua attività",
-        "promptSubtitle": "Raccontaci della tua attività in poche frasi — la nostra IA estrarrà i dettagli e creerà il tuo programma fedeltà.",
+        "promptSubtitle": "Raccontaci della tua attività in poche frasi: la nostra IA costruirà la tua app fedeltà mentre aspetti. Circa 20 secondi.",
         "promptPlaceholder": "es., Gestisco un ristorante di ramen a Milano chiamato Slurp Ramen. Abbiamo circa 300 clienti abituali e vogliamo premiare i clienti fedeli e far tornare chi non viene da un po'...",
-        "analyzeButton": "Analizza la Mia Attività",
+        "analyzeButton": "Crea la mia app",
         "analyzingTitle": "Analisi della tua attività...",
         "analyzingSubtitle": "La nostra IA sta leggendo la tua descrizione e costruendo il tuo programma fedeltà",
         "confirmTitle": "Abbiamo capito la tua attività",
@@ -83,7 +83,23 @@
         "loadingStep2": "Identificazione del settore...",
         "loadingStep3": "Creazione del programma fedeltà...",
         "loadingStep4": "Calcolo del potenziale di crescita...",
-        "loadingSubtext": "L'analisi dei tuoi dati può richiedere da 10 a 20 secondi"
+        "loadingSubtext": "L'analisi dei tuoi dati può richiedere da 10 a 20 secondi",
+        "previewTitle": "Ecco l'app fedeltà di {name}",
+        "previewClaim": "Ottieni la mia app — Gratis",
+        "previewClaimNote": "Crea il tuo account per tenere questa app. Nessun addebito.",
+        "previewEditToggle": "Non è proprio giusto? Modifica i dettagli",
+        "previewFallbackNote": "Creata dal nostro modello {industry} — puoi cambiare tutto al passaggio successivo",
+        "previewIndustryGeneric": "piccola impresa",
+        "previewChipPoints": "{n} pt per visita",
+        "previewChipWelcome": "{n} punti di benvenuto",
+        "previewChipTiers": "{n} livelli",
+        "previewChipRewards": "{n} premi pronti",
+        "previewPointsLabel": "punti",
+        "previewNavHome": "Home",
+        "previewNavRewards": "Premi",
+        "previewNavScan": "Scansiona",
+        "previewNavProfile": "Profilo",
+        "previewTitleGeneric": "Ecco la tua app fedeltà"
     },
     "orbStatus": {
         "thinking": "Sto pensando",
@@ -1974,11 +1990,11 @@
         "rewardsLink": "Sfoglia premi"
     },
     "ctaBand": {
-        "build1": "Crea il tuo programma gratis — pronto in 60 secondi",
+        "build1": "Crea il tuo programma gratis: guardalo prima di registrarti",
         "build2": "Inizia gratis. L'IA fa il resto.",
         "build3": "Il tuo programma fedeltà, attivo in 60 secondi",
         "button": "Inizia gratis →",
-        "note": "Crea il tuo programma fedeltà in meno di 60 secondi — gratis, nessuna carta di credito"
+        "note": "Guarda la tua app prima di registrarti: gratis, senza carta di credito"
     },
     "builder": {
         "domain": {
@@ -1992,7 +2008,9 @@
             "statusLabel": "Stato:",
             "verify": "Verifica",
             "dnsIntro": "Aggiungi questi record presso il tuo registrar del dominio, poi clicca su Verifica:"
-        }
+        },
+        "onboardingBanner": "Questa è l'app che Royal AI ha creato dalla tua descrizione: controlla ogni passaggio e pubblica quando ti sembra giusta.",
+        "publishAndQr": "Pubblica e ottieni il mio codice QR"
     },
     "faq": {
         "tag": "FAQ",

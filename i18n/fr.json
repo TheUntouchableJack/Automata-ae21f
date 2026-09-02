@@ -54,7 +54,7 @@
         "titlePart1": "Créez votre programme de fidélité en ",
         "titleHighlight": "60 secondes",
         "titleLine2": "Il fonctionne pour toujours.",
-        "subtitle": "Royalty est une IA qui crée votre programme de fidélité en 60 secondes, puis le gère pour toujours. Les clients gagnent des points, vous voyez ce qui fonctionne, et l'IA vous dit exactement comment grandir.",
+        "subtitle": "Décrivez votre activité en une phrase. En 20 secondes environ, vous verrez votre application de fidélité terminée : votre nom, vos couleurs, vos récompenses. Inscrivez-vous seulement si vous voulez la garder.",
         "joinWaitlist": "Commencer",
         "seeHowItWorks": "Voir Comment Ça Marche",
         "discoveryTitle": "Décrivez votre entreprise",
@@ -69,9 +69,9 @@
         "ctaSubtitle": "Décrivez votre entreprise et notre IA s'occupe du reste — points, niveaux, récompenses, tout est automatisé.",
         "ctaButton": "Commencer Gratuitement",
         "promptTitle": "Décrivez votre entreprise",
-        "promptSubtitle": "Décrivez votre entreprise en quelques phrases — notre IA extraira les détails et créera votre programme de fidélité.",
+        "promptSubtitle": "Parlez-nous de votre activité en quelques phrases — notre IA construira votre application de fidélité pendant que vous patientez. Environ 20 secondes.",
         "promptPlaceholder": "ex., Je gère un restaurant de ramen à Paris appelé Slurp Ramen. Nous avons environ 300 habitués et voulons récompenser les clients fidèles et faire revenir ceux qui ne sont pas venus depuis un moment...",
-        "analyzeButton": "Analyser Mon Entreprise",
+        "analyzeButton": "Créer mon application",
         "analyzingTitle": "Analyse de votre entreprise...",
         "analyzingSubtitle": "Notre IA lit votre description et construit votre programme de fidélité",
         "confirmTitle": "Nous avons compris votre entreprise",
@@ -83,7 +83,23 @@
         "loadingStep2": "Identification de votre secteur...",
         "loadingStep3": "Construction de votre programme de fidélité...",
         "loadingStep4": "Calcul du potentiel de croissance...",
-        "loadingSubtext": "L'analyse de vos données peut prendre de 10 à 20 secondes"
+        "loadingSubtext": "L'analyse de vos données peut prendre de 10 à 20 secondes",
+        "previewTitle": "Voici l'application de fidélité de {name}",
+        "previewClaim": "Obtenir mon application — Gratuit",
+        "previewClaimNote": "Créez votre compte pour conserver cette application. Aucun paiement.",
+        "previewEditToggle": "Pas tout à fait juste ? Modifier les détails",
+        "previewFallbackNote": "Créée à partir de notre modèle {industry} — vous pourrez tout modifier à l'étape suivante",
+        "previewIndustryGeneric": "petite entreprise",
+        "previewChipPoints": "{n} pts par visite",
+        "previewChipWelcome": "{n} points de bienvenue",
+        "previewChipTiers": "{n} niveaux",
+        "previewChipRewards": "{n} récompenses prêtes",
+        "previewPointsLabel": "points",
+        "previewNavHome": "Accueil",
+        "previewNavRewards": "Récompenses",
+        "previewNavScan": "Scanner",
+        "previewNavProfile": "Profil",
+        "previewTitleGeneric": "Voici votre application de fidélité"
     },
     "orbStatus": {
         "thinking": "Réflexion",
@@ -1974,11 +1990,11 @@
         "rewardsLink": "Voir les récompenses"
     },
     "ctaBand": {
-        "build1": "Créez votre programme gratuitement — prêt en 60 secondes",
+        "build1": "Créez votre programme gratuitement — voyez-le avant de vous inscrire",
         "build2": "Commencez gratuitement. L'IA fait le reste.",
         "build3": "Votre programme de fidélité, actif en 60 secondes",
         "button": "Commencer gratuitement →",
-        "note": "Créez votre programme de fidélité en moins de 60 secondes — gratuit, sans carte bancaire"
+        "note": "Voyez votre application avant de vous inscrire — gratuit, sans carte bancaire"
     },
     "builder": {
         "domain": {
@@ -1992,7 +2008,9 @@
             "statusLabel": "Statut :",
             "verify": "Vérifier",
             "dnsIntro": "Ajoutez ces enregistrements chez votre registraire de domaine, puis cliquez sur Vérifier :"
-        }
+        },
+        "onboardingBanner": "Voici l'application que Royal AI a créée à partir de votre description — vérifiez chaque étape et publiez quand cela vous convient.",
+        "publishAndQr": "Publier et obtenir mon QR code"
     },
     "faq": {
         "tag": "FAQ",

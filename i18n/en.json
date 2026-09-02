@@ -54,7 +54,7 @@
         "titlePart1": "Build your loyalty program in ",
         "titleHighlight": "60 seconds",
         "titleLine2": "Run it forever.",
-        "subtitle": "Royalty is an AI that builds your loyalty program in 60 seconds—then runs it forever. Customers earn points, you see what's working, and AI tells you exactly how to grow.",
+        "subtitle": "Describe your business in a sentence. In about 20 seconds you'll see your finished loyalty app — your name, your colours, your rewards. Sign up only if you want to keep it.",
         "joinWaitlist": "Get Started",
         "seeHowItWorks": "See How It Works",
         "discoveryTitle": "Describe your business",
@@ -69,9 +69,9 @@
         "ctaSubtitle": "Describe your business and our AI handles the rest — points, tiers, rewards, all automated.",
         "ctaButton": "Get Started Free",
         "promptTitle": "Describe your business",
-        "promptSubtitle": "Tell us about your business in a few sentences — our AI will extract the details and build your loyalty program.",
+        "promptSubtitle": "Tell us about your business in a few sentences — our AI will build your loyalty app while you wait. About 20 seconds.",
         "promptPlaceholder": "e.g., I run a ramen shop in Brooklyn called Slurp Ramen. We have about 300 regulars and want to reward loyal customers and bring back people who haven't visited in a while...",
-        "analyzeButton": "Analyze My Business",
+        "analyzeButton": "Build My App",
         "analyzingTitle": "Analyzing your business...",
         "analyzingSubtitle": "Our AI is reading your description and building your loyalty program",
         "confirmTitle": "We understood your business",
@@ -83,7 +83,23 @@
         "loadingStep2": "Identifying your industry...",
         "loadingStep3": "Building your loyalty program...",
         "loadingStep4": "Calculating growth potential...",
-        "loadingSubtext": "This can take from 10 - 20 seconds to analyze your data"
+        "loadingSubtext": "This can take from 10 - 20 seconds to analyze your data",
+        "previewTitle": "Here's {name}'s loyalty app",
+        "previewClaim": "Claim My App — Free",
+        "previewClaimNote": "Create your account to keep this app. Nothing is charged.",
+        "previewEditToggle": "Not quite right? Edit the details",
+        "previewFallbackNote": "Built from our {industry} template — you can change everything in the next step",
+        "previewIndustryGeneric": "small business",
+        "previewChipPoints": "{n} pts per visit",
+        "previewChipWelcome": "{n} welcome points",
+        "previewChipTiers": "{n} tiers",
+        "previewChipRewards": "{n} rewards ready",
+        "previewPointsLabel": "points",
+        "previewNavHome": "Home",
+        "previewNavRewards": "Rewards",
+        "previewNavScan": "Scan",
+        "previewNavProfile": "Profile",
+        "previewTitleGeneric": "Here's your loyalty app"
     },
     "orbStatus": {
         "thinking": "Thinking",
@@ -1974,11 +1990,11 @@
         "rewardsLink": "Browse Rewards"
     },
     "ctaBand": {
-        "build1": "Build your program free — ready in 60 seconds",
+        "build1": "Build your program free — see it before you sign up",
         "build2": "Start free. AI does the rest.",
         "build3": "Your loyalty program, live in 60 seconds",
         "button": "Get Started Free →",
-        "note": "Create your loyalty program in under 60 seconds — free, no credit card required"
+        "note": "See your app before you sign up — free, no credit card required"
     },
     "builder": {
         "domain": {
@@ -1992,7 +2008,9 @@
             "statusLabel": "Status:",
             "verify": "Verify",
             "dnsIntro": "Add these records at your domain registrar, then click Verify:"
-        }
+        },
+        "onboardingBanner": "This is the app Royal AI built from your description — review each step and publish when it looks right.",
+        "publishAndQr": "Publish & Get My QR Code"
     },
     "faq": {
         "tag": "FAQ",

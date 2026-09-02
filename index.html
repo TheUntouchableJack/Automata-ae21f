@@ -159,7 +159,10 @@
         </nav>
         <div class="mobile-menu-cta">
             <a href="/app/login.html" class="btn btn-secondary btn-block" data-i18n="nav.login">Log In</a>
-            <a href="/app/signup.html" class="btn btn-primary btn-block" data-i18n="nav.getStarted">Get Started Free</a>
+            <!-- Points at the discovery card, not straight at /app/signup.html. This is
+                 the most prominent CTA on mobile; sending it to a bare password form
+                 skipped the entire AI funnel that the rest of the page is selling. -->
+            <a href="#discovery-card" id="mobile-cta-btn" class="btn btn-primary btn-block" data-i18n="nav.getStarted">Get Started Free</a>
         </div>
         <div class="mobile-menu-footer">
             <div class="lang-selector mobile-lang-selector">
@@ -352,6 +355,40 @@
                             </svg>
                         </button>
                         <button id="retry-prompt-btn" class="btn-link skip-link">
+                            <span data-i18n="hero.retryButton">Start over with a different description</span>
+                        </button>
+                    </div>
+
+                    <!-- State 5: Preview — their actual app, before the signup wall.
+                         The #extracted-fields block is NOT duplicated here. There is
+                         exactly one copy of those inputs in the document (inside
+                         #hero-confirm-state above); script.js moves that single node
+                         into #preview-fields-mount when the preview variant is active
+                         and moves it back otherwise. Duplicating them would give two
+                         elements the same id and handleConfirmAndSignup() would read
+                         whichever the browser happened to return first. -->
+                    <div id="hero-preview-state" style="display: none;">
+                        <!-- Generic key here on purpose: hero.previewTitle carries a
+                             {name} placeholder that JS interpolates once the business
+                             name is known. Binding data-i18n to it would render a raw
+                             "{name}" for the split second before that happens. -->
+                        <h2 class="discovery-title" id="hero-preview-title" data-i18n="hero.previewTitleGeneric">Here's your loyalty app</h2>
+
+                        <div id="hero-preview-mount"></div>
+
+                        <details class="preview-edit-details">
+                            <summary data-i18n="hero.previewEditToggle">Not quite right? Edit the details</summary>
+                            <div id="preview-fields-mount"></div>
+                        </details>
+
+                        <button id="claim-app-btn" class="btn btn-primary btn-large discovery-btn">
+                            <span data-i18n="hero.previewClaim">Claim My App — Free</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <p class="preview-source-note" data-i18n="hero.previewClaimNote">Create your account to keep this app. Nothing is charged.</p>
+                        <button id="preview-retry-btn" class="btn-link skip-link">
                             <span data-i18n="hero.retryButton">Start over with a different description</span>
                         </button>
                     </div>
@@ -1065,11 +1102,19 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="i18n/i18n.js?v=2"></script>
-    <script src="app/onboarding-storage.js"></script>
+    <script src="app/onboarding-storage.js?v=3"></script>
     <script src="app/templates-library.js"></script>
+    <!-- NOTE: app-templates-library.js is a DIFFERENT file from templates-library.js
+         above. That one holds automation templates; this one holds APP templates
+         (loyalty-points, cafe-rewards, fitness-club...) and is what
+         app-config-fallback.js reads to build the preview. Every symbol in it is
+         App-prefixed, so the two can safely share global scope. -->
+    <script src="app/app-templates-library.js?v=1"></script>
+    <script src="app/app-config-fallback.js?v=1"></script>
+    <script src="app/app-preview-card.js?v=1"></script>
     <script src="app/ai-recommendations.js"></script>
     <script src="app/rate-limiter.js?v=1"></script>
-    <script src="script.js?v=21"></script>
+    <script src="script.js?v=22"></script>
     <script src="network-bg.js?v=7"></script>
     <script src="js/section-nav.js?v=1"></script>
 </body>

@@ -54,7 +54,7 @@
         "titlePart1": "Erstellen Sie Ihr Treueprogramm in ",
         "titleHighlight": "60 Sekunden",
         "titleLine2": "Es läuft für immer.",
-        "subtitle": "Royalty ist eine KI, die Ihr Treueprogramm in 60 Sekunden erstellt — und es dann für immer betreibt. Kunden sammeln Punkte, Sie sehen, was funktioniert, und KI sagt Ihnen genau, wie Sie wachsen können.",
+        "subtitle": "Beschreiben Sie Ihr Unternehmen in einem Satz. In etwa 20 Sekunden sehen Sie Ihre fertige Treue-App — Ihr Name, Ihre Farben, Ihre Prämien. Registrieren Sie sich nur, wenn Sie sie behalten möchten.",
         "joinWaitlist": "Loslegen",
         "seeHowItWorks": "So funktioniert's",
         "discoveryTitle": "Beschreiben Sie Ihr Unternehmen",
@@ -69,9 +69,9 @@
         "ctaSubtitle": "Beschreiben Sie Ihr Unternehmen und unsere KI erledigt den Rest — Punkte, Stufen, Belohnungen, alles automatisiert.",
         "ctaButton": "Kostenlos Starten",
         "promptTitle": "Beschreiben Sie Ihr Unternehmen",
-        "promptSubtitle": "Erzählen Sie uns in ein paar Sätzen von Ihrem Unternehmen — unsere KI wird die Details extrahieren und Ihr Treueprogramm erstellen.",
+        "promptSubtitle": "Erzählen Sie uns in ein paar Sätzen von Ihrem Unternehmen — unsere KI baut Ihre Treue-App, während Sie warten. Etwa 20 Sekunden.",
         "promptPlaceholder": "z.B., Ich betreibe ein Ramen-Restaurant in Berlin namens Slurp Ramen. Wir haben etwa 300 Stammkunden und möchten treue Kunden belohnen und Kunden zurückgewinnen, die länger nicht da waren...",
-        "analyzeButton": "Mein Unternehmen Analysieren",
+        "analyzeButton": "Meine App erstellen",
         "analyzingTitle": "Ihr Unternehmen wird analysiert...",
         "analyzingSubtitle": "Unsere KI liest Ihre Beschreibung und erstellt Ihr Treueprogramm",
         "confirmTitle": "Wir haben Ihr Unternehmen verstanden",
@@ -83,7 +83,23 @@
         "loadingStep2": "Identifiziere Ihre Branche...",
         "loadingStep3": "Erstelle Ihr Treueprogramm...",
         "loadingStep4": "Berechne Wachstumspotenzial...",
-        "loadingSubtext": "Die Analyse Ihrer Daten kann 10 bis 20 Sekunden dauern"
+        "loadingSubtext": "Die Analyse Ihrer Daten kann 10 bis 20 Sekunden dauern",
+        "previewTitle": "Hier ist die Treue-App von {name}",
+        "previewClaim": "Meine App sichern — Kostenlos",
+        "previewClaimNote": "Erstellen Sie ein Konto, um diese App zu behalten. Es wird nichts berechnet.",
+        "previewEditToggle": "Nicht ganz richtig? Details bearbeiten",
+        "previewFallbackNote": "Erstellt aus unserer {industry}-Vorlage — im nächsten Schritt können Sie alles ändern",
+        "previewIndustryGeneric": "Kleinunternehmen",
+        "previewChipPoints": "{n} Pkt. pro Besuch",
+        "previewChipWelcome": "{n} Willkommenspunkte",
+        "previewChipTiers": "{n} Stufen",
+        "previewChipRewards": "{n} Prämien bereit",
+        "previewPointsLabel": "Punkte",
+        "previewNavHome": "Start",
+        "previewNavRewards": "Prämien",
+        "previewNavScan": "Scannen",
+        "previewNavProfile": "Profil",
+        "previewTitleGeneric": "Hier ist Ihre Treue-App"
     },
     "orbStatus": {
         "thinking": "Denke nach",
@@ -1974,11 +1990,11 @@
         "rewardsLink": "Belohnungen ansehen"
     },
     "ctaBand": {
-        "build1": "Erstellen Sie Ihr Programm kostenlos — in 60 Sekunden bereit",
+        "build1": "Erstellen Sie Ihr Programm kostenlos — sehen Sie es, bevor Sie sich registrieren",
         "build2": "Kostenlos starten. Die KI erledigt den Rest.",
         "build3": "Ihr Treueprogramm, live in 60 Sekunden",
         "button": "Kostenlos starten →",
-        "note": "Erstelle dein Treueprogramm in unter 60 Sekunden — kostenlos, keine Kreditkarte nötig"
+        "note": "Sehen Sie Ihre App, bevor Sie sich registrieren — kostenlos, keine Kreditkarte nötig"
     },
     "builder": {
         "domain": {
@@ -1992,7 +2008,9 @@
             "statusLabel": "Status:",
             "verify": "Überprüfen",
             "dnsIntro": "Füge diese Einträge bei deinem Domain-Registrar hinzu und klicke dann auf Überprüfen:"
-        }
+        },
+        "onboardingBanner": "Das ist die App, die Royal AI aus Ihrer Beschreibung erstellt hat — prüfen Sie jeden Schritt und veröffentlichen Sie, wenn es passt.",
+        "publishAndQr": "Veröffentlichen & QR-Code erhalten"
     },
     "faq": {
         "tag": "FAQ",

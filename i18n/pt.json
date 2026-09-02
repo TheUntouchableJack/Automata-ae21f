@@ -54,7 +54,7 @@
         "titlePart1": "Crie seu programa de fidelidade em ",
         "titleHighlight": "60 segundos",
         "titleLine2": "Funcione para sempre.",
-        "subtitle": "Royalty é uma IA que cria seu programa de fidelidade em 60 segundos — e depois o gerencia para sempre. Clientes ganham pontos, você vê o que funciona, e a IA diz exatamente como crescer.",
+        "subtitle": "Descreva o seu negócio numa frase. Em cerca de 20 segundos verá a sua app de fidelização pronta — o seu nome, as suas cores, as suas recompensas. Registe-se só se quiser ficar com ela.",
         "joinWaitlist": "Começar",
         "seeHowItWorks": "Veja Como Funciona",
         "discoveryTitle": "Descreva seu negócio",
@@ -69,9 +69,9 @@
         "ctaSubtitle": "Descreva seu negócio e nossa IA cuida do resto — pontos, níveis, recompensas, tudo automatizado.",
         "ctaButton": "Começar Grátis",
         "promptTitle": "Descreva seu negócio",
-        "promptSubtitle": "Conte-nos sobre seu negócio em algumas frases — nossa IA extrairá os detalhes e criará seu programa de fidelidade.",
+        "promptSubtitle": "Fale-nos do seu negócio em poucas frases — a nossa IA vai construir a sua app de fidelização enquanto espera. Cerca de 20 segundos.",
         "promptPlaceholder": "ex., Tenho um restaurante de ramen em São Paulo chamado Slurp Ramen. Temos cerca de 300 clientes regulares e queremos recompensar clientes fiéis e trazer de volta quem não visita há um tempo...",
-        "analyzeButton": "Analisar Meu Negócio",
+        "analyzeButton": "Criar a minha app",
         "analyzingTitle": "Analisando seu negócio...",
         "analyzingSubtitle": "Nossa IA está lendo sua descrição e construindo seu programa de fidelidade",
         "confirmTitle": "Entendemos seu negócio",
@@ -83,7 +83,23 @@
         "loadingStep2": "Identificando seu setor...",
         "loadingStep3": "Construindo seu programa de fidelidade...",
         "loadingStep4": "Calculando potencial de crescimento...",
-        "loadingSubtext": "A análise dos seus dados pode levar de 10 a 20 segundos"
+        "loadingSubtext": "A análise dos seus dados pode levar de 10 a 20 segundos",
+        "previewTitle": "Aqui está a app de fidelização de {name}",
+        "previewClaim": "Ficar com a minha app — Grátis",
+        "previewClaimNote": "Crie a sua conta para ficar com esta app. Não é cobrado nada.",
+        "previewEditToggle": "Não está bem? Edite os detalhes",
+        "previewFallbackNote": "Criada a partir do nosso modelo de {industry} — pode alterar tudo no passo seguinte",
+        "previewIndustryGeneric": "pequeno negócio",
+        "previewChipPoints": "{n} pts por visita",
+        "previewChipWelcome": "{n} pontos de boas-vindas",
+        "previewChipTiers": "{n} níveis",
+        "previewChipRewards": "{n} recompensas prontas",
+        "previewPointsLabel": "pontos",
+        "previewNavHome": "Início",
+        "previewNavRewards": "Recompensas",
+        "previewNavScan": "Digitalizar",
+        "previewNavProfile": "Perfil",
+        "previewTitleGeneric": "Aqui está a sua app de fidelização"
     },
     "orbStatus": {
         "thinking": "A pensar",
@@ -1974,11 +1990,11 @@
         "rewardsLink": "Ver recompensas"
     },
     "ctaBand": {
-        "build1": "Crie seu programa grátis — pronto em 60 segundos",
+        "build1": "Crie o seu programa grátis — veja-o antes de se registar",
         "build2": "Comece grátis. A IA faz o resto.",
         "build3": "Seu programa de fidelidade, no ar em 60 segundos",
         "button": "Começar Grátis →",
-        "note": "Crie seu programa de fidelidade em menos de 60 segundos — grátis, sem cartão de crédito"
+        "note": "Veja a sua app antes de se registar — grátis, sem cartão de crédito"
     },
     "builder": {
         "domain": {
@@ -1992,7 +2008,9 @@
             "statusLabel": "Estado:",
             "verify": "Verificar",
             "dnsIntro": "Adicione estes registos no seu registador de domínios e depois clique em Verificar:"
-        }
+        },
+        "onboardingBanner": "Esta é a app que a Royal AI criou a partir da sua descrição — reveja cada passo e publique quando estiver bem.",
+        "publishAndQr": "Publicar e obter o meu código QR"
     },
     "faq": {
         "tag": "FAQ",

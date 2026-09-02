@@ -32,6 +32,151 @@ const OnboardingSave = (function () {
         'vip-program': 'VIP Program'
     };
 
+    // Slug generation. AppUtils is not loaded on every page that calls commit(),
+    // so this is deliberately self-contained.
+    function slugify(text) {
+        return String(text || '')
+            .toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')  // strip accents
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 40) || 'my-app';
+    }
+
+    /**
+     * Create the customer_apps row (and its rewards) from the config the visitor
+     * was shown before signing up.
+     *
+     * WHY THIS IS HERE
+     * commit() previously wrote projects, automations, ai_recommendations,
+     * business_knowledge and business_profiles — and no customer_apps row at all.
+     * The app was created blind and late by dashboard.js's autoCreateDefaultApp()
+     * whenever the user happened to click "Application" in the sidebar, which is
+     * why every business ended up purple with the same four filler rewards. If we
+     * are going to show someone their app before signup, that app has to be the
+     * one that actually gets created.
+     *
+     * Returns the new app id, or null. NEVER throws: a failure here must not cost
+     * the account, the project, or the knowledge that was already written.
+     */
+    async function createLoyaltyApp(organizationId, projectId, config, businessDetails) {
+        if (!config) return null;
+        try {
+            const details = businessDetails || {};
+            const appName = config.appName || `${details.businessName || 'My Business'} Rewards`;
+            const baseSlug = slugify(appName);
+
+            const tiers = Array.isArray(config.tiers) ? config.tiers : [];
+            const tierByKey = {};
+            tiers.forEach(t => { if (t && t.key) tierByKey[t.key] = t; });
+
+            // Built in EXACTLY the shape app-builder.js getAppData() produces, so
+            // the wizard round-trips it without normalising anything on first save.
+            // In particular tier_thresholds is the NESTED {points, name} shape the
+            // builder writes, not the flat shape autoCreateDefaultApp writes.
+            const appData = {
+                organization_id: organizationId,
+                project_id: projectId || null,
+                name: appName,
+                slug: baseSlug,
+                description: config.appDescription || '',
+                app_type: config.appType || 'loyalty',
+                features: config.features || {},
+                settings: {
+                    points_per_scan: config.pointsPerScan ?? 10,
+                    points_per_dollar: config.pointsPerDollar ?? 1,
+                    welcome_points: config.welcomePoints ?? 50,
+                    daily_scan_limit: config.dailyScanLimit ?? 1,
+                    require_email: true,
+                    require_phone: false,
+                    tier_thresholds: {
+                        bronze:   { points: tierByKey.bronze?.points ?? 0,      name: tierByKey.bronze?.name || 'Bronze' },
+                        silver:   { points: tierByKey.silver?.points ?? 500,    name: tierByKey.silver?.name || 'Silver' },
+                        gold:     { points: tierByKey.gold?.points ?? 1500,     name: tierByKey.gold?.name || 'Gold' },
+                        platinum: { points: tierByKey.platinum?.points ?? 5000, name: tierByKey.platinum?.name || 'Platinum' }
+                    },
+                    created_from: 'signup_ai',
+                    config_source: config.source || 'template'
+                },
+                branding: {
+                    primary_color: config.primaryColor || '#5B21B6',
+                    secondary_color: config.secondaryColor || '#2E1065',
+                    logo_url: null,
+                    logo_fit: 'contain',
+                    favicon_url: null,
+                    custom_css: null,
+                    business_info: {
+                        hours: null,
+                        phone: null,
+                        email: null,
+                        address: details.location || null,
+                        social: { website: details.websiteUrl || null }
+                    }
+                },
+                is_active: true,
+                // NOT published. autoCreateDefaultApp publishes immediately, which
+                // was right when nobody was ever going to open the wizard — the
+                // context this change removes. Publishing here would put /a/{slug}
+                // publicly live with colours and reward names the owner has never
+                // seen, and would fire app_published (explicitly the north-star
+                // activation event) for ~100% of signups, destroying it as a metric.
+                is_published: false
+            };
+
+            // Slug collisions. dashboard.js retries exactly once with a 4-char
+            // suffix, which is not enough at signup volume for names like
+            // "my-business-rewards". Bounded: base, then three random suffixes,
+            // then a timestamp that cannot realistically collide.
+            let app = null;
+            const candidates = [
+                baseSlug,
+                `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`,
+                `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`,
+                `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`,
+                `${baseSlug}-${Date.now().toString(36)}`
+            ];
+
+            for (const slug of candidates) {
+                appData.slug = slug;
+                const { data, error } = await db.from('customer_apps').insert(appData).select().single();
+                if (!error) { app = data; break; }
+                // Only a unique-violation is worth retrying; anything else is a
+                // real error and retrying it just burns four more round trips.
+                if (error.code !== '23505') {
+                    console.error('Error creating loyalty app:', error);
+                    return null;
+                }
+            }
+
+            if (!app) {
+                console.error('Could not find a free slug for the loyalty app');
+                return null;
+            }
+
+            // Rewards. Non-fatal: an app with no rewards is still a usable app,
+            // and the owner is about to walk through the builder anyway.
+            const rewards = Array.isArray(config.rewards) ? config.rewards : [];
+            if (rewards.length) {
+                const rows = rewards.map((r, i) => ({
+                    app_id: app.id,
+                    name: r.name,
+                    description: r.description || '',
+                    points_cost: r.pointsCost ?? 100,
+                    tier_required: r.tierRequired || null,
+                    display_order: i,
+                    is_active: true
+                }));
+                const { error: rewardError } = await db.from('app_rewards').insert(rows);
+                if (rewardError) console.error('Error creating app rewards:', rewardError);
+            }
+
+            return app.id;
+        } catch (err) {
+            console.error('Error creating loyalty app:', err);
+            return null;
+        }
+    }
+
     async function commit(userId) {
         if (typeof OnboardingStorage === 'undefined') return null;
 
@@ -81,6 +226,50 @@ const OnboardingSave = (function () {
             if (projectError) {
                 console.error('Error creating project:', projectError);
                 return null;
+            }
+
+            // ── Create the loyalty app ──
+            // Placed after the project insert (so project_id can be set) and
+            // before the automations block. Two AFTER INSERT triggers fire on
+            // customer_apps — create_default_campaigns and
+            // auto_create_support_settings — so those rows now exist from minute
+            // one instead of appearing whenever the user first opens the app page.
+            //
+            // If no config was stored (an older OnboardingStorage blob, or the
+            // control arm of the preview A/B), rebuild one from the template so a
+            // signup still ends with a real app rather than nothing.
+            let appConfig = onboardingData.appConfig || null;
+            if (!appConfig && typeof AppConfigFallback !== 'undefined') {
+                appConfig = AppConfigFallback.build({
+                    prompt: onboardingData.businessPrompt || '',
+                    industry: onboardingData.businessContext?.industry || '',
+                    businessName: onboardingData.businessDetails?.businessName || ''
+                });
+            }
+
+            const newAppId = await createLoyaltyApp(
+                organizationId,
+                project.id,
+                appConfig,
+                onboardingData.businessDetails
+            );
+
+            // commit() returns project.id and three call sites consume that, so
+            // the signature must not change. The app id rides alongside instead.
+            OnboardingSave.lastAppId = newAppId;
+
+            if (newAppId) {
+                window.Analytics?.track('onboarding_app_created', {
+                    app_id: newAppId,
+                    source: appConfig?.source || 'unknown',
+                    reward_count: (appConfig?.rewards || []).length
+                });
+            } else {
+                // Falling through to autoCreateDefaultApp means a generic purple
+                // app instead of the one they were shown. Worth an alarm.
+                window.Analytics?.track('onboarding_app_create_failed', {
+                    had_config: !!appConfig
+                });
             }
 
             if (onboardingData.selectedTemplates?.length > 0) {
@@ -177,6 +366,16 @@ const OnboardingSave = (function () {
                     customerCount: details.customerCount,
                     websiteUrl: details.websiteUrl
                 };
+            }
+
+            // Which pricing tier sent them here, stashed by signup.html from
+            // ?plan=. Survives the cold-path hop to get-started.html because
+            // sessionStorage is per-tab, not per-page. Recorded so plan intent
+            // is answerable from the database and not just from analytics.
+            let planIntent = null;
+            try { planIntent = sessionStorage.getItem('royalty_plan_intent'); } catch (e) { /* private mode */ }
+            if (planIntent) {
+                settingsPayload.plan_intent = planIntent;
             }
 
             const projectUpdate = {};
@@ -325,6 +524,7 @@ const OnboardingSave = (function () {
 
             // ── Clear caches ──
             OnboardingStorage.clear();
+            try { sessionStorage.removeItem('royalty_plan_intent'); } catch (e) { /* private mode */ }
             if (typeof BusinessAnalysis !== 'undefined' && BusinessAnalysis.clearCache) {
                 BusinessAnalysis.clearCache();
             }
@@ -349,7 +549,10 @@ const OnboardingSave = (function () {
         }
     }
 
-    return { commit };
+    // lastAppId: set by commit() when it creates a customer_apps row. commit()
+    // still returns project.id because three call sites depend on that; callers
+    // that need to route into the app builder read this instead.
+    return { commit, createLoyaltyApp, lastAppId: null };
 })();
 
 window.OnboardingSave = OnboardingSave;

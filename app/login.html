@@ -309,12 +309,20 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js?v=1"></script>
-    <script src="onboarding-storage.js?v=1"></script>
+    <script src="onboarding-storage.js?v=3"></script>
     <script src="workspace.js?v=1"></script>
     <script src="auth.js?v=14"></script>
     <script src="password-toggle.js?v=2"></script>
     <script src="mfa.js?v=4"></script>
-    <script src="onboarding-transition.js?v=1"></script>
+    <script src="onboarding-transition.js?v=2"></script>
+    <!-- Email-confirmation signups commit their onboarding HERE rather than on
+         signup.html, so this page needs the same modules signup.html has: the
+         shared commit implementation, and the template/config pair it uses to
+         rebuild a loyalty app when the stored config is missing.
+         onboarding-save.js depends on `db` from auth.js above. -->
+    <script src="app-templates-library.js?v=1"></script>
+    <script src="app-config-fallback.js?v=1"></script>
+    <script src="onboarding-save.js?v=2"></script>
     <script src="celebrate.js?v=2"></script>
     <script>
         // CAPTCHA state
@@ -541,27 +549,28 @@
             console.error('Auth check error:', err);
         });
 
-        // Template names for creating automations
-        const templateNames = {
-            'birthday-rewards': 'Birthday Rewards',
-            'loyalty-program': 'Loyalty Points Program',
-            'happy-hour': 'Happy Hour Alerts',
-            'appointment-reminders': 'Appointment Reminders',
-            'post-visit': 'Post-Visit Follow-up',
-            'win-back': 'Win-Back Campaign',
-            'referral-program': 'Referral Program',
-            'review-request': 'Review Request',
-            'new-product': 'New Product Announcements',
-            'welcome-series': 'Welcome Series',
-            'seasonal-promo': 'Seasonal Promotions',
-            'vip-program': 'VIP Program'
-        };
+        // (templateNames removed — the only consumer was the inline onboarding
+        // commit that now delegates to OnboardingSave, which owns that map.)
 
         // Decide where a just-authenticated user lands. Cold signups (account
         // created without describing their business) have no project yet — route
         // them to the business-description page so onboarding has real content.
         async function firstRunDestination(user) {
             try {
+                // Email-confirmation signups have no session on signup.html, so
+                // their onboarding commit runs here instead. When THAT commit
+                // just created a loyalty app in this same page load, send them to
+                // the builder exactly as the direct signup path does.
+                //
+                // Deliberately scoped to "created in this page load": a returning
+                // owner logging in months later must never be dumped into a
+                // 6-step wizard, and OnboardingSave.lastAppId is only ever set by
+                // a commit that happened in this document.
+                const justCreatedAppId = (typeof OnboardingSave !== 'undefined' && OnboardingSave.lastAppId) || null;
+                if (justCreatedAppId) {
+                    return `/app/app-builder.html?id=${encodeURIComponent(justCreatedAppId)}&onboarding=1`;
+                }
+
                 // Scoped workspaces short-circuit BEFORE the projects branch.
                 // A client shares the owner's org, which has no `projects`
                 // row, so the branch below would send them to
@@ -597,7 +606,15 @@
             }
         }
 
-        // Save onboarding data to database after login (if any exists)
+        // Save onboarding data to database after login (if any exists).
+        //
+        // Delegates to the shared OnboardingSave module. What this replaces was a
+        // ~115-line second copy of the same logic that had quietly fallen behind:
+        // it created the project and the automations, but not business_knowledge,
+        // not business_profiles, not ai_recommendations, and not the loyalty app.
+        // So anyone who signed up with email confirmation — who commits here
+        // rather than on signup.html — ended up with a materially worse account
+        // than someone who signed up directly, which nobody ever decided to do.
         async function saveOnboardingDataAfterLogin(userId) {
             if (typeof OnboardingStorage === 'undefined') return null;
 
@@ -606,112 +623,43 @@
                 return null;
             }
 
+            if (typeof OnboardingSave === 'undefined') {
+                console.error('OnboardingSave module not loaded');
+                return null;
+            }
+
             try {
-                // Get user's organization
-                const { data: membership, error: membershipError } = await db
+                // Don't re-run onboarding for someone who already has a project.
+                // A returning user can still be carrying a stale localStorage blob,
+                // and committing it again would duplicate their project AND create
+                // a second loyalty app. The old inline version guarded this too;
+                // OnboardingSave.commit() does not, so the guard stays here.
+                const { data: membership } = await db
                     .from('organization_members')
                     .select('organization_id')
                     .eq('user_id', userId)
                     .single();
 
-                if (membershipError || !membership) {
-                    console.error('Error finding organization:', membershipError);
-                    OnboardingStorage.clear();
-                    return null;
-                }
+                if (membership) {
+                    const { data: existingProjects } = await db
+                        .from('projects')
+                        .select('id')
+                        .eq('organization_id', membership.organization_id)
+                        .limit(1);
 
-                const organizationId = membership.organization_id;
-
-                // Check if user already has projects (don't create duplicate)
-                const { data: existingProjects } = await db
-                    .from('projects')
-                    .select('id')
-                    .eq('organization_id', organizationId)
-                    .limit(1);
-
-                if (existingProjects?.length > 0) {
-                    // User already has projects, clear onboarding data
-                    OnboardingStorage.clear();
-                    return null;
-                }
-
-                // Create a default project with onboarding data
-                const projectName = onboardingData.businessContext?.industry
-                    ? `My ${onboardingData.businessContext.industry} Project`
-                    : 'My First Project';
-
-                const { data: project, error: projectError } = await db
-                    .from('projects')
-                    .insert({
-                        organization_id: organizationId,
-                        created_by: userId,
-                        name: projectName,
-                        description: onboardingData.businessPrompt || '',
-                        industry: onboardingData.businessContext?.industry || null,
-                        goals: onboardingData.businessContext?.goals || [],
-                        pain_points: onboardingData.businessContext?.painPoints || [],
-                        target_market: onboardingData.businessContext?.targetMarket || null,
-                        location: onboardingData.businessContext?.location || null
-                    })
-                    .select()
-                    .single();
-
-                if (projectError) {
-                    console.error('Error creating project:', projectError);
-                    OnboardingStorage.clear();
-                    return null;
-                }
-
-                // Create automations from selected templates
-                if (onboardingData.selectedTemplates?.length > 0) {
-                    const automations = onboardingData.selectedTemplates.map(templateId => ({
-                        project_id: project.id,
-                        name: templateNames[templateId] || templateId,
-                        description: `Template: ${templateId}`,
-                        type: 'email',
-                        frequency: 'manual',
-                        is_active: false,
-                        settings: { template_id: templateId }
-                    }));
-
-                    const { error: automationError } = await db
-                        .from('automations')
-                        .insert(automations);
-
-                    if (automationError) {
-                        console.error('Error creating automations:', automationError);
+                    if (existingProjects?.length > 0) {
+                        OnboardingStorage.clear();
+                        return null;
                     }
                 }
 
-                // Create custom automation if provided
-                if (onboardingData.customAutomation?.trim()) {
-                    const { error: customError } = await db
-                        .from('automations')
-                        .insert({
-                            project_id: project.id,
-                            name: 'Custom Request: ' + (onboardingData.customAutomation.trim().slice(0, 60) || 'Pending'),
-                            description: onboardingData.customAutomation,
-                            type: 'custom',
-                            frequency: 'manual',
-                            is_active: false,
-                            settings: { status: 'requested', source: 'onboarding' }
-                        });
-
-                    if (customError) {
-                        console.error('Error creating custom automation:', customError);
-                    }
-                }
-
-                // Clear onboarding data after successful save
-                OnboardingStorage.clear();
-
-                console.log('Onboarding data saved to project:', project.id);
-                return project.id;
+                return await OnboardingSave.commit(userId);
             } catch (err) {
                 console.error('Error saving onboarding data:', err);
                 return null;
             }
         }
+
     </script>
 </body>
 </html>

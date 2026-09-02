@@ -3636,3 +3636,204 @@ input.discovery-input {
         display: none !important;
     }
 }
+
+/* ==========================================================================
+   Hero app preview  —  the pre-signup payoff
+   --------------------------------------------------------------------------
+   Reuses .app-screen-inner / .app-header / .app-status-bar / .app-bottom-nav /
+   .phone-frame / .phone-island from the sections above. What it CANNOT reuse is
+   .app-screen: that is absolutely positioned with hardcoded offsets for the 3D
+   carousel on estimate.html. So .hero-preview-phone below is a plain relative
+   box that gives the (absolutely positioned, centered) .phone-frame something to
+   overlay, sized to match the frame at every breakpoint the frame responds to.
+   Colour comes from --preview-primary set inline on this root.
+   ========================================================================== */
+
+.hero-preview-split {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.hero-preview-phone-col { flex: 0 0 auto; }
+
+.hero-preview-facts {
+    flex: 1 1 240px;
+    min-width: 220px;
+    max-width: 340px;
+}
+
+.hero-preview-phone {
+    position: relative;
+    width: 300px;
+    height: 530px;
+    margin: 0 auto;
+}
+
+.hero-preview-phone .app-screen-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    height: 500px;
+}
+
+.preview-app-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 12px 8px;
+    overflow: hidden;
+}
+
+.preview-points-ring {
+    width: 86px;
+    height: 86px;
+    border: 3px solid var(--preview-primary, #5B21B6);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.preview-points-value { font-size: 24px; font-weight: 700; line-height: 1; }
+.preview-points-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.preview-tier-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+}
+
+.preview-tier-chip {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.preview-tier-chip.is-current {
+    background: var(--preview-primary, #5B21B6);
+    color: #fff;
+}
+
+.preview-rewards-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.preview-reward-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.preview-reward-text { display: flex; flex-direction: column; min-width: 0; }
+.preview-reward-name { font-size: 10px; font-weight: 600; color: #1e293b; }
+.preview-reward-desc {
+    font-size: 8px;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-reward-cost {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--preview-primary, #5B21B6);
+    flex: 0 0 auto;
+}
+
+.preview-fact-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.preview-fact-chip {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.preview-source-note {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
+    margin: 0 0 14px;
+}
+
+/* Collapsed "Not quite right?" details — the five extracted fields live here now.
+   They are still the same inputs with the same ids; they are just no longer the
+   thing a visitor is confronted with before they have seen anything. */
+.preview-edit-details { margin-top: 4px; text-align: left; }
+
+.preview-edit-details > summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-accent, #7c3aed);
+    list-style: none;
+    padding: 6px 0;
+}
+
+.preview-edit-details > summary::-webkit-details-marker { display: none; }
+.preview-edit-details > summary::before { content: '▸ '; }
+.preview-edit-details[open] > summary::before { content: '▾ '; }
+
+/* Track the .phone-frame media queries above so the bezel keeps fitting. */
+@media (max-width: 1024px) {
+    .hero-preview-phone { width: 260px; height: 460px; }
+    .hero-preview-phone .app-screen-inner { width: 240px; height: 430px; }
+}
+
+@media (max-width: 768px) {
+    .hero-preview-split { gap: 20px; }
+    .hero-preview-phone { width: 220px; height: 390px; }
+    .hero-preview-phone .app-screen-inner { width: 200px; height: 360px; }
+    .preview-points-ring { width: 70px; height: 70px; }
+    .preview-points-value { font-size: 20px; }
+}
+
+@media (max-width: 480px) {
+    .hero-preview-phone { width: 198px; height: 350px; }
+    .hero-preview-phone .app-screen-inner { width: 180px; height: 320px; }
+    .hero-preview-facts { max-width: 100%; }
+}
+
+/* First-run app-builder banner (?onboarding=1). Explains where the pre-filled
+   app came from, so six populated steps read as review rather than as someone
+   else's work. */
+.onboarding-builder-banner {
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
+    color: #4c1d95;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.5;
+}

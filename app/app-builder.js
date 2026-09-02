@@ -12,6 +12,7 @@ let isNewApp = true;
 let autoSaveTimer = null;
 let hasUnsavedChanges = false;
 let linkAutomationId = null; // If creating from automation, link after creation
+let isOnboardingRun = false; // ?onboarding=1 — first run, straight from signup
 let isOrgAdmin = false; // Track if user is admin/owner for UI visibility
 
 // ===== App Type Feature Configurations =====
@@ -230,9 +231,16 @@ async function initAppBuilder() {
             }
         }
 
+        // Arriving straight from signup, on the app Royal AI just built. Every
+        // field is already populated by populateFormFromApp(), so all six steps
+        // read as review-and-confirm rather than as build-from-scratch. All six
+        // stay: skipping steps would hide the fields that make it feel theirs.
+        isOnboardingRun = urlParams.get('onboarding') === '1';
+
         if (appId) {
             isNewApp = false;
             await loadApp(appId);
+            if (isOnboardingRun) applyOnboardingMode();
         } else {
             // New app - render default features and show first step
             const defaultType = 'loyalty';
@@ -936,6 +944,32 @@ async function saveApp(silent = false) {
     }
 }
 
+// First-run mode: a banner explaining where this app came from, and a step-6
+// button that promises the thing they actually want next.
+function applyOnboardingMode() {
+    try {
+        const container = document.querySelector('.builder-container') || document.querySelector('main') || document.body;
+        if (container && !document.getElementById('onboarding-builder-banner')) {
+            const banner = document.createElement('div');
+            banner.id = 'onboarding-builder-banner';
+            banner.className = 'onboarding-builder-banner';
+            banner.textContent = (window.I18n && I18n.t('builder.onboardingBanner') !== 'builder.onboardingBanner')
+                ? I18n.t('builder.onboardingBanner')
+                : 'This is the app Royal AI built from your description — review each step and publish when it looks right.';
+            container.prepend(banner);
+        }
+
+        const publishLabel = document.querySelector('#publish-btn span') || document.getElementById('publish-btn');
+        if (publishLabel) {
+            publishLabel.textContent = (window.I18n && I18n.t('builder.publishAndQr') !== 'builder.publishAndQr')
+                ? I18n.t('builder.publishAndQr')
+                : 'Publish & Get My QR Code';
+        }
+    } catch (e) {
+        console.warn('[AppBuilder] onboarding mode failed:', e);
+    }
+}
+
 async function publishApp() {
     try {
         // Save first
@@ -957,14 +991,17 @@ async function publishApp() {
         // funnel is measured against.
         window.Analytics?.track('app_published', {
             app_type: currentApp?.app_type || null,
-            created_from: currentApp?.settings?.created_from || null
+            created_from: currentApp?.settings?.created_from || null,
+            onboarding: isOnboardingRun
         });
 
         showSuccess('App published successfully!');
 
-        // Redirect to apps list
+        // A first-run publisher has exactly one app, so the apps LIST is a list of
+        // one and a dead end. Send them to the intelligence feed, which is where
+        // the product actually starts doing something for them.
         setTimeout(() => {
-            window.location.href = '/app/apps.html';
+            window.location.href = isOnboardingRun ? '/app/intelligence.html' : '/app/apps.html';
         }, 1500);
 
     } catch (error) {

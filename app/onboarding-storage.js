@@ -29,6 +29,14 @@ const OnboardingStorage = (function() {
                 customerCount: '',
                 websiteUrl: ''
             },
+            // The loyalty-app config the visitor was shown before signing up.
+            // Additive and optional on purpose: VERSION is deliberately NOT
+            // bumped for this field, because get() hard-clears any blob whose
+            // version differs, which would drop every visitor currently
+            // mid-onboarding onto the cold path. commit() rebuilds a config from
+            // the template when this is absent, so an old blob still works.
+            appConfig: null,
+            appConfigSource: null,
             createdAt: now,
             expiresAt: now + (EXPIRY_DAYS * 24 * 60 * 60 * 1000)
         };
@@ -192,6 +200,31 @@ const OnboardingStorage = (function() {
         save({ aiRecommendations: recommendations });
     }
 
+    // Store the app config the preview was built from.
+    //
+    // This OVERWRITES the node rather than going through save()'s deepMerge. A
+    // retry that returns fewer tiers or fewer rewards would otherwise leave the
+    // extra entries from the previous config merged underneath it, and the app
+    // that gets created would be a blend of two configs that never existed.
+    function setAppConfig(config) {
+        try {
+            const data = get() || getDefaultData();
+            data.appConfig = config || null;
+            data.appConfigSource = (config && config.source) || null;
+            data.expiresAt = Date.now() + (EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            return data;
+        } catch (e) {
+            console.warn('Error saving app config:', e);
+            return null;
+        }
+    }
+
+    function getAppConfig() {
+        const data = get();
+        return data?.appConfig || null;
+    }
+
     // Get days until expiry
     function getDaysUntilExpiry() {
         const data = get();
@@ -232,6 +265,8 @@ const OnboardingStorage = (function() {
         getCustomAutomation,
         setBusinessDetails,
         getBusinessDetails,
+        setAppConfig,
+        getAppConfig,
         canAddMore,
         getDaysUntilExpiry
     };

@@ -158,13 +158,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js?v=1"></script>
-    <script src="onboarding-storage.js?v=2"></script>
+    <script src="onboarding-storage.js?v=3"></script>
     <script src="workspace.js?v=1"></script>
     <script src="auth.js?v=14"></script>
     <script src="ai-recommendations.js?v=1"></script>
     <script src="business-analysis.js?v=3"></script>
-    <script src="onboarding-transition.js?v=1"></script>
-    <script src="onboarding-save.js?v=1"></script>
+    <script src="onboarding-transition.js?v=2"></script>
+    <!-- Needed by OnboardingSave.commit(): when no app config was stored
+         (control arm of the preview A/B, or the cold path), it rebuilds one
+         from these so a signup still ends with a real loyalty app. -->
+    <script src="app-templates-library.js?v=1"></script>
+    <script src="app-config-fallback.js?v=1"></script>
+    <script src="onboarding-save.js?v=2"></script>
     <script>
         // Cold-signup business-description page. The account already exists; this
         // captures the business context the homepage form would have, commits it to
@@ -175,10 +180,22 @@
         let _analysisResult = null;
         let _analysisToken = 0;
 
+        // ── Analytics ──
+        // This page is a near-clone of the homepage hero flow but fired ZERO
+        // events, so the entire cold funnel (signup with no homepage context)
+        // was invisible: we could see accounts appear but not where the people
+        // who abandoned dropped out. Events are prefixed `cold_` so the cold and
+        // warm funnels can be compared side by side rather than blended.
+        // Optional chaining throughout — analytics must never break onboarding.
+        function coldTrack(event, props) {
+            try { window.Analytics?.track(event, props || {}); } catch (e) { /* never block */ }
+        }
+
         // ── Auth gate ──
         (async function gate() {
             currentUser = await requireAuth();  // redirects to login if unauthenticated
             if (!currentUser) return;
+            coldTrack('cold_page_viewed');
         })();
 
         function showState(stateId) {
@@ -254,6 +271,8 @@
             }
 
             const myToken = ++_analysisToken;
+            const _startedAt = Date.now();
+            coldTrack('cold_build_started', { prompt_length: prompt.length });
 
             if (typeof OnboardingStorage !== 'undefined') {
                 OnboardingStorage.setBusinessPrompt(prompt);
@@ -319,9 +338,19 @@
 
                 stopOrbWordCycle();
                 if (statusRow) statusRow.classList.add('hidden');
+                coldTrack('cold_analysis_succeeded', {
+                    latency_ms: Date.now() - _startedAt,
+                    industry: extracted.industry || null
+                });
             } catch (err) {
                 if (myToken !== _analysisToken) return;
                 console.error('Analysis error:', err);
+                // The user still lands in the confirm state, so this failure is
+                // otherwise silent in aggregate — it needs its own counter.
+                coldTrack('cold_analysis_failed', {
+                    latency_ms: Date.now() - _startedAt,
+                    message: String((err && err.message) || err).slice(0, 120)
+                });
                 stopOrbWordCycle();
                 if (statusRow) statusRow.classList.add('hidden');
                 // Leave the user in the confirm state with their smart-guess name so
@@ -348,6 +377,13 @@
             const location = document.getElementById('extracted-location')?.value?.trim() || '';
             const websiteUrl = document.getElementById('extracted-website')?.value?.trim() || '';
             const prompt = OnboardingStorage.get()?.businessPrompt || document.getElementById('hero-business-prompt')?.value?.trim() || '';
+
+            // The cold-path equivalent of hero_confirmed_signup — the step that
+            // turns a described business into a committed one.
+            coldTrack('cold_confirmed', {
+                industry: industry || null,
+                had_analysis: !!_analysisResult
+            });
 
             if (confirmBtn) {
                 confirmBtn.disabled = true;
@@ -388,26 +424,46 @@
                 }
             } catch (e) { /* ignore */ }
 
+            // Guarded so the catch below can ensure a commit happened without
+            // risking a second one: committing twice would create two projects
+            // and two loyalty apps for the same signup.
+            let committed = false;
             const commit = async () => {
                 if (typeof OnboardingSave !== 'undefined') {
                     await OnboardingSave.commit(currentUser.id);
+                    committed = true;
                 }
+            };
+
+            // Null-guarded: app-builder.html?id=undefined lands in the
+            // "Database tables not set up" branch, so fall through to the
+            // intelligence feed whenever no app was created.
+            const destination = () => {
+                const appId = (typeof OnboardingSave !== 'undefined' && OnboardingSave.lastAppId) || null;
+                if (!appId) return '/app/intelligence.html';
+                coldTrack('builder_onboarding_entered', { app_id: appId });
+                return `/app/app-builder.html?id=${encodeURIComponent(appId)}&onboarding=1`;
             };
 
             try {
                 if (typeof OnboardingTransition !== 'undefined') {
                     await OnboardingTransition.show({
                         onBuild: commit,
-                        redirectUrl: '/app/intelligence.html'
+                        redirectUrl: destination
                     });
                 } else {
                     await commit();
-                    window.location.href = '/app/intelligence.html';
+                    window.location.href = destination();
                 }
             } catch (err) {
                 console.error('Build error:', err);
-                await commit();
-                window.location.href = '/app/intelligence.html';
+                // The transition may have failed before onBuild ever ran, which
+                // would strand them with an account and no business data. Retry
+                // only if the commit definitely has not happened.
+                if (!committed) {
+                    try { await commit(); } catch (e) { console.error('Commit retry failed:', e); }
+                }
+                window.location.href = destination();
             }
         }
 
@@ -415,6 +471,7 @@
         document.getElementById('analyze-business-btn')?.addEventListener('click', handleAnalyze);
         document.getElementById('confirm-and-build-btn')?.addEventListener('click', handleConfirm);
         document.getElementById('retry-prompt-btn')?.addEventListener('click', () => {
+            coldTrack('cold_retry');
             _analysisResult = null;
             _analysisToken++;
             stopOrbWordCycle();
@@ -426,8 +483,18 @@
             document.getElementById('hero-business-prompt')?.focus();
         });
         document.getElementById('gs-skip-btn')?.addEventListener('click', () => {
+            // Explicit abandonment. Distinct from silently closing the tab, and
+            // the difference matters when judging whether this page earns itself.
+            coldTrack('cold_skipped');
             window.location.href = '/app/intelligence.html';
         });
+
+        // First keystroke separates "landed here" from "actually engaged", which
+        // is the biggest single drop on this page. once:true — the start of
+        // typing, not every character.
+        document.getElementById('hero-business-prompt')?.addEventListener('input', () => {
+            coldTrack('cold_prompt_started');
+        }, { once: true });
 
         // Submit on Ctrl/Cmd+Enter from the textarea
         document.getElementById('hero-business-prompt')?.addEventListener('keydown', (e) => {

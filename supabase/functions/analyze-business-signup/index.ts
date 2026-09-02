@@ -171,7 +171,14 @@ Analyze this business and show what Royalty can do for them.`
       },
       body: JSON.stringify({
         model: MODEL_HAIKU,
-        max_tokens: 3000,
+        // 3000 was already tight for a 4-opportunity report with sources and
+        // 3 actionSteps each. German and Portuguese run roughly 1.3x English,
+        // so the non-English requests were closest to the ceiling. Truncation
+        // here is not a soft failure: the response stops mid-JSON, the
+        // jsonStart/jsonEnd slice below yields an unterminated object, and the
+        // caller gets a hard 500. The homepage now depends on this call for
+        // extractedDetails.industry, so a 500 costs a signup.
+        max_tokens: 4000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       }),
@@ -188,6 +195,21 @@ Analyze this business and show what Royalty can do for them.`
 
     const result = await response.json()
     const aiText = result.content?.[0]?.text
+
+    // Truncation is worth its own branch. A response cut off at max_tokens can
+    // never parse, so falling through to the JSON slice below just turns a
+    // known cause into an opaque "Failed to parse AI response". Returning a
+    // distinct code lets the client go straight to its fallback instead of
+    // retrying a request that will truncate again in exactly the same place.
+    if (result.stop_reason === 'max_tokens') {
+      console.error('Claude response truncated at max_tokens', {
+        lang, promptLength: prompt.length, outputTokens: result.usage?.output_tokens
+      })
+      return new Response(
+        JSON.stringify({ success: false, error: 'Analysis was truncated', code: 'truncated' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!aiText) {
       console.error('Empty AI response')

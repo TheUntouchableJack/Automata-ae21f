@@ -137,8 +137,12 @@ if (mobileMenuBtn && mobileMenuDrawer) {
         });
     });
 
-    // Close on CTA click for anchor links
+    // Close on CTA click for anchor links.
+    // #mobile-cta-btn is excluded: it has its own handler that closes the drawer
+    // and then focuses the prompt. This one restores focus to the hamburger on
+    // close, which would yank focus straight back out of the textarea.
     mobileMenuCTA.forEach(link => {
+        if (link.id === 'mobile-cta-btn') return;
         link.addEventListener('click', () => {
             const href = link.getAttribute('href');
             if (href?.startsWith('#')) {
@@ -792,7 +796,7 @@ function clearLoadingSteps() {
 }
 
 function showHeroState(stateId) {
-    ['hero-cta-state', 'hero-prompt-state', 'hero-loading-state', 'hero-confirm-state'].forEach(id => {
+    ['hero-cta-state', 'hero-prompt-state', 'hero-loading-state', 'hero-confirm-state', 'hero-preview-state'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = id === stateId ? 'block' : 'none';
     });
@@ -807,15 +811,32 @@ if (heroCTABtn) {
     });
 }
 
+// Send a "Get Started" click to the discovery prompt rather than to a signup form.
+// Textarea is shown by default — just scroll to it and focus (no reveal needed).
+function scrollToDiscoveryPrompt() {
+    const card = document.getElementById('discovery-card');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('hero-business-prompt')?.focus();
+}
+
 // Nav "Get Started Free" → mirror hero CTA behavior (smooth scroll + transition)
 const navCTABtn = document.getElementById('nav-cta-btn');
 if (navCTABtn) {
     navCTABtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const card = document.getElementById('discovery-card');
-        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Textarea is shown by default — just focus it (no reveal needed)
-        document.getElementById('hero-business-prompt')?.focus();
+        scrollToDiscoveryPrompt();
+    });
+}
+
+// Mobile drawer "Get Started Free" → same destination as the nav CTA.
+// Close first, then focus: closeMobileMenu() restores focus to the hamburger,
+// so focusing before it runs would lose the textarea.
+const mobileCTABtn = document.getElementById('mobile-cta-btn');
+if (mobileCTABtn) {
+    mobileCTABtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMobileMenu();
+        scrollToDiscoveryPrompt();
     });
 }
 
@@ -842,8 +863,25 @@ if (confirmBtn) {
     confirmBtn.addEventListener('click', handleConfirmAndSignup);
 }
 
+// "Claim My App — Free" → same destination as the old confirm button. The
+// preview and confirm arms converge here so signup sees one code path.
+const claimBtn = document.getElementById('claim-app-btn');
+if (claimBtn) {
+    claimBtn.addEventListener('click', handleConfirmAndSignup);
+}
+
+// Opening the details is a signal in its own right: it says the preview was
+// close but not right. A high rate here means the extraction is the weak link.
+document.querySelector('.preview-edit-details')?.addEventListener('toggle', function () {
+    if (this.open) window.Analytics?.track('hero_preview_expanded');
+}, { once: true });
+
 // Retry button → go back to prompt state
 const retryBtn = document.getElementById('retry-prompt-btn');
+const previewRetryBtn = document.getElementById('preview-retry-btn');
+if (previewRetryBtn) {
+    previewRetryBtn.addEventListener('click', () => retryBtn?.click());
+}
 if (retryBtn) {
     retryBtn.addEventListener('click', () => {
         // A retry means step 2 showed them something wrong enough to start over.
@@ -963,7 +1001,127 @@ function guessBusinessNameFromPrompt(prompt) {
     return caps ? caps[0] : '';
 }
 
-// Main analysis handler — skips loader, streams AI into editable fields (item 2)
+// ── Preview variant ────────────────────────────────────────────────────────
+// The pre-signup app preview replaces the extracted-fields confirm step. It is
+// behind a flag so it can be A/B'd against the old confirm state rather than
+// eyeballed against last month's numbers, which seasonality would confound.
+//
+// Resolution order: explicit URL param (?preview=0 is the kill switch) →
+// PostHog flag `hero_app_preview` if one is configured → on.
+// Until the PostHog flag exists this ships on for everyone, killable per-visit.
+function isPreviewVariant() {
+    try {
+        const param = new URLSearchParams(window.location.search).get('preview');
+        if (param === '0' || param === 'false') return false;
+        if (param === '1' || param === 'true') return true;
+        const flag = window.posthog?.getFeatureFlag?.('hero_app_preview');
+        if (flag === 'control' || flag === false) return false;
+        if (flag === 'preview' || flag === true) return true;
+    } catch (e) { /* fall through to default */ }
+    return true;
+}
+
+// The five extracted fields exist exactly once in the document. Move that one
+// node into whichever state is showing rather than duplicating the ids.
+function moveExtractedFieldsTo(mountId) {
+    const mount = document.getElementById(mountId);
+    const fields = document.getElementById('extracted-fields');
+    if (!mount || !fields || fields.parentElement === mount) return;
+    mount.appendChild(fields);
+    const hint = document.querySelector('.extracted-edit-hint');
+    if (hint) mount.appendChild(hint);
+}
+
+// Render the preview from whatever we know. Never throws, never shows an error:
+// a visible failure here is worse than the report it replaced, because it lands
+// exactly where the payoff was promised.
+function renderHeroPreview(extracted, prompt) {
+    const industry = extracted?.industry || '';
+    const businessName = document.getElementById('extracted-name')?.value?.trim()
+        || extracted?.businessName || '';
+
+    let config;
+    try {
+        config = window.AppConfigFallback
+            ? AppConfigFallback.build({ prompt, industry, businessName })
+            : null;
+    } catch (e) {
+        console.error('Preview config failed:', e);
+        config = null;
+    }
+    if (!config) return false;
+
+    // Localised, not string-concatenated. Possessives and word order differ per
+    // language, so the name is interpolated into a translated sentence rather
+    // than glued onto an English one.
+    const titleEl = document.getElementById('hero-preview-title');
+    if (titleEl) {
+        const tr = (key, fallback) => {
+            try {
+                const v = window.I18n && I18n.t(key);
+                if (v && v !== key) return v;
+            } catch (e) { /* fall through */ }
+            return fallback;
+        };
+        titleEl.textContent = businessName
+            ? tr('hero.previewTitle', "Here's {name}'s loyalty app").replace('{name}', businessName)
+            : tr('hero.previewTitleGeneric', "Here's your loyalty app");
+    }
+
+    // Only use the select's label when an industry was actually chosen. Reading
+    // selectedOptions blindly returns the placeholder option, which produced
+    // "Built from our Select your industry template" whenever extraction failed.
+    const industrySelect = document.getElementById('extracted-industry');
+    const industryLabel = (industrySelect && industrySelect.value)
+        ? (industrySelect.selectedOptions?.[0]?.textContent?.trim() || '')
+        : '';
+
+    let rendered = false;
+    try {
+        rendered = window.AppPreviewCard
+            ? AppPreviewCard.render('hero-preview-mount', config, { industryLabel })
+            : false;
+    } catch (e) {
+        console.error('Preview render failed:', e);
+        rendered = false;
+    }
+    if (!rendered) return false;
+
+    moveExtractedFieldsTo('preview-fields-mount');
+    _previewConfig = config;
+
+    // Which field they correct tells us which part of the extraction is weakest.
+    // once per field, so this counts people not keystrokes.
+    ['extracted-name', 'extracted-industry', 'extracted-customers', 'extracted-location', 'extracted-website']
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if (!el || el.dataset.previewEditTracked) return;
+            el.dataset.previewEditTracked = '1';
+            el.addEventListener('change', () => {
+                window.Analytics?.track('hero_preview_edited', { field: id });
+            }, { once: true });
+        });
+
+    window.Analytics?.track('hero_preview_shown', {
+        source: config.source,
+        industry: industry || null,
+        reward_count: (config.rewards || []).length,
+        latency_ms: _previewLatencyMs
+    });
+    if (config.source !== 'template') {
+        window.Analytics?.track('hero_config_fallback', { reason: config.source });
+    }
+    return true;
+}
+
+// Config backing the preview currently on screen, handed to signup so the app
+// can actually be created from it. Declared here (not inside the handler) so
+// handleConfirmAndSignup can read it.
+let _previewConfig = null;
+let _previewLatencyMs = null;
+
+// Main analysis handler — loader, then the app preview (or the legacy confirm
+// state when the preview variant is off).
 async function handleAnalyzeBusiness() {
     const promptEl = document.getElementById('hero-business-prompt');
     const prompt = promptEl?.value?.trim() || '';
@@ -1010,16 +1168,40 @@ async function handleAnalyzeBusiness() {
         el.addEventListener('change', onDirty, { once: true });
     });
 
-    // Jump straight to the confirm state — no loader
-    showHeroState('hero-confirm-state');
-
-    // Show the inline "Refining your details" status row with orb + cycling words
+    const usePreview = isPreviewVariant();
+    const startedAt = Date.now();
+    let extracted = {};
     const statusRow = document.getElementById('confirm-status-row');
-    if (statusRow) statusRow.classList.remove('hidden');
-    startOrbWordCycle('confirm-status-word');
+
+    if (usePreview) {
+        // There is a real 10-20 second wait to fill now, and the loader built for
+        // it has been sitting here fully implemented with zero callers. Its step 3
+        // label — "Building your loyalty program..." — finally becomes literally
+        // true. The confirm-state orb is NOT started here; running both would
+        // double-animate.
+        showHeroState('hero-loading-state');
+        clearLoadingSteps();
+        startLoadingSteps();
+    } else {
+        // Control arm: the old behaviour, straight to the editable fields.
+        showHeroState('hero-confirm-state');
+        if (statusRow) statusRow.classList.remove('hidden');
+        startOrbWordCycle('confirm-status-word');
+    }
+
+    window.Analytics?.track('hero_build_started', {
+        prompt_length: prompt.length,
+        variant: usePreview ? 'preview' : 'control'
+    });
 
     // Detect language
     const lang = document.documentElement.lang || 'en';
+
+    // The fetch below had no timeout. A hung edge function left the loader
+    // spinning forever with no way out — the worst possible outcome for a step
+    // whose entire job is to end in a payoff.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     try {
         const response = await fetch(EDGE_FUNCTION_URL, {
@@ -1028,7 +1210,8 @@ async function handleAnalyzeBusiness() {
             body: JSON.stringify({
                 businessPrompt: prompt,
                 language: lang
-            })
+            }),
+            signal: controller.signal
         });
 
         const data = await response.json();
@@ -1043,7 +1226,7 @@ async function handleAnalyzeBusiness() {
         _analysisResult = data.analysis;
 
         // Stream AI results into fields the user hasn't touched
-        const extracted = data.analysis.extractedDetails || {};
+        extracted = data.analysis.extractedDetails || {};
         const maybeFill = (el, value) => {
             if (!el || !value) return;
             if (touched.has(el.id)) return;  // user has edited — don't overwrite
@@ -1059,7 +1242,6 @@ async function handleAnalyzeBusiness() {
         }
 
         // Hide the status row — analysis complete
-        stopOrbWordCycle();
         if (statusRow) statusRow.classList.add('hidden');
         window.Analytics?.track('hero_analysis_succeeded', {
             industry: extracted.industry || null,
@@ -1071,12 +1253,17 @@ async function handleAnalyzeBusiness() {
         // The user can still proceed from here, so an outage of
         // analyze-business-signup is completely invisible from the outside —
         // conversion just quietly sags. This event is the only alarm we get.
-        window.Analytics?.track('hero_analysis_failed', { message: String(err && err.message || err) });
-        stopOrbWordCycle();
+        window.Analytics?.track('hero_analysis_failed', {
+            message: String(err && err.message || err),
+            aborted: !!(err && err.name === 'AbortError')
+        });
         if (statusRow) statusRow.classList.add('hidden');
-        // User is already in confirm state with their smart-guess name — leave them
-        // there so they can edit and proceed even if AI failed. Show a subtle retry hint.
-        const confirmState = document.getElementById('hero-confirm-state');
+
+        // The preview arm shows NO error text. A visitor who was promised their
+        // app must not be handed an apology instead — the finally block below
+        // renders a template app for them regardless. Only the control arm keeps
+        // the old inline hint.
+        const confirmState = usePreview ? null : document.getElementById('hero-confirm-state');
         confirmState?.querySelector('.extraction-error-msg')?.remove();
         if (confirmState) {
             const errMsg = document.createElement('p');
@@ -1085,6 +1272,30 @@ async function handleAnalyzeBusiness() {
             errMsg.textContent = 'Couldn\u2019t auto-fill your details \u2014 please review and edit the fields above.';
             confirmState.querySelector('.extracted-edit-hint')?.after(errMsg);
             setTimeout(() => errMsg.remove(), 8000);
+        }
+    } finally {
+        clearTimeout(timeoutId);
+        stopOrbWordCycle();
+
+        // Rendering lives in `finally` so the preview state is UNCONDITIONAL.
+        // Whether the analysis returned, errored, or timed out, the visitor ends
+        // up looking at a plausible app rather than at an apology. On the failure
+        // path `extracted` is still {}; AppConfigFallback normalises the missing
+        // industry to 'other' and produces something coherent anyway.
+        if (usePreview && myToken === _analysisToken) {
+            _previewLatencyMs = Date.now() - startedAt;
+            completeLoadingSteps(() => {
+                if (myToken !== _analysisToken) return;
+                if (renderHeroPreview(extracted, prompt)) {
+                    showHeroState('hero-preview-state');
+                } else {
+                    // Last resort: the preview modules themselves are broken or
+                    // absent. Fall back to the old confirm state rather than
+                    // stranding them on a blank card.
+                    showHeroState('hero-confirm-state');
+                    window.Analytics?.track('hero_config_fallback', { reason: 'render_failed' });
+                }
+            });
         }
     }
 }
@@ -1113,6 +1324,17 @@ function handleConfirmAndSignup() {
             goals: [],
             painPoints: []
         });
+
+        // Carry the exact config the visitor was just shown through to signup, so
+        // OnboardingSave creates THAT app rather than rebuilding a different one
+        // from scratch. Without this the person who was shown a deep-teal med-spa
+        // app signs up and lands on a purple one, which is a worse outcome than
+        // never having shown them a preview at all.
+        //
+        // setAppConfig overwrites rather than deep-merges — see onboarding-storage.js.
+        if (_previewConfig && OnboardingStorage.setAppConfig) {
+            OnboardingStorage.setAppConfig(_previewConfig);
+        }
 
         // Run local keyword recommendations as fallback
         const prompt = OnboardingStorage.get()?.businessPrompt || '';

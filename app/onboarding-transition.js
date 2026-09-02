@@ -372,7 +372,10 @@ const OnboardingTransition = (function() {
      * @param {object} options
      * @param {function} options.onBuild - Async function to run during "Activating AI" step (e.g., OnboardingProcessor)
      * @param {function} options.onComplete - Called when all steps finish (before fade-out)
-     * @param {string} options.redirectUrl - URL to redirect to after completion
+     * @param {string|function} options.redirectUrl - URL to redirect to after
+     *   completion. May be a function, resolved AFTER onBuild has run — the
+     *   signup flow needs this because the app id it routes to does not exist
+     *   until onBuild has created the app.
      */
     async function show({ onBuild, onComplete, redirectUrl } = {}) {
         injectStyles();
@@ -445,9 +448,19 @@ const OnboardingTransition = (function() {
         overlay.classList.add('fade-out');
         await sleep(500);
 
-        // Redirect
+        // Redirect. Resolved here, not at call time, so a caller can decide the
+        // destination based on what onBuild produced.
         if (redirectUrl) {
-            window.location.href = redirectUrl;
+            let target = redirectUrl;
+            if (typeof redirectUrl === 'function') {
+                try {
+                    target = redirectUrl();
+                } catch (e) {
+                    console.error('[OnboardingTransition] redirectUrl resolver threw:', e);
+                    target = '/app/intelligence.html';
+                }
+            }
+            if (target) window.location.href = target;
         }
 
         // Cleanup
