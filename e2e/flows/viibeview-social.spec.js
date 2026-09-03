@@ -43,9 +43,13 @@ async function loadApp(page, url = PRETTY_URL) {
  * Returns null when the app has no real venues — demo venue ids are the strings
  * 'demo-1'..'demo-5', not UUIDs, and nothing server-side accepts them.
  *
- * The id is read from the swim lane's data-venue-id rather than from social.js
- * state: `venues` is declared with `let` at the top level of a classic script,
- * so it is NOT a window property and page.evaluate() cannot see it.
+ * The id is read from the swim lane's data-venue-id because that is the
+ * rendered contract, not because the state is unreachable. `venues` is a
+ * top-level `let` in a CLASSIC script (social.html loads social.js with no
+ * type="module"), so it lands in the global lexical environment: `window.venues`
+ * is undefined, but a bare `venues` inside page.evaluate() resolves fine. Only
+ * the `window.`-prefixed form fails. Function *declarations* like
+ * openVenuePage() do become window properties, which is why :60 works.
  */
 async function openFirstRealVenue(page) {
     await page.click('.nav-item[data-tab="map"]');
@@ -98,14 +102,27 @@ test.describe('ViibeView social app', () => {
         await loadApp(page);
 
         const VALID = ['nightlife', 'bar', 'club', 'restaurant', 'lounge', 'rooftop', 'event_space'];
-        const pills = await page.$$('#filter-pills .pill');
+        const pillRow = page.locator('#filter-pills .pill');
+        const pillCount = await pillRow.count();
 
         // The chip list is DERIVED from the venues this app has, so its length
         // is not fixed. What must hold is that "All" is present and every
         // category chip carries a real venues.category value.
-        expect(pills.length, 'no filter chips rendered at all').toBeGreaterThan(0);
+        expect(pillCount, 'no filter chips rendered at all').toBeGreaterThan(0);
 
-        for (const pill of pills) {
+        // Re-query by index each iteration rather than holding ElementHandles.
+        // The first click runs setFilter() -> renderFilterPills(), which
+        // rewrites container.innerHTML (social.js:3523 -> :3433) and detaches
+        // every handle resolved beforehand, so `page.$$` up front died on
+        // iteration 2 with "Element is not attached to the DOM".
+        //
+        // Indexing is safe because a filter click changes neither the row's
+        // length nor its order — availableFilters() takes the order from
+        // window.VENUE_CATEGORIES, not from venue data (social.js:3385-3386),
+        // and the Following chip cannot appear mid-loop while signed out. That
+        // assumption is asserted below rather than trusted.
+        for (let i = 0; i < pillCount; i++) {
+            const pill = pillRow.nth(i);
             const kind = await pill.getAttribute('data-filter-kind');
             const slug = await pill.getAttribute('data-filter-value');
             if (kind === 'genre') continue;   // covered by the genre test below
@@ -114,6 +131,8 @@ test.describe('ViibeView social app', () => {
             await pill.click();
             await page.waitForTimeout(600);
 
+            expect(await pillRow.count(), 'the chip row changed length mid-loop, so the indices no longer line up')
+                .toBe(pillCount);
             expect(sent.length, `"${slug}" triggered no feed reload`).toBeGreaterThan(0);
             const category = sent[sent.length - 1];
 
@@ -213,7 +232,35 @@ test.describe('ViibeView social app', () => {
         await page.click('.nav-item[data-tab="map"]');
         await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
 
-        await page.click('.map-pin-wrapper', { force: true });
+        // initMap() centres on the newest POST (social.js:1707-1723), and the
+        // newest post in this app is venue-less and thousands of km from its
+        // one venue — so the pin is mounted but off-screen, and renderMapPins()
+        // skips its fitBounds safety valve whenever post pins exist (:1775).
+        // Leaflet keeps the marker in a transformed pane inside a clipped
+        // container, which is why waitForSelector resolves and click({force})
+        // still failed: force skips actionability checks, but Playwright must
+        // still compute a click point.
+        //
+        // Bring the venue into view rather than change where the map looks.
+        // That centring rule is deliberate, documented product behaviour, and
+        // bending it to suit a harness is the tail wagging the dog.
+        const fitted = await page.evaluate(() => {
+            // Bare identifiers, not window.* — see the openFirstRealVenue note.
+            const geo = filteredVenues().filter(v => v.latitude && v.longitude);
+            if (!geo.length || !map) return 0;
+            map.fitBounds(L.latLngBounds(geo.map(v => [v.latitude, v.longitude])),
+                { padding: [60, 60] });
+            return geo.length;
+        });
+        // Not vacuous: a zero here means nothing was ever brought on screen and
+        // the click below would be testing the old off-screen state again.
+        expect(fitted, 'no venue with coordinates to bring into view').toBeGreaterThan(0);
+        await page.waitForTimeout(800);
+
+        // No force: with the pin genuinely on screen the real actionability
+        // checks run, so this now proves the pin is clickable rather than
+        // merely present in the DOM.
+        await page.click('.map-pin-wrapper');
         await page.waitForTimeout(1000);
 
         await expect(page.locator('#venue-page')).toHaveClass(/visible/);
@@ -261,10 +308,34 @@ test.describe('ViibeView social app', () => {
     });
 
     test('search matches a category by its display label', async ({ page }) => {
-        // Typing "Bars" has to find a venue whose category column reads "bar".
+        // Typing a category's LABEL has to find a venue whose category column
+        // stores the matching slug — "Bars" against `bar`.
+        //
+        // The label is derived, not hardcoded. This asserted "Bars" against a
+        // tenant whose one venue is `nightlife`, so handleSearch took its
+        // zero-results branch (social.js:2142-2144) and never rendered a card:
+        // a test failing on a venue this app does not have. Same data-driven
+        // rule this file states at :103-105 and applies at :174 and :200.
         await loadApp(page);
+
+        const chip = page.locator('#filter-pills .pill[data-filter-kind="category"]').first();
+        if (await chip.count() === 0) {
+            // Legitimate: no venue in this app has a category set, so the row
+            // correctly offers no category chips and there is no label to type.
+            test.skip(true, 'no category chips — no venue has a category set');
+            return;
+        }
+
+        // The SLUG comes off the chip; window.categoryLabel() maps it. NOT the
+        // chip's own text — that has been through I18n.applyTranslations(),
+        // while matchesQuery() compares against the untranslated label in
+        // js/venue-categories.js, so the two disagree on any non-English locale.
+        const slug = await chip.getAttribute('data-filter-value');
+        const label = await page.evaluate(s => window.categoryLabel(s), slug);
+        expect(label, `no display label for category "${slug}"`).toBeTruthy();
+
         await page.click('.nav-item[data-tab="search"]');
-        await page.fill('#search-input', 'Bars');
+        await page.fill('#search-input', label);
         await page.waitForTimeout(700);
 
         await expect(page.locator('#search-results .search-result-card').first()).toBeVisible();
