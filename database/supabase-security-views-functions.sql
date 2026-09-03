@@ -1126,7 +1126,16 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION record_member_visit(UUID, UUID, UUID) TO anon, authenticated;
+-- ⚠️ RETIRED 2026-09-03 by supabase/migrations/20260903000005 — DO NOT RE-RUN.
+-- This function is SECURITY DEFINER and takes p_member_id FROM THE CALLER
+-- without ever checking auth.uid(), so this grant was a POINTS-FORGERY
+-- ENDPOINT: anyone holding the published anon key could mint points, streak
+-- bonuses and milestone bonuses onto any member id. EXECUTE is now service_role
+-- only, which means QR check-in is OFF for loyalty members. It was safe to do
+-- because zero loyalty members existed.
+-- ⚠️ Re-granting anon is NOT the fix for a check-in bug — it reopens the
+-- forgery. The fix is a real member session so this can key on auth.uid().
+-- GRANT EXECUTE ON FUNCTION record_member_visit(UUID, UUID, UUID) TO anon, authenticated;
 
 -- =====================================================
 -- B18. get_app_leaderboard() - from customer-apps-migration.sql
@@ -1264,7 +1273,13 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION update_member_profile(UUID, TEXT, TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+-- ⚠️ RETIRED 2026-09-03 by supabase/migrations/20260903000005 — DO NOT RE-RUN.
+-- This function is SECURITY DEFINER and takes p_member_id FROM THE CALLER
+-- without ever checking auth.uid(), so this grant let anyone holding the
+-- published anon key rewrite ANY member's name, email, phone or avatar.
+-- EXECUTE is now service_role only. ViibeView uses update_social_profile
+-- (20260903000002), which keys on auth.uid().
+-- GRANT EXECUTE ON FUNCTION update_member_profile(UUID, TEXT, TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
 
 -- =====================================================
 -- B23. create_support_ticket() - from support-system-migration.sql

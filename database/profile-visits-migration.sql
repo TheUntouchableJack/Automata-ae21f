@@ -65,36 +65,45 @@ CREATE POLICY "Members can view own visits" ON member_visits
     FOR SELECT USING (true); -- Public read for now, restrict later if needed
 
 
--- ===== STORAGE BUCKET FOR AVATARS =====
-
--- Create storage bucket for member avatars (run in SQL editor)
--- Note: You may need to create this in Supabase Dashboard > Storage instead
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-    'member-avatars',
-    'member-avatars',
-    true,
-    2097152, -- 2MB limit
-    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-)
-ON CONFLICT (id) DO NOTHING;
-
--- Storage policy: Anyone can read avatars (public bucket)
-CREATE POLICY "Public avatar access" ON storage.objects
-    FOR SELECT USING (bucket_id = 'member-avatars');
-
--- Storage policy: Members can upload their own avatar
--- (Uses member_id in path: member-avatars/{member_id}/avatar.jpg)
-CREATE POLICY "Members can upload own avatar" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'member-avatars');
-
--- Storage policy: Members can update their own avatar
-CREATE POLICY "Members can update own avatar" ON storage.objects
-    FOR UPDATE USING (bucket_id = 'member-avatars');
-
--- Storage policy: Members can delete their own avatar
-CREATE POLICY "Members can delete own avatar" ON storage.objects
-    FOR DELETE USING (bucket_id = 'member-avatars');
+-- ===== STORAGE BUCKET FOR AVATARS — RETIRED, DO NOT RE-RUN =====
+--
+-- ⚠️ RETIRED 2026-09-03 by supabase/migrations/20260903000005. Commented out,
+-- not deleted, so the history stays readable — but re-running it would UNDO
+-- that migration, and the INSERT's `ON CONFLICT DO NOTHING` means it would do
+-- so QUIETLY.
+--
+-- Why it had to go: not one of these four policies constrains WHICH object a
+-- caller may touch. Every predicate is just `bucket_id = 'member-avatars'`, and
+-- the bucket is public, so any holder of the published anon key
+-- (customer-app/social.js:8) could overwrite or delete ANY member's avatar.
+--
+-- A path predicate would not have fixed it either. Loyalty members authenticate
+-- by PIN — customer-app/app.html builds its client with the anon key and never
+-- calls signIn — so they have no auth.uid() to compare the path against.
+-- Securing this properly means giving them a real session, which is a rebuild.
+--
+-- The replacement already shipped: ViibeView members store avatars in
+-- `venue-media` under `members/{auth.uid()}/`, with policies that DO check the
+-- path (20260828000002:277-285, 20260903000002).
+--
+-- INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+-- VALUES (
+--     'member-avatars',
+--     'member-avatars',
+--     true,
+--     2097152, -- 2MB limit
+--     ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+-- )
+-- ON CONFLICT (id) DO NOTHING;
+--
+-- CREATE POLICY "Public avatar access" ON storage.objects
+--     FOR SELECT USING (bucket_id = 'member-avatars');
+-- CREATE POLICY "Members can upload own avatar" ON storage.objects
+--     FOR INSERT WITH CHECK (bucket_id = 'member-avatars');
+-- CREATE POLICY "Members can update own avatar" ON storage.objects
+--     FOR UPDATE USING (bucket_id = 'member-avatars');
+-- CREATE POLICY "Members can delete own avatar" ON storage.objects
+--     FOR DELETE USING (bucket_id = 'member-avatars');
 
 
 -- ===== UPDATE MEMBER PROFILE RPC =====
@@ -200,7 +209,13 @@ END;
 $$;
 
 -- Grant execute
-GRANT EXECUTE ON FUNCTION update_member_profile(UUID, TEXT, TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+-- ⚠️ RETIRED 2026-09-03 by supabase/migrations/20260903000005 — DO NOT RE-RUN.
+-- This function is SECURITY DEFINER and takes p_member_id FROM THE CALLER
+-- without ever checking auth.uid(), so this grant let anyone holding the
+-- published anon key rewrite ANY member's name, email, phone or avatar.
+-- EXECUTE is now service_role only. ViibeView uses update_social_profile
+-- (20260903000002), which keys on auth.uid().
+-- GRANT EXECUTE ON FUNCTION update_member_profile(UUID, TEXT, TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
 
 -- Comment
 COMMENT ON FUNCTION update_member_profile IS 'Update member profile info with email/phone uniqueness checks';
@@ -354,7 +369,16 @@ END;
 $$;
 
 -- Grant execute
-GRANT EXECUTE ON FUNCTION record_member_visit(UUID, UUID, UUID) TO anon, authenticated;
+-- ⚠️ RETIRED 2026-09-03 by supabase/migrations/20260903000005 — DO NOT RE-RUN.
+-- This function is SECURITY DEFINER and takes p_member_id FROM THE CALLER
+-- without ever checking auth.uid(), so this grant was a POINTS-FORGERY
+-- ENDPOINT: anyone holding the published anon key could mint points, streak
+-- bonuses and milestone bonuses onto any member id. EXECUTE is now service_role
+-- only, which means QR check-in is OFF for loyalty members. It was safe to do
+-- because zero loyalty members existed.
+-- ⚠️ Re-granting anon is NOT the fix for a check-in bug — it reopens the
+-- forgery. The fix is a real member session so this can key on auth.uid().
+-- GRANT EXECUTE ON FUNCTION record_member_visit(UUID, UUID, UUID) TO anon, authenticated;
 
 -- Comment
 COMMENT ON FUNCTION record_member_visit IS 'Record a member visit, award points with streak and milestone bonuses';

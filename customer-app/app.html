@@ -1044,9 +1044,11 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
-        .profile-avatar-edit svg {
-            width: 14px;
-            height: 14px;
+        /* The badge holds a pencil GLYPH now, not an <svg> — the camera went
+           with the avatar upload surface (20260903000005). */
+        .profile-avatar-edit {
+            font-size: 14px;
+            line-height: 1;
             color: white;
         }
 
@@ -1521,68 +1523,8 @@
             color: var(--color-text);
         }
 
-        .edit-avatar-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-
-        .edit-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--app-primary), color-mix(in srgb, var(--app-primary) 60%, #a855f7));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            font-weight: 700;
-            color: white;
-            overflow: hidden;
-            border: 4px solid var(--color-surface);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .edit-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .edit-avatar-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn-avatar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--app-primary);
-            background: rgba(var(--app-primary-rgb), 0.1);
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-avatar:hover {
-            background: rgba(var(--app-primary-rgb), 0.15);
-        }
-
-        .btn-avatar:active {
-            transform: scale(0.97);
-        }
-
-        .btn-avatar svg {
-            width: 18px;
-            height: 18px;
-        }
+        /* .edit-avatar-* / .btn-avatar removed with the avatar upload surface —
+           see migration 20260903000005. */
 
         .edit-profile-form {
             display: flex;
@@ -2459,12 +2401,12 @@
         <div class="profile-header">
             <div class="profile-avatar-wrapper" onclick="openEditProfile()">
                 <div class="profile-avatar" id="profile-avatar">J</div>
-                <div class="profile-avatar-edit">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
-                    </svg>
-                </div>
+                <!-- A pencil, not a camera. The wrapper still opens Edit
+                     Profile, but that form no longer has a photo control
+                     (20260903000005), and a camera badge over a form with no
+                     way to add a photo is a guaranteed support ticket. Same
+                     glyph as the "Edit Profile" menu item below. -->
+                <div class="profile-avatar-edit">&#9998;</div>
             </div>
             <div class="profile-name" id="profile-name">Member</div>
             <div class="profile-contact">
@@ -2643,32 +2585,13 @@
             <div class="modal-handle"></div>
             <h2 class="modal-title">Edit Profile</h2>
 
-            <!-- Avatar Upload -->
-            <div class="edit-avatar-section">
-                <div class="edit-avatar" id="edit-avatar">
-                    <span id="edit-avatar-initial">J</span>
-                    <img id="edit-avatar-img" src="" alt="" style="display: none;">
-                </div>
-                <div class="edit-avatar-actions">
-                    <button class="btn-avatar" id="btn-take-photo">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                            <circle cx="12" cy="13" r="4"/>
-                        </svg>
-                        Take Photo
-                    </button>
-                    <button class="btn-avatar" id="btn-upload-photo">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="17 8 12 3 7 8"/>
-                            <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                        Upload
-                    </button>
-                </div>
-                <input type="file" id="photo-input" accept="image/*" style="display: none;">
-                <input type="file" id="camera-input" accept="image/*" capture="user" style="display: none;">
-            </div>
+            <!-- The avatar upload surface was removed with migration
+                 20260903000005. It wrote to the `member-avatars` bucket, whose
+                 policies had no path predicate — any anon caller could
+                 overwrite or delete anyone's image. The bucket is gone.
+                 Loyalty members authenticate by PIN and have no auth.uid(), so
+                 there is no path predicate that would have secured it; giving
+                 them a real session is a rebuild, not a patch. -->
 
             <!-- Profile Form -->
             <div class="edit-profile-form">
@@ -4991,7 +4914,13 @@
         }
 
         // ===== Edit Profile =====
-        let pendingAvatarFile = null;
+        //
+        // No avatar handling here any more. The upload wrote to the
+        // `member-avatars` bucket, retired by migration 20260903000005 because
+        // its storage policies had no path predicate — any anon caller could
+        // overwrite or delete any member's image. A path predicate could not
+        // have fixed it either: loyalty members authenticate by PIN and have no
+        // auth.uid() to compare against.
 
         function openEditProfile() {
             const modal = document.getElementById('edit-profile-modal');
@@ -5002,89 +4931,11 @@
             document.getElementById('edit-email').value = currentMember?.email || '';
             document.getElementById('edit-phone').value = currentMember?.phone || '';
 
-            // Set avatar
-            const avatarEl = document.getElementById('edit-avatar');
-            const avatarImg = document.getElementById('edit-avatar-img');
-            const avatarInitial = document.getElementById('edit-avatar-initial');
-
-            if (currentMember?.avatar_url) {
-                avatarImg.src = currentMember.avatar_url;
-                avatarImg.style.display = 'block';
-                avatarInitial.style.display = 'none';
-            } else {
-                avatarImg.style.display = 'none';
-                avatarInitial.style.display = 'block';
-                avatarInitial.textContent = (currentMember?.first_name || 'M').charAt(0).toUpperCase();
-            }
-
-            pendingAvatarFile = null;
             modal.classList.add('active');
         }
 
         function closeEditProfile() {
             document.getElementById('edit-profile-modal').classList.remove('active');
-            pendingAvatarFile = null;
-        }
-
-        // Photo upload handlers
-        document.getElementById('btn-take-photo')?.addEventListener('click', () => {
-            document.getElementById('camera-input').click();
-        });
-
-        document.getElementById('btn-upload-photo')?.addEventListener('click', () => {
-            document.getElementById('photo-input').click();
-        });
-
-        document.getElementById('camera-input')?.addEventListener('change', handlePhotoSelect);
-        document.getElementById('photo-input')?.addEventListener('change', handlePhotoSelect);
-
-        function handlePhotoSelect(e) {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            // Validate file size (2MB max)
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('Photo must be less than 2MB', 'error');
-                return;
-            }
-
-            // Preview the image
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const avatarImg = document.getElementById('edit-avatar-img');
-                const avatarInitial = document.getElementById('edit-avatar-initial');
-
-                avatarImg.src = event.target.result;
-                avatarImg.style.display = 'block';
-                avatarInitial.style.display = 'none';
-
-                pendingAvatarFile = file;
-            };
-            reader.readAsDataURL(file);
-
-            // Clear input so same file can be selected again
-            e.target.value = '';
-        }
-
-        async function uploadAvatar(file) {
-            const fileExt = file.name.split('.').pop().toLowerCase();
-            const fileName = `${currentMember.id}/avatar.${fileExt}`;
-
-            const { data, error } = await supabaseClient.storage
-                .from('member-avatars')
-                .upload(fileName, file, {
-                    upsert: true,
-                    contentType: file.type
-                });
-
-            if (error) throw error;
-
-            // Get public URL
-            const { data: urlData } = supabaseClient.storage
-                .from('member-avatars')
-                .getPublicUrl(fileName);
-
-            return urlData.publicUrl + '?t=' + Date.now(); // Cache bust
         }
 
         async function saveProfile() {
@@ -5094,30 +4945,23 @@
             btn.textContent = 'Saving...';
 
             try {
-                let avatarUrl = currentMember?.avatar_url || null;
-
-                // Upload avatar if pending
-                if (pendingAvatarFile) {
-                    try {
-                        avatarUrl = await uploadAvatar(pendingAvatarFile);
-                    } catch (e) {
-                        console.error('Avatar upload failed:', e);
-                        showToast('Failed to upload photo', 'error');
-                        // Continue with profile update without avatar
-                    }
-                }
-
                 // Call RPC to update profile
                 const phoneRaw = document.getElementById('edit-phone').value.trim();
                 const phoneFormatted = phoneRaw ? formatPhoneE164(phoneRaw) : null;
 
+                // p_avatar_url is OMITTED, deliberately — do NOT "complete" this
+                // to `p_avatar_url: null`. The argument defaults to NULL and the
+                // body does `avatar_url = COALESCE(p_avatar_url, avatar_url)`
+                // (database/supabase-security-views-functions.sql:1258), so
+                // leaving it out preserves any existing value while passing an
+                // explicit null would too — but naming it invites someone to
+                // wire an upload back up to a bucket that no longer exists.
                 const { data, error } = await supabaseClient.rpc('update_member_profile', {
                     p_member_id: currentMember.id,
                     p_first_name: document.getElementById('edit-first-name').value.trim(),
                     p_last_name: document.getElementById('edit-last-name').value.trim(),
                     p_email: document.getElementById('edit-email').value.trim(),
-                    p_phone: phoneFormatted,
-                    p_avatar_url: avatarUrl
+                    p_phone: phoneFormatted
                 });
 
                 if (error) throw error;
@@ -5129,7 +4973,6 @@
 
                 // Update local state
                 currentMember = { ...currentMember, ...result.member };
-                pendingAvatarFile = null;
 
                 // Re-render the app to show updated info
                 renderApp();
