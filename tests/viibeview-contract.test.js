@@ -107,6 +107,71 @@ describe('ViibeView markup + vocabularies', () => {
         expect(iOf('venue-places.js')).toBeLessThan(iOf('social.js'));
     });
 
+    // ===== Phase 2: profiles, follows, discovery =====
+
+    it('the bottom nav has exactly FOUR items', () => {
+        // The member profile is an OVERLAY on purpose. Every "add a screen"
+        // change is one line from becoming a fifth tab, and a fifth tab breaks
+        // the layout the whole stylesheet is built around — plus it would have
+        // nothing to show the signed-out visitors who are most of this app's
+        // traffic. Assert the invariant, not the intention.
+        expect(d.querySelectorAll('.bottom-nav .nav-item').length).toBe(4);
+        expect(d.getElementById('member-page').tagName).toBe('SECTION');
+    });
+
+    it('the member profile overlay and its backdrop exist', () => {
+        for (const id of ['member-page', 'member-page-backdrop']) {
+            expect(d.getElementById(id), id).toBeTruthy();
+        }
+    });
+
+    it('every Phase 2 element the JS reaches for by id is present', () => {
+        const ids = [
+            // member profile overlay
+            'member-page-back', 'member-page-title', 'member-page-scroll',
+            'member-page-avatar', 'member-page-name', 'member-page-bio',
+            'member-page-stats', 'member-page-follow-btn', 'member-page-grid',
+            'member-page-loading', 'member-page-empty', 'member-page-private',
+            // people sheet (followers / following / discover)
+            'people-sheet', 'people-backdrop', 'people-sheet-title',
+            'people-sheet-search', 'people-sheet-search-wrap',
+            'people-list', 'people-empty', 'people-sheet-close',
+            // edit profile
+            'edit-profile-sheet', 'edit-profile-backdrop', 'edit-profile-close',
+            'edit-profile-form', 'edit-profile-name', 'edit-profile-bio',
+            'edit-profile-bio-count', 'edit-profile-public',
+            'edit-profile-avatar-preview', 'edit-profile-avatar-input',
+            'edit-profile-avatar-remove',
+            // profile tab entry points
+            'profile-stats', 'profile-followers-btn', 'profile-followers-count',
+            'profile-following-btn', 'profile-following-count',
+            'edit-profile-btn', 'view-my-profile-btn', 'discover-members-btn',
+        ];
+        const missing = ids.filter(id => !d.getElementById(id));
+        expect(missing).toEqual([]);
+    });
+
+    it('setFormMessage/setSubmitting id conventions are satisfied by the edit-profile form', () => {
+        // These two ids are NOT cosmetic. setFormMessage('edit-profile', …)
+        // resolves `${formId}-error` / `${formId}-success`, and
+        // setSubmitting('edit-profile-save', …) resolves the id directly
+        // (social.js:591-609). Rename either and the form silently loses its
+        // error reporting and its busy state — no exception, no console line.
+        expect(d.getElementById('edit-profile-error')).toBeTruthy();
+        expect(d.getElementById('edit-profile-success')).toBeTruthy();
+        expect(d.getElementById('edit-profile-save')).toBeTruthy();
+        // setFieldError('edit-profile-name', …) uses the same convention.
+        expect(d.getElementById('edit-profile-name-error')).toBeTruthy();
+    });
+
+    it('the follow button ships with no hardcoded label', () => {
+        // paintFollowButton() is the single writer of Follow/Following text, so
+        // the venue page's button and the member page's button cannot disagree
+        // about the same edge. A label in the markup would show through for one
+        // frame and, worse, would survive if the repaint never ran.
+        expect(d.getElementById('member-page-follow-btn').textContent.trim()).toBe('');
+    });
+
     it('keeps a cache buster on social.js and social.css', () => {
         // sw.js serves cache-first keyed on the FULL url, so dropping the ?v=
         // would strand every returning PWA user on the cached renderer. The

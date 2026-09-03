@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=10">
+    <link rel="stylesheet" href="/customer-app/social.css?v=11">
 </head>
 <body>
 
@@ -288,8 +288,41 @@
                 </div>
             </div>
 
-            <!-- Full profile editing, follows and check-ins arrive in Phase 2 -->
+            <!-- Follower / following counts. Both are buttons: the number is
+                 the affordance, and tapping it opens the people sheet on the
+                 matching mode. Counts are painted by renderProfileIdentity()
+                 from get_member_profile — never stored, so they cannot drift
+                 from the lists behind them. -->
+            <div class="profile-stats" id="profile-stats">
+                <button class="profile-stat" id="profile-followers-btn" type="button">
+                    <span class="profile-stat-value" id="profile-followers-count">0</span>
+                    <span class="profile-stat-label" data-i18n="social.followers">Followers</span>
+                </button>
+                <button class="profile-stat" id="profile-following-btn" type="button">
+                    <span class="profile-stat-value" id="profile-following-count">0</span>
+                    <span class="profile-stat-label" data-i18n="social.following">Following</span>
+                </button>
+            </div>
+
             <div class="profile-menu">
+                <button class="profile-menu-item" id="edit-profile-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    <span data-i18n="social.editProfile">Edit Profile</span>
+                </button>
+                <button class="profile-menu-item" id="view-my-profile-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span data-i18n="social.viewMyProfile">View My Profile</span>
+                </button>
+                <button class="profile-menu-item" id="discover-members-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span data-i18n="social.discoverMembers">Discover Members</span>
+                </button>
                 <!-- Org members only. checkOwnerAccess() unhides it; a plain
                      member never sees it, and RLS would reject the insert
                      behind it anyway. -->
@@ -720,6 +753,158 @@
         </div>
     </section>
 
+    <!-- ===== Member Profile Page =====
+         An OVERLAY, modelled on #venue-page — deliberately NOT a fifth tab. The
+         bottom nav is exactly four items and a contract test asserts it; a
+         profile tab would also have nothing to show a signed-out visitor, who
+         is the majority of this app's traffic.
+
+         ⚠️ It can be opened from INSIDE #venue-page (a feed card there links to
+         its author), so it sits above the venue page in the z-index ladder and
+         the body scroll lock is refcounted — see lockBodyScroll() in social.js. -->
+    <div class="member-page-backdrop" id="member-page-backdrop"></div>
+    <section class="member-page" id="member-page">
+        <div class="member-page-header">
+            <button class="venue-page-back" id="member-page-back" aria-label="Go back" data-i18n-aria="social.goBack">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15,18 9,12 15,6"/>
+                </svg>
+                <span data-i18n="social.back">Back</span>
+            </button>
+            <h3 class="venue-page-title" id="member-page-title"></h3>
+            <span class="member-page-header-spacer" aria-hidden="true"></span>
+        </div>
+
+        <div class="member-page-scroll" id="member-page-scroll">
+            <div class="member-page-identity">
+                <div class="member-page-avatar" id="member-page-avatar"></div>
+                <h2 class="member-page-name" id="member-page-name"></h2>
+                <p class="member-page-bio" id="member-page-bio"></p>
+
+                <!-- Follower / following counts + post count. Buttons, because
+                     each one opens the people sheet. -->
+                <div class="member-page-stats" id="member-page-stats"></div>
+
+                <!-- Painted by renderMemberFollowButton(). Hidden entirely on
+                     your own profile — there is nothing to follow. -->
+                <button class="follow-btn" id="member-page-follow-btn" type="button" style="display:none;"></button>
+            </div>
+
+            <!-- Private profiles get a row, not a blank screen: get_member_profile
+                 returns is_private = true rather than zero rows precisely so this
+                 can explain itself. -->
+            <div class="member-page-private" id="member-page-private" style="display:none;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <p data-i18n="social.privateProfile">This profile is private.</p>
+            </div>
+
+            <div class="member-grid" id="member-page-grid"></div>
+
+            <div class="venue-page-loading" id="member-page-loading" style="display:none;">
+                <div class="shimmer-card"><div class="shimmer-image"></div></div>
+            </div>
+
+            <div class="venue-page-empty" id="member-page-empty" style="display:none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="23,7 16,12 23,17 23,7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+                <p data-i18n="social.noPostsYet">No posts yet</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== People sheet — ONE sheet, three modes =====
+         followers / following / discover. All three RPCs return the identical
+         row shape (target_type, target_id, name, avatar_url, subtitle,
+         followed_at — see migration 20260903000003), so there is one list
+         renderer and one sheet rather than three that drift apart.
+
+         ⚠️ z-index must clear .member-page (2700), which is what opens it. -->
+    <div class="sheet-backdrop people-backdrop" id="people-backdrop"></div>
+    <div class="app-sheet people-sheet" id="people-sheet" role="dialog" aria-modal="true" aria-label="People">
+        <div class="app-sheet-header">
+            <h3 id="people-sheet-title"></h3>
+            <button class="app-sheet-close" id="people-sheet-close" aria-label="Close" data-i18n-aria="social.close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <!-- Only shown in discover mode; followers/following are lists, not
+             searches, and a search box over nine rows is noise. -->
+        <div class="venue-picker-search people-sheet-search-wrap" id="people-sheet-search-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="search" id="people-sheet-search" autocomplete="off"
+                   placeholder="Search members..." data-i18n-placeholder="social.searchMembers"
+                   aria-label="Search members" data-i18n-aria="social.searchMembers">
+        </div>
+        <div class="people-list" id="people-list"></div>
+        <p class="venue-picker-empty" id="people-empty" style="display:none;"></p>
+    </div>
+
+    <!-- ===== Edit profile =====
+         ⚠️ #edit-profile-error and #edit-profile-save are NOT cosmetic ids.
+         setFormMessage('edit-profile', …) resolves `${formId}-error` and
+         setSubmitting('edit-profile-save', …) resolves the id directly
+         (social.js:591-609). Rename either and the form silently loses its
+         error reporting and its busy state. A contract test asserts both. -->
+    <div class="sheet-backdrop" id="edit-profile-backdrop"></div>
+    <div class="app-sheet edit-profile-sheet" id="edit-profile-sheet" role="dialog" aria-modal="true" aria-label="Edit profile">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.editProfile">Edit Profile</h3>
+            <button class="app-sheet-close" id="edit-profile-close" aria-label="Close" data-i18n-aria="social.close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form class="auth-form" id="edit-profile-form" novalidate>
+            <!-- Avatar. The file is downscaled in-browser before upload
+                 (downscaleImage) — a 12MP phone photo is a multi-MB fetch on
+                 every feed card otherwise. -->
+            <div class="edit-profile-avatar-row">
+                <div class="edit-profile-avatar" id="edit-profile-avatar-preview"></div>
+                <div class="edit-profile-avatar-actions">
+                    <label class="auth-btn auth-btn-ghost edit-profile-avatar-pick" for="edit-profile-avatar-input"
+                           data-i18n="social.changePhoto">Change photo</label>
+                    <input type="file" id="edit-profile-avatar-input" accept="image/*" hidden>
+                    <button type="button" class="auth-link" id="edit-profile-avatar-remove"
+                            data-i18n="social.removePhoto">Remove photo</button>
+                </div>
+            </div>
+
+            <div class="auth-field">
+                <label for="edit-profile-name" data-i18n="social.displayName">Display name</label>
+                <input type="text" id="edit-profile-name" maxlength="60" autocomplete="nickname">
+                <div class="auth-field-error" id="edit-profile-name-error"></div>
+            </div>
+
+            <div class="auth-field">
+                <label for="edit-profile-bio" data-i18n="social.bio">Bio</label>
+                <textarea id="edit-profile-bio" rows="3" maxlength="300"></textarea>
+                <div class="auth-field-hint">
+                    <span id="edit-profile-bio-count">0</span>/300
+                </div>
+            </div>
+
+            <!-- The off switch for the public-by-default backfill. It ships in
+                 the SAME release as the backfill on purpose: public by default
+                 only means what it says if it can be turned off. -->
+            <label class="auth-checkbox edit-profile-public">
+                <input type="checkbox" id="edit-profile-public">
+                <span>
+                    <strong data-i18n="social.publicProfile">Public profile</strong>
+                    <small data-i18n="social.publicProfileHint">Off hides your posts, bio and counts from other people.</small>
+                </span>
+            </label>
+
+            <div class="auth-form-error" id="edit-profile-error"></div>
+            <div class="auth-form-success" id="edit-profile-success"></div>
+            <button type="submit" class="auth-btn auth-btn-primary" id="edit-profile-save" data-i18n="social.saveChanges">Save Changes</button>
+        </form>
+    </div>
+
     <!-- ===== Post options (delete / report) =====
          Reuses the .sheet-backdrop + .app-sheet pattern from Contact Us. The
          body is rendered by showPostOptions(): Delete for your own post (or an
@@ -942,7 +1127,7 @@
     <script src="/customer-app/social-auth.js?v=3"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=13"></script>
+    <script src="/customer-app/social.js?v=14"></script>
 
 </body>
 </html>

@@ -66,7 +66,7 @@ const I18n = (function() {
     }
 
     // Translation file version - increment when translations change
-    const TRANSLATION_VERSION = 11;
+    const TRANSLATION_VERSION = 12;
 
     // Load translation file
     async function loadTranslations(lang) {
@@ -155,6 +155,27 @@ const I18n = (function() {
 
             if (translation !== key) {
                 element.placeholder = translation;
+            }
+        });
+
+        // Handle aria-label translations.
+        //
+        // This handler did not exist. `data-i18n-aria` has been in social.html
+        // on ~13 controls since it shipped — the bottom nav, the create-post
+        // button, centre-on-me, back-to-top — and every one of those aria-labels
+        // has always been read out in English regardless of the chosen language.
+        // Nothing errored, because an unhandled attribute is just an attribute.
+        //
+        // Kept as its own loop rather than folded into data-i18n-attr: an
+        // element can legitimately need a translated aria-label AND translated
+        // text content (the nav buttons do), and data-i18n-attr hijacks the
+        // data-i18n key into an attribute instead of the text.
+        document.querySelectorAll('[data-i18n-aria]').forEach(element => {
+            const key = element.getAttribute('data-i18n-aria');
+            const translation = t(key);
+
+            if (translation !== key) {
+                element.setAttribute('aria-label', translation);
             }
         });
 

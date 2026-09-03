@@ -15,6 +15,15 @@ import { test, expect } from '@playwright/test';
 const PRETTY_URL = '/a/viibeview/social';
 const QUERY_URL = '/customer-app/social.html?slug=viibeview';
 
+// Signing in writes to Royalty PRODUCTION (follow edges, and a last_login_at
+// touch on a real member row), so the follow round-trip runs only when a real
+// member's credentials are supplied. It is skipped, loudly, otherwise —
+// reporting green over a test that never signed in is worse than reporting a
+// skip.
+const TEST_EMAIL = process.env.VIIBEVIEW_TEST_EMAIL;
+const TEST_PASSWORD = process.env.VIIBEVIEW_TEST_PASSWORD;
+const CAN_SIGN_IN = !!(TEST_EMAIL && TEST_PASSWORD);
+
 async function loadApp(page, url = PRETTY_URL) {
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
@@ -314,6 +323,195 @@ test.describe('ViibeView social app', () => {
         // The logout button is inside the signed-in panel and bound, not the
         // dead markup it used to be.
         await expect(page.locator('#logout-btn')).toHaveCount(1);
+    });
+
+    // ===== Phase 2: profiles, follows, discovery =====
+
+    test('the Following chip is absent when signed out', async ({ page }) => {
+        // get_following_feed is authenticated-only. A chip offered to a
+        // signed-out visitor could only ever return an empty feed, which reads
+        // as "nobody you follow has posted" rather than "you are signed out".
+        await loadApp(page);
+        await expect(page.locator('#filter-pills .pill[data-filter-kind="following"]'))
+            .toHaveCount(0);
+    });
+
+    test('an anonymous visitor can open a member profile from a feed card', async ({ page }) => {
+        // The root cause behind "Viewing A Profile", "View Another User's
+        // Followers" and "View Another User's Following" all failing together:
+        // the author name on a feed card rendered with NO click handler, so
+        // there was no route to a member profile from anywhere in the app.
+        await loadApp(page);
+        await page.waitForTimeout(2000);
+
+        // Only unattached Viibes route to their author — a venue post opens the
+        // venue, which is covered elsewhere. An app whose every post has a
+        // venue has nothing to assert here, and pretending otherwise is how a
+        // test starts passing against a state it never reached.
+        const authorCards = page.locator('#feed-container .feed-card[data-venue-id=""] .feed-venue-info');
+        const count = await authorCards.count();
+        test.skip(count === 0, 'no venue-less posts in this app yet');
+
+        const clickable = await authorCards.first().getAttribute('onclick');
+        test.skip(!clickable || !clickable.includes('openMemberProfile'),
+            'the visible venue-less posts predate authorship being recorded');
+
+        await authorCards.first().click();
+        await page.waitForTimeout(1200);
+
+        await expect(page.locator('#member-page')).toHaveClass(/visible/);
+        await expect(page.locator('#member-page-name')).not.toBeEmpty();
+
+        // Anonymous means anonymous: opening a profile must not trip the auth
+        // overlay. That is the whole reason get_member_profile ships with no
+        // grant footer.
+        await expect(page.locator('#auth-overlay')).not.toHaveClass(/visible/);
+
+        // No follow button for a signed-out visitor's view of someone else —
+        // it appears, but tapping it is what opens signup. What must NOT
+        // happen is the profile refusing to render.
+        await expect(page.locator('#member-page-stats .member-stat')).toHaveCount(3);
+
+        await page.click('#member-page-back');
+        await expect(page.locator('#member-page')).not.toHaveClass(/visible/);
+    });
+
+    test('a private profile explains itself instead of opening blank', async ({ page }) => {
+        // get_member_profile returns a ROW with is_private for a private
+        // member, not zero rows, precisely so the overlay has something to say.
+        // Asserted structurally: the state exists and is hidden until needed.
+        await loadApp(page);
+        await expect(page.locator('#member-page-private')).toBeHidden();
+        await expect(page.locator('#member-page-private')).toBeAttached();
+    });
+
+    test('the people sheet opens on discover and closes cleanly', async ({ page }) => {
+        // Discover is the only mode reachable without an account: followers and
+        // following need a user id, and the Profile tab is signed-out here.
+        await loadApp(page);
+        await page.evaluate(() => window.openPeopleSheet('discover'));
+        await page.waitForTimeout(800);
+
+        await expect(page.locator('#people-sheet')).toHaveClass(/visible/);
+        // discover_members is anon-readable, so this must resolve to a real
+        // list or a real empty message — never a permission error rendered as
+        // an empty box.
+        const rows = await page.locator('#people-list .people-row').count();
+        const emptyVisible = await page.locator('#people-empty').isVisible();
+        expect(rows > 0 || emptyVisible, 'the sheet rendered neither rows nor an empty state').toBe(true);
+
+        await page.click('#people-sheet-close');
+        await expect(page.locator('#people-sheet')).not.toHaveClass(/visible/);
+        // The body scroll lock is refcounted; closing the only open overlay
+        // must release it.
+        await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
+    });
+
+    test('the venue page offers a Follow button', async ({ page }) => {
+        // social.html:259 has promised "follow venues" since the auth overlay
+        // shipped, with nothing behind it. This is the control that makes it
+        // true. Demo venues are excluded — their ids are not UUIDs and
+        // follow_target rejects them.
+        await loadApp(page);
+        await page.click('.nav-item[data-tab="map"]');
+        await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
+        await page.click('.map-pin-wrapper', { force: true });
+        await page.waitForTimeout(1200);
+
+        await expect(page.locator('#venue-page')).toHaveClass(/visible/);
+
+        // The button is omitted entirely for demo venues (their ids are the
+        // strings 'demo-1'..'demo-5', not UUIDs, so follow_target rejects
+        // them). Zero of them therefore means "this app has no real venues" —
+        // a data fact, not a regression. Say so rather than failing.
+        const btn = page.locator('#venue-page-follow-btn');
+        test.skip(await btn.count() === 0, 'demo venues only — nothing real to follow');
+
+        await expect(btn).toBeVisible();
+        // paintFollowButton() is the single writer of the label, so an empty
+        // one means the repaint never ran.
+        await expect(btn).not.toBeEmpty();
+    });
+
+    test('two overlays deep, closing the inner one keeps the body locked', async ({ page }) => {
+        // ⚠️ A real regression, not hygiene. Phase 2 is the first time two
+        // full-screen overlays can coexist, and every close path used to write
+        // `document.body.style.overflow = ''` unconditionally — so closing the
+        // inner overlay unlocked the page underneath the outer one.
+        await loadApp(page);
+        await page.click('.nav-item[data-tab="map"]');
+        await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
+        await page.click('.map-pin-wrapper', { force: true });
+        await page.waitForTimeout(1000);
+        await expect(page.locator('#venue-page')).toHaveClass(/visible/);
+        await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+
+        // Open the people sheet on top, then close it. The venue page is still
+        // open, so the lock must survive.
+        await page.evaluate(() => window.openPeopleSheet('discover'));
+        await page.waitForTimeout(600);
+        await page.click('#people-sheet-close');
+        await page.waitForTimeout(300);
+
+        await expect(page.locator('#venue-page')).toHaveClass(/visible/);
+        await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+
+        // And releasing the last one does unlock it.
+        await page.click('#venue-page-back');
+        await page.waitForTimeout(400);
+        await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
+    });
+
+    test('signed in: the Following chip appears and follow/unfollow moves the count', async ({ page }) => {
+        test.skip(!CAN_SIGN_IN,
+            'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD — this writes follow edges to Royalty PROD');
+
+        await loadApp(page);
+        await page.click('.nav-item[data-tab="profile"]');
+        await page.click('#profile-login-btn');
+        await page.fill('#login-email', TEST_EMAIL);
+        await page.fill('#login-password', TEST_PASSWORD);
+        await page.click('#login-submit');
+        await page.waitForTimeout(2500);
+
+        await expect(page.locator('#profile-signed-in')).toBeVisible();
+
+        // The chip only exists for a signed-in visitor, and onSignedIn() has to
+        // rebuild the row for it to appear without a reload.
+        await expect(page.locator('#filter-pills .pill[data-filter-kind="following"]'))
+            .toHaveCount(1);
+
+        // Follow a venue and watch the button invert. The count that must move
+        // is the venue's follower count, which lives server-side — the client
+        // cannot compute it, because it excludes soft-deleted members.
+        await page.click('.nav-item[data-tab="map"]');
+        await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
+        await page.click('.map-pin-wrapper', { force: true });
+        await page.waitForTimeout(1200);
+
+        const btn = page.locator('#venue-page-follow-btn');
+        test.skip(await btn.count() === 0, 'demo venues only — nothing real to follow');
+
+        const before = (await btn.textContent()).trim();
+        await btn.click();
+        await page.waitForTimeout(1200);
+        const after = (await btn.textContent()).trim();
+        expect(after, 'the follow button did not change state').not.toBe(before);
+
+        // Persists across a reload — an optimistic repaint that was never
+        // written would pass the assertion above and fail this one.
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
+        await page.click('.nav-item[data-tab="map"]');
+        await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
+        await page.click('.map-pin-wrapper', { force: true });
+        await page.waitForTimeout(1500);
+        expect((await page.locator('#venue-page-follow-btn').textContent()).trim()).toBe(after);
+
+        // Put it back, so the test is idempotent against a production row.
+        await page.click('#venue-page-follow-btn');
+        await page.waitForTimeout(1000);
+        expect((await page.locator('#venue-page-follow-btn').textContent()).trim()).toBe(before);
     });
 
     test('loads without console errors', async ({ page }) => {

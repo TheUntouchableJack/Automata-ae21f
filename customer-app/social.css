@@ -3359,3 +3359,432 @@ body {
     font-size: 0.75rem;
     color: var(--color-text-secondary);
 }
+
+/* =========================================================================
+   ViibeView Phase 2 — profiles, follows, discovery
+   =========================================================================
+
+   ⚠️ THE Z-INDEX LADDER, MEASURED, NOT GUESSED.
+   Phase 2 is the first time two full-screen overlays can coexist: a feed card
+   inside #venue-page links to its author's #member-page, and #member-page opens
+   #people-sheet. Each new layer therefore has to clear the one that opened it.
+
+       .filter-pills                     99
+       .social-header                   100
+       .back-to-top                     900
+       .bottom-nav                     1000
+       .sheet-backdrop / .app-sheet    2100 / 2200
+       .post-preview-modal             2200
+       .venue-page-backdrop / page     2499 / 2500
+       .member-page-backdrop / page    2699 / 2700   <- opened FROM the venue page
+       .people-backdrop / .people-sheet 2800 / 2900  <- opened FROM the member page
+       .create-post-* modal            3000 / 3001
+       .venue-picker-*                 3200 / 3300   <- opened FROM the composer
+
+   #edit-profile-sheet is opened only from the Profile TAB, never from another
+   overlay, so it keeps the default .app-sheet 2100/2200 and needs no override.
+   ========================================================================= */
+
+/* ===== Profile tab: follower / following counts ===== */
+.profile-stats {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.profile-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--spacing-md) var(--spacing-sm);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.profile-stat:active {
+    background: var(--color-bg);
+}
+
+.profile-stat-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.profile-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+/* The signed-in profile avatar can now hold a real image. */
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-full);
+}
+
+/* ===== Member profile page ===== */
+/* Cloned from .venue-page (same transform-based sheet animation, same
+   margin-inline so it does not escape --app-max-width on desktop) and lifted
+   200 above it in the ladder. */
+.member-page-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 2699;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.member-page-backdrop.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.member-page {
+    position: fixed;
+    inset: 0;
+    max-width: var(--app-max-width);
+    margin-inline: auto;
+    background: #fff;
+    z-index: 2700;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.member-page.visible {
+    transform: translateY(0);
+}
+
+.member-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    min-height: 48px;
+    border-bottom: 1px solid #e2e8f0;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Balances the Back button so the title stays optically centred. The venue
+   page uses its "+" button for this; a profile has no header action. */
+.member-page-header-spacer {
+    width: 56px;
+    flex-shrink: 0;
+}
+
+.member-page-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--spacing-xl);
+}
+
+.member-page-identity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg) var(--spacing-md);
+    text-align: center;
+}
+
+.member-page-avatar {
+    width: 84px;
+    height: 84px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--app-primary, #6366f1);
+}
+
+.member-page-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-page-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.member-page-bio {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    max-width: 34ch;
+    white-space: pre-wrap;
+}
+
+.member-page-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-top: 2px;
+}
+
+.member-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.member-stat-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.member-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.member-page-private {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xl) var(--spacing-md);
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+/* ===== Follow button ===== */
+/* Filled = "not following, tap to follow". Outlined = "following", which is
+   the affordance to STOP — the same inversion every social app uses, and the
+   reason .following is a modifier rather than a separate class. */
+.follow-btn {
+    min-width: 132px;
+    padding: 9px 20px;
+    border: 1px solid var(--app-primary, #6366f1);
+    border-radius: var(--radius-full);
+    background: var(--app-primary, #6366f1);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.follow-btn.following {
+    background: transparent;
+    color: var(--app-primary, #6366f1);
+}
+
+.follow-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* The venue page's Follow control sits in the same row as Navigate/Directions,
+   so it takes that row's shape rather than the pill above. */
+.venue-page-actions .follow-btn {
+    min-width: 0;
+}
+
+/* ===== Member post grid ===== */
+/* A grid of poster frames, not a stack of autoplaying videos: a profile can
+   hold dozens of clips and #member-page has no IntersectionObserver of its
+   own. Tapping a tile opens the venue page when the post has one. */
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding: 0 2px;
+}
+
+.member-grid-tile {
+    position: relative;
+    aspect-ratio: 9 / 16;
+    background: var(--color-bg);
+    overflow: hidden;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.member-grid-tile img,
+.member-grid-tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.member-grid-tile .video-duration {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+}
+
+/* ===== People sheet (followers / following / discover) ===== */
+.people-backdrop {
+    z-index: 2800;
+}
+
+.people-sheet {
+    z-index: 2900;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.people-sheet-search-wrap {
+    flex-shrink: 0;
+}
+
+.people-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--spacing-md);
+}
+
+.people-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: 10px var(--spacing-md);
+    background: none;
+    border: none;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.people-row:active {
+    background: var(--color-bg);
+}
+
+.people-row-avatar {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-weight: 700;
+    color: var(--app-primary, #6366f1);
+}
+
+.people-row-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Venue rows are square-ish, members are round — the shape is how you tell a
+   place from a person in a mixed Following list at a glance. */
+.people-row-avatar.venue {
+    border-radius: var(--radius-md);
+}
+
+.people-row-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.people-row-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.people-row-meta {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+/* ===== Edit profile sheet ===== */
+.edit-profile-sheet .auth-form {
+    padding: var(--spacing-md);
+}
+
+.edit-profile-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.edit-profile-avatar {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--app-primary, #6366f1);
+}
+
+.edit-profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.edit-profile-avatar-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+/* A <label for> styled as a button: the file input is hidden, and a real
+   <button> cannot open a file picker without JS that re-fires the click. */
+.edit-profile-avatar-pick {
+    display: inline-block;
+    width: auto;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.edit-profile-public {
+    align-items: flex-start;
+}
+
+.edit-profile-public small {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}

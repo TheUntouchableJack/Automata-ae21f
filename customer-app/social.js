@@ -94,6 +94,72 @@ let lastScrollY = 0;
 // Which post the options sheet is acting on.
 let optionsMediaId = null;
 
+// ===== Phase 2: profiles, follows, discovery =====
+
+// Which feed the Feed tab is showing: 'all' (get_venue_feed, anon-readable) or
+// 'following' (get_following_feed, authenticated only). Lives beside
+// activeCategory/activeGenre rather than inside them because it selects the RPC
+// rather than an argument to it.
+let feedMode = 'all';
+
+// The member profile overlay. venuePage* has the same three-variable shape and
+// for the same reasons: the page is a reused singleton node, so its content has
+// to be cleared on close or the previous member's grid lingers.
+let memberPageUserId = null;
+let memberPageProfile = null;
+let memberPagePosts = [];
+
+// The signed-in user's own follow edges, as a Set of `${type}:${id}` keys.
+//
+// This is the ONE place the client knows what it follows, and it is read from
+// the table with a plain .select() — social_follows keeps an own-rows SELECT
+// policy precisely so this works without a new RPC and without adding an
+// is_following column to get_venue_detail.
+let followingKeys = new Set();
+let followingLoaded = false;
+
+// People sheet: 'followers' | 'following' | 'discover', plus whose lists are
+// being shown (null = the signed-in user's own).
+let peopleSheetMode = 'followers';
+let peopleSheetUserId = null;
+let peopleSearchTimeout = null;
+
+// Edit Profile: the avatar the form will save. `undefined` means "unchanged"
+// has already been resolved into a concrete value by openEditProfile(), so this
+// is always either a URL string or null (explicitly removed).
+let editProfileAvatarUrl = null;
+let editProfileAvatarFile = null;
+
+// Avatars are downscaled to this longest edge before upload. A modern phone
+// camera produces a 12MP JPEG; unresized, that is a multi-megabyte fetch on
+// every feed card that member appears on.
+const AVATAR_MAX_PX = 512;
+const AVATAR_QUALITY = 0.82;
+
+// ===== Body scroll lock =====
+//
+// ⚠️ This exists because of a REAL new bug, not for tidiness. Phase 2 is the
+// first time two full-screen overlays can coexist: a feed card inside
+// #venue-page links to its author's #member-page. Every close path in this file
+// used to write `document.body.style.overflow = ''` unconditionally, so closing
+// the INNER overlay unlocked the body underneath the outer one — the page behind
+// the venue page would start scrolling while the venue page was still open.
+//
+// Keyed rather than counted: a close handler that runs twice (a backdrop click
+// plus a button click) must not decrement a counter it only incremented once.
+// Set semantics make both lock and unlock idempotent.
+const bodyScrollLocks = new Set();
+
+function lockBodyScroll(key) {
+    bodyScrollLocks.add(key);
+    document.body.style.overflow = 'hidden';
+}
+
+function unlockBodyScroll(key) {
+    bodyScrollLocks.delete(key);
+    if (bodyScrollLocks.size === 0) document.body.style.overflow = '';
+}
+
 // Venue picker (composer). The sheet is a filtered view over `venues`, so the
 // only state it needs is the query the user has typed.
 let venuePickerQuery = '';
@@ -380,6 +446,10 @@ async function init() {
         // Check if viewer is the business owner
         await checkOwnerAccess();
 
+        // What this user follows, for every Follow button on the page. Must run
+        // AFTER checkOwnerAccess(), which is what sets currentUserId.
+        await loadFollowingState();
+
         // Request geolocation
         requestLocation();
 
@@ -536,6 +606,154 @@ async function renderProfileIdentity() {
     if (emailEl) emailEl.textContent = email;
     if (signedOut) signedOut.style.display = 'none';
     if (signedIn) signedIn.style.display = '';
+
+    // Avatar. app_members.avatar_url has existed since the original loyalty
+    // schema and nothing wrote it until update_social_profile shipped.
+    //
+    // The markup's SVG placeholder is stashed on first paint and restored when
+    // the avatar is removed — otherwise "Remove photo" would leave a broken
+    // <img> behind, which is the same shape of bug as a stale venue page.
+    const avatarEl = document.getElementById('profile-avatar');
+    if (avatarEl) {
+        if (avatarEl.dataset.placeholder === undefined) {
+            avatarEl.dataset.placeholder = avatarEl.innerHTML;
+        }
+        avatarEl.innerHTML = member?.avatar_url
+            ? `<img src="${escapeHtml(member.avatar_url)}" alt="">`
+            : avatarEl.dataset.placeholder;
+    }
+
+    // Counts come from get_member_profile, which computes them rather than
+    // reading a stored column — see migration 20260903000001 §4 for why there
+    // is no counter. A failure here must not blank the whole tab, so the row
+    // simply keeps its zeros.
+    const userId = session.user?.id;
+    if (userId && currentApp) {
+        const { data } = await supabaseClient.rpc('get_member_profile', {
+            p_app_id: currentApp.id,
+            p_user_id: userId
+        });
+        const profile = Array.isArray(data) ? data[0] : data;
+        if (profile) {
+            const followers = document.getElementById('profile-followers-count');
+            const following = document.getElementById('profile-following-count');
+            if (followers) followers.textContent = profile.follower_count ?? 0;
+            if (following) following.textContent = profile.following_count ?? 0;
+        }
+    }
+}
+
+// ===== Follow state =====
+//
+// What the signed-in user follows, as `${type}:${id}` keys. Read with a plain
+// .select(): social_follows keeps an own-rows SELECT policy (migration
+// 20260903000001 §3) exactly so the client can answer "am I following this?"
+// without a round trip per button and without get_venue_detail growing an
+// is_following column.
+function followKey(type, id) {
+    return `${type}:${id}`;
+}
+
+function isFollowing(type, id) {
+    return followingKeys.has(followKey(type, id));
+}
+
+async function loadFollowingState({ force = false } = {}) {
+    if (followingLoaded && !force) return;
+    if (!currentApp || !currentUserId) {
+        followingKeys = new Set();
+        followingLoaded = false;
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from('social_follows')
+        .select('followee_user_id, followee_venue_id')
+        .eq('app_id', currentApp.id)
+        .eq('follower_user_id', currentUserId);
+
+    if (error) {
+        // Non-fatal: every follow button falls back to "Follow", and tapping it
+        // is idempotent server-side (ON CONFLICT DO NOTHING), so the worst case
+        // is a button that says the wrong thing until the next load.
+        console.warn('Failed to load follow state:', error.message);
+        return;
+    }
+
+    followingKeys = new Set((data || []).map(row => row.followee_user_id
+        ? followKey('user', row.followee_user_id)
+        : followKey('venue', row.followee_venue_id)));
+    followingLoaded = true;
+}
+
+// Follow / unfollow, shared by the venue page button and the member profile
+// button. Optimistic, then reconciled — the same posture toggleVenueGenre()
+// takes, and for the same reason: a button that stays lit over a rejected write
+// is the same class of lie as a "Posted!" toast over a post that never existed.
+//
+// ⚠️ Family A RPC. A SECURITY DEFINER function returning success:false does NOT
+// set PostgREST's `error` field (20260828000002:29-32), so this checks
+// data[0].success. Testing only `error` would report a follow that never landed.
+async function toggleFollow(type, id) {
+    if (!currentApp || !id) return;
+
+    if (!(await requireAccount('Create an account to follow'))) return;
+
+    // requireAccount() only guarantees a session; currentUserId is set by
+    // checkOwnerAccess(), which onSignedIn() runs. Read it again rather than
+    // assuming, so the first follow after a fresh signup is not a no-op.
+    if (!currentUserId) await checkOwnerAccess();
+
+    const key = followKey(type, id);
+    const wasFollowing = followingKeys.has(key);
+
+    if (wasFollowing) followingKeys.delete(key); else followingKeys.add(key);
+    repaintFollowButtons();
+
+    const { data, error } = await supabaseClient.rpc(
+        wasFollowing ? 'unfollow_target' : 'follow_target',
+        { p_app_id: currentApp.id, p_target_type: type, p_target_id: id }
+    );
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row || row.success === false) {
+        if (wasFollowing) followingKeys.add(key); else followingKeys.delete(key);
+        repaintFollowButtons();
+        showToast(row?.error_message || error?.message || 'Could not update that');
+        return;
+    }
+
+    // The server's follower count is authoritative — it excludes soft-deleted
+    // members, which the client cannot see and therefore cannot compute.
+    if (memberPageProfile && type === 'user' && memberPageUserId === id) {
+        memberPageProfile.follower_count = row.follower_count ?? memberPageProfile.follower_count;
+        renderMemberStats();
+    }
+
+    repaintFollowButtons();
+}
+
+// Every visible follow control, repainted from followingKeys. One writer, so
+// the venue page's button and the member page's button cannot disagree.
+function repaintFollowButtons() {
+    const memberBtn = document.getElementById('member-page-follow-btn');
+    if (memberBtn && memberPageUserId) {
+        paintFollowButton(memberBtn, isFollowing('user', memberPageUserId));
+    }
+
+    const venueBtn = document.getElementById('venue-page-follow-btn');
+    if (venueBtn && venuePageVenueId) {
+        paintFollowButton(venueBtn, isFollowing('venue', venuePageVenueId));
+    }
+}
+
+function paintFollowButton(btn, following) {
+    btn.classList.toggle('following', following);
+    btn.setAttribute('data-i18n', following ? 'social.followingState' : 'social.follow');
+    btn.textContent = following ? 'Following' : 'Follow';
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
 }
 
 // ===== Auth Overlay =====
@@ -545,14 +763,14 @@ function showAuth(view = 'splash') {
     if (!overlay) return;
     setAuthView(view);
     overlay.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('auth');
 }
 
 function hideAuth() {
     const overlay = document.getElementById('auth-overlay');
     if (!overlay) return;
     overlay.classList.remove('visible');
-    document.body.style.overflow = '';
+    unlockBodyScroll('auth');
 }
 
 function setAuthView(view) {
@@ -897,7 +1115,13 @@ async function handleResetSubmit(e) {
 async function onSignedIn() {
     await SocialAuth.loadMember({ force: true });
     await checkOwnerAccess();
+    await loadFollowingState({ force: true });
     await renderProfileIdentity();
+
+    // The Following chip only exists for a signed-in visitor, and
+    // checkOwnerAccess() has just set currentUserId — so the row has to be
+    // rebuilt or the chip does not appear until the next reload.
+    renderFilterPills();
 
     // The feed cards render Delete vs Report from currentUserId, which was null
     // for the whole signed-out session.
@@ -926,13 +1150,13 @@ function openContactSheet() {
 
     sheet.classList.add('visible');
     backdrop.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('contact');
 }
 
 function closeContactSheet() {
     document.getElementById('contact-sheet')?.classList.remove('visible');
     document.getElementById('contact-backdrop')?.classList.remove('visible');
-    document.body.style.overflow = '';
+    unlockBodyScroll('contact');
 }
 
 async function handleContactSubmit(e) {
@@ -1015,7 +1239,7 @@ function showConfirm({ title, body, acceptLabel, onAccept }) {
     const close = () => {
         dialog.classList.remove('visible');
         backdrop.classList.remove('visible');
-        document.body.style.overflow = '';
+        unlockBodyScroll('confirm');
         // Replacing the nodes drops every listener — no accumulation across opens
         accept.replaceWith(accept.cloneNode(true));
         cancel.replaceWith(cancel.cloneNode(true));
@@ -1027,7 +1251,7 @@ function showConfirm({ title, body, acceptLabel, onAccept }) {
 
     dialog.classList.add('visible');
     backdrop.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('confirm');
 }
 
 // ===== Owner Access Check =====
@@ -1229,12 +1453,26 @@ async function loadFeed(append = false) {
 
     showFeedLoading(true);
 
+    // Two RPCs, one identical RETURNS TABLE, one renderFeedCard(). They are
+    // separate functions rather than a p_following argument on get_venue_feed
+    // because a merged function could not have an honest grant footer —
+    // browsing must be anon-executable and a Following feed cannot be. See the
+    // header of migration 20260903000004.
+    //
+    // ⚠️ Belt and braces on the mode: get_following_feed returns zero rows for
+    // a null auth.uid(), which would read as "nobody you follow has posted"
+    // rather than "you are signed out". Falling back to the public feed here
+    // means signing out can never strand the tab on an unexplainable empty
+    // state, even if a chip survived the sign-out.
+    const useFollowing = feedMode === 'following' && !!currentUserId;
+    const rpcName = useFollowing ? 'get_following_feed' : 'get_venue_feed';
+
     // Named arguments, so the new p_genre parameter landing in the middle of
     // the signature (migration 20260901000001) does not shift anything.
     // activeCategory and activeGenre are already normalized to null by
     // normalizeCategory()/normalizeGenre() — the literal strings 'all' would
     // filter on a value no row has and empty the feed silently.
-    const { data, error } = await supabaseClient.rpc('get_venue_feed', {
+    const { data, error } = await supabaseClient.rpc(rpcName, {
         p_app_id: currentApp.id,
         p_category: activeCategory,
         p_genre: activeGenre,
@@ -1271,6 +1509,7 @@ function renderFeed() {
 
     if (feedItems.length === 0) {
         container.innerHTML = '';
+        renderFeedEmptyState();
         if (emptyState) emptyState.style.display = 'flex';
         return;
     }
@@ -1283,6 +1522,56 @@ function renderFeed() {
     setupVideoObserver();
     refreshSoundButtons();
     feedHasRendered = true;
+}
+
+// The Feed tab's empty state says different things depending on why it is
+// empty. "Check back later for venue content" is wrong and unhelpful when the
+// real answer is "you do not follow anyone yet" — and the fix for that is one
+// tap away, so the empty state carries it.
+//
+// The English strings are written into textContent as well as the data-i18n
+// key: I18n.t() returns the KEY when a translation is missing, and
+// applyTranslations() then leaves the node alone — so a node that is not
+// pre-filled would keep the previous mode's copy.
+function renderFeedEmptyState() {
+    const empty = document.getElementById('feed-empty');
+    if (!empty) return;
+
+    const following = feedMode === 'following';
+    const title = empty.querySelector('h3');
+    const body = empty.querySelector('p');
+
+    if (title) {
+        title.setAttribute('data-i18n', following ? 'social.emptyFollowingTitle' : 'social.emptyFeedTitle');
+        title.textContent = following ? 'Nothing from your follows yet' : 'No posts yet';
+    }
+    if (body) {
+        body.setAttribute('data-i18n', following ? 'social.emptyFollowingBody' : 'social.emptyFeedBody');
+        body.textContent = following
+            ? 'Follow some people and venues to fill this up.'
+            : 'Check back later for venue content';
+    }
+
+    let cta = document.getElementById('feed-empty-cta');
+    if (following) {
+        if (!cta) {
+            cta = document.createElement('button');
+            cta.id = 'feed-empty-cta';
+            cta.type = 'button';
+            cta.className = 'auth-btn auth-btn-primary';
+            cta.setAttribute('data-i18n', 'social.discoverMembers');
+            cta.textContent = 'Discover Members';
+            cta.addEventListener('click', () => openPeopleSheet('discover'));
+            empty.appendChild(cta);
+        }
+        cta.style.display = '';
+    } else if (cta) {
+        cta.style.display = 'none';
+    }
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
 }
 
 // Who a post is by.
@@ -1300,21 +1589,34 @@ function postIdentity(item) {
             imageUrl: item.venue_profile_image_url || null,
             letter: (item.venue_name || '?').charAt(0).toUpperCase(),
             venueId: item.venue_id,
+            userId: null,
             // get_venue_feed returns the venue's genres on every row, so the
             // card header can say what was playing without a second lookup.
             genres: Array.isArray(item.venue_music_genres) ? item.venue_music_genres : []
         };
     }
 
-    const name = [item.author_first_name, item.author_last_name].filter(Boolean).join(' ');
+    // display_name first: it is what the member chose for themselves in Edit
+    // Profile. first/last are the signup fields and remain the fallback for
+    // anyone who has not set one — which is everybody until this release, since
+    // nothing has ever written app_members.display_name.
+    const name = item.author_display_name
+        || [item.author_first_name, item.author_last_name].filter(Boolean).join(' ');
+
     return {
         // Pre-UGC posts have no venue AND no author (uploaded_by_user_id has
         // never been written before this release). "Someone" beats a blank row.
         title: name || 'Someone',
         subtitle: '',
-        imageUrl: null,
+        imageUrl: item.author_avatar_url || null,
         letter: (name || '?').charAt(0).toUpperCase(),
         venueId: null,
+        // The single root cause behind "Viewing A Profile", "View Another
+        // User's Followers" and "View Another User's Following" all failing
+        // together: the author name rendered with no click handler, so there
+        // was no route to a member profile from anywhere in the app.
+        // Null for a pre-UGC post, whose author was never recorded.
+        userId: item.uploaded_by_user_id || null,
         genres: []
     };
 }
@@ -1323,10 +1625,19 @@ function renderFeedCard(item) {
     const isVideo = item.media_type === 'video';
     const identity = postIdentity(item);
 
+    // A venue post opens the venue; an unattached Viibe opens its author's
+    // profile; a pre-UGC post (no venue, no recorded author) opens nothing and
+    // is deliberately not made to look tappable.
+    const openIdentity = identity.venueId
+        ? ` onclick="openVenuePage('${escapeHtml(identity.venueId)}')"`
+        : identity.userId
+            ? ` onclick="openMemberProfile('${escapeHtml(identity.userId)}')"`
+            : '';
+
     return `
         <div class="feed-card" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
             <div class="feed-card-header">
-                <div class="feed-venue-info"${identity.venueId ? ` onclick="openVenuePage('${escapeHtml(identity.venueId)}')"` : ''}>
+                <div class="feed-venue-info"${openIdentity}>
                     <div class="venue-avatar">
                         ${identity.imageUrl
                             ? `<img src="${escapeHtml(identity.imageUrl)}" alt="">`
@@ -1870,7 +2181,7 @@ async function openVenuePage(venueId) {
     // Show page immediately (content loads inside)
     page.classList.add('visible');
     backdrop.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('venue-page');
 
     // Load venue detail (use local data for demo venues)
     let venue;
@@ -1953,6 +2264,19 @@ async function openVenuePage(venueId) {
     const actionsEl = document.getElementById('venue-page-actions');
     if (actionsEl) {
         let actions = '';
+
+        // Follow. This is what finally makes social.html:259 — "follow venues"
+        // — true; that copy has been in the signed-out invitation since the
+        // auth overlay shipped, with nothing behind it.
+        //
+        // Excluded for demo venues: their ids are the strings 'demo-1'..'demo-5',
+        // not UUIDs, so follow_target's venue-belongs-to-app check rejects them
+        // as success:false — the shape this app has historically swallowed.
+        if (!isDemoVenueId(venue.id)) {
+            actions += `<button class="venue-action-btn follow-btn" id="venue-page-follow-btn" type="button"
+                onclick="toggleFollow('venue', '${escapeHtml(venue.id)}')"></button>`;
+        }
+
         // Navigate button (demo placeholder)
         actions += `<button class="venue-action-btn" onclick="showToast('Navigation coming soon')">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
@@ -1985,6 +2309,10 @@ async function openVenuePage(venueId) {
         }
         actionsEl.innerHTML = actions;
         actionsEl.style.display = actions ? 'flex' : 'none';
+        // The button ships with no label; repaintFollowButtons() is the single
+        // writer of Follow/Following text so the two follow surfaces cannot
+        // disagree about the same edge.
+        repaintFollowButtons();
     }
 
     // Render address
@@ -2334,7 +2662,7 @@ function closeVenuePage() {
     const backdrop = document.getElementById('venue-page-backdrop');
     if (page) page.classList.remove('visible');
     if (backdrop) backdrop.classList.remove('visible');
-    document.body.style.overflow = '';
+    unlockBodyScroll('venue-page');
 
     // Remove scroll listener
     const scrollEl = document.getElementById('venue-page-scroll');
@@ -2352,6 +2680,600 @@ function closeVenuePage() {
     venuePageVenueId = null;
     venuePageVenue = null;
     venuePageFeed = [];
+}
+
+// ===== Member Profile Page =====
+//
+// An overlay, not a fifth tab: the bottom nav is exactly four items (a contract
+// test asserts it), and a profile tab would have nothing to show the signed-out
+// visitors who are most of this app's traffic.
+//
+// Mirrors openVenuePage(): show the page FIRST, then fetch. A tap that appears
+// to do nothing for 400ms reads as a broken button, and every failure path below
+// closes the page again with a toast that says why.
+
+async function openMemberProfile(userId) {
+    const page = document.getElementById('member-page');
+    const backdrop = document.getElementById('member-page-backdrop');
+    if (!page || !backdrop || !userId || !currentApp) return;
+
+    memberPageUserId = userId;
+    memberPageProfile = null;
+    memberPagePosts = [];
+
+    page.classList.add('visible');
+    backdrop.classList.add('visible');
+    // Keyed, because this can open ON TOP of #venue-page — see lockBodyScroll().
+    lockBodyScroll('member-page');
+
+    // Reset the reused singleton's content, or the previously-opened member's
+    // grid and bio show through while this one loads.
+    setText('member-page-title', '');
+    setText('member-page-name', '');
+    setText('member-page-bio', '');
+    const grid = document.getElementById('member-page-grid');
+    if (grid) grid.innerHTML = '';
+    const stats = document.getElementById('member-page-stats');
+    if (stats) stats.innerHTML = '';
+    const avatar = document.getElementById('member-page-avatar');
+    if (avatar) avatar.innerHTML = '';
+    const privateEl = document.getElementById('member-page-private');
+    if (privateEl) privateEl.style.display = 'none';
+    const emptyEl = document.getElementById('member-page-empty');
+    if (emptyEl) emptyEl.style.display = 'none';
+    const followBtn = document.getElementById('member-page-follow-btn');
+    if (followBtn) followBtn.style.display = 'none';
+    const scrollEl = document.getElementById('member-page-scroll');
+    if (scrollEl) scrollEl.scrollTop = 0;
+
+    const { data, error } = await supabaseClient.rpc('get_member_profile', {
+        p_app_id: currentApp.id,
+        p_user_id: userId
+    });
+
+    // Zero rows means "no such member" — get_member_profile deliberately
+    // returns a ROW with is_private for a private one, so an empty result here
+    // is unambiguous.
+    const profile = Array.isArray(data) ? data[0] : data;
+    if (error || !profile) {
+        if (error) console.error('Failed to load profile:', error);
+        showToast('Could not open that profile');
+        closeMemberProfile();
+        return;
+    }
+
+    // A late-arriving response for a profile the user has already navigated
+    // away from must not paint over the current one.
+    if (memberPageUserId !== userId) return;
+
+    memberPageProfile = profile;
+    renderMemberProfile();
+
+    if (profile.is_private && userId !== currentUserId) {
+        if (privateEl) privateEl.style.display = 'flex';
+        return;
+    }
+
+    await loadMemberPosts();
+}
+
+function closeMemberProfile() {
+    document.getElementById('member-page')?.classList.remove('visible');
+    document.getElementById('member-page-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('member-page');
+
+    // Clearing the grid stops any <video> that was decoding a poster frame; a
+    // paused video left in the DOM keeps its buffer and keeps downloading.
+    const grid = document.getElementById('member-page-grid');
+    if (grid) grid.innerHTML = '';
+
+    memberPageUserId = null;
+    memberPageProfile = null;
+    memberPagePosts = [];
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || '';
+}
+
+function renderMemberProfile() {
+    const p = memberPageProfile;
+    if (!p) return;
+
+    setText('member-page-title', p.display_name);
+    setText('member-page-name', p.display_name);
+
+    const bioEl = document.getElementById('member-page-bio');
+    if (bioEl) {
+        bioEl.textContent = p.bio || '';
+        bioEl.style.display = p.bio ? '' : 'none';
+    }
+
+    const avatar = document.getElementById('member-page-avatar');
+    if (avatar) {
+        avatar.innerHTML = p.avatar_url
+            ? `<img src="${escapeHtml(p.avatar_url)}" alt="">`
+            : escapeHtml((p.display_name || '?').charAt(0).toUpperCase());
+    }
+
+    renderMemberStats();
+
+    const followBtn = document.getElementById('member-page-follow-btn');
+    if (followBtn) {
+        // No follow button on your own profile: social_follows_no_self would
+        // reject the write, so offering it would be a control that can only
+        // ever produce an error message.
+        const isSelf = !!currentUserId && currentUserId === p.user_id;
+        followBtn.style.display = isSelf ? 'none' : '';
+        if (!isSelf) {
+            followBtn.onclick = () => toggleFollow('user', p.user_id);
+            paintFollowButton(followBtn, isFollowing('user', p.user_id));
+        }
+    }
+}
+
+// Posts / Followers / Following. Followers and Following are buttons that open
+// the people sheet — the whole point of the profile is being a route to them.
+function renderMemberStats() {
+    const el = document.getElementById('member-page-stats');
+    const p = memberPageProfile;
+    if (!el || !p) return;
+
+    const stat = (value, labelKey, label, onclick) => `
+        <button class="member-stat" type="button" ${onclick ? `onclick="${onclick}"` : 'disabled'}>
+            <span class="member-stat-value">${escapeHtml(String(value ?? 0))}</span>
+            <span class="member-stat-label" data-i18n="${labelKey}">${escapeHtml(label)}</span>
+        </button>
+    `;
+
+    const uid = escapeHtml(p.user_id);
+    el.innerHTML =
+        stat(p.post_count, 'social.posts', 'Posts', null) +
+        stat(p.follower_count, 'social.followers', 'Followers', `openPeopleSheet('followers', '${uid}')`) +
+        stat(p.following_count, 'social.following', 'Following', `openPeopleSheet('following', '${uid}')`);
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+async function loadMemberPosts() {
+    if (!memberPageUserId || !currentApp) return;
+
+    const loadingEl = document.getElementById('member-page-loading');
+    if (loadingEl) loadingEl.style.display = 'block';
+
+    const userId = memberPageUserId;
+    const { data, error } = await supabaseClient.rpc('get_member_posts', {
+        p_app_id: currentApp.id,
+        p_user_id: userId,
+        p_limit: 48,
+        p_offset: 0
+    });
+
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (memberPageUserId !== userId) return;   // navigated away mid-flight
+
+    if (error) {
+        console.error('Failed to load member posts:', error);
+        memberPagePosts = [];
+    } else {
+        memberPagePosts = data || [];
+    }
+
+    renderMemberGrid();
+}
+
+// A grid of poster frames, not a stack of autoplaying clips. A profile can hold
+// dozens of Viibes and this overlay has no IntersectionObserver of its own —
+// forty <video> elements all calling play() is how a phone runs out of memory.
+// Tiles with no thumbnail_url (every post predating thumbnail generation) fall
+// back to preload="metadata", which paints the first frame.
+function renderMemberGrid() {
+    const grid = document.getElementById('member-page-grid');
+    const emptyEl = document.getElementById('member-page-empty');
+    if (!grid) return;
+
+    if (memberPagePosts.length === 0) {
+        grid.innerHTML = '';
+        if (emptyEl) emptyEl.style.display = 'flex';
+        return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    grid.innerHTML = memberPagePosts.map(post => {
+        // A tile opens the venue it was posted at. An unattached Viibe has no
+        // venue page to open, so its tile is not made to look tappable.
+        const onclick = post.venue_id
+            ? ` onclick="closeMemberProfile(); openVenuePage('${escapeHtml(post.venue_id)}')"`
+            : '';
+        const label = post.venue_name || post.caption || '';
+
+        return `
+            <button class="member-grid-tile" type="button"${onclick}
+                    aria-label="${escapeHtml(label)}">
+                ${post.thumbnail_url
+                    ? `<img src="${escapeHtml(post.thumbnail_url)}" alt="" loading="lazy">`
+                    : `<video src="${escapeHtml(post.url)}" muted playsinline preload="metadata"></video>`}
+                ${post.duration_seconds ? `<span class="video-duration">${formatDuration(post.duration_seconds)}</span>` : ''}
+            </button>
+        `;
+    }).join('');
+}
+
+// ===== People sheet — one sheet, three modes =====
+//
+// followers / following / discover. All three RPCs return the identical row
+// shape (migration 20260903000003), so there is one renderer here rather than
+// three that drift.
+
+async function openPeopleSheet(mode, userId) {
+    const sheet = document.getElementById('people-sheet');
+    const backdrop = document.getElementById('people-backdrop');
+    if (!sheet || !backdrop || !currentApp) return;
+
+    peopleSheetMode = mode;
+    // null means "the signed-in user's own lists".
+    peopleSheetUserId = userId || currentUserId || null;
+
+    if (mode !== 'discover' && !peopleSheetUserId) {
+        // Followers/following of nobody. Reachable only from the Profile tab,
+        // which is signed-out at that point.
+        showAuth('signup');
+        return;
+    }
+
+    const titles = {
+        followers: ['social.followers', 'Followers'],
+        following: ['social.following', 'Following'],
+        discover:  ['social.discoverMembers', 'Discover Members']
+    };
+    const titleEl = document.getElementById('people-sheet-title');
+    if (titleEl) {
+        const [key, fallback] = titles[mode] || titles.discover;
+        titleEl.setAttribute('data-i18n', key);
+        titleEl.textContent = fallback;
+    }
+
+    // The search box belongs to discover only: followers and following are
+    // lists, and a search field over nine rows is noise.
+    const searchWrap = document.getElementById('people-sheet-search-wrap');
+    const searchInput = document.getElementById('people-sheet-search');
+    if (searchWrap) searchWrap.style.display = mode === 'discover' ? '' : 'none';
+    if (searchInput && mode === 'discover') searchInput.value = '';
+
+    const list = document.getElementById('people-list');
+    if (list) list.innerHTML = '';
+    setPeopleEmpty('');
+
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    lockBodyScroll('people-sheet');
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+
+    await loadPeople();
+}
+
+function closePeopleSheet() {
+    document.getElementById('people-sheet')?.classList.remove('visible');
+    document.getElementById('people-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('people-sheet');
+    clearTimeout(peopleSearchTimeout);
+}
+
+function setPeopleEmpty(message) {
+    const el = document.getElementById('people-empty');
+    if (!el) return;
+    el.textContent = message || '';
+    el.style.display = message ? 'block' : 'none';
+}
+
+async function loadPeople() {
+    if (!currentApp) return;
+
+    const mode = peopleSheetMode;
+    const rpc = mode === 'discover'
+        ? 'discover_members'
+        : mode === 'following' ? 'get_member_following' : 'get_member_followers';
+
+    const args = mode === 'discover'
+        ? {
+            p_app_id: currentApp.id,
+            p_query: (document.getElementById('people-sheet-search')?.value || '').trim() || null,
+            p_limit: 50,
+            p_offset: 0
+        }
+        : {
+            p_app_id: currentApp.id,
+            p_user_id: peopleSheetUserId,
+            p_limit: 50,
+            p_offset: 0
+        };
+
+    const { data, error } = await supabaseClient.rpc(rpc, args);
+
+    // A mode switch or a new keystroke landed while this was in flight.
+    if (peopleSheetMode !== mode) return;
+
+    if (error) {
+        console.error('Failed to load people:', error);
+        setPeopleEmpty('Could not load that list');
+        return;
+    }
+
+    renderPeopleList(data || []);
+}
+
+function renderPeopleList(rows) {
+    const list = document.getElementById('people-list');
+    if (!list) return;
+
+    if (rows.length === 0) {
+        list.innerHTML = '';
+        setPeopleEmpty(peopleSheetMode === 'discover'
+            ? 'No members found'
+            : peopleSheetMode === 'following'
+                ? 'Not following anyone yet'
+                : 'No followers yet');
+        return;
+    }
+    setPeopleEmpty('');
+
+    list.innerHTML = rows.map(row => {
+        const isVenue = row.target_type === 'venue';
+        // A venue row opens the venue page, a member row opens their profile.
+        // Both close the sheet first: the sheet sits ABOVE #member-page in the
+        // ladder, so leaving it open would cover the thing it just opened.
+        const onclick = isVenue
+            ? `closePeopleSheet(); openVenuePage('${escapeHtml(row.target_id)}')`
+            : `closePeopleSheet(); openMemberProfile('${escapeHtml(row.target_id)}')`;
+
+        return `
+            <button class="people-row" type="button" onclick="${onclick}">
+                <span class="people-row-avatar ${isVenue ? 'venue' : ''}">
+                    ${row.avatar_url
+                        ? `<img src="${escapeHtml(row.avatar_url)}" alt="">`
+                        : escapeHtml((row.name || '?').charAt(0).toUpperCase())}
+                </span>
+                <span class="people-row-body">
+                    <span class="people-row-name">${escapeHtml(row.name)}</span>
+                    ${row.subtitle ? `<span class="people-row-meta">${escapeHtml(row.subtitle)}</span>` : ''}
+                </span>
+            </button>
+        `;
+    }).join('');
+}
+
+// ===== Edit profile =====
+
+async function openEditProfile() {
+    if (!(await requireAccount('Create an account to set up a profile'))) return;
+
+    const sheet = document.getElementById('edit-profile-sheet');
+    const backdrop = document.getElementById('edit-profile-backdrop');
+    if (!sheet || !backdrop) return;
+
+    // force: the member row may have been edited in another tab, and a stale
+    // cache here would silently revert whatever was changed there — this form
+    // is a FULL write (see update_social_profile), not a patch.
+    const member = await SocialAuth.loadMember({ force: true });
+
+    const nameInput = document.getElementById('edit-profile-name');
+    const bioInput = document.getElementById('edit-profile-bio');
+    const publicInput = document.getElementById('edit-profile-public');
+    if (nameInput) nameInput.value = member?.display_name || '';
+    if (bioInput) bioInput.value = member?.bio || '';
+    if (publicInput) publicInput.checked = member?.profile_public !== false;
+
+    editProfileAvatarUrl = member?.avatar_url || null;
+    editProfileAvatarFile = null;
+    renderEditProfileAvatar(editProfileAvatarUrl, member?.display_name);
+    updateBioCount();
+
+    setFormMessage('edit-profile', '');
+    setFormMessage('edit-profile', '', 'success');
+    setFieldError('edit-profile-name', null);
+
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    lockBodyScroll('edit-profile');
+}
+
+function closeEditProfile() {
+    document.getElementById('edit-profile-sheet')?.classList.remove('visible');
+    document.getElementById('edit-profile-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('edit-profile');
+    editProfileAvatarFile = null;
+}
+
+function renderEditProfileAvatar(url, name) {
+    const el = document.getElementById('edit-profile-avatar-preview');
+    if (!el) return;
+    el.innerHTML = url
+        ? `<img src="${escapeHtml(url)}" alt="">`
+        : escapeHtml((name || '?').charAt(0).toUpperCase());
+}
+
+function updateBioCount() {
+    const bio = document.getElementById('edit-profile-bio');
+    const count = document.getElementById('edit-profile-bio-count');
+    if (bio && count) count.textContent = bio.value.length;
+}
+
+/**
+ * Downscales an image file to a square-ish JPEG no larger than maxPx on its
+ * longest edge.
+ *
+ * None of this existed: generateThumbnail() is video-only. Without it an
+ * unresized 12MP phone photo becomes a multi-megabyte fetch on every feed card
+ * that member appears on, and on the venue page, and in every follower list.
+ *
+ * Resolves to null on any failure, and handleAvatarPick() treats that as "keep
+ * the file as-is" rather than refusing the upload — a broken canvas must not
+ * make a profile photo impossible.
+ */
+function downscaleImage(file, maxPx, quality) {
+    return new Promise((resolve) => {
+        let settled = false;
+        let objectUrl = null;
+
+        const finish = (blob) => {
+            if (settled) return;
+            settled = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            resolve(blob || null);
+        };
+
+        try {
+            const img = new Image();
+            const timer = setTimeout(() => finish(null), 8000);
+
+            img.onload = () => {
+                try {
+                    const w = img.naturalWidth || img.width;
+                    const h = img.naturalHeight || img.height;
+                    if (!w || !h) { clearTimeout(timer); finish(null); return; }
+
+                    const scale = Math.min(1, maxPx / Math.max(w, h));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(w * scale));
+                    canvas.height = Math.max(1, Math.round(h * scale));
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob(
+                        (blob) => { clearTimeout(timer); finish(blob); },
+                        'image/jpeg',
+                        quality
+                    );
+                } catch {
+                    clearTimeout(timer);
+                    finish(null);
+                }
+            };
+
+            img.onerror = () => { clearTimeout(timer); finish(null); };
+
+            objectUrl = URL.createObjectURL(file);
+            img.src = objectUrl;
+        } catch {
+            finish(null);
+        }
+    });
+}
+
+async function handleAvatarPick(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    if (!/^image\//.test(file.type)) {
+        setFormMessage('edit-profile', 'Choose an image file');
+        return;
+    }
+
+    setFormMessage('edit-profile', '');
+    const shrunk = await downscaleImage(file, AVATAR_MAX_PX, AVATAR_QUALITY);
+    editProfileAvatarFile = shrunk || file;
+
+    // Local preview from the blob, so the picker feels instant. The real URL
+    // only exists after the upload in handleEditProfileSubmit().
+    const previewUrl = URL.createObjectURL(editProfileAvatarFile);
+    renderEditProfileAvatar(previewUrl);
+
+    // The file input keeps its value, so re-picking the SAME file would not
+    // fire `change` again. Reset it.
+    event.target.value = '';
+}
+
+function removeEditProfileAvatar() {
+    editProfileAvatarFile = null;
+    editProfileAvatarUrl = null;
+    renderEditProfileAvatar(null, document.getElementById('edit-profile-name')?.value);
+}
+
+async function handleEditProfileSubmit(e) {
+    e.preventDefault();
+    setFormMessage('edit-profile', '');
+    setFormMessage('edit-profile', '', 'success');
+
+    if (!currentApp) return;
+
+    const displayName = document.getElementById('edit-profile-name')?.value || '';
+    const bio = document.getElementById('edit-profile-bio')?.value || '';
+    const isPublic = !!document.getElementById('edit-profile-public')?.checked;
+
+    setSubmitting('edit-profile-save', true, 'Saving…');
+
+    try {
+        let avatarUrl = editProfileAvatarUrl;
+
+        if (editProfileAvatarFile) {
+            const session = await SocialAuth.getSession();
+            const userId = session?.user?.id;
+            if (!userId) throw new Error('Sign in to update your profile');
+
+            // The EXISTING venue-media bucket, under the members/{uid}/ prefix
+            // the member storage policy already permits (20260828000002:263-285)
+            // and whose mime allowlist already includes image/jpeg. No new
+            // bucket, no new policy, no CSP change — netlify.toml:41 already
+            // has img-src 'self' data: https: blob:.
+            //
+            // ⚠️ Deliberately NOT the member-avatars bucket. Its policies are
+            // unscoped (database/profile-visits-migration.sql:70-97): any
+            // authenticated user can overwrite or delete any other member's
+            // avatar there.
+            const path = `members/${userId}/avatar-${Date.now()}.jpg`;
+            const { error: uploadError } = await supabaseClient.storage
+                .from('venue-media')
+                .upload(path, editProfileAvatarFile, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: 'image/jpeg'
+                });
+
+            if (uploadError) throw uploadError;
+
+            avatarUrl = supabaseClient.storage
+                .from('venue-media')
+                .getPublicUrl(path).data.publicUrl;
+        }
+
+        const { data, error } = await supabaseClient.rpc('update_social_profile', {
+            p_app_id: currentApp.id,
+            p_display_name: displayName,
+            p_bio: bio,
+            p_avatar_url: avatarUrl,
+            p_profile_public: isPublic
+        });
+
+        // ⚠️ Family A: success:false does NOT set `error`. Checking only
+        // `error` would show "Saved" over a rejected write.
+        const row = Array.isArray(data) ? data[0] : data;
+        if (error) throw error;
+        if (!row || row.success === false) {
+            throw new Error(row?.error_message || 'Could not save your profile');
+        }
+
+        editProfileAvatarUrl = avatarUrl;
+        editProfileAvatarFile = null;
+
+        await SocialAuth.loadMember({ force: true });
+        await renderProfileIdentity();
+
+        // The author name and avatar on every card come from the feed RPC, so
+        // the change is only visible after a refetch.
+        await loadFeed(false);
+
+        closeEditProfile();
+        showToast('Profile updated');
+    } catch (err) {
+        console.error('Profile save failed:', err);
+        setFormMessage('edit-profile', err.message || 'Could not save your profile');
+    } finally {
+        setSubmitting('edit-profile-save', false);
+    }
 }
 
 // ===== Tab Navigation =====
@@ -2496,9 +3418,22 @@ function renderFilterPills() {
         `;
     };
 
+    // The Following chip leads the row, and only exists for a signed-in
+    // visitor: it selects a different RPC (get_following_feed), which is
+    // authenticated-only, so offering it signed out would be a chip that can
+    // only ever return nothing.
+    const followingActive = feedMode === 'following';
+    const followingChip = currentUserId
+        ? `<button class="pill ${followingActive ? 'active' : ''}" role="tab"
+                   aria-selected="${followingActive ? 'true' : 'false'}"
+                   data-filter-kind="following" data-filter-value="following"
+                   data-i18n="social.following">Following</button>`
+        : '';
+
     container.innerHTML = `
-        <button class="pill ${allActive ? 'active' : ''}" role="tab"
-                aria-selected="${allActive ? 'true' : 'false'}"
+        ${followingChip}
+        <button class="pill ${allActive && !followingActive ? 'active' : ''}" role="tab"
+                aria-selected="${allActive && !followingActive ? 'true' : 'false'}"
                 data-filter-kind="all" data-filter-value="all"
                 data-i18n="social.catAll">All</button>
         ${categories.map(c => chip('category', c.slug, c.labelKey, c.label)).join('')}
@@ -2531,11 +3466,19 @@ function pinFilterPills() {
 // category, say), the filter is cleared rather than left pointing at nothing.
 function refreshFilterPills() {
     const { categories, genres } = availableFilters();
-    const stillThere = activeCategory
-        ? categories.some(c => c.slug === activeCategory)
-        : activeGenre
-            ? genres.some(g => g.slug === activeGenre)
-            : true;
+
+    // ⚠️ The Following chip is EXCLUDED from this check. It is not derived from
+    // the venue set — it is always offered to a signed-in visitor — so asking
+    // "is its chip still in the derived list?" answers no every time, and any
+    // venue edit (an owner tapping a genre, a phone adding a venue) would
+    // silently kick the user from Following back to All mid-scroll.
+    const stillThere = feedMode === 'following'
+        ? true
+        : activeCategory
+            ? categories.some(c => c.slug === activeCategory)
+            : activeGenre
+                ? genres.some(g => g.slug === activeGenre)
+                : true;
 
     if (!stillThere) {
         activeCategory = null;
@@ -2547,6 +3490,18 @@ function refreshFilterPills() {
 }
 
 function setFilter(kind, value) {
+    // Following is a third state of the same row: it switches which RPC the
+    // feed calls, and every other chip switches back. Category and genre still
+    // apply on top of it — one shared pill row that stopped working when you
+    // moved to Following would read as the filter being broken.
+    if (kind === 'following') {
+        feedMode = 'following';
+        renderFilterPills();
+        loadFeed(false);
+        return;
+    }
+    feedMode = 'all';
+
     // "All" and any no-op value must reach the RPC as SQL NULL, never the
     // literal string — filtering on a value no row has empties the feed
     // silently, which this app has shipped twice already.
@@ -2806,6 +3761,37 @@ function setupEventListeners() {
         venuePostBtn.addEventListener('click', () => openCreatePost(venuePageVenueId));
     }
 
+    // Member profile overlay
+    document.getElementById('member-page-back')?.addEventListener('click', closeMemberProfile);
+    document.getElementById('member-page-backdrop')?.addEventListener('click', closeMemberProfile);
+
+    // People sheet (followers / following / discover)
+    document.getElementById('people-sheet-close')?.addEventListener('click', closePeopleSheet);
+    document.getElementById('people-backdrop')?.addEventListener('click', closePeopleSheet);
+    document.getElementById('people-sheet-search')?.addEventListener('input', () => {
+        // Debounced: unlike the venue picker this one hits the database on
+        // every keystroke (discover_members runs a server-side ILIKE).
+        clearTimeout(peopleSearchTimeout);
+        peopleSearchTimeout = setTimeout(loadPeople, 300);
+    });
+
+    // Profile tab entry points
+    document.getElementById('edit-profile-btn')?.addEventListener('click', openEditProfile);
+    document.getElementById('discover-members-btn')?.addEventListener('click', () => openPeopleSheet('discover'));
+    document.getElementById('profile-followers-btn')?.addEventListener('click', () => openPeopleSheet('followers'));
+    document.getElementById('profile-following-btn')?.addEventListener('click', () => openPeopleSheet('following'));
+    document.getElementById('view-my-profile-btn')?.addEventListener('click', () => {
+        if (currentUserId) openMemberProfile(currentUserId);
+    });
+
+    // Edit profile sheet
+    document.getElementById('edit-profile-close')?.addEventListener('click', closeEditProfile);
+    document.getElementById('edit-profile-backdrop')?.addEventListener('click', closeEditProfile);
+    document.getElementById('edit-profile-form')?.addEventListener('submit', handleEditProfileSubmit);
+    document.getElementById('edit-profile-avatar-input')?.addEventListener('change', handleAvatarPick);
+    document.getElementById('edit-profile-avatar-remove')?.addEventListener('click', removeEditProfileAvatar);
+    document.getElementById('edit-profile-bio')?.addEventListener('input', updateBioCount);
+
     // Post options sheet
     document.getElementById('post-options-close')?.addEventListener('click', closePostOptions);
     document.getElementById('post-options-backdrop')?.addEventListener('click', closePostOptions);
@@ -2982,13 +3968,13 @@ function showPostOptions(mediaId) {
 
     sheet.classList.add('visible');
     backdrop.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('post-options');
 }
 
 function closePostOptions() {
     document.getElementById('post-options-sheet')?.classList.remove('visible');
     document.getElementById('post-options-backdrop')?.classList.remove('visible');
-    document.body.style.overflow = '';
+    unlockBodyScroll('post-options');
     optionsMediaId = null;
 }
 
@@ -3321,7 +4307,7 @@ async function openCreatePost(venueId) {
 
     modal.classList.add('visible');
     backdrop.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('create-post');
 }
 
 // The composer's venue row. ALWAYS visible now, and always a button.
@@ -3518,7 +4504,7 @@ function openAddVenue() {
 
     sheet.classList.add('visible');
     backdrop.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('add-venue');
 
     if (input && !('ontouchstart' in window)) setTimeout(() => input.focus(), 50);
 }
@@ -3526,7 +4512,7 @@ function openAddVenue() {
 function closeAddVenue() {
     document.getElementById('add-venue-sheet')?.classList.remove('visible');
     document.getElementById('add-venue-backdrop')?.classList.remove('visible');
-    document.body.style.overflow = '';
+    unlockBodyScroll('add-venue');
     pendingPlace = null;
 }
 
@@ -3755,7 +4741,7 @@ function closeCreatePost() {
     const backdrop = document.getElementById('create-post-backdrop');
     if (modal) modal.classList.remove('visible');
     if (backdrop) backdrop.classList.remove('visible');
-    document.body.style.overflow = '';
+    unlockBodyScroll('create-post');
     selectedPostFile = null;
     recordedChunks = [];
     recordedDurationSeconds = null;
@@ -4350,13 +5336,13 @@ function setupInstallPrompt() {
 function openIosInstall() {
     document.getElementById('ios-install-sheet')?.classList.add('visible');
     document.getElementById('ios-install-backdrop')?.classList.add('visible');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll('ios-install');
 }
 
 function closeIosInstall() {
     document.getElementById('ios-install-sheet')?.classList.remove('visible');
     document.getElementById('ios-install-backdrop')?.classList.remove('visible');
-    document.body.style.overflow = '';
+    unlockBodyScroll('ios-install');
 }
 
 // ===== Service Worker =====
