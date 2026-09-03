@@ -29,6 +29,39 @@ async function loadApp(page, url = PRETTY_URL) {
     await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
 }
 
+/**
+ * Opens the venue page for the app's first REAL venue, driving openVenuePage()
+ * directly instead of clicking a map pin.
+ *
+ * Deliberately not `page.click('.map-pin-wrapper')`: initMap() centres on the
+ * newest POST, and the newest post in this app is venue-less, so the venue's
+ * pin sits outside the viewport and Playwright refuses to click it even with
+ * force. That is a harness fact about where the map happens to be looking, not
+ * a product behaviour, and the sibling "tapping a map pin opens the venue page"
+ * test already owns the pin-click path (and currently fails on exactly this).
+ *
+ * Returns null when the app has no real venues — demo venue ids are the strings
+ * 'demo-1'..'demo-5', not UUIDs, and nothing server-side accepts them.
+ *
+ * The id is read from the swim lane's data-venue-id rather than from social.js
+ * state: `venues` is declared with `let` at the top level of a classic script,
+ * so it is NOT a window property and page.evaluate() cannot see it.
+ */
+async function openFirstRealVenue(page) {
+    await page.click('.nav-item[data-tab="map"]');
+    await page.waitForTimeout(1200);
+
+    const ids = await page.locator('#venue-swim-lane .swim-card').evaluateAll(
+        cards => cards.map(c => c.dataset.venueId)
+    );
+    const venueId = ids.find(id => id && !id.startsWith('demo-')) || null;
+    if (!venueId) return null;
+
+    await page.evaluate(id => window.openVenuePage(id), venueId);
+    await page.waitForTimeout(1500);
+    return venueId;
+}
+
 test.describe('ViibeView social app', () => {
     test('pretty URL /a/:slug/social resolves the app', async ({ page }) => {
         // The Netlify/Vite rewrite is server-side: the browser stays on
@@ -413,24 +446,24 @@ test.describe('ViibeView social app', () => {
         // true. Demo venues are excluded — their ids are not UUIDs and
         // follow_target rejects them.
         await loadApp(page);
-        await page.click('.nav-item[data-tab="map"]');
-        await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
-        await page.click('.map-pin-wrapper', { force: true });
-        await page.waitForTimeout(1200);
+
+        // Zero real venues is a data fact, not a regression — the Follow
+        // button is omitted entirely for demo venues.
+        const venueId = await openFirstRealVenue(page);
+        test.skip(!venueId, 'demo venues only — nothing real to follow');
 
         await expect(page.locator('#venue-page')).toHaveClass(/visible/);
 
-        // The button is omitted entirely for demo venues (their ids are the
-        // strings 'demo-1'..'demo-5', not UUIDs, so follow_target rejects
-        // them). Zero of them therefore means "this app has no real venues" —
-        // a data fact, not a regression. Say so rather than failing.
         const btn = page.locator('#venue-page-follow-btn');
-        test.skip(await btn.count() === 0, 'demo venues only — nothing real to follow');
-
         await expect(btn).toBeVisible();
         // paintFollowButton() is the single writer of the label, so an empty
         // one means the repaint never ran.
         await expect(btn).not.toBeEmpty();
+
+        // Signed out, tapping it must open signup rather than fail silently.
+        await btn.click();
+        await page.waitForTimeout(800);
+        await expect(page.locator('#auth-overlay')).toHaveClass(/visible/);
     });
 
     test('two overlays deep, closing the inner one keeps the body locked', async ({ page }) => {
@@ -439,10 +472,10 @@ test.describe('ViibeView social app', () => {
         // `document.body.style.overflow = ''` unconditionally — so closing the
         // inner overlay unlocked the page underneath the outer one.
         await loadApp(page);
-        await page.click('.nav-item[data-tab="map"]');
-        await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
-        await page.click('.map-pin-wrapper', { force: true });
-        await page.waitForTimeout(1000);
+
+        const venueId = await openFirstRealVenue(page);
+        test.skip(!venueId, 'demo venues only — no venue page to nest under');
+
         await expect(page.locator('#venue-page')).toHaveClass(/visible/);
         await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
 
