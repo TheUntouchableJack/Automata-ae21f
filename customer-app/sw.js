@@ -37,9 +37,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
-const CACHE_NAME = 'royalty-rewards-v9';
-const STATIC_CACHE = 'royalty-static-v9';
-const DYNAMIC_CACHE = 'royalty-dynamic-v9';
+const CACHE_NAME = 'royalty-rewards-v10';
+const STATIC_CACHE = 'royalty-static-v10';
+const DYNAMIC_CACHE = 'royalty-dynamic-v10';
 
 // Static assets to cache on install.
 //
@@ -53,7 +53,10 @@ const DYNAMIC_CACHE = 'royalty-dynamic-v9';
 const STATIC_ASSETS = [
     '/customer-app/app.html',
     '/customer-app/app.css',
-    '/customer-app/app.js',
+    // '/customer-app/app.js' was removed on 2026-09-04: no HTML ever loaded it,
+    // and it was the only caller of several RPCs revoked in 20260904000005,
+    // which made it read like live code in a caller search. Deleting the file
+    // and this line MUST happen together — see the all-or-nothing note above.
     '/customer-app/social.html',
     '/customer-app/social.css',
     '/customer-app/social.js',

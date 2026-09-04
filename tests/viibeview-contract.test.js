@@ -265,7 +265,20 @@ describe('manifest', () => {
 
 describe('service worker precache', () => {
     const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-    const assets = [...sw.matchAll(/'(\/customer-app\/[^']+)'/g)].map(m => m[1]);
+
+    // ⚠️ Strip // comments BEFORE matching. This scan is a plain regex over the
+    // file, so a comment that merely NAMES a path in quotes — e.g. the note left
+    // where '/customer-app/app.js' was removed on 2026-09-04 — was picked up as
+    // a live precache entry and failed the existence check below against a
+    // correct service worker.
+    const swCode = sw.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+    const assets = [...swCode.matchAll(/'(\/customer-app\/[^']+)'/g)].map(m => m[1]);
+
+    it('the comment strip did not eat the precache list', () => {
+        // Anti-vacuity: an empty `assets` makes the existence check below pass
+        // while asserting nothing at all.
+        expect(assets.length).toBeGreaterThan(4);
+    });
 
     it('precaches the ViibeView manifest', () => {
         expect(assets).toContain('/customer-app/viibeview-manifest.json');
