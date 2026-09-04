@@ -30,15 +30,48 @@ async function loadApp(page, url = PRETTY_URL) {
 }
 
 /**
+ * Pans the map so the VENUE pins are on screen, and asserts at least one was.
+ *
+ * initMap() centres on the newest POST (social.js:1707-1723), and the newest
+ * post in this app is venue-less and thousands of km from its one venue — so
+ * the pin is mounted but off-screen, and renderMapPins() skips its fitBounds
+ * safety valve whenever post pins exist (:1775). Leaflet keeps the marker in a
+ * transformed pane inside a clipped container, which is why waitForSelector
+ * resolves and `click({ force: true })` still fails with "Element is outside of
+ * the viewport": force skips actionability CHECKS, but Playwright must still
+ * compute a click point.
+ *
+ * Bring the venue into view rather than change where the map looks. That
+ * centring rule is deliberate, documented product behaviour, and bending it to
+ * suit a harness is the tail wagging the dog.
+ *
+ * Call this before every `.map-pin-wrapper` click, and click WITHOUT force so
+ * the real actionability checks run.
+ */
+async function bringVenuePinsIntoView(page) {
+    const fitted = await page.evaluate(() => {
+        // Bare identifiers, not window.* — see the openFirstRealVenue note.
+        const geo = filteredVenues().filter(v => v.latitude && v.longitude);
+        if (!geo.length || !map) return 0;
+        map.fitBounds(L.latLngBounds(geo.map(v => [v.latitude, v.longitude])),
+            { padding: [60, 60] });
+        return geo.length;
+    });
+    // Not vacuous: a zero here means nothing was ever brought on screen and the
+    // click that follows would be testing the old off-screen state again.
+    expect(fitted, 'no venue with coordinates to bring into view').toBeGreaterThan(0);
+    await page.waitForTimeout(800);
+}
+
+/**
  * Opens the venue page for the app's first REAL venue, driving openVenuePage()
  * directly instead of clicking a map pin.
  *
- * Deliberately not `page.click('.map-pin-wrapper')`: initMap() centres on the
- * newest POST, and the newest post in this app is venue-less, so the venue's
- * pin sits outside the viewport and Playwright refuses to click it even with
- * force. That is a harness fact about where the map happens to be looking, not
- * a product behaviour, and the sibling "tapping a map pin opens the venue page"
- * test already owns the pin-click path (and currently fails on exactly this).
+ * Deliberately not `page.click('.map-pin-wrapper')` — not because that path is
+ * broken (bringVenuePinsIntoView() makes it work, and two tests use it), but
+ * because these tests are about what the venue PAGE does once open. Going
+ * through the map would make them fail on map centring, which the sibling
+ * "tapping a map pin opens the venue page" test already owns.
  *
  * Returns null when the app has no real venues — demo venue ids are the strings
  * 'demo-1'..'demo-5', not UUIDs, and nothing server-side accepts them.
@@ -49,7 +82,7 @@ async function loadApp(page, url = PRETTY_URL) {
  * type="module"), so it lands in the global lexical environment: `window.venues`
  * is undefined, but a bare `venues` inside page.evaluate() resolves fine. Only
  * the `window.`-prefixed form fails. Function *declarations* like
- * openVenuePage() do become window properties, which is why :60 works.
+ * openVenuePage() do become window properties, which is why the call below works.
  */
 async function openFirstRealVenue(page) {
     await page.click('.nav-item[data-tab="map"]');
@@ -232,30 +265,7 @@ test.describe('ViibeView social app', () => {
         await page.click('.nav-item[data-tab="map"]');
         await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
 
-        // initMap() centres on the newest POST (social.js:1707-1723), and the
-        // newest post in this app is venue-less and thousands of km from its
-        // one venue — so the pin is mounted but off-screen, and renderMapPins()
-        // skips its fitBounds safety valve whenever post pins exist (:1775).
-        // Leaflet keeps the marker in a transformed pane inside a clipped
-        // container, which is why waitForSelector resolves and click({force})
-        // still failed: force skips actionability checks, but Playwright must
-        // still compute a click point.
-        //
-        // Bring the venue into view rather than change where the map looks.
-        // That centring rule is deliberate, documented product behaviour, and
-        // bending it to suit a harness is the tail wagging the dog.
-        const fitted = await page.evaluate(() => {
-            // Bare identifiers, not window.* — see the openFirstRealVenue note.
-            const geo = filteredVenues().filter(v => v.latitude && v.longitude);
-            if (!geo.length || !map) return 0;
-            map.fitBounds(L.latLngBounds(geo.map(v => [v.latitude, v.longitude])),
-                { padding: [60, 60] });
-            return geo.length;
-        });
-        // Not vacuous: a zero here means nothing was ever brought on screen and
-        // the click below would be testing the old off-screen state again.
-        expect(fitted, 'no venue with coordinates to bring into view').toBeGreaterThan(0);
-        await page.waitForTimeout(800);
+        await bringVenuePinsIntoView(page);
 
         // No force: with the pin genuinely on screen the real actionability
         // checks run, so this now proves the pin is clickable rather than
@@ -590,7 +600,8 @@ test.describe('ViibeView social app', () => {
         // cannot compute it, because it excludes soft-deleted members.
         await page.click('.nav-item[data-tab="map"]');
         await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
-        await page.click('.map-pin-wrapper', { force: true });
+        await bringVenuePinsIntoView(page);
+        await page.click('.map-pin-wrapper');
         await page.waitForTimeout(1200);
 
         const btn = page.locator('#venue-page-follow-btn');
@@ -608,7 +619,8 @@ test.describe('ViibeView social app', () => {
         await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
         await page.click('.nav-item[data-tab="map"]');
         await page.waitForSelector('.map-pin-wrapper', { timeout: 15000 });
-        await page.click('.map-pin-wrapper', { force: true });
+        await bringVenuePinsIntoView(page);
+        await page.click('.map-pin-wrapper');
         await page.waitForTimeout(1500);
         expect((await page.locator('#venue-page-follow-btn').textContent()).trim()).toBe(after);
 
