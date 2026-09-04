@@ -37,9 +37,14 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
-const CACHE_NAME = 'royalty-rewards-v10';
-const STATIC_CACHE = 'royalty-static-v10';
-const DYNAMIC_CACHE = 'royalty-dynamic-v10';
+// v11 (2026-09-04): app.html now reads member.is_me from the leaderboard and no
+// longer renders email/phone. 20260904000008 already reshaped both RPCs in prod,
+// so a returning PWA still serving cached v10 app.html would pair old client code
+// with the new shapes — the "this is you" highlight silently off. Mandatory, not
+// cosmetic.
+const CACHE_NAME = 'royalty-rewards-v11';
+const STATIC_CACHE = 'royalty-static-v11';
+const DYNAMIC_CACHE = 'royalty-dynamic-v11';
 
 // Static assets to cache on install.
 //

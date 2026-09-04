@@ -307,3 +307,194 @@ describe('cross-file: the premises M3 rests on still hold', () => {
         }
     });
 });
+
+// ============================================================================
+// M4 — 20260904000008_close_member_pii_chain.sql
+//
+// The odd one out in this file: M1/M2/M3 change GRANTS, M4 changes SHAPES and
+// touches no grant at all except to restore the ones its own DROPs removed. So
+// it gets its OWN corpus rather than joining FILES — the header's warning about
+// a shared corpus resolving the first match of a function name applies doubly
+// here, where get_member_profile is named in all four files and M4 is the only
+// one that DROPs it.
+//
+// What M4 closes: get_app_leaderboard returned app_members.id for every public
+// member, and get_member_profile(UUID) — which has no profile_public gate —
+// turned any such id into a name, email and phone. Two anon requests, verified
+// live 2026-09-04 against three real rows.
+// ============================================================================
+const M4 = '20260904000008_close_member_pii_chain.sql';
+const raw4 = fs.readFileSync(path.join(MIGRATIONS, M4), 'utf8');
+const code4 = stripComments(raw4);
+const ddl4 = stripDoBlocks(code4);
+
+describe('M4 closes the member PII chain', () => {
+    // ⚠️ Anti-vacuity FIRST. Every not.toMatch below passes against an empty
+    // string, and M4 is comment-heavy enough that a greedy strip is a real risk.
+    it('the corpus is real and survived both strips', () => {
+        expect(raw4.length).toBeGreaterThan(2000);
+        expect(code4.length, 'M4 is almost entirely comments after stripping')
+            .toBeGreaterThan(raw4.length * 0.25);
+        expect(ddl4.length, 'stripDoBlocks ate the top-level DDL — every prohibition ' +
+            'assertion below would pass vacuously')
+            .toBeGreaterThan(600);
+        // Positive anchors: the statements the prohibitions are relative to.
+        expect(ddl4).toMatch(/CREATE FUNCTION public\.get_app_leaderboard/);
+        expect(ddl4).toMatch(/CREATE FUNCTION public\.get_member_profile/);
+    });
+
+    // 🔴 THE SILENT FAILURE. get_member_profile is overloaded: the 1-arg loyalty
+    // form is M4's target, the 2-arg (UUID, UUID) form is ViibeView's profile
+    // overlay. A bare-name DROP raises 42725 rather than guessing, but a DROP of
+    // the (UUID, UUID) form would succeed and take the WRONG one — emptying every
+    // overlay with no error visible anywhere, because social.js:660 destructures
+    // { data } and never inspects error.
+    it('drops get_member_profile TYPE-QUALIFIED to the 1-arg form only', () => {
+        expect(ddl4).toMatch(/DROP FUNCTION public\.get_member_profile\(UUID\);/);
+
+        expect(ddl4, 'a bare-name DROP would raise 42725 on this overloaded function')
+            .not.toMatch(/DROP FUNCTION\s+(IF EXISTS\s+)?(public\.)?get_member_profile\s*;/i);
+
+        expect(ddl4, '🔴 M4 drops the 2-arg ViibeView overload. Every profile overlay ' +
+            'goes empty and fails SILENTLY — social.js:660 ignores error.')
+            .not.toMatch(/DROP FUNCTION[^;]*get_member_profile\s*\(\s*UUID\s*,\s*UUID\s*\)/i);
+    });
+
+    // 🔴 Ambiguity at RUN time, not deploy time. Leaving the 2-arg leaderboard in
+    // place alongside the new 3-arg form makes get_app_leaderboard(app, 10) match
+    // both — 42725 for real users while the push reports green.
+    it('drops the old 2-arg get_app_leaderboard exactly once', () => {
+        const drops = ddl4.match(/DROP FUNCTION[^;]*get_app_leaderboard[^;]*;/gi) || [];
+        expect(drops, `leaderboard drops found: ${drops.join(' | ')}`).toHaveLength(1);
+        expect(drops[0]).toMatch(/public\.get_app_leaderboard\(UUID,\s*INTEGER\)/i);
+        // ...and the post-flight proves it is GONE rather than merely shadowed.
+        expect(raw4).toMatch(/to_regprocedure\('public\.get_app_leaderboard\(uuid,integer\)'\)/);
+    });
+
+    // ⚠️ A DROP takes the function's grants with it, silently. Forgetting the
+    // re-GRANT turns both functions into 42501 for every caller.
+    it('re-GRANTs both recreated functions', () => {
+        expect(ddl4, 'the leaderboard DROP took its grants and they were not restored')
+            .toMatch(/GRANT EXECUTE ON FUNCTION public\.get_app_leaderboard\(UUID,\s*INTEGER,\s*UUID\) TO anon, authenticated;/);
+        expect(ddl4, 'the profile DROP took its grants and they were not restored')
+            .toMatch(/GRANT EXECUTE ON FUNCTION public\.get_member_profile\(UUID\) TO anon, authenticated;/);
+    });
+
+    it('never re-grants the 2-arg overload it must not have touched', () => {
+        // Not a widening and not a repair: M4 must leave that function alone
+        // entirely. A GRANT here would mean a DROP happened.
+        expect(ddl4).not.toMatch(/GRANT[^;]*get_member_profile\s*\(\s*UUID\s*,\s*UUID\s*\)/i);
+    });
+
+    // The actual payload: the PII is gone from the returned SHAPE.
+    //
+    // ⚠️ Assert on the RETURNS TABLE block, not on the body. `am.id` appears
+    // legitimately in both bodies — the leaderboard compares it to build is_me,
+    // and the profile returns the caller's own id, which they had to know to ask.
+    // A body-wide /am\.id/ prohibition fails against correct code.
+    const shapeOf = (name) => {
+        const fn = ddl4.slice(ddl4.indexOf(`CREATE FUNCTION public.${name}`));
+        const start = fn.indexOf('RETURNS TABLE');
+        const end = fn.indexOf('LANGUAGE');
+        expect(start, `could not locate the RETURNS TABLE of ${name}`).toBeGreaterThan(-1);
+        expect(end, `could not locate the end of ${name}'s signature`).toBeGreaterThan(start);
+        return fn.slice(start, end);
+    };
+
+    it('get_member_profile returns neither email nor phone', () => {
+        const shape = shapeOf('get_member_profile');
+        expect(shape.length).toBeGreaterThan(50);          // the slice is real
+        expect(shape, `still returns email — the chain is not closed. Shape: ${shape}`)
+            .not.toMatch(/\bemail\b/);
+        expect(shape, `still returns phone — the chain is not closed. Shape: ${shape}`)
+            .not.toMatch(/\bphone\b/);
+        // Positive control: the slice would trivially satisfy the above if empty.
+        expect(shape).toMatch(/\bfirst_name\b/);
+    });
+
+    it('get_app_leaderboard returns is_me and no dereferenceable id', () => {
+        const shape = shapeOf('get_app_leaderboard');
+        expect(shape.length).toBeGreaterThan(50);
+        expect(shape, `still returns a bare id — the harvest chain is open. Shape: ${shape}`)
+            .not.toMatch(/\bid\b/);
+        expect(shape, 'no is_me — the "this is you" highlight would be dead')
+            .toMatch(/\bis_me BOOLEAN\b/);
+        expect(ddl4).toMatch(/AS is_me/);
+    });
+
+    it('keeps the columns app.html actually renders', () => {
+        for (const col of ['am.first_name', 'am.last_name', 'am.points_balance',
+                           'am.tier', 'am.notifications_enabled']) {
+            expect(ddl4, `M4 dropped ${col}, which app.html renders`).toContain(col);
+        }
+    });
+
+    it('preserves the leaderboard visibility filter', () => {
+        expect(ddl4).toMatch(/am\.profile_public = true/);
+        expect(ddl4).toMatch(/am\.deleted_at IS NULL/);
+    });
+
+    it('carries a no-op warning, a functionality guard and isolated COMMENTs', () => {
+        expect(raw4).toMatch(/RAISE WARNING/);
+        expect(raw4).toMatch(/functionality guard/i);
+        // 🔴 The must-stay-OPEN direction. Security assertions all pass on a
+        // database where every caller is broken.
+        for (const fn of ['get_app_leaderboard\\(uuid,integer,uuid\\)',
+                          'get_member_profile\\(uuid\\)',
+                          'get_member_profile\\(uuid,uuid\\)']) {
+            expect(raw4, `the functionality guard omits ${fn}`)
+                .toMatch(new RegExp(`'public\\.${fn}'`));
+        }
+        const comments = (code4.match(/COMMENT ON /g) || []).length;
+        const doBlocks = (code4.match(/DO \$doc\$/g) || []).length;
+        expect(doBlocks).toBe(comments);
+        expect(comments).toBeGreaterThanOrEqual(2);
+    });
+
+    it('reloads the PostgREST schema cache', () => {
+        // Both signatures changed; a stale cache answers PGRST202, which reads as
+        // a broken migration rather than a stale cache.
+        expect(ddl4).toMatch(/NOTIFY pgrst, 'reload schema';/);
+    });
+});
+
+describe('M4 client half — the two halves are not independently correct', () => {
+    const html = fs.readFileSync(path.join(ROOT, 'customer-app/app.html'), 'utf8');
+
+    it('app.html reads is_me instead of comparing member ids', () => {
+        expect(html.length).toBeGreaterThan(10000);          // corpus is real
+        // The old comparison cannot work: member.id is now undefined, so isMe
+        // would be false for everyone and the highlight would die SILENTLY.
+        expect(html, 'app.html still compares member.id — the leaderboard no longer ' +
+            'returns one, so the "this is you" highlight is permanently false')
+            .not.toMatch(/member\.id === currentMember\.id/);
+        const uses = html.match(/member\.is_me === true/g) || [];
+        expect(uses, 'both render paths (podium and list) must read is_me').toHaveLength(2);
+    });
+
+    it('app.html passes its own member id to the leaderboard', () => {
+        expect(html).toMatch(/p_member_id: currentMember\?\.id \|\| null/);
+    });
+
+    it('app.html no longer renders email or phone', () => {
+        for (const ref of ['profile-email', 'profile-phone',
+                           'currentMember.email', 'currentMember.phone']) {
+            expect(html, `app.html still references ${ref}, which get_member_profile ` +
+                'no longer returns').not.toContain(ref);
+        }
+    });
+
+    it('sw.js bumped its cache generation past v10', () => {
+        // ⚠️ Mandatory, not cosmetic. The fetch handler is cache-first keyed on
+        // the full URL, so a returning PWA user keeps the old app.html — pairing
+        // old client code with the new RPC shapes — until the cache name changes.
+        const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
+        const names = stripJsComments(sw).match(/royalty-[a-z]+-v(\d+)/g) || [];
+        expect(names).toHaveLength(3);
+        for (const n of names) {
+            expect(Number(n.match(/v(\d+)$/)[1]),
+                `${n} was not bumped — returning PWA users keep the old app.html`)
+                .toBeGreaterThanOrEqual(11);
+        }
+    });
+});

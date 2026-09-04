@@ -2409,10 +2409,13 @@
                 <div class="profile-avatar-edit">&#9998;</div>
             </div>
             <div class="profile-name" id="profile-name">Member</div>
-            <div class="profile-contact">
-                <span id="profile-email">member@email.com</span>
-                <span id="profile-phone"></span>
-            </div>
+            <!-- The .profile-contact row (email + phone) was removed
+                 2026-09-04 with 20260904000008: get_member_profile no longer
+                 returns either field, so the spans could only ever paint empty.
+                 Do not re-add them without the gateway — the RPC that feeds this
+                 screen takes the member id from the caller and has no auth.uid(),
+                 so anything it returns is readable by anyone with the anon key. -->
+
         </div>
 
         <div class="profile-stats">
@@ -2889,8 +2892,11 @@
             // Profile
             const name = `${currentMember.first_name || ''} ${currentMember.last_name || ''}`.trim();
             document.getElementById('profile-name').textContent = name || 'Member';
-            document.getElementById('profile-email').textContent = currentMember.email || '';
-            document.getElementById('profile-phone').textContent = currentMember.phone || '';
+            // No email/phone row: get_member_profile stopped returning them
+            // (20260904000008) because it has no profile_public gate and returns
+            // any live row by id, so it was the dereference half of an anon PII
+            // harvest chain. Showing a member their OWN contact details comes back
+            // with the gateway, which can tell them from a stranger.
 
             // Profile avatar
             const profileAvatar = document.getElementById('profile-avatar');
@@ -2997,8 +3003,17 @@
 
         async function loadLeaderboard() {
             try {
+                // p_member_id is OUR OWN id, and the server returns is_me rather
+                // than every member's id. The leaderboard used to hand back
+                // app_members.id for every public member, which fed straight into
+                // get_member_profile and yielded their name, email and phone to
+                // anyone holding the anon key (20260904000008).
                 const { data } = await supabaseClient
-                    .rpc('get_app_leaderboard', { p_app_id: currentApp.id, p_limit: 10 });
+                    .rpc('get_app_leaderboard', {
+                        p_app_id: currentApp.id,
+                        p_limit: 10,
+                        p_member_id: currentMember?.id || null
+                    });
 
                 const realMembers = data || [];
                 const totalSlots = 10;
@@ -3023,7 +3038,7 @@
                     const actualRank = member === top3[0] ? 1 : member === top3[1] ? 2 : 3;
                     const placeClass = actualRank === 1 ? 'first' : actualRank === 2 ? 'second' : 'third';
                     const isPlaceholder = member._isPlaceholder;
-                    const isMe = !isPlaceholder && member.id === currentMember.id;
+                    const isMe = !isPlaceholder && member.is_me === true;
                     const initial = (member.display_name || 'A').charAt(0).toUpperCase();
                     const avatarContent = (!isPlaceholder && member.avatar_url)
                         ? `<img src="${escapeHtml(member.avatar_url)}" alt="">`
@@ -3056,7 +3071,7 @@
                 listEl.innerHTML = rest.map((member, i) => {
                     const rank = i + 4;
                     const isPlaceholder = member._isPlaceholder;
-                    const isMe = !isPlaceholder && member.id === currentMember.id;
+                    const isMe = !isPlaceholder && member.is_me === true;
                     const initial = (member.display_name || 'A').charAt(0).toUpperCase();
                     const avatarContent = (!isPlaceholder && member.avatar_url)
                         ? `<img src="${escapeHtml(member.avatar_url)}" alt="">`
