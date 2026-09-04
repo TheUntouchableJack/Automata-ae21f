@@ -56,10 +56,16 @@
 -- the forgery. The fix is a real member session. See the COMMENT ON FUNCTION
 -- in §5, which says the same thing to anyone reading the catalog.
 --
--- Scope: drops one storage bucket, its objects and its four policies; revokes
--- EXECUTE on two functions. No function BODY is touched, no table is altered,
--- no return type changes. Needs a client deploy (app.html + sw.js) because the
--- avatar upload UI it backed is being removed in the same commit.
+-- ⚠️ PREREQUISITE — the bucket must be dropped via the STORAGE API first.
+-- This project blocks direct DML on storage tables project-wide (42501,
+-- "Direct deletion from storage tables is not allowed"), at STATEMENT level, so
+-- a migration cannot do it and cannot even try without aborting. §1-2 asserts
+-- the bucket is gone and tells you the exact curl commands if it is not.
+--
+-- Scope: asserts one storage bucket is gone, drops its four policies, and
+-- revokes EXECUTE on two functions. No function BODY is touched, no table is
+-- altered, no return type changes. Needs a client deploy (app.html + sw.js)
+-- because the avatar upload UI it backed is being removed in the same commit.
 --
 -- Rollback
 -- --------
@@ -188,59 +194,56 @@ END
 $preflight$;
 
 
--- ===== 1. Empty the bucket =====
+-- ===== 1-2. The bucket and its objects — ASSERTED, not deleted here =====
 --
--- ⚠️ ORDER IS LOAD-BEARING, and this is the subtle half of it. The objects are
--- deleted BEFORE the policies in §3. If the migration role does not bypass RLS
--- on storage.objects, the ONLY thing permitting this DELETE is "Members can
--- delete own avatar" — the very policy §3 removes. Drop the policies first and
--- this DELETE silently affects zero rows, and then §2 fails 23503 on a bucket
--- you had every reason to believe was empty.
+-- ⚠️ THE BUCKET MUST ALREADY BE GONE BEFORE THIS FILE RUNS. This section only
+-- checks; it deliberately deletes nothing.
 --
--- ⚠️ This removes the ROWS, not the bytes in S3. The Storage API pre-step
--- (POST /storage/v1/bucket/member-avatars/empty) is what reclaims those, and it
--- is deliberately outside this transaction. Two orphan JPEGs totalling ~98 KB
--- are not worth making the migration depend on an HTTP call.
+-- The first draft did `DELETE FROM storage.objects` then `DELETE FROM
+-- storage.buckets`. This project rejects both:
+--
+--     ERROR: Direct deletion from storage tables is not allowed.
+--            Use the Storage API instead.  (SQLSTATE 42501)
+--
+-- and — the part worth writing down — it raised that error with ZERO matching
+-- rows, on an already-emptied bucket. So the guard is STATEMENT-level, not
+-- row-level: you cannot make it vacuous by deleting the rows out from under it,
+-- and "the bucket is already empty" is not a way around it. Any DELETE against
+-- storage.objects aborts the whole migration.
+--
+-- So the Storage API pre-step is REQUIRED, not optional as first drafted:
+--
+--   # ⚠️ NOT POST /bucket/member-avatars/empty — that endpoint is ASYNC
+--   #   ("queued, may take up to an hour") and the bucket DELETE then fails
+--   #   409 ResourceNotEmpty. Delete the objects explicitly; that is synchronous.
+--   curl -X DELETE "$SB/storage/v1/object/member-avatars" \
+--        -H "apikey: $SRK" -H "Authorization: Bearer $SRK" \
+--        -H 'Content-Type: application/json' \
+--        -d '{"prefixes":["<id>/avatar.jpg","<id>/avatar.jpeg"]}'
+--   curl -X DELETE "$SB/storage/v1/bucket/member-avatars" \
+--        -H "apikey: $SRK" -H "Authorization: Bearer $SRK"
+--
+-- Doing it through the API is also strictly better than the SQL would have
+-- been: it reclaims the actual BYTES in S3, which a DELETE against
+-- storage.objects never could.
 
-DELETE FROM storage.objects WHERE bucket_id = 'member-avatars';
-
--- Newer storage versions FK s3_multipart_uploads(_parts) to buckets too. Guarded
--- with to_regclass so this is a clean no-op on older storage rather than a
--- 42P01 on a table that does not exist here.
-DO $mpu$
+DO $bucket_gone$
+DECLARE v_objects INTEGER;
 BEGIN
-    IF to_regclass('storage.s3_multipart_uploads_parts') IS NOT NULL THEN
-        DELETE FROM storage.s3_multipart_uploads_parts WHERE bucket_id = 'member-avatars';
+    IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'member-avatars') THEN
+        RAISE NOTICE 'member-avatars bucket already removed via the Storage API — as required.';
+        RETURN;
     END IF;
-    IF to_regclass('storage.s3_multipart_uploads') IS NOT NULL THEN
-        DELETE FROM storage.s3_multipart_uploads WHERE bucket_id = 'member-avatars';
-    END IF;
+
+    SELECT COUNT(*) INTO v_objects FROM storage.objects WHERE bucket_id = 'member-avatars';
+
+    RAISE EXCEPTION
+        'member-avatars still exists (% object(s)). This migration cannot drop it: '
+        'direct DML on storage tables is blocked project-wide (42501), even for zero rows. '
+        'Delete the objects and then the bucket via the Storage API with the service key '
+        '(see the commands in this file, §1-2), then re-run this push.', v_objects;
 END
-$mpu$;
-
--- Say so out loud if the DELETE was a no-op against a non-empty bucket, rather
--- than letting §2 report it as an opaque foreign-key violation.
-DO $emptied$
-DECLARE v_left INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO v_left FROM storage.objects WHERE bucket_id = 'member-avatars';
-    IF v_left > 0 THEN
-        RAISE EXCEPTION
-            '§1 left % object(s) in member-avatars. The DELETE was blocked — almost '
-            'certainly RLS on storage.objects. Empty the bucket via the Storage API '
-            '(POST /storage/v1/bucket/member-avatars/empty) with the service key, then re-run.',
-            v_left;
-    END IF;
-END
-$emptied$;
-
-
--- ===== 2. Drop the bucket =====
---
--- storage.objects.bucket_id references storage.buckets(id) with NO cascade, so
--- §1 has to have run first or this fails 23503.
-
-DELETE FROM storage.buckets WHERE id = 'member-avatars';
+$bucket_gone$;
 
 
 -- ===== 3. Drop the four path-less policies =====
