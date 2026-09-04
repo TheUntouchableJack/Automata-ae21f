@@ -57,7 +57,7 @@ describe('ViibeView markup + vocabularies', () => {
             'venue-picker-sheet', 'venue-picker-backdrop',
             'add-venue-sheet', 'add-venue-backdrop',
             'ios-install-sheet', 'ios-install-backdrop',
-            'install-banner',
+            'install-banner', 'signup-banner',
         ]) {
             expect(d.getElementById(id), id).toBeTruthy();
         }
@@ -73,10 +73,23 @@ describe('ViibeView markup + vocabularies', () => {
             'add-venue-category', 'add-venue-genres', 'add-venue-save', 'add-venue-error',
             'add-venue-btn', 'search-add-venue-btn',
             'install-banner-icon', 'install-banner-btn', 'install-banner-dismiss',
+            'signup-banner-icon', 'signup-banner-btn', 'signup-banner-dismiss',
             'ios-install-close',
         ];
         const missing = ids.filter(id => !d.getElementById(id));
         expect(missing).toEqual([]);
+    });
+
+    it('both bottom banners ship hidden and share one slot', () => {
+        // They occupy the same fixed position above the nav, so a build that
+        // shipped either with .visible would stack them on top of each other.
+        // Visibility is refreshBottomBanners()'s decision alone, at runtime.
+        for (const id of ['install-banner', 'signup-banner']) {
+            expect(d.getElementById(id).classList.contains('visible'), id).toBe(false);
+        }
+        // The signup banner wears .install-banner deliberately — that class is
+        // what carries the slot's geometry. Losing it would drop it inline.
+        expect(d.getElementById('signup-banner').classList.contains('install-banner')).toBe(true);
     });
 
     it('setFormMessage/setSubmitting id conventions are satisfied by the add-venue form', () => {

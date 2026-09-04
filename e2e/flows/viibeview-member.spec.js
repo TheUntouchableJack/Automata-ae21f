@@ -132,19 +132,25 @@ async function restoreProfile(snapshot) {
 }
 
 /**
- * Finds another member to follow: the author of a venue-less feed card.
+ * Finds another member to follow: the author of any feed card.
  *
  * Deliberately the author of a REAL POST rather than any row from the discover
  * sheet — the Following-feed test needs the followed person to actually have a
  * post, and picking someone at random would make that test pass or fail on who
  * happens to be listed first.
  *
- * Returns null when this app has no venue-less post by someone else.
+ * Headers are author-first regardless of whether the post has a venue, so the
+ * onclick is the whole test: a card that opens a member profile has an author,
+ * and one that opens a venue page (or nothing) does not. This used to filter on
+ * data-venue-id="" as a proxy for "has an author", which was true only while
+ * venue posts hid their author entirely.
+ *
+ * Returns null when nobody else has posted in this app.
  */
 async function findAnotherAuthor() {
     const me = await signedInUserId();
     return page.evaluate(myId => {
-        const cards = [...document.querySelectorAll('#feed-container .feed-card[data-venue-id=""]')];
+        const cards = [...document.querySelectorAll('#feed-container .feed-card')];
         for (const card of cards) {
             const info = card.querySelector('.feed-venue-info');
             const onclick = info?.getAttribute('onclick') || '';
@@ -212,8 +218,8 @@ test.describe('ViibeView signed-in member', () => {
             // a brand-new test account has not, and asserting anyway is how a
             // test starts passing against a state it never reached.
             const myId = await signedInUserId();
-            // .venue-handle sits INSIDE .feed-venue-info (social.js:1640-1647),
-            // so this descends rather than hopping to a parent.
+            // .venue-handle sits INSIDE .feed-venue-info (see
+            // postHeaderMarkup), so this descends rather than hopping up.
             const myByline = page.locator(
                 `#feed-container .feed-venue-info[onclick*="${myId}"] .venue-handle`);
             if (await myByline.count() > 0) {
@@ -332,10 +338,10 @@ test.describe('ViibeView signed-in member', () => {
         await page.waitForTimeout(2500);
 
         const other = await findAnotherAuthor();
-        // Only follow-a-VENUE was covered before (viibeview-social.spec.js:443,
-        // :498). A tenant whose only venue-less posts are this member's own has
-        // nobody to follow, and saying so is better than a green vacuous test.
-        test.skip(!other, 'no venue-less post by another member in this app yet');
+        // Only follow-a-VENUE was covered before (viibeview-social.spec.js).
+        // A tenant whose every post is this member's own has nobody to follow,
+        // and saying so is better than a green vacuous test.
+        test.skip(!other, 'no post by another member in this app yet');
 
         await page.evaluate(id => window.openMemberProfile(id), other.userId);
         await page.waitForTimeout(1500);
@@ -404,7 +410,7 @@ test.describe('ViibeView signed-in member', () => {
         await expect(chip).toHaveCount(1);
 
         const other = await findAnotherAuthor();
-        test.skip(!other, 'no venue-less post by another member to populate a Following feed');
+        test.skip(!other, 'no post by another member to populate a Following feed');
 
         let followed = false;
         try {
@@ -445,6 +451,57 @@ test.describe('ViibeView signed-in member', () => {
                     await page.waitForTimeout(1500);
                 }
             }
+        }
+    });
+
+    test('signing in swaps the signup banner for the install banner immediately', async ({ browser }) => {
+        test.skip(!CAN_SIGN_IN, 'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD');
+
+        // ⚠️ Its own context, NOT the shared signed-in `page` — the whole point
+        // is to start signed OUT and watch the slot change under a page that is
+        // already painted. Writes nothing; no restore needed.
+        const ctx = await browser.newContext();
+        const p = await ctx.newPage();
+
+        try {
+            await p.addInitScript(() => {
+                // Qualify for the second-visit rule, and clear both dismissals.
+                localStorage.setItem('viibe_visits_viibeview', '3');
+                localStorage.removeItem('viibe_install_dismissed_viibeview');
+                localStorage.removeItem('viibe_signup_banner_dismissed_viibeview');
+            });
+            await p.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+            await p.waitForSelector('#filter-pills .pill', { timeout: 15000 });
+
+            await expect(p.locator('#signup-banner')).toHaveClass(/visible/);
+            await expect(p.locator('#install-banner')).not.toHaveClass(/visible/);
+
+            // Chromium does not fire beforeinstallprompt under automation, so
+            // canOfferInstall() would veto the install banner for reasons that
+            // have nothing to do with what this test is about. Stand one in.
+            // (Classic script — the bare identifier is the top-level binding.)
+            await p.evaluate(() => {
+                deferredInstallPrompt = {
+                    prompt() {},
+                    userChoice: Promise.resolve({ outcome: 'accepted' })
+                };
+            });
+
+            await p.click('.nav-item[data-tab="profile"]');
+            await p.click('#profile-login-btn');
+            await p.fill('#login-email', TEST_EMAIL);
+            await p.fill('#login-password', TEST_PASSWORD);
+            await p.click('#login-submit');
+
+            await expect(p.locator('#profile-signed-in')).toBeVisible({ timeout: 20000 });
+
+            // ⚠️ No p.reload() anywhere in this test. That absence IS the
+            // assertion: onSignedIn() has to swap the slot in place, and it has
+            // to ignore the visit count for someone who just joined.
+            await expect(p.locator('#install-banner')).toHaveClass(/visible/);
+            await expect(p.locator('#signup-banner')).not.toHaveClass(/visible/);
+        } finally {
+            await ctx.close();
         }
     });
 });

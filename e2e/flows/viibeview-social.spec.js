@@ -458,17 +458,13 @@ test.describe('ViibeView social app', () => {
         await loadApp(page);
         await page.waitForTimeout(2000);
 
-        // Only unattached Viibes route to their author — a venue post opens the
-        // venue, which is covered elsewhere. An app whose every post has a
-        // venue has nothing to assert here, and pretending otherwise is how a
-        // test starts passing against a state it never reached.
-        const authorCards = page.locator('#feed-container .feed-card[data-venue-id=""] .feed-venue-info');
+        // Headers are AUTHOR-FIRST now, venue or no venue — a post made at a
+        // venue reads as its author with an "at {venue}" line beneath, so this
+        // no longer has to restrict itself to data-venue-id="". Only a pre-UGC
+        // post, whose author was never recorded, has nothing to open.
+        const authorCards = page.locator('#feed-container .feed-venue-info[onclick*="openMemberProfile"]');
         const count = await authorCards.count();
-        test.skip(count === 0, 'no venue-less posts in this app yet');
-
-        const clickable = await authorCards.first().getAttribute('onclick');
-        test.skip(!clickable || !clickable.includes('openMemberProfile'),
-            'the visible venue-less posts predate authorship being recorded');
+        test.skip(count === 0, 'every visible post predates authorship being recorded');
 
         await authorCards.first().click();
         await page.waitForTimeout(1200);
@@ -488,6 +484,85 @@ test.describe('ViibeView social app', () => {
 
         await page.click('#member-page-back');
         await expect(page.locator('#member-page')).not.toHaveClass(/visible/);
+    });
+
+    test('a post made AT a venue still routes to its author', async ({ page }) => {
+        // The gap this closes: postIdentity() used to branch on venue_id FIRST,
+        // so a venue-attached post rendered the venue's avatar and opened the
+        // venue page — with the author's id, name and avatar sitting unused in
+        // the very same payload. There was no route to the author at all.
+        await loadApp(page);
+        await page.waitForTimeout(2000);
+
+        const venueCards = page.locator('#feed-container .feed-card:not([data-venue-id=""])');
+        const count = await venueCards.count();
+        test.skip(count === 0, 'no venue-attached posts in this app yet');
+
+        const header = venueCards.first().locator('.feed-venue-info');
+        const onclick = await header.getAttribute('onclick');
+        test.skip(!onclick || !onclick.includes('openMemberProfile'),
+            'the visible venue posts are venue-authored or predate authorship');
+
+        // The venue is not lost — it moves to a nested subtitle whose own
+        // handler stops propagation, so one tap cannot open both.
+        const venueLine = header.locator('.venue-location-link');
+        await expect(venueLine).toHaveCount(1);
+        await expect(venueLine).toHaveAttribute('onclick', /openVenueFromPost/);
+
+        await header.click();
+        await page.waitForTimeout(1200);
+
+        await expect(page.locator('#member-page')).toHaveClass(/visible/);
+        // Tapping the author must NOT also have opened the venue underneath.
+        await expect(page.locator('#venue-page')).not.toHaveClass(/visible/);
+    });
+
+    test('venue page posts show who posted them', async ({ page }) => {
+        // These cards used to carry a header holding nothing but the ⋮ button:
+        // the venue page fetched its posts with a raw venue_media select that
+        // asked for no author name or avatar. get_venue_page_feed exists to
+        // supply them, and it ships without a grant footer so this works signed
+        // out — which is how it is exercised here.
+        await loadApp(page);
+        await page.waitForTimeout(2000);
+
+        // ⚠️ Navigate by id, not by clicking the feed card's header. The header
+        // is author-primary when the post has an author and venue-primary when
+        // it does not, so a click path would silently depend on which shape
+        // this tenant's data happens to produce.
+        const venueId = await page.evaluate(() => {
+            const c = document.querySelector('#feed-container .feed-card:not([data-venue-id=""])');
+            return c?.getAttribute('data-venue-id') || null;
+        });
+        test.skip(!venueId, 'no venue-attached posts in this app yet');
+
+        await page.evaluate(id => window.openVenuePage(id), venueId);
+        await expect(page.locator('#venue-page')).toHaveClass(/visible/);
+        await page.waitForTimeout(2500);
+
+        const posts = page.locator('#venue-page-feed .feed-card');
+        const count = await posts.count();
+        test.skip(count === 0, 'this venue has no approved posts');
+
+        // The invariant, asserted for EVERY card: a post whose author was
+        // recorded names them and opens their profile; a pre-UGC post, whose
+        // author never was and cannot be backfilled, keeps the old headerless
+        // card. What must not happen is a header that names nobody, or one that
+        // names someone with no way to reach them.
+        for (let i = 0; i < count; i++) {
+            const card = posts.nth(i);
+            const info = card.locator('.feed-venue-info');
+
+            if (await info.count() === 0) {
+                await expect(card.locator('.feed-card-header-compact')).toHaveCount(1);
+                continue;
+            }
+
+            await expect(info).toHaveAttribute('onclick', /openMemberProfile/);
+            await expect(card.locator('.venue-handle')).not.toBeEmpty();
+            // No "at {venue}" line here — the whole page is already that venue.
+            await expect(card.locator('.venue-location-link')).toHaveCount(0);
+        }
     });
 
     test('a private profile explains itself instead of opening blank', async ({ page }) => {

@@ -250,6 +250,87 @@ test.describe('ViibeView member accounts', () => {
         expect(errors, errors.join('\n')).toEqual([]);
     });
 
+    // ===== Bottom banner slot =====
+    //
+    // #install-banner and #signup-banner share ONE fixed slot above the nav.
+    // Which one shows is decided by the session: a signed-out visitor gets the
+    // signup prompt and must NEVER get the install prompt — asking someone to
+    // install an app they have no account in is the wrong ask.
+    //
+    // Both are gated on "second visit or later", so every test here seeds the
+    // visit counter first. addInitScript runs before any page script, which is
+    // what makes the seed visible to setupSignupPrompt() at the end of init().
+    test.describe('bottom banner slot', () => {
+
+        // ⚠️ Sets the visit count ONLY. An earlier version also cleared the two
+        // dismissal keys "for safety", which was worse than useless: every test
+        // gets a fresh context so they are already absent, and addInitScript
+        // re-runs on RELOAD — so it erased the very dismissal the persistence
+        // test had just written, and that test failed against correct code.
+        async function seedVisits(page, visits) {
+            await page.addInitScript((n) => {
+                localStorage.setItem('viibe_visits_viibeview', String(n));
+            }, visits);
+        }
+
+        test('neither banner appears on a first visit', async ({ page }) => {
+            await seedVisits(page, 0);
+            await loadApp(page);
+            await page.waitForTimeout(500);
+
+            await expect(page.locator('#signup-banner')).not.toHaveClass(/visible/);
+            await expect(page.locator('#install-banner')).not.toHaveClass(/visible/);
+        });
+
+        test('anonymous visitors get the signup banner, never the install banner', async ({ page }) => {
+            // The load-bearing assertion: this is the one that fails the moment
+            // maybeShowInstallBanner() loses its isMemberSignedIn guard.
+            await seedVisits(page, 3);
+            await loadApp(page);
+
+            await expect(page.locator('#signup-banner')).toHaveClass(/visible/);
+            await expect(page.locator('#install-banner')).not.toHaveClass(/visible/);
+        });
+
+        test('the signup banner opens the signup view', async ({ page }) => {
+            await seedVisits(page, 3);
+            await loadApp(page);
+            await expect(page.locator('#signup-banner')).toHaveClass(/visible/);
+
+            await page.click('#signup-banner-btn');
+
+            await expect(page.locator('#auth-overlay')).toHaveClass(/visible/);
+            await expect(page.locator('#auth-view-signup')).toBeVisible();
+            await expect(page.locator('#signup-banner')).not.toHaveClass(/visible/);
+
+            // Opening the overlay is not a dismissal — someone who backs out
+            // should be asked again next visit, not silenced for 14 days.
+            const dismissed = await page.evaluate(
+                () => localStorage.getItem('viibe_signup_banner_dismissed_viibeview'));
+            expect(dismissed).toBeNull();
+        });
+
+        test('dismissing the signup banner sticks across a reload', async ({ page }) => {
+            await seedVisits(page, 3);
+            await loadApp(page);
+            await expect(page.locator('#signup-banner')).toHaveClass(/visible/);
+
+            await page.click('#signup-banner-dismiss');
+            await expect(page.locator('#signup-banner')).not.toHaveClass(/visible/);
+
+            const dismissed = await page.evaluate(
+                () => localStorage.getItem('viibe_signup_banner_dismissed_viibeview'));
+            expect(dismissed).not.toBeNull();
+
+            await page.reload({ waitUntil: 'networkidle' });
+            await page.waitForTimeout(1000);
+
+            await expect(page.locator('#signup-banner')).not.toHaveClass(/visible/);
+            // And the install banner must not take the freed slot.
+            await expect(page.locator('#install-banner')).not.toHaveClass(/visible/);
+        });
+    });
+
     // ===== Live tests — create real users. Opt in explicitly. =====
     test.describe('live signup', () => {
         test.skip(!LIVE, 'Creates real users in Royalty PROD. Enable with SOCIAL_AUTH_LIVE=true');
