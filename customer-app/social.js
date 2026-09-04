@@ -186,10 +186,25 @@ let deferredInstallPrompt = null;
 // Flips true once setupInstallPrompt() has run, so an event that arrives first
 // is stashed rather than dropped and the banner appears when the UI is ready.
 let installUiReady = false;
+// Same contract, for #signup-banner.
+let signupUiReady = false;
+
+// Cached answer to "is there a session?", because the bottom banners are
+// decided from the parse-time beforeinstallprompt handler, which is synchronous
+// and cannot await SocialAuth.isSignedIn().
+//
+// Written by renderProfileIdentity(), whose whole job is reflecting the session
+// in the UI and which already awaits getSession(). It runs at init():444, long
+// before installUiReady/signupUiReady flip at the tail of setupEventListeners(),
+// so no banner can be shown while this is still stale.
+let isMemberSignedIn = false;
 
 const FEED_PAGE_SIZE = 20;
 const SOUND_PREF_KEY = 'viibe_sound_on';
 const INSTALL_DISMISSED_KEY = 'viibe_install_dismissed';
+// The signup banner shares the install banner's slot and its rules, but keeps
+// its own key: dismissing one must not silence the other.
+const SIGNUP_BANNER_DISMISSED_KEY = 'viibe_signup_banner_dismissed';
 // How long a dismissal sticks. Long enough that the banner is not nagging,
 // short enough that someone who dismissed it in a hurry sees it again.
 const INSTALL_DISMISS_DAYS = 14;
@@ -571,6 +586,9 @@ function maxVideoDuration() {
 
 // ===== Session =====
 
+// ⚠️ The reload is load-bearing beyond convenience: it is what rebuilds the
+// bottom banner slot signed-out. Anything that turns this into an in-place
+// teardown must also call refreshBottomBanners().
 async function handleLogout() {
     await SocialAuth.signOut();
     window.location.reload();
@@ -586,6 +604,10 @@ async function renderProfileIdentity() {
     const emailEl = document.getElementById('profile-email');
 
     const session = await SocialAuth.getSession();
+
+    // The bottom banner slot is decided synchronously from a browser event
+    // handler, so it reads this rather than awaiting the session itself.
+    isMemberSignedIn = !!session;
 
     if (!session) {
         if (signedOut) signedOut.style.display = '';
@@ -1127,6 +1149,13 @@ async function onSignedIn() {
     // for the whole signed-out session.
     if (feedHasRendered) renderFeed();
 
+    // The bottom banner slot belongs to whichever prompt fits the session, and
+    // the session just changed under a page that is already painted. Swap the
+    // signup banner for the install one immediately: waiting for the two-visit
+    // rule would leave the slot empty for the rest of a session in which the
+    // visitor just told us they are staying.
+    refreshBottomBanners({ justSignedIn: true });
+
     // Finish what the visitor was doing when the overlay interrupted them.
     if (hasPendingComposer) {
         const venueId = pendingComposerVenueId;
@@ -1576,79 +1605,152 @@ function renderFeedEmptyState() {
 
 // Who a post is by.
 //
-// A post carries a venue OR an author, and now usually the latter: members post
-// unattached Viibes. Before venue_id was nullable, submitPost() invented a
-// "General" venue for every post so the NOT NULL could be satisfied — which is
-// why Jay's test post reads "General / General" and links to a venue nobody
-// created on purpose.
+// AUTHOR-FIRST. A post can carry a venue AND an author, and when it does, the
+// person is the headline and the venue is the place they were — "Pahkie A / at
+// The Blue Room", not "@blueroom" with the author nowhere on the card. The
+// venue used to win that contest outright, which meant a post made at a venue
+// had no route to its author at all even though the author's id, name and
+// avatar were all sitting in the same payload.
+//
+// Before venue_id was nullable, submitPost() invented a "General" venue for
+// every post so the NOT NULL could be satisfied — which is why Jay's test post
+// reads "General" and links to a venue nobody created on purpose. Those posts
+// have an author, so they now read as their author.
+//
+// `primary` says which of the three shapes this is, so renderFeedCard() does
+// not re-derive the branch:
+//   'author' — avatar+name are the member; optional "at {venue}" subtitle
+//   'venue'  — no recorded author (venue-authored, or pre-UGC with a venue)
+//   'none'   — pre-UGC with neither; inert, and must not look tappable
 function postIdentity(item) {
-    if (item.venue_id) {
+    // display_name first: it is what the member chose for themselves in Edit
+    // Profile. first/last are the signup fields and remain the fallback for
+    // anyone who has not set one.
+    const authorName = item.author_display_name
+        || [item.author_first_name, item.author_last_name].filter(Boolean).join(' ');
+    const userId = item.uploaded_by_user_id || null;
+
+    // Two spellings of the same venue, deliberately. The handle is the right
+    // headline for a venue-primary card — it is the venue's identity, the way
+    // @blueroom is. It reads badly in prose, though: "at @blueroom" is not a
+    // sentence, so the "at {venue}" subtitle takes the display name instead.
+    const venueTitle = item.venue_handle ? `@${item.venue_handle}` : (item.venue_name || '');
+    const venueLabel = item.venue_name || venueTitle;
+    // get_venue_feed returns the venue's genres on every row, so the card
+    // header can say what was playing without a second lookup.
+    const venueGenres = Array.isArray(item.venue_music_genres) ? item.venue_music_genres : [];
+
+    if (userId) {
         return {
-            title: item.venue_handle ? `@${item.venue_handle}` : (item.venue_name || ''),
-            subtitle: [item.venue_name, item.venue_city].filter(Boolean).join(', '),
-            imageUrl: item.venue_profile_image_url || null,
-            letter: (item.venue_name || '?').charAt(0).toUpperCase(),
-            venueId: item.venue_id,
-            userId: null,
-            // get_venue_feed returns the venue's genres on every row, so the
-            // card header can say what was playing without a second lookup.
-            genres: Array.isArray(item.venue_music_genres) ? item.venue_music_genres : []
+            primary: 'author',
+            title: authorName || 'Someone',
+            imageUrl: item.author_avatar_url || null,
+            letter: (authorName || '?').charAt(0).toUpperCase(),
+            userId,
+            // Carried even on an author-primary card: it is what the "at
+            // {venue}" subtitle names and links to.
+            venueId: item.venue_id || null,
+            venueName: venueLabel,
+            genres: item.venue_id ? venueGenres : []
         };
     }
 
-    // display_name first: it is what the member chose for themselves in Edit
-    // Profile. first/last are the signup fields and remain the fallback for
-    // anyone who has not set one — which is everybody until this release, since
-    // nothing has ever written app_members.display_name.
-    const name = item.author_display_name
-        || [item.author_first_name, item.author_last_name].filter(Boolean).join(' ');
+    if (item.venue_id) {
+        return {
+            primary: 'venue',
+            title: venueTitle,
+            subtitle: [item.venue_name, item.venue_city].filter(Boolean).join(', '),
+            imageUrl: item.venue_profile_image_url || null,
+            letter: (item.venue_name || '?').charAt(0).toUpperCase(),
+            userId: null,
+            venueId: item.venue_id,
+            venueName: venueLabel,
+            genres: venueGenres
+        };
+    }
 
+    // Pre-UGC: no venue AND no author. uploaded_by_user_id was never written
+    // before the UGC release and no backfill is possible, so there is nothing
+    // to link to. "Someone" beats a blank row.
     return {
-        // Pre-UGC posts have no venue AND no author (uploaded_by_user_id has
-        // never been written before this release). "Someone" beats a blank row.
-        title: name || 'Someone',
-        subtitle: '',
-        imageUrl: item.author_avatar_url || null,
-        letter: (name || '?').charAt(0).toUpperCase(),
+        primary: 'none',
+        title: 'Someone',
+        imageUrl: null,
+        letter: '?',
+        userId: null,
         venueId: null,
-        // The single root cause behind "Viewing A Profile", "View Another
-        // User's Followers" and "View Another User's Following" all failing
-        // together: the author name rendered with no click handler, so there
-        // was no route to a member profile from anywhere in the app.
-        // Null for a pre-UGC post, whose author was never recorded.
-        userId: item.uploaded_by_user_id || null,
+        venueName: '',
         genres: []
     };
+}
+
+// The "at {venue}" subtitle sits INSIDE the clickable identity block, so its
+// click must not also fire the parent's openMemberProfile. Nothing else in this
+// file delegates on the feed container — every handler is an inline onclick —
+// so taking the event explicitly is the local idiom (see toggleFeedSound).
+function openVenueFromPost(event, venueId) {
+    event.stopPropagation();
+    openVenuePage(venueId);
+}
+
+// "at The Blue Room". I18n.t() returns the key when a translation is missing,
+// so the English is built here rather than trusting the lookup.
+function postedAtLabel(venueName) {
+    const translated = window.I18n?.t
+        ? window.I18n.t('social.postedAtVenue', { venue: venueName })
+        : 'social.postedAtVenue';
+    return translated === 'social.postedAtVenue' ? `at ${venueName}` : translated;
+}
+
+// The identity block of a post header, shared by the main feed and the venue
+// page so the two cannot drift. `showVenue` is false on the venue page, where
+// the whole page is already that one venue.
+function postHeaderMarkup(identity, { showVenue = true } = {}) {
+    const openIdentity = identity.primary === 'author'
+        ? ` onclick="openMemberProfile('${escapeHtml(identity.userId)}')"`
+        : identity.primary === 'venue'
+            ? ` onclick="openVenuePage('${escapeHtml(identity.venueId)}')"`
+            : '';
+
+    // ⚠️ .feed-venue-info carries cursor:pointer unconditionally, so a header
+    // with nothing to open still looks tappable without this class.
+    const inert = identity.primary === 'none' ? ' feed-venue-info-inert' : '';
+
+    let subtitle = '';
+    if (identity.primary === 'author') {
+        // Nested inside the clickable parent, hence openVenueFromPost's
+        // stopPropagation — otherwise one tap opens the venue AND the profile.
+        if (showVenue && identity.venueId && identity.venueName) {
+            subtitle = `<div class="venue-location venue-location-link" onclick="openVenueFromPost(event, '${escapeHtml(identity.venueId)}')">${escapeHtml(postedAtLabel(identity.venueName))}</div>`;
+        }
+    } else if (identity.subtitle) {
+        subtitle = `<div class="venue-location">${escapeHtml(identity.subtitle)}</div>`;
+    }
+
+    return `
+        <div class="feed-venue-info${inert}"${openIdentity}>
+            <div class="venue-avatar">
+                ${identity.imageUrl
+                    ? `<img src="${escapeHtml(identity.imageUrl)}" alt="">`
+                    : `<div class="venue-avatar-placeholder">${escapeHtml(identity.letter)}</div>`}
+            </div>
+            <div class="venue-meta">
+                <div class="venue-handle">${escapeHtml(identity.title)}</div>
+                ${subtitle}
+                ${genreChipsMarkup({ music_genres: identity.genres }, 2)}
+            </div>
+        </div>
+    `;
 }
 
 function renderFeedCard(item) {
     const isVideo = item.media_type === 'video';
     const identity = postIdentity(item);
 
-    // A venue post opens the venue; an unattached Viibe opens its author's
-    // profile; a pre-UGC post (no venue, no recorded author) opens nothing and
-    // is deliberately not made to look tappable.
-    const openIdentity = identity.venueId
-        ? ` onclick="openVenuePage('${escapeHtml(identity.venueId)}')"`
-        : identity.userId
-            ? ` onclick="openMemberProfile('${escapeHtml(identity.userId)}')"`
-            : '';
-
     return `
         <div class="feed-card" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
             <div class="feed-card-header">
-                <div class="feed-venue-info"${openIdentity}>
-                    <div class="venue-avatar">
-                        ${identity.imageUrl
-                            ? `<img src="${escapeHtml(identity.imageUrl)}" alt="">`
-                            : `<div class="venue-avatar-placeholder">${escapeHtml(identity.letter)}</div>`}
-                    </div>
-                    <div class="venue-meta">
-                        <div class="venue-handle">${escapeHtml(identity.title)}</div>
-                        ${identity.subtitle ? `<div class="venue-location">${escapeHtml(identity.subtitle)}</div>` : ''}
-                        ${genreChipsMarkup({ music_genres: identity.genres }, 2)}
-                    </div>
-                </div>
+                ${postHeaderMarkup(identity)}
                 <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                 </button>
@@ -1846,16 +1948,27 @@ function openPostPreview(postId) {
 
     previewPostId = postId;
 
-    const authorName = [pin.author_first_name, pin.author_last_name].filter(Boolean).join(' ');
-    const byline = pin.venue_id ? (pin.venue_name || '') : (authorName || 'Someone');
+    // Author-first, matching the feed card. display_name is what the member
+    // chose for themselves; first/last are the signup fallback.
+    const authorName = pin.author_display_name
+        || [pin.author_first_name, pin.author_last_name].filter(Boolean).join(' ');
+    const byline = authorName || (pin.venue_id ? (pin.venue_name || '') : 'Someone');
 
     mediaEl.innerHTML = `
         <video src="${escapeHtml(pin.url)}" poster="${escapeHtml(pin.thumbnail_url || '')}"
                playsinline muted loop autoplay preload="metadata"></video>
     `;
 
+    // The byline opens the author's profile when there is one to open. Closing
+    // the preview first: the member page is a full-screen overlay and would
+    // otherwise stack on top of a still-playing video.
+    const bylineMarkup = pin.uploaded_by_user_id
+        ? `<div class="post-preview-byline post-preview-byline-link"
+                onclick="closePostPreview(); openMemberProfile('${escapeHtml(pin.uploaded_by_user_id)}')">${escapeHtml(byline)}</div>`
+        : `<div class="post-preview-byline">${escapeHtml(byline)}</div>`;
+
     infoEl.innerHTML = `
-        <div class="post-preview-byline">${escapeHtml(byline)}</div>
+        ${bylineMarkup}
         ${pin.caption ? `<div class="post-preview-caption">${escapeHtml(pin.caption)}</div>` : ''}
         ${pin.venue_id
             ? `<button class="auth-btn auth-btn-primary post-preview-venue-btn" type="button"
@@ -2557,16 +2670,17 @@ async function loadVenuePageFeed(append = false) {
     if (loadingEl) loadingEl.style.display = 'block';
 
     const pageSize = 20;
-    // uploaded_by_user_id is load-bearing: the options sheet decides Delete vs
-    // Report from it, and an explicit select list that omits it makes the menu
-    // silently wrong on this page while it is right on the main feed.
-    const { data, error } = await supabaseClient
-        .from('venue_media')
-        .select('id, url, thumbnail_url, media_type, caption, duration_seconds, created_at, uploaded_by_user_id, venue_id')
-        .eq('venue_id', venuePageVenueId)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .range(venuePageOffset, venuePageOffset + pageSize - 1);
+    // An RPC rather than a .from() select, because the card header needs the
+    // author's display name and avatar — which live on app_members, not on
+    // venue_media — and RLS on that table would not hand them to an anonymous
+    // visitor. uploaded_by_user_id stays load-bearing: the options sheet
+    // decides Delete vs Report from it.
+    const { data, error } = await supabaseClient.rpc('get_venue_page_feed', {
+        p_app_id: currentApp.id,
+        p_venue_id: venuePageVenueId,
+        p_limit: pageSize,
+        p_offset: venuePageOffset
+    });
 
     venuePageLoading = false;
     if (loadingEl) loadingEl.style.display = 'none';
@@ -2606,9 +2720,22 @@ function renderVenuePageFeed() {
 
     container.innerHTML = venuePageFeed.map(item => {
         const isVideo = item.media_type === 'video';
+        // The author, not the venue — the whole page is already this venue, so
+        // showVenue:false drops the "at {venue}" line that would just repeat
+        // the page header above.
+        //
+        // A pre-UGC post has no recorded author and no backfill is possible, so
+        // there is nothing to name. It keeps the old headerless card rather
+        // than an inert "Someone / ?" row: on a page that is already one venue,
+        // that row would add a name nobody can use and an avatar nobody can
+        // open. The main feed still says "Someone" there, because a feed card
+        // with no header at all reads as broken.
+        const identity = postIdentity({ ...item, venue_id: null });
+        const headerless = identity.primary === 'none';
         return `
             <div class="feed-card" data-media-id="${escapeHtml(item.id)}">
-                <div class="feed-card-header feed-card-header-compact">
+                <div class="feed-card-header${headerless ? ' feed-card-header-compact' : ''}">
+                    ${headerless ? '' : postHeaderMarkup(identity, { showVenue: false })}
                     <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                     </button>
@@ -3905,8 +4032,9 @@ function setupEventListeners() {
     // Nav hide-on-scroll + back-to-top
     setupScrollChrome();
 
-    // Add to Home Screen
+    // Add to Home Screen, and the signup prompt that shares its slot
     setupInstallPrompt();
+    setupSignupPrompt();
 
     // Re-measure the sticky offsets when the header or the pill rows can change
     // height. Both rows wrap, so a rotation changes the genre row's offset.
@@ -5219,11 +5347,13 @@ function isIosSafari() {
     return iOS && realSafari;
 }
 
-// Dismissals persist per app, matching the viibe_recent_searches_${appSlug} /
-// viibe_sound_on_${appSlug} convention already in this file.
-function installDismissedRecently() {
+// Dismissals persist per app AND per banner, matching the
+// viibe_recent_searches_${appSlug} / viibe_sound_on_${appSlug} convention
+// already in this file. Keyed because the install and signup banners share a
+// slot but not an answer.
+function bannerDismissedRecently(key) {
     try {
-        const raw = localStorage.getItem(`${INSTALL_DISMISSED_KEY}_${appSlug}`);
+        const raw = localStorage.getItem(`${key}_${appSlug}`);
         if (!raw) return false;
         const at = parseInt(raw, 10);
         if (!Number.isFinite(at)) return false;
@@ -5233,11 +5363,14 @@ function installDismissedRecently() {
     }
 }
 
-function recordInstallDismissal() {
+function recordBannerDismissal(key) {
     try {
-        localStorage.setItem(`${INSTALL_DISMISSED_KEY}_${appSlug}`, String(Date.now()));
+        localStorage.setItem(`${key}_${appSlug}`, String(Date.now()));
     } catch { /* preference is non-essential */ }
 }
+
+function installDismissedRecently() { return bannerDismissedRecently(INSTALL_DISMISSED_KEY); }
+function recordInstallDismissal()   { recordBannerDismissal(INSTALL_DISMISSED_KEY); }
 
 // Second visit, not first. Chrome only fires beforeinstallprompt once its own
 // engagement heuristic is met anyway, so this mainly governs the iOS banner —
@@ -5245,16 +5378,23 @@ function recordInstallDismissal() {
 // how you teach them to dismiss banners.
 const INSTALL_VISITS_KEY = 'viibe_visits';
 
+// ⚠️ Incremented at most once per page load, whichever banner's setup asks
+// first. Both setupInstallPrompt() and setupSignupPrompt() must call it so
+// neither depends on the other having run — and without this memo that double
+// increment would collapse the second-visit rule into a first-visit rule.
+let visitsThisLoad = null;
+
 function recordVisit() {
+    if (visitsThisLoad !== null) return visitsThisLoad;
     try {
         const key = `${INSTALL_VISITS_KEY}_${appSlug}`;
         const n = parseInt(localStorage.getItem(key) || '0', 10);
-        const next = (Number.isFinite(n) ? n : 0) + 1;
-        localStorage.setItem(key, String(next));
-        return next;
+        visitsThisLoad = (Number.isFinite(n) ? n : 0) + 1;
+        localStorage.setItem(key, String(visitsThisLoad));
     } catch {
-        return 1;
+        visitsThisLoad = 1;
     }
+    return visitsThisLoad;
 }
 
 // Read without incrementing — maybeShowInstallBanner() can run more than once
@@ -5268,20 +5408,68 @@ function recordedVisits() {
     }
 }
 
+// Chrome-family hands us a replayable beforeinstallprompt; iOS Safari hands us
+// nothing but has a Share -> Add to Home Screen item to point at. Anywhere else
+// — desktop Firefox, Chrome/Firefox on iOS — the Add button would have nothing
+// honest to do, so the banner must never be offered at all.
+//
+// This lived at maybeShowInstallBanner()'s single call site until it acquired a
+// second one. A caller that forgets it shows a banner whose Add button falls
+// through to openIosInstall(), i.e. iOS instructions on Firefox.
+function canOfferInstall() {
+    return !!deferredInstallPrompt || isIosSafari();
+}
+
 // Shows the banner if every condition is met. Safe to call from either side of
 // the race between beforeinstallprompt and init().
-function maybeShowInstallBanner() {
+//
+// `ignoreVisitCount` is the ONE bypass: someone who just signed up in this
+// session has already told us they are staying, so making them wait for a
+// second visit to be offered the install is pure friction. Standalone and the
+// 14-day dismissal are still honoured on that path.
+function maybeShowInstallBanner({ ignoreVisitCount = false } = {}) {
     if (!installUiReady) return;
+    // Anonymous visitors get #signup-banner in this slot instead. There is no
+    // point asking someone to install an app they have no account in.
+    if (!isMemberSignedIn) return;
+    if (!canOfferInstall()) return;
     if (isStandalone() || installDismissedRecently()) return;
-    if (recordedVisits() < 2) return;
+    if (!ignoreVisitCount && recordedVisits() < 2) return;
     document.getElementById('install-banner')?.classList.add('visible');
+}
+
+// The signup half of the same slot. Same gating as install — second visit or
+// later, its own 14-day dismissal — but deliberately NOT gated on
+// isStandalone(): someone who installed the PWA and still has no account is
+// exactly who this is for.
+function maybeShowSignupBanner() {
+    if (!signupUiReady) return;
+    if (isMemberSignedIn) return;
+    if (bannerDismissedRecently(SIGNUP_BANNER_DISMISSED_KEY)) return;
+    if (recordedVisits() < 2) return;
+    document.getElementById('signup-banner')?.classList.add('visible');
+}
+
+// The two banners share one fixed slot at the bottom of the viewport, so
+// exactly one may be .visible. This is the only function that decides which,
+// and the only one anything outside this section should call — onSignedIn()
+// uses it to swap the slot under a page that is already painted.
+//
+// The isMemberSignedIn guards in the two maybeShow* functions are exact
+// complements read from one variable, so they are mutually exclusive by
+// construction rather than by call ordering. Clearing both first is the belt.
+function refreshBottomBanners({ justSignedIn = false } = {}) {
+    document.getElementById('install-banner')?.classList.remove('visible');
+    document.getElementById('signup-banner')?.classList.remove('visible');
+    maybeShowSignupBanner();
+    maybeShowInstallBanner({ ignoreVisitCount: justSignedIn });
 }
 
 function setupInstallPrompt() {
     const banner = document.getElementById('install-banner');
     if (!banner) return;
 
-    const visits = recordVisit();
+    recordVisit();
 
     // Brand the banner's tile the same way the header and auth splash do.
     const icon = document.getElementById('install-banner-icon');
@@ -5329,8 +5517,47 @@ function setupInstallPrompt() {
     //     at parse time, below) or will fire shortly and call this itself.
     //   iOS Safari — that event NEVER fires, so the banner is offered on visit
     //     count alone and the Add button opens the instructions instead.
-    if (deferredInstallPrompt || isIosSafari()) maybeShowInstallBanner();
-    if (visits < 2) return;   // nothing further; the next visit will qualify
+    // Both cases are canOfferInstall(), which maybeShowInstallBanner() now
+    // checks for itself.
+    maybeShowInstallBanner();
+}
+
+// The other half of the bottom slot. Mirrors setupInstallPrompt(), minus the
+// platform and standalone questions — a signup prompt is offerable everywhere.
+function setupSignupPrompt() {
+    const banner = document.getElementById('signup-banner');
+    if (!banner) return;
+
+    // Idempotent per page load — setupInstallPrompt() has already called it.
+    // Both must ask, so neither depends on the other having run.
+    recordVisit();
+
+    // Brand the tile the same way the install banner, the header and the auth
+    // splash do.
+    const icon = document.getElementById('signup-banner-icon');
+    if (icon && currentApp) {
+        const logo = currentApp.branding?.logo_url;
+        icon.innerHTML = logo
+            ? `<img src="${escapeHtml(logo)}" alt="">`
+            : escapeHtml((currentApp.name || 'V').charAt(0).toUpperCase());
+    }
+
+    document.getElementById('signup-banner-dismiss')?.addEventListener('click', () => {
+        banner.classList.remove('visible');
+        recordBannerDismissal(SIGNUP_BANNER_DISMISSED_KEY);
+    });
+
+    // showAuth() rather than requireAccount(): the banner is only ever visible
+    // when signed out, and there is no interrupted action to stash. Hidden but
+    // NOT recorded as a dismissal — someone who backs out of the overlay should
+    // be asked again next visit, just not for the rest of this one.
+    document.getElementById('signup-banner-btn')?.addEventListener('click', () => {
+        banner.classList.remove('visible');
+        showAuth('signup');
+    });
+
+    signupUiReady = true;
+    maybeShowSignupBanner();
 }
 
 function openIosInstall() {

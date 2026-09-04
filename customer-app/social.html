@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=11">
+    <link rel="stylesheet" href="/customer-app/social.css?v=12">
 </head>
 <body>
 
@@ -1033,8 +1033,13 @@
         </div>
     </div>
 
-    <!-- ===== Install prompts =====
-         Android/Chrome gets a real one-tap install via the stashed
+    <!-- ===== Bottom banner slot =====
+         The two banners below share ONE fixed slot above the nav, and exactly
+         one is ever .visible. refreshBottomBanners() in social.js is the only
+         thing that decides which: a signed-in member gets the install prompt, a
+         signed-out visitor gets the signup prompt and never sees install.
+
+         Install: Android/Chrome gets a real one-tap install via the stashed
          beforeinstallprompt event. iOS Safari has no such API — Apple provides
          no programmatic install — so it gets instructions instead. Both are
          suppressed once the app is already running standalone. -->
@@ -1046,6 +1051,21 @@
         </div>
         <button class="install-banner-btn" id="install-banner-btn" type="button" data-i18n="social.installAction">Add</button>
         <button class="install-banner-dismiss" id="install-banner-dismiss" type="button" aria-label="Dismiss">&times;</button>
+    </div>
+
+    <!-- Signup: the other half of the slot, for the other half of the audience.
+         Asking someone to install an app they have no account in is the wrong
+         ask, so this comes first and install comes after they join. Wears
+         .install-banner deliberately — same slot, same geometry, and the class
+         already carries every rule this needs. -->
+    <div class="install-banner" id="signup-banner" role="region" aria-label="Create an account">
+        <div class="install-banner-icon" id="signup-banner-icon">V</div>
+        <div class="install-banner-text">
+            <strong data-i18n="social.signupBannerTitle">Join ViibeView</strong>
+            <span data-i18n="social.signupBannerBody">Post, follow, and save your spots.</span>
+        </div>
+        <button class="install-banner-btn" id="signup-banner-btn" type="button" data-i18n="social.signupBannerAction">Sign up</button>
+        <button class="install-banner-dismiss" id="signup-banner-dismiss" type="button" aria-label="Dismiss">&times;</button>
     </div>
 
     <div class="sheet-backdrop" id="ios-install-backdrop"></div>
@@ -1110,7 +1130,10 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
     <!-- i18n must load before social.js: this page is covered in data-i18n
          attributes that were inert until now because it was never included. -->
-    <script src="/i18n/i18n.js?v=1"></script>
+    <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
+         lives INSIDE this cached file, so a stale copy keeps requesting the old
+         en.json and new keys never arrive. -->
+    <script src="/i18n/i18n.js?v=2"></script>
     <script src="/js/venue-categories.js?v=1"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1127,7 +1150,7 @@
     <script src="/customer-app/social-auth.js?v=3"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=14"></script>
+    <script src="/customer-app/social.js?v=15"></script>
 
 </body>
 </html>

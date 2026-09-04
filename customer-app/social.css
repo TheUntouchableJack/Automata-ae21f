@@ -346,6 +346,29 @@ body {
     color: var(--color-text-muted);
 }
 
+/* JS: the "at {venue}" line under an author-primary post header. A nested tap
+   target inside .feed-venue-info — its handler stops propagation so it opens
+   the venue rather than the author's profile. Given its own affordance because
+   it does something different from the block around it. */
+.venue-location-link {
+    display: inline-block;
+    max-width: 100%;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.venue-location-link:hover {
+    text-decoration: underline;
+}
+
+/* A pre-UGC post has neither a venue nor a recorded author, so its header
+   opens nothing. .feed-venue-info sets cursor:pointer for everyone else. */
+.feed-venue-info-inert {
+    cursor: default;
+}
+
 /* JS: <button class="feed-more-btn"> */
 .feed-more-btn {
     width: 32px;
@@ -432,8 +455,8 @@ body {
     background: var(--app-primary, #6366f1);
 }
 
-/* JS: venue-page cards carry only the 3-dots button, no identity row —
-   the whole page is already one venue. */
+/* JS: venue-page cards whose author was never recorded (pre-UGC posts) carry
+   only the 3-dots button. Every other card on that page names its author. */
 .feed-card-header-compact {
     justify-content: flex-end;
     padding-bottom: 0;
@@ -2750,6 +2773,16 @@ body {
     font-size: 0.9375rem;
     font-weight: 600;
     color: var(--color-text);
+}
+
+/* JS: only when the pin carries an author to open. A pre-UGC post has none, so
+   the plain .post-preview-byline must not look tappable. */
+.post-preview-byline-link {
+    cursor: pointer;
+}
+
+.post-preview-byline-link:hover {
+    text-decoration: underline;
 }
 
 .post-preview-caption {
