@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=12">
+    <link rel="stylesheet" href="/customer-app/social.css?v=13">
 </head>
 <body>
 
@@ -781,8 +781,18 @@
                 <h2 class="member-page-name" id="member-page-name"></h2>
                 <p class="member-page-bio" id="member-page-bio"></p>
 
+                <!-- Self-declared, and returned by get_member_profile on the
+                     same terms as the bio — suppressed for a private profile
+                     viewed by anyone else. Ships hidden; renderMemberProfile()
+                     is its only writer. -->
+                <p class="member-page-location" id="member-page-location" style="display:none;"></p>
+
                 <!-- Follower / following counts + post count. Buttons, because
-                     each one opens the people sheet. -->
+                     each one opens the people sheet.
+
+                     ⚠️ These carry the member's uid in an inline onclick, so a
+                     private profile must never PAINT them, not merely hide
+                     them — see renderMemberProfile(). -->
                 <div class="member-page-stats" id="member-page-stats"></div>
 
                 <!-- Painted by renderMemberFollowButton(). Hidden entirely on
@@ -799,6 +809,25 @@
                 </svg>
                 <p data-i18n="social.privateProfile">This profile is private.</p>
             </div>
+
+            <!-- ===== "Been to" — venues DERIVED FROM POSTS =====
+                 Not a check-in log. Choosing a venue when you post already IS
+                 the check-in, so get_member_venues groups this member's posts
+                 by venue; there is no separate write path, which is deliberate
+                 (record_member_visit was revoked as a points-forgery hole in
+                 20260903000005 and must stay revoked).
+
+                 Ships hidden. renderMemberVenues() shows it only when there is
+                 at least one venue — a member who only posts unattached Viibes
+                 should not see an empty heading. -->
+            <section class="member-venues" id="member-page-venues" style="display:none;">
+                <div class="member-venues-header">
+                    <h4 data-i18n="social.beenTo">Been to</h4>
+                    <button type="button" class="member-venues-more" id="member-page-venues-more"
+                            style="display:none;" data-i18n="social.seeAll">See all</button>
+                </div>
+                <div class="member-venues-list" id="member-page-venues-list"></div>
+            </section>
 
             <div class="member-grid" id="member-page-grid"></div>
 
@@ -880,12 +909,30 @@
                 <div class="auth-field-error" id="edit-profile-name-error"></div>
             </div>
 
+            <!-- "About" is a LABEL over the two fields below, not a third
+                 free-text column. The proposal card asked for About + Location;
+                 the 300-char bio already IS the about text, so this groups them
+                 rather than adding a second thing to write. -->
+            <h4 class="edit-profile-group" data-i18n="social.about">About</h4>
+
             <div class="auth-field">
                 <label for="edit-profile-bio" data-i18n="social.bio">Bio</label>
                 <textarea id="edit-profile-bio" rows="3" maxlength="300"></textarea>
                 <div class="auth-field-hint">
                     <span id="edit-profile-bio-count">0</span>/300
                 </div>
+            </div>
+
+            <!-- Free text, never geocoded. maxlength matches the 80-char cap
+                 update_social_profile applies server-side, so the input cannot
+                 accept something the save would silently truncate.
+                 autocomplete="address-level2" = city, which is what people
+                 actually type here. -->
+            <div class="auth-field">
+                <label for="edit-profile-location" data-i18n="social.location">Location</label>
+                <input type="text" id="edit-profile-location" maxlength="80"
+                       autocomplete="address-level2"
+                       placeholder="City, Country" data-i18n-placeholder="social.locationPlaceholder">
             </div>
 
             <!-- The off switch for the public-by-default backfill. It ships in
@@ -1150,7 +1197,7 @@
     <script src="/customer-app/social-auth.js?v=3"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=15"></script>
+    <script src="/customer-app/social.js?v=16"></script>
 
 </body>
 </html>

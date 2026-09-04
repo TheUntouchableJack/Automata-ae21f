@@ -100,6 +100,11 @@ async function readProfileForm() {
     return page.evaluate(() => ({
         name: document.getElementById('edit-profile-name').value,
         bio: document.getElementById('edit-profile-bio').value,
+        // ⚠️ Location MUST be in the snapshot. update_social_profile is a full
+        // write, so any restore that omits it clears the member's location
+        // rather than restoring it — and the restore is what makes this file
+        // safe to run twice against production.
+        location: document.getElementById('edit-profile-location').value,
         isPublic: document.getElementById('edit-profile-public').checked,
     }));
 }
@@ -121,11 +126,12 @@ async function saveProfileSheet() {
     await expect(page.locator('#edit-profile-sheet')).not.toHaveClass(/visible/);
 }
 
-/** Restores name/bio/public in one write. Used from `finally` blocks. */
+/** Restores name/bio/location/public in one write. Used from `finally` blocks. */
 async function restoreProfile(snapshot) {
     await openEditProfileSheet();
     await page.fill('#edit-profile-name', snapshot.name);
     await page.fill('#edit-profile-bio', snapshot.bio);
+    await page.fill('#edit-profile-location', snapshot.location);
     const nowPublic = await page.isChecked('#edit-profile-public');
     if (nowPublic !== snapshot.isPublic) await page.click('#edit-profile-public');
     await saveProfileSheet();
@@ -275,6 +281,158 @@ test.describe('ViibeView signed-in member', () => {
         }
     });
 
+    test('a location persists across a reload and shows on the profile overlay', async () => {
+        test.skip(!CAN_SIGN_IN, 'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD — writes to Royalty PROD');
+
+        await loadApp();
+        const myId = await signedInUserId();
+        await openEditProfileSheet();
+        const before = await readProfileForm();
+
+        const newLocation = `Perpignan ${Date.now()}`;
+
+        try {
+            await page.fill('#edit-profile-location', newLocation);
+            await saveProfileSheet();
+
+            // Reload proves it was WRITTEN. An optimistic repaint would pass a
+            // same-session assertion and fail this one.
+            await loadApp();
+            await page.evaluate(id => window.openMemberProfile(id), myId);
+            await page.waitForTimeout(1500);
+            const loc = page.locator('#member-page-location');
+            await expect(loc).toBeVisible();
+            await expect(loc).toHaveText(newLocation);
+            await page.click('#member-page-back');
+
+            // ⚠️ The full-write trap, driven end to end: reopen the sheet, change
+            // ONLY the bio, save. If the sheet failed to prefill location — or
+            // failed to send it — update_social_profile's DEFAULT NULL clears it
+            // and the member silently loses their location for editing something
+            // else. get_social_member gained the column in 20260904000003 purely
+            // so this passes.
+            await openEditProfileSheet();
+            expect(
+                await page.inputValue('#edit-profile-location'),
+                'the edit sheet did not prefill location — the next save would erase it'
+            ).toBe(newLocation);
+            await page.fill('#edit-profile-bio', `E2E bio ${Date.now()}`);
+            await saveProfileSheet();
+
+            await loadApp();
+            await page.evaluate(id => window.openMemberProfile(id), myId);
+            await page.waitForTimeout(1500);
+            await expect(
+                page.locator('#member-page-location'),
+                'editing the bio wiped the location — update_social_profile is a FULL write'
+            ).toHaveText(newLocation);
+            await page.click('#member-page-back');
+        } finally {
+            await restoreProfile(before);
+        }
+    });
+
+    test('a private profile shows a stranger NO tappable stat buttons', async () => {
+        test.skip(!CAN_SIGN_IN, 'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD — writes to Royalty PROD');
+
+        await loadApp();
+        const myId = await signedInUserId();
+        await openEditProfileSheet();
+        const before = await readProfileForm();
+
+        try {
+            if (before.isPublic) await page.click('#edit-profile-public');
+            await saveProfileSheet();
+
+            const anonCtx = await context.browser().newContext();
+            try {
+                const anon = await anonCtx.newPage();
+                await anon.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+                await anon.waitForSelector('#filter-pills .pill', { timeout: 15000 });
+                await anon.evaluate(id => window.openMemberProfile(id), myId);
+                await anon.waitForTimeout(1500);
+
+                await expect(anon.locator('#member-page-private')).toBeVisible();
+
+                // ⚠️ Assert the buttons are ABSENT, not merely invisible. The
+                // bug this replaced hid them after painting, which still wrote
+                // three openPeopleSheet('followers','<uid>') handlers into the
+                // DOM under a panel saying the profile is private.
+                await expect(anon.locator('#member-page-stats .member-stat')).toHaveCount(0);
+                expect(
+                    await anon.locator('#member-page-stats').innerHTML(),
+                    'the stats block still carries this member\'s uid'
+                ).not.toContain(myId);
+
+                // And the derived surfaces are empty too — 20260904000002 gates
+                // the list RPCs themselves, not just what the client draws.
+                const leaked = await anon.evaluate(async id => {
+                    const call = async (fn) => {
+                        const { data } = await supabaseClient.rpc(fn, {
+                            p_app_id: currentApp.id, p_user_id: id, p_limit: 50, p_offset: 0,
+                        });
+                        return (data || []).length;
+                    };
+                    return {
+                        venues: await call('get_member_venues'),
+                        followers: await call('get_member_followers'),
+                        following: await call('get_member_following'),
+                    };
+                }, myId);
+                expect(leaked, 'a private member\'s lists are readable with the anon key')
+                    .toEqual({ venues: 0, followers: 0, following: 0 });
+            } finally {
+                await anonCtx.close();
+            }
+
+            // The same three calls, as the member themselves, must NOT be
+            // empty-by-permission. Without this half, the block above passes
+            // just as well against a function that returns nothing to anyone.
+            await page.evaluate(id => window.openMemberProfile(id), myId);
+            await page.waitForTimeout(1500);
+            await expect(page.locator('#member-page-stats .member-stat')).toHaveCount(3);
+            await page.click('#member-page-back');
+        } finally {
+            await restoreProfile(before);
+        }
+    });
+
+    test('the grid chips each tile with its venue and "Been to" dedupes them', async () => {
+        test.skip(!CAN_SIGN_IN, 'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD');
+
+        await loadApp();
+        const myId = await signedInUserId();
+        await page.evaluate(id => window.openMemberProfile(id), myId);
+        await page.waitForTimeout(2000);
+
+        // ⚠️ ViibeView prod has two posts, neither of them a venue-attached post
+        // by this member, so this normally skips. That skip is honest but it is
+        // NOT coverage — the markup, the dedup, the six-row cap and the
+        // ellipsis rule are pinned in tests/viibeview-member-venues.test.js
+        // against fabricated rows, precisely because this cannot run.
+        const tiles = await page.locator('#member-page-grid .member-grid-tile').count();
+        const chips = await page.locator('#member-page-grid .member-grid-venue').count();
+        test.skip(chips === 0,
+            `this member has no venue-attached posts (${tiles} tiles, 0 with a venue) — ` +
+            'covered by tests/viibeview-member-venues.test.js instead');
+
+        // Every chip names something.
+        for (const text of await page.locator('.member-grid-venue').allTextContents()) {
+            expect(text.trim()).not.toBe('');
+        }
+
+        // "Been to" appears, and holds no more rows than there are chipped
+        // tiles — the whole claim of deduping by venue.
+        await expect(page.locator('#member-page-venues')).toBeVisible();
+        const rows = await page.locator('#member-page-venues-list .people-row').count();
+        expect(rows).toBeGreaterThan(0);
+        expect(rows, 'the venue list is not deduped').toBeLessThanOrEqual(chips);
+
+        // Each row says how many and when.
+        const meta = await page.locator('#member-page-venues-list .people-row-meta').first().textContent();
+        expect(meta).toMatch(/\d+\s+Viibes?/);
+    });
+
     test('uploading an avatar stores it under members/{uid}/ and renders it', async () => {
         test.skip(!CAN_SIGN_IN, 'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD — writes to Royalty PROD');
 
@@ -318,6 +476,8 @@ test.describe('ViibeView signed-in member', () => {
             await page.click('#edit-profile-avatar-remove');
             await page.fill('#edit-profile-name', before.name);
             await page.fill('#edit-profile-bio', before.bio);
+            // Full write — omitting this field clears it, it does not skip it.
+            await page.fill('#edit-profile-location', before.location);
             await saveProfileSheet();
 
             if (uploadedPath) {

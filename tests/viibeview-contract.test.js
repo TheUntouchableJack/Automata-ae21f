@@ -155,6 +155,10 @@ describe('ViibeView markup + vocabularies', () => {
             'edit-profile-bio-count', 'edit-profile-public',
             'edit-profile-avatar-preview', 'edit-profile-avatar-input',
             'edit-profile-avatar-remove',
+            // location + venue history
+            'edit-profile-location',
+            'member-page-location', 'member-page-venues',
+            'member-page-venues-list', 'member-page-venues-more',
             // profile tab entry points
             'profile-stats', 'profile-followers-btn', 'profile-followers-count',
             'profile-following-btn', 'profile-following-count',
@@ -175,6 +179,43 @@ describe('ViibeView markup + vocabularies', () => {
         expect(d.getElementById('edit-profile-save')).toBeTruthy();
         // setFieldError('edit-profile-name', …) uses the same convention.
         expect(d.getElementById('edit-profile-name-error')).toBeTruthy();
+    });
+
+    // ===== location + venue history =====
+
+    it('the location field caps at the 80 chars the RPC enforces', () => {
+        // update_social_profile truncates to 80 (20260904000002). An input that
+        // accepted more would let someone type a value the save silently cuts.
+        expect(d.getElementById('edit-profile-location').getAttribute('maxlength')).toBe('80');
+    });
+
+    it('the location and venues blocks ship HIDDEN', () => {
+        // Both are painted by JS from a fetch. Shipping them visible means an
+        // empty "Been to" heading and a bare pin icon on every profile for as
+        // long as the request takes — and forever on a private one, where the
+        // fetch deliberately returns nothing.
+        expect(d.getElementById('member-page-location').style.display).toBe('none');
+        expect(d.getElementById('member-page-venues').style.display).toBe('none');
+        expect(d.getElementById('member-page-venues-more').style.display).toBe('none');
+    });
+
+    it('the venues section sits between the stats and the post grid', () => {
+        // Order is the whole layout claim: "Been to" is context for the grid
+        // below it, not a footer under it.
+        const scroll = d.getElementById('member-page-scroll');
+        const pos = (id) => [...scroll.querySelectorAll('*')].indexOf(d.getElementById(id));
+        expect(pos('member-page-stats')).toBeLessThan(pos('member-page-venues'));
+        expect(pos('member-page-venues')).toBeLessThan(pos('member-page-grid'));
+    });
+
+    it('every new string is translatable', () => {
+        const keyed = (sel) => d.querySelector(sel)?.getAttribute('data-i18n')
+            || d.querySelector(sel)?.getAttribute('data-i18n-placeholder');
+        expect(keyed('label[for="edit-profile-location"]')).toBe('social.location');
+        expect(keyed('#edit-profile-location')).toBe('social.locationPlaceholder');
+        expect(keyed('.edit-profile-group')).toBe('social.about');
+        expect(keyed('#member-page-venues h4')).toBe('social.beenTo');
+        expect(keyed('#member-page-venues-more')).toBe('social.seeAll');
     });
 
     it('the follow button ships with no hardcoded label', () => {

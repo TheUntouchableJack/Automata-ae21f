@@ -262,3 +262,178 @@ describe('social_follows is written only through its RPCs', () => {
         expect(deleteEdges).toBeLessThan(releaseUser);
     });
 });
+
+// ===== 20260904000002 / …0003: location, venue history, follow-list gate =====
+//
+// A separate corpus rather than more entries in FILES above: bodyAndFooterOf()
+// resolves the FIRST definition it finds across the concatenation, so appending
+// these files would keep matching the Phase 2 originals and quietly assert
+// nothing about the new ones.
+
+describe('member location + venue history migrations', () => {
+    const F2 = '20260904000002_member_location_and_venue_history.sql';
+    const F3 = '20260904000003_get_social_member_location.sql';
+    const m2 = fs.readFileSync(path.join(MIGRATIONS, F2), 'utf8');
+    const m3 = fs.readFileSync(path.join(MIGRATIONS, F3), 'utf8');
+    const both = m2 + '\n' + m3;
+
+    // ⚠️ Assert against CODE, not prose. Both headers explain at length the
+    // grant footers they do and do not issue, so a naive substring search finds
+    // the warning and calls it the bug.
+    const code2 = m2.replace(/^\s*--.*$/gm, '');
+    const code3 = m3.replace(/^\s*--.*$/gm, '');
+
+    it('the comment strip did not eat either migration', () => {
+        // Without this every not.toMatch below passes against an empty string.
+        expect(code2.length).toBeGreaterThan(m2.length * 0.3);
+        expect(code3.length).toBeGreaterThan(m3.length * 0.3);
+        expect(code2).toContain('CREATE OR REPLACE FUNCTION get_member_venues');
+        expect(code3).toContain('CREATE FUNCTION get_social_member');
+    });
+
+    describe('signature changes are DROPPED, not just REPLACEd', () => {
+        it('update_social_profile drops the exact 5-arg signature first', () => {
+            // Every argument has a DEFAULT, so adding p_location WITHOUT the
+            // drop creates an overload rather than an error — and the existing
+            // named-argument call in social.js then resolves ambiguously at RUN
+            // time. The migration installs clean and the Edit Profile sheet
+            // starts failing for everyone.
+            const drop = code2.indexOf('DROP FUNCTION IF EXISTS update_social_profile(UUID, TEXT, TEXT, TEXT, BOOLEAN);');
+            const create = code2.indexOf('CREATE OR REPLACE FUNCTION update_social_profile');
+            expect(drop, 'the 5-arg DROP is missing').toBeGreaterThan(-1);
+            expect(drop).toBeLessThan(create);
+        });
+
+        it('and asserts afterwards that exactly one 6-arg version survives', () => {
+            // The overload failure is invisible at install time, so the
+            // migration checks itself rather than trusting the DROP.
+            expect(code2).toMatch(/proname = 'update_social_profile'/);
+            expect(code2).toMatch(/RAISE EXCEPTION/);
+        });
+
+        it('get_member_profile drops only the TWO-arg signature', () => {
+            // ⚠️ get_member_profile is legitimately overloaded: 20260217000004
+            // owns a one-arg get_member_profile(p_member_id) that the LOYALTY
+            // customer app calls (customer-app/app.js:427). An unqualified drop,
+            // or `DROP FUNCTION get_member_profile(UUID)`, takes that one out.
+            expect(code2).toContain('DROP FUNCTION IF EXISTS get_member_profile(UUID, UUID);');
+            expect(code2).not.toMatch(/DROP FUNCTION IF EXISTS get_member_profile\(UUID\);/);
+            // And the assertion block guards the one-arg overload explicitly.
+            expect(code2).toMatch(/p\.pronargs = 1/);
+        });
+
+        it('the follow-list fix does NOT drop them — the signatures are unchanged', () => {
+            expect(code2).not.toMatch(/DROP FUNCTION IF EXISTS get_member_follow/);
+        });
+    });
+
+    describe('grant footers', () => {
+        it('update_social_profile re-grants on the NEW 6-arg signature', () => {
+            // Grants do not survive DROP FUNCTION, and a 5-arg re-grant would
+            // target a function that no longer exists.
+            const sig = '\\(UUID, TEXT, TEXT, TEXT, BOOLEAN, TEXT\\)';
+            expect(code2).toMatch(new RegExp(`REVOKE ALL ON FUNCTION update_social_profile${sig} FROM PUBLIC;`));
+            expect(code2).toMatch(new RegExp(`REVOKE ALL ON FUNCTION update_social_profile${sig} FROM anon;`));
+            expect(code2).toMatch(new RegExp(`GRANT EXECUTE ON FUNCTION update_social_profile${sig} TO authenticated;`));
+        });
+
+        it('get_social_member re-grants all THREE lines after its drop', () => {
+            // It returns the caller's own email, phone, points_balance and
+            // tier. REVOKE FROM PUBLIC alone does not restrict anon — Supabase
+            // grants anon EXECUTE directly (measured in 20260828000005) — so
+            // the FROM anon line is the one that matters.
+            expect(code3).toMatch(/REVOKE ALL ON FUNCTION get_social_member\(UUID\) FROM PUBLIC;/);
+            expect(code3).toMatch(/REVOKE ALL ON FUNCTION get_social_member\(UUID\) FROM anon;/);
+            expect(code3).toMatch(/GRANT EXECUTE ON FUNCTION get_social_member\(UUID\) TO authenticated;/);
+        });
+
+        it('get_social_member asserts its own footer took', () => {
+            // A DROP that lands without its re-GRANT fails OPEN and nothing on
+            // screen shows it.
+            expect(code3).toMatch(/has_function_privilege\('anon'/);
+            expect(code3).toMatch(/has_function_privilege\('authenticated'/);
+        });
+
+        it('the anon-readable functions carry NO footer', () => {
+            // Signed-out visitors browse profiles. A footer here empties the
+            // overlay for them SILENTLY (20260828000003:21-28).
+            for (const fn of ['get_member_venues', 'get_member_profile',
+                              'get_member_followers', 'get_member_following']) {
+                expect(code2, `${fn}: a grant footer empties it for signed-out visitors`)
+                    .not.toMatch(new RegExp(`GRANT EXECUTE ON FUNCTION ${fn}\\(`));
+                expect(code2, `${fn}: a REVOKE empties it for signed-out visitors`)
+                    .not.toMatch(new RegExp(`REVOKE ALL ON FUNCTION ${fn}\\(`));
+            }
+        });
+    });
+
+    describe('the privacy gate', () => {
+        /** Body of a function defined in this corpus. */
+        function bodyIn(sql, fnName) {
+            const start = sql.search(new RegExp(`CREATE (?:OR REPLACE )?FUNCTION ${fnName}\\s*\\(`));
+            if (start === -1) return null;
+            const rest = sql.slice(start);
+            const open = rest.indexOf('AS $$');
+            const close = rest.indexOf('$$;', open);
+            return open === -1 || close === -1 ? null : rest.slice(open, close);
+        }
+
+        // The whole point of this migration's section 5.
+        for (const fn of ['get_member_venues', 'get_member_followers', 'get_member_following']) {
+            it(`${fn} copies get_member_posts' gate verbatim`, () => {
+                const body = bodyIn(m2, fn);
+                expect(body, `${fn} body not found`).toBeTruthy();
+                const code = body.replace(/^\s*--.*$/gm, '');
+                expect(code.length).toBeGreaterThan(body.length * 0.4);
+
+                expect(code, `${fn}: no profile_public lookup`)
+                    .toMatch(/COALESCE\(m\.profile_public, false\) INTO v_public/);
+                expect(code, `${fn}: missing the not-found RETURN`)
+                    .toMatch(/IF NOT FOUND THEN\s+RETURN;/);
+                // The own-profile exception. Without it a member who turns their
+                // profile off loses their own lists.
+                expect(code, `${fn}: missing the own-profile exception`)
+                    .toMatch(/IF NOT v_public AND NOT \(auth\.uid\(\) IS NOT NULL AND auth\.uid\(\) = p_user_id\) THEN\s+RETURN;/);
+            });
+        }
+
+        it('get_member_profile suppresses location on the same terms as bio', () => {
+            const code = bodyIn(m2, 'get_member_profile').replace(/^\s*--.*$/gm, '');
+            expect(code).toMatch(/CASE WHEN v_visible THEN v_bio ELSE NULL::TEXT END/);
+            expect(code).toMatch(/CASE WHEN v_visible THEN v_location ELSE NULL::TEXT END/);
+        });
+
+        it('individual private members are still NOT filtered out of other people\'s lists', () => {
+            // ⚠️ 20260903000003's header documents this asymmetry deliberately:
+            // the follower COUNT has no profile_public predicate, so filtering
+            // rows would show "12 followers" above a list of 9. Gating the WHOLE
+            // list on the target is orthogonal and composes with it. Changing
+            // this is a different decision than the one this migration made.
+            const code = bodyIn(m2, 'get_member_followers').replace(/^\s*--.*$/gm, '');
+            expect(code).not.toMatch(/am\.profile_public/);
+        });
+    });
+
+    describe('the anon-readable additions leak no private column', () => {
+        it('get_member_venues selects nothing from app_members but the gate', () => {
+            const start = m2.search(/CREATE OR REPLACE FUNCTION get_member_venues\s*\(/);
+            const rest = m2.slice(start);
+            const body = rest.slice(rest.indexOf('AS $$'), rest.indexOf('$$;', rest.indexOf('AS $$')));
+            const code = body.replace(/^\s*--.*$/gm, '');
+            expect(code.length).toBeGreaterThan(body.length * 0.4);
+
+            for (const col of FORBIDDEN_COLUMNS) {
+                expect(code, `get_member_venues references ${col}`)
+                    .not.toMatch(new RegExp(`\\b${col}\\b`));
+            }
+        });
+
+        it('location is added to app_members, not derived from anything sensitive', () => {
+            expect(code2).toMatch(/ALTER TABLE app_members\s+ADD COLUMN IF NOT EXISTS location TEXT;/);
+        });
+    });
+
+    it('neither migration is missing from disk', () => {
+        expect(both.length).toBeGreaterThan(1000);
+    });
+});

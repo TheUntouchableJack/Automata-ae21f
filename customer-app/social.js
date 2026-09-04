@@ -108,6 +108,12 @@ let feedMode = 'all';
 let memberPageUserId = null;
 let memberPageProfile = null;
 let memberPagePosts = [];
+let memberPageVenues = [];
+
+// How many "Been to" rows sit inline on the profile before "See all" hands the
+// rest to the people sheet. Six is two thumb-heights — enough to read as a list
+// rather than a teaser, short enough not to push the post grid off the screen.
+const MEMBER_VENUES_PREVIEW = 6;
 
 // The signed-in user's own follow edges, as a Set of `${type}:${id}` keys.
 //
@@ -2827,6 +2833,7 @@ async function openMemberProfile(userId) {
     memberPageUserId = userId;
     memberPageProfile = null;
     memberPagePosts = [];
+    memberPageVenues = [];
 
     page.classList.add('visible');
     backdrop.classList.add('visible');
@@ -2842,6 +2849,15 @@ async function openMemberProfile(userId) {
     if (grid) grid.innerHTML = '';
     const stats = document.getElementById('member-page-stats');
     if (stats) stats.innerHTML = '';
+    const locEl = document.getElementById('member-page-location');
+    if (locEl) locEl.style.display = 'none';
+    // The venues section is a reused singleton like everything else here: leave
+    // it painted and the previous member's venues show under this member's name
+    // for as long as the fetch takes.
+    const venuesEl = document.getElementById('member-page-venues');
+    if (venuesEl) venuesEl.style.display = 'none';
+    const venuesList = document.getElementById('member-page-venues-list');
+    if (venuesList) venuesList.innerHTML = '';
     const avatar = document.getElementById('member-page-avatar');
     if (avatar) avatar.innerHTML = '';
     const privateEl = document.getElementById('member-page-private');
@@ -2881,7 +2897,11 @@ async function openMemberProfile(userId) {
         return;
     }
 
-    await loadMemberPosts();
+    // Both read from this member's posts, and both are gated server-side on the
+    // same profile_public switch, so they either both return or both do not.
+    // Not awaited in series — the grid is the slower of the two and there is no
+    // reason for the venue list to queue behind it.
+    await Promise.all([loadMemberPosts(), loadMemberVenues()]);
 }
 
 function closeMemberProfile() {
@@ -2897,6 +2917,7 @@ function closeMemberProfile() {
     memberPageUserId = null;
     memberPageProfile = null;
     memberPagePosts = [];
+    memberPageVenues = [];
 }
 
 function setText(id, value) {
@@ -2917,6 +2938,15 @@ function renderMemberProfile() {
         bioEl.style.display = p.bio ? '' : 'none';
     }
 
+    // get_member_profile returns location NULL for a private profile viewed by
+    // anyone else, on the same terms as the bio — so this needs no gate of its
+    // own beyond "hide the element when there is nothing in it".
+    const locEl = document.getElementById('member-page-location');
+    if (locEl) {
+        locEl.textContent = p.location || '';
+        locEl.style.display = p.location ? '' : 'none';
+    }
+
     const avatar = document.getElementById('member-page-avatar');
     if (avatar) {
         avatar.innerHTML = p.avatar_url
@@ -2924,7 +2954,24 @@ function renderMemberProfile() {
             : escapeHtml((p.display_name || '?').charAt(0).toUpperCase());
     }
 
-    renderMemberStats();
+    // ⚠️ A private profile viewed by someone else must not PAINT the stats, not
+    // merely hide them. Each stat is a button carrying this member's uid inside
+    // an inline openPeopleSheet('followers', '<uid>') — so hiding them after the
+    // fact still writes the uid into the DOM and still leaves three working
+    // routes into a profile the app has just said is private. The counts are
+    // already server-suppressed to 0, which is its own tell: three tappable
+    // zeroes under a padlock is a worse answer than no stats at all.
+    const statsEl = document.getElementById('member-page-stats');
+    const statsHidden = !!p.is_private && p.user_id !== currentUserId;
+    if (statsHidden) {
+        if (statsEl) {
+            statsEl.innerHTML = '';
+            statsEl.style.display = 'none';
+        }
+    } else {
+        if (statsEl) statsEl.style.display = '';   // reused singleton — undo a prior hide
+        renderMemberStats();
+    }
 
     const followBtn = document.getElementById('member-page-follow-btn');
     if (followBtn) {
@@ -3023,10 +3070,123 @@ function renderMemberGrid() {
                 ${post.thumbnail_url
                     ? `<img src="${escapeHtml(post.thumbnail_url)}" alt="" loading="lazy">`
                     : `<video src="${escapeHtml(post.url)}" muted playsinline preload="metadata"></video>`}
+                ${post.venue_name
+                    // BEFORE the duration badge, not after: the chip's scrim
+                    // spans the full tile width and would paint over the badge
+                    // otherwise. .has-duration is what reserves the badge's
+                    // corner — done with a class rather than a CSS :has()
+                    // sibling rule, which is both newer than this app's
+                    // baseline and silent when it fails to match.
+                    ? `<span class="member-grid-venue${post.duration_seconds ? ' has-duration' : ''}">${escapeHtml(post.venue_name)}</span>`
+                    : ''}
                 ${post.duration_seconds ? `<span class="video-duration">${formatDuration(post.duration_seconds)}</span>` : ''}
             </button>
         `;
     }).join('');
+}
+
+// ===== "Been to" — venues derived from posts =====
+//
+// Not a check-in log and not presented as one. Choosing a venue when you post
+// IS the check-in in this app, so get_member_venues groups this member's posts
+// by venue. That means no new write path, which is the point: record_member_visit
+// was revoked from anon and authenticated in 20260903000005 as a points-forgery
+// hole, and a "real" check-in button would be a request to re-open it.
+
+/**
+ * "3 Viibes · Aug 28".
+ *
+ * I18n.t() returns the KEY when a translation is missing, so the English is
+ * built here rather than trusting the lookup — same shape as postedAtLabel().
+ * Two keys rather than one because t() has no plural support (i18n.js:103): it
+ * does `{param}` substitution and nothing else, so "1 Viibes" is the only thing
+ * a single key can produce.
+ *
+ * The date is formatted client-side from last_posted_at, in the reader's own
+ * locale and time zone. The `subtitle` the RPC returns is the same string in
+ * English and UTC, and is what shows if this function is somehow not reached.
+ */
+function venueVisitLabel(count, lastPostedAt) {
+    const n = Number(count) || 0;
+    const date = lastPostedAt
+        ? new Date(lastPostedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        : '';
+
+    const key = n === 1 ? 'social.viibeAtVenue' : 'social.viibesAtVenue';
+    const translated = window.I18n?.t
+        ? window.I18n.t(key, { count: n, date })
+        : key;
+    if (translated !== key) return translated;
+
+    const noun = n === 1 ? 'Viibe' : 'Viibes';
+    return date ? `${n} ${noun} · ${date}` : `${n} ${noun}`;
+}
+
+/** Replaces the server's English subtitle with a localised one. */
+function withVenueSubtitles(rows) {
+    return (rows || []).map(row => ({
+        ...row,
+        subtitle: venueVisitLabel(row.visit_count, row.last_posted_at),
+    }));
+}
+
+async function loadMemberVenues() {
+    if (!memberPageUserId || !currentApp) return;
+
+    const userId = memberPageUserId;
+    const { data, error } = await supabaseClient.rpc('get_member_venues', {
+        p_app_id: currentApp.id,
+        p_user_id: userId,
+        p_limit: 24,
+        p_offset: 0
+    });
+
+    // A late response for a member the user has already navigated away from
+    // must not paint over the current one — same guard as loadMemberPosts().
+    if (memberPageUserId !== userId) return;
+
+    if (error) {
+        console.error('Failed to load member venues:', error);
+        memberPageVenues = [];
+    } else {
+        memberPageVenues = withVenueSubtitles(data);
+    }
+
+    renderMemberVenues();
+}
+
+function renderMemberVenues() {
+    const section = document.getElementById('member-page-venues');
+    const list = document.getElementById('member-page-venues-list');
+    const more = document.getElementById('member-page-venues-more');
+    if (!section || !list) return;
+
+    // No heading over nothing. A member who only posts unattached Viibes has no
+    // venue history, and "Been to (empty)" states that as if it were a failure.
+    if (memberPageVenues.length === 0) {
+        section.style.display = 'none';
+        list.innerHTML = '';
+        if (more) more.style.display = 'none';
+        return;
+    }
+
+    section.style.display = '';
+    list.innerHTML = memberPageVenues
+        .slice(0, MEMBER_VENUES_PREVIEW)
+        .map(row => peopleRowMarkup(
+            row,
+            // NOT closePeopleSheet() — these rows live on the profile itself,
+            // not in the sheet. The profile has to close for the same reason
+            // the grid tiles close it: #member-page sits ABOVE #venue-page.
+            `closeMemberProfile(); openVenuePage('${escapeHtml(row.target_id)}')`
+        ))
+        .join('');
+
+    if (more) {
+        const hasMore = memberPageVenues.length > MEMBER_VENUES_PREVIEW;
+        more.style.display = hasMore ? '' : 'none';
+        more.onclick = hasMore ? () => openPeopleSheet('venues', memberPageUserId) : null;
+    }
 }
 
 // ===== People sheet — one sheet, three modes =====
@@ -3054,7 +3214,8 @@ async function openPeopleSheet(mode, userId) {
     const titles = {
         followers: ['social.followers', 'Followers'],
         following: ['social.following', 'Following'],
-        discover:  ['social.discoverMembers', 'Discover Members']
+        discover:  ['social.discoverMembers', 'Discover Members'],
+        venues:    ['social.beenTo', 'Been to']
     };
     const titleEl = document.getElementById('people-sheet-title');
     if (titleEl) {
@@ -3105,6 +3266,7 @@ async function loadPeople() {
     const mode = peopleSheetMode;
     const rpc = mode === 'discover'
         ? 'discover_members'
+        : mode === 'venues' ? 'get_member_venues'
         : mode === 'following' ? 'get_member_following' : 'get_member_followers';
 
     const args = mode === 'discover'
@@ -3132,7 +3294,9 @@ async function loadPeople() {
         return;
     }
 
-    renderPeopleList(data || []);
+    // get_member_venues is the one mode whose subtitle is generated rather than
+    // stored, so it gets localised here before the shared renderer sees it.
+    renderPeopleList(mode === 'venues' ? withVenueSubtitles(data) : (data || []));
 }
 
 function renderPeopleList(rows) {
@@ -3141,11 +3305,23 @@ function renderPeopleList(rows) {
 
     if (rows.length === 0) {
         list.innerHTML = '';
-        setPeopleEmpty(peopleSheetMode === 'discover'
-            ? 'No members found'
-            : peopleSheetMode === 'following'
-                ? 'Not following anyone yet'
-                : 'No followers yet');
+        // These were hardcoded English. They are set as textContent by
+        // setPeopleEmpty(), so data-i18n never reaches them — the lookup has to
+        // happen here, with the English built in JS because I18n.t() returns the
+        // KEY on a miss (same pattern as postedAtLabel).
+        const empties = {
+            discover:  ['social.noMembersFound', 'No members found'],
+            // ⚠️ noVenuesVISITED, not noVenuesYet. The latter already exists and
+            // says "No venues have been added yet" — the app-level empty state
+            // for a tenant with no venues at all, which is a different sentence
+            // in every one of the eight locales.
+            venues:    ['social.noVenuesVisited', 'No venues yet'],
+            following: ['social.notFollowingAnyone', 'Not following anyone yet'],
+            followers: ['social.noFollowersYet', 'No followers yet'],
+        };
+        const [key, english] = empties[peopleSheetMode] || empties.followers;
+        const translated = window.I18n?.t ? window.I18n.t(key) : key;
+        setPeopleEmpty(translated === key ? english : translated);
         return;
     }
     setPeopleEmpty('');
@@ -3159,20 +3335,34 @@ function renderPeopleList(rows) {
             ? `closePeopleSheet(); openVenuePage('${escapeHtml(row.target_id)}')`
             : `closePeopleSheet(); openMemberProfile('${escapeHtml(row.target_id)}')`;
 
-        return `
-            <button class="people-row" type="button" onclick="${onclick}">
-                <span class="people-row-avatar ${isVenue ? 'venue' : ''}">
-                    ${row.avatar_url
-                        ? `<img src="${escapeHtml(row.avatar_url)}" alt="">`
-                        : escapeHtml((row.name || '?').charAt(0).toUpperCase())}
-                </span>
-                <span class="people-row-body">
-                    <span class="people-row-name">${escapeHtml(row.name)}</span>
-                    ${row.subtitle ? `<span class="people-row-meta">${escapeHtml(row.subtitle)}</span>` : ''}
-                </span>
-            </button>
-        `;
+        return peopleRowMarkup(row, onclick);
     }).join('');
+}
+
+/**
+ * One row of a people/venue list.
+ *
+ * Extracted from renderPeopleList so the inline "Been to" list on the profile
+ * and the same list inside the sheet cannot drift into looking different — they
+ * are the same rows, and only what a tap DOES differs (the sheet closes itself;
+ * the profile closes itself). `onclick` is therefore the caller's, not derived
+ * here.
+ */
+function peopleRowMarkup(row, onclick) {
+    const isVenue = row.target_type === 'venue';
+    return `
+        <button class="people-row" type="button" onclick="${onclick}">
+            <span class="people-row-avatar ${isVenue ? 'venue' : ''}">
+                ${row.avatar_url
+                    ? `<img src="${escapeHtml(row.avatar_url)}" alt="">`
+                    : escapeHtml((row.name || '?').charAt(0).toUpperCase())}
+            </span>
+            <span class="people-row-body">
+                <span class="people-row-name">${escapeHtml(row.name)}</span>
+                ${row.subtitle ? `<span class="people-row-meta">${escapeHtml(row.subtitle)}</span>` : ''}
+            </span>
+        </button>
+    `;
 }
 
 // ===== Edit profile =====
@@ -3191,9 +3381,15 @@ async function openEditProfile() {
 
     const nameInput = document.getElementById('edit-profile-name');
     const bioInput = document.getElementById('edit-profile-bio');
+    const locationInput = document.getElementById('edit-profile-location');
     const publicInput = document.getElementById('edit-profile-public');
     if (nameInput) nameInput.value = member?.display_name || '';
     if (bioInput) bioInput.value = member?.bio || '';
+    // ⚠️ Prefilling this is not cosmetic. The save below is a FULL write, so a
+    // location this form failed to load is a location the next Save deletes.
+    // `location` reaches us because 20260904000003 added it to
+    // get_social_member — it is NOT on the row otherwise.
+    if (locationInput) locationInput.value = member?.location || '';
     if (publicInput) publicInput.checked = member?.profile_public !== false;
 
     editProfileAvatarUrl = member?.avatar_url || null;
@@ -3329,6 +3525,7 @@ async function handleEditProfileSubmit(e) {
 
     const displayName = document.getElementById('edit-profile-name')?.value || '';
     const bio = document.getElementById('edit-profile-bio')?.value || '';
+    const location = document.getElementById('edit-profile-location')?.value || '';
     const isPublic = !!document.getElementById('edit-profile-public')?.checked;
 
     setSubmitting('edit-profile-save', true, 'Saving…');
@@ -3367,12 +3564,17 @@ async function handleEditProfileSubmit(e) {
                 .getPublicUrl(path).data.publicUrl;
         }
 
+        // ⚠️ p_location goes on EVERY save, empty or not. update_social_profile
+        // is a full write: omit the argument and its DEFAULT NULL clears the
+        // stored value, so "I only changed my bio" would silently erase the
+        // member's location.
         const { data, error } = await supabaseClient.rpc('update_social_profile', {
             p_app_id: currentApp.id,
             p_display_name: displayName,
             p_bio: bio,
             p_avatar_url: avatarUrl,
-            p_profile_public: isPublic
+            p_profile_public: isPublic,
+            p_location: location
         });
 
         // ⚠️ Family A: success:false does NOT set `error`. Checking only
