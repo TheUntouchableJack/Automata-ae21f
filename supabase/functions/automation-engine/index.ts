@@ -59,6 +59,7 @@ interface Member {
   last_name: string | null
   tier: string | null
   points_balance: number
+  total_points_earned: number
   visit_count: number
   current_streak: number
   last_visit_at: string | null
@@ -502,12 +503,14 @@ async function executeAwardPoints(
   const points = (config.points as number) || 0
   const reason = (config.reason as string) || 'Automation reward'
 
-  // Update member points
+  // Update member points. total_points_earned is a lifetime counter, so it
+  // accumulates from itself -- deriving it from points_balance rewrites it
+  // downward for anyone who has ever redeemed, and lifetime total drives tier.
   const { error } = await supabase
     .from('app_members')
     .update({
-      points_balance: member.points_balance + points,
-      total_points_earned: (member.points_balance || 0) + points
+      points_balance: (member.points_balance || 0) + points,
+      total_points_earned: (member.total_points_earned || 0) + points
     })
     .eq('id', member.id)
 
