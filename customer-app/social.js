@@ -77,6 +77,9 @@ let feedSoundOn = false;
 // observers fought over the same <video> elements.
 let feedVideoObserver = null;
 let venueVideoObserver = null;
+// Rebuilt on every renderFeed() alongside feedVideoObserver — the sentinel it
+// watches now lives inside the scroller and is destroyed by each render.
+let feedScrollObserver = null;
 
 // requestLocation() resolves asynchronously and used to call renderFeed()
 // unconditionally, blowing away innerHTML and restarting every playing video.
@@ -442,6 +445,21 @@ async function init() {
         applyFeatureFlags();
         document.title = `${app.name} - Social`;
 
+        // Before the feed paints, and before the four awaits below. The intro
+        // overlay covers everything while venues and posts load behind it, so
+        // a first-time visitor reads the intro instead of watching a shimmer.
+        //
+        // Order matters: the stored answers hydrate FIRST, so a member who
+        // cleared the onboarded flag but kept their picks sees them selected.
+        loadStoredPreferences();
+        maybeShowOnboarding();
+
+        // Needs appSettings, which was assigned three lines up: the tenant's
+        // feed_radius_default is the fallback when this device has no choice
+        // stored. Must also run before the first renderFilterPills(), which
+        // paints the distance chip's label from it.
+        loadRadiusPreference();
+
         SocialAuth.init({
             supabaseClient,
             appId: app.id,
@@ -464,6 +482,10 @@ async function init() {
         setupAuthListeners();
         await renderProfileIdentity();
 
+        // renderProfileIdentity() is what loads the member row, so this is the
+        // first point at which the account's saved answers are known.
+        await syncPreferencesWithMember();
+
         // Check if viewer is the business owner
         await checkOwnerAccess();
 
@@ -477,6 +499,12 @@ async function init() {
         // Load venues for map
         await loadVenues();
 
+        // The chip row exists now, so a saved preference can pick its opening
+        // filter. Must run BEFORE the first loadFeed() or the app paints an
+        // unfiltered feed and then visibly re-filters it.
+        seedFilterFromPreferences();
+        renderFilterPills();
+
         // Post pins double as the map's default centre, so they are loaded up
         // front rather than lazily with the map tab.
         await loadPostPins();
@@ -484,8 +512,18 @@ async function init() {
         // Load initial feed
         await loadFeed();
 
+        // ⚠️ Load-bearing: if the preference-seeded filter came back empty, this
+        // drops back to All. A blank opening feed caused by a choice made weeks
+        // ago is indistinguishable from a broken app.
+        await clearPreferenceSeedIfEmpty();
+
         // Setup event listeners
         setupEventListeners();
+
+        // A recording that outlived its upload gets a second chance (#11).
+        // Last, and not awaited by anything above it: it reads IndexedDB and
+        // must never be on the critical path to a painted feed.
+        refreshDraftBanner();
 
     } catch (err) {
         console.error('Init error:', err);
@@ -588,6 +626,343 @@ function updatePillVisibility() {
 function maxVideoDuration() {
     const v = parseInt(appSettings.video_max_duration, 10);
     return Number.isFinite(v) && v > 0 ? v : 15;
+}
+
+// ===== Onboarding + preferences (#1, #2) =====
+//
+// Three intro panels and a "what are you into?" picker, shown ONCE per device
+// on first open — to everyone, signed in or not. Anonymous browsing is a
+// supported mode here, so gating the intro behind an account would mean most
+// first-time visitors never saw it.
+//
+// Device-level (localStorage) is the correct scope for "have I seen the
+// intro?". The ANSWERS are a different question: they follow the account once
+// there is one, so a second device inherits them instead of asking again.
+//
+// ⚠️ What a preference DOES: it orders the filter chips and seeds the initially
+// active one. It does NOT hard-filter the feed. availableFilters() derives the
+// chip row from the venues the tenant actually has, so a member who picks
+// "Rooftop" in a city with no rooftop venue would otherwise open the app on a
+// permanently empty feed with nothing on screen explaining why.
+
+const ONBOARDED_KEY = 'viibeview_onboarded_v1';
+const PREFS_KEY = 'viibeview_prefs_v1';
+const ONBOARDING_PANELS = 4;
+
+let preferredCategories = [];
+let preferredGenres = [];
+let onboardingIndex = 0;
+let onboardingScrollTicking = false;
+
+// The seed is one-shot per page load. Without this guard, every
+// refreshFilterPills() (an owner tapping a venue genre, a phone adding a venue)
+// would shove a member who had deliberately tapped "All" back onto their
+// preference mid-scroll.
+let preferenceFilterSeeded = false;
+// True only between the seed and the first loadFeed() that follows it, so the
+// empty-feed fallback below can never fire against a filter the member chose.
+let preferenceSeedPending = false;
+
+function hasOnboarded() {
+    try {
+        return localStorage.getItem(ONBOARDED_KEY) === '1';
+    } catch (err) {
+        // Storage disabled (Safari private browsing, a locked-down profile).
+        // We cannot remember the dismissal, so treat it as already seen: an
+        // intro that reappears on EVERY page load is worse than one never shown.
+        return true;
+    }
+}
+
+function loadStoredPreferences() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
+        if (!parsed || typeof parsed !== 'object') return;
+        preferredCategories = Array.isArray(parsed.categories) ? parsed.categories : [];
+        preferredGenres = Array.isArray(parsed.genres) ? parsed.genres : [];
+    } catch (err) {
+        // Corrupt or unavailable storage is not worth failing the app boot over.
+    }
+}
+
+function writeStoredPreferences() {
+    try {
+        localStorage.setItem(PREFS_KEY, JSON.stringify({
+            categories: preferredCategories,
+            genres: preferredGenres
+        }));
+    } catch (err) {
+        // See hasOnboarded(): storage is best-effort here.
+    }
+}
+
+// Preferred slugs first, in the order they were picked; everything else keeps
+// the shared vocabulary's order so the row does not reshuffle when a venue is
+// edited. Array#sort has been stable since ES2019, which is what makes the
+// "equal rank -> 0" branch below safe.
+//
+// ⚠️ Explicit comparisons, not `ra - rb`: two unranked entries are both
+// Infinity and Infinity - Infinity is NaN, which no comparator should return.
+function orderByPreference(list, preferred) {
+    if (!preferred || !preferred.length) return list;
+    const rank = new Map(preferred.map((slug, i) => [slug, i]));
+    return list.slice().sort((a, b) => {
+        const ra = rank.has(a.slug) ? rank.get(a.slug) : Infinity;
+        const rb = rank.has(b.slug) ? rank.get(b.slug) : Infinity;
+        if (ra === rb) return 0;
+        return ra < rb ? -1 : 1;
+    });
+}
+
+// The onboarding picker offers the FULL vocabularies, not availableFilters().
+// Two reasons: it runs before loadVenues() has resolved, and a preference is
+// about the person, not about which venues this tenant happens to have tonight.
+function renderOnboardingChips() {
+    const groups = [
+        ['category', 'onboarding-categories', window.VENUE_CATEGORIES || [], preferredCategories],
+        ['genre', 'onboarding-genres', window.MUSIC_GENRES || [], preferredGenres]
+    ];
+
+    groups.forEach(([kind, containerId, vocabulary, selected]) => {
+        const box = document.getElementById(containerId);
+        if (!box) return;
+        box.innerHTML = vocabulary.map(item => {
+            const on = selected.includes(item.slug);
+            return `
+                <button type="button" class="onboarding-chip"
+                        aria-pressed="${on ? 'true' : 'false'}"
+                        data-ob-kind="${kind}" data-ob-slug="${escapeHtml(item.slug)}"
+                        data-i18n="${item.labelKey}">${escapeHtml(item.label)}</button>
+            `;
+        }).join('');
+    });
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+function toggleOnboardingChip(kind, slug) {
+    const list = kind === 'category' ? preferredCategories : preferredGenres;
+    const at = list.indexOf(slug);
+    if (at === -1) list.push(slug); else list.splice(at, 1);
+    renderOnboardingChips();
+}
+
+function renderOnboardingDots() {
+    const dots = document.getElementById('onboarding-dots');
+    if (!dots) return;
+    dots.innerHTML = Array.from({ length: ONBOARDING_PANELS }, (_, i) =>
+        `<span class="onboarding-dot${i === onboardingIndex ? ' active' : ''}"></span>`
+    ).join('');
+}
+
+// `scroll: false` is for the case where the TRACK moved first (a swipe) and we
+// are only catching the dots up — scrolling back would fight the gesture.
+//
+// The button label is written into textContent as well as data-i18n: I18n.t()
+// returns the KEY when a translation is missing and applyTranslations() then
+// leaves the node alone, so a node that is not pre-filled keeps the old label.
+function setOnboardingIndex(index, { scroll = true } = {}) {
+    onboardingIndex = Math.max(0, Math.min(ONBOARDING_PANELS - 1, index));
+
+    const track = document.getElementById('onboarding-track');
+    if (track && scroll) {
+        track.scrollTo({ left: track.clientWidth * onboardingIndex, behavior: 'smooth' });
+    }
+
+    renderOnboardingDots();
+
+    const next = document.getElementById('onboarding-next');
+    if (next) {
+        const last = onboardingIndex === ONBOARDING_PANELS - 1;
+        next.setAttribute('data-i18n', last ? 'social.obDone' : 'social.obNext');
+        next.textContent = last ? 'Show me' : 'Next';
+    }
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// ⚠️ This owns its own listeners rather than waiting for setupEventListeners(),
+// which runs at the END of init() behind four awaits. Wiring them there would
+// leave Skip and Next dead for as long as the venue and feed queries take —
+// on a slow connection, the entire time the intro is on screen.
+function maybeShowOnboarding() {
+    if (hasOnboarded()) return;
+
+    const overlay = document.getElementById('onboarding-overlay');
+    const track = document.getElementById('onboarding-track');
+    if (!overlay || !track) return;
+
+    renderOnboardingChips();
+    overlay.classList.add('visible');
+    lockBodyScroll('onboarding');
+    setOnboardingIndex(0, { scroll: false });
+
+    document.getElementById('onboarding-skip')
+        ?.addEventListener('click', () => finishOnboarding());
+
+    document.getElementById('onboarding-next')?.addEventListener('click', () => {
+        if (onboardingIndex >= ONBOARDING_PANELS - 1) finishOnboarding();
+        else setOnboardingIndex(onboardingIndex + 1);
+    });
+
+    // Delegated: the chips are re-rendered on every tap.
+    document.getElementById('onboarding-categories')?.addEventListener('click', onOnboardingChipClick);
+    document.getElementById('onboarding-genres')?.addEventListener('click', onOnboardingChipClick);
+
+    track.addEventListener('scroll', () => {
+        if (onboardingScrollTicking) return;
+        onboardingScrollTicking = true;
+        requestAnimationFrame(() => {
+            onboardingScrollTicking = false;
+            const width = track.clientWidth || 1;
+            const index = Math.round(track.scrollLeft / width);
+            if (index !== onboardingIndex) setOnboardingIndex(index, { scroll: false });
+        });
+    }, { passive: true });
+}
+
+function onOnboardingChipClick(event) {
+    const chip = event.target.closest('.onboarding-chip');
+    if (!chip) return;
+    toggleOnboardingChip(chip.dataset.obKind, chip.dataset.obSlug);
+}
+
+// Skip and Finish are the same path deliberately: skipping means "no
+// preferences", which is a valid answer and the default one. The only
+// difference is that Finish usually has chips selected.
+function finishOnboarding() {
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.classList.remove('visible');
+    unlockBodyScroll('onboarding');
+
+    try {
+        localStorage.setItem(ONBOARDED_KEY, '1');
+    } catch (err) {
+        // See hasOnboarded(). Nothing to do; the intro simply may reappear.
+    }
+
+    writeStoredPreferences();
+    persistPreferences();
+
+    // init() may already have loaded venues and painted the feed behind the
+    // overlay, in which case the seed never got a chance to run. Do it now.
+    if (venues.length && !preferenceFilterSeeded) {
+        seedFilterFromPreferences();
+        renderFilterPills();
+        if (preferenceSeedPending) {
+            loadFeed(false).then(clearPreferenceSeedIfEmpty);
+        }
+    } else {
+        renderFilterPills();
+    }
+}
+
+// Writes the current answers to the member row. Best-effort by design: the
+// localStorage copy is what drives this session either way, and a visitor who
+// is signed in but has no member row yet (mid-signup) correctly gets
+// "Join this app first" back, which is not worth interrupting them for.
+//
+// ⚠️ Checks BOTH `error` and `success: false`. This RPC returns failure in its
+// result row without setting PostgREST's error — the same shape that made
+// submitPost() report success on a failed post.
+async function persistPreferences() {
+    if (!currentApp) return;
+    if (!(await SocialAuth.isSignedIn())) return;
+
+    const { data, error } = await supabaseClient.rpc('set_member_preferences', {
+        p_app_id: currentApp.id,
+        p_categories: preferredCategories,
+        p_genres: preferredGenres
+    });
+
+    if (error) {
+        console.warn('Failed to save preferences:', error.message);
+        return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row && row.success === false) {
+        console.warn('Failed to save preferences:', row.error_message);
+    }
+}
+
+// Reconciles device and account. Which side wins is decided by the member row:
+//
+//   member row has answers -> they win, and a second device inherits them
+//   member row is empty    -> this device's onboarding answers are pushed up
+//
+// That ordering is what makes "merge into the member row on signup" work
+// without a member who has already chosen being overwritten by a fresh
+// device's blank slate.
+async function syncPreferencesWithMember() {
+    const member = SocialAuth.getMember ? SocialAuth.getMember() : null;
+    if (!member) return;
+
+    const remoteCategories = Array.isArray(member.preferred_categories) ? member.preferred_categories : [];
+    const remoteGenres = Array.isArray(member.preferred_genres) ? member.preferred_genres : [];
+
+    if (remoteCategories.length || remoteGenres.length) {
+        preferredCategories = remoteCategories;
+        preferredGenres = remoteGenres;
+        writeStoredPreferences();
+        // The intro may still be on screen on a second device — repaint so the
+        // chips arrive pre-selected rather than asking a returning member to
+        // answer a question they already answered.
+        if (document.getElementById('onboarding-overlay')?.classList.contains('visible')) {
+            renderOnboardingChips();
+        }
+        return;
+    }
+
+    if (preferredCategories.length || preferredGenres.length) {
+        await persistPreferences();
+    }
+}
+
+// Sets activeCategory/activeGenre BEFORE the first loadFeed(), so the app does
+// not paint an unfiltered feed and then visibly re-filter it.
+//
+// Only ever picks a chip that availableFilters() actually offers — a preference
+// for a category this tenant has no venue in is silently ignored rather than
+// becoming a filter that matches nothing.
+function seedFilterFromPreferences() {
+    if (preferenceFilterSeeded) return;
+    preferenceFilterSeeded = true;
+
+    if (activeCategory || activeGenre || feedMode === 'following') return;
+    if (!preferredCategories.length && !preferredGenres.length) return;
+
+    const { categories, genres } = availableFilters();
+    const category = preferredCategories.find(slug => categories.some(c => c.slug === slug)) || null;
+    const genre = category
+        ? null
+        : (preferredGenres.find(slug => genres.some(g => g.slug === slug)) || null);
+
+    if (!category && !genre) return;
+
+    activeCategory = category;
+    activeGenre = genre;
+    preferenceSeedPending = true;
+}
+
+// ⚠️ The empty-feed fallback, and the reason the seed is safe at all.
+// availableFilters() proves the CATEGORY exists; it proves nothing about
+// anything having been POSTED under it. Opening the app on a blank feed because
+// of a preference the member set once, weeks ago, is indistinguishable from the
+// app being broken — so if the seeded filter returns nothing, drop straight
+// back to All.
+async function clearPreferenceSeedIfEmpty() {
+    if (!preferenceSeedPending) return;
+    preferenceSeedPending = false;
+    if (feedItems.length) return;
+
+    activeCategory = null;
+    activeGenre = null;
+    renderFilterPills();
+    await loadFeed(false);
 }
 
 // ===== Session =====
@@ -1142,6 +1517,12 @@ async function handleResetSubmit(e) {
 // Runs after any successful sign-in / sign-up.
 async function onSignedIn() {
     await SocialAuth.loadMember({ force: true });
+
+    // The merge point. A visitor who answered the onboarding picker while
+    // signed out has those answers in localStorage only — this is what carries
+    // them onto the account they just created.
+    await syncPreferencesWithMember();
+
     await checkOwnerAccess();
     await loadFollowingState({ force: true });
     await renderProfileIdentity();
@@ -1161,6 +1542,10 @@ async function onSignedIn() {
     // rule would leave the slot empty for the rest of a session in which the
     // visitor just told us they are staying.
     refreshBottomBanners({ justSignedIn: true });
+
+    // refreshDraftBanner() returns early when signed out, so a draft saved
+    // before a session expired only becomes offerable now.
+    refreshDraftBanner();
 
     // Finish what the visitor was doing when the overlay interrupted them.
     if (hasPendingComposer) {
@@ -1333,7 +1718,7 @@ async function checkOwnerAccess() {
 // organization_members row; hiding a button is not a security control and is
 // not relied on as one.
 function applyOwnerAffordances() {
-    ['add-venue-btn', 'search-add-venue-btn'].forEach(id => {
+    ['add-venue-btn', 'search-add-venue-btn', 'app-settings-btn'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = isOwner ? '' : 'none';
     });
@@ -1359,6 +1744,16 @@ function requestLocation() {
             // whenever geolocation resolved after the map mounted.
             // #center-on-me-btn still does it, explicitly, on request.
             renderVenueSwimLane();
+
+            // ⚠️ The distance filter is SUPPRESSED until there is a fix — see
+            // loadFeed(). A member whose device remembers "5 mi" therefore gets
+            // an unfiltered first paint, and without this the chip would sit
+            // there reading "5 mi" over a feed that is not filtered at all.
+            // Only reload when a radius is actually waiting on the fix.
+            if (feedRadiusMiles !== null) {
+                renderFilterPills();
+                loadFeed(false);
+            }
         },
         (err) => {
             console.warn('Geolocation denied:', err.message);
@@ -1486,7 +1881,10 @@ async function loadFeed(append = false) {
         feedHasMore = true;
     }
 
-    showFeedLoading(true);
+    // ⚠️ First load only. The shimmer now OVERLAYS the scroller (it would
+    // otherwise squeeze the panels as a flex sibling), so showing it while
+    // paginating would blank the Viibe the user is watching mid-scroll.
+    showFeedLoading(!append);
 
     // Two RPCs, one identical RETURNS TABLE, one renderFeedCard(). They are
     // separate functions rather than a p_following argument on get_venue_feed
@@ -1494,23 +1892,43 @@ async function loadFeed(append = false) {
     // browsing must be anon-executable and a Following feed cannot be. See the
     // header of migration 20260903000004.
     //
-    // ⚠️ Belt and braces on the mode: get_following_feed returns zero rows for
-    // a null auth.uid(), which would read as "nobody you follow has posted"
+    // ⚠️ Belt and braces on the mode: get_following_feed_v3 returns zero rows
+    // for a null auth.uid(), which would read as "nobody you follow has posted"
     // rather than "you are signed out". Falling back to the public feed here
     // means signing out can never strand the tab on an unexplainable empty
     // state, even if a chip survived the sign-out.
+    //
+    // ⚠️ _v3 (migration 20260907000002) — SIBLINGS of the v2 pair, not
+    // replacements. get_venue_feed / get_following_feed are still installed and
+    // untouched, which makes rollback these two identifiers and nothing else.
+    // v3 adds distance, a server-side TTL and video-only; the RETURNS TABLE is
+    // byte-identical, so renderFeedCard() did not change with it.
     const useFollowing = feedMode === 'following' && !!currentUserId;
-    const rpcName = useFollowing ? 'get_following_feed' : 'get_venue_feed';
+    const rpcName = useFollowing ? 'get_following_feed_v3' : 'get_venue_feed_v3';
 
-    // Named arguments, so the new p_genre parameter landing in the middle of
-    // the signature (migration 20260901000001) does not shift anything.
-    // activeCategory and activeGenre are already normalized to null by
-    // normalizeCategory()/normalizeGenre() — the literal strings 'all' would
-    // filter on a value no row has and empty the feed silently.
+    // ⚠️ Coordinates come from the CACHED userLocation and are never awaited
+    // here. getCurrentCoords() can block for up to 10 seconds behind a
+    // permission dialog, and loadFeed() runs on every chip tap.
+    //
+    // ⚠️ No fix means NO RADIUS, not radius-with-null-coords. A denied or
+    // still-pending location permission must never produce an empty feed —
+    // the RPC guards this too, but the client must not be the thing that
+    // asks for an impossible filter in the first place.
+    const coords = userLocation;
+    const radius = coords ? feedRadiusMiles : null;
+
+    // Named arguments, so a parameter landing in the middle of the signature
+    // does not shift anything. activeCategory and activeGenre are already
+    // normalized to null by normalizeCategory()/normalizeGenre() — the literal
+    // strings 'all' would filter on a value no row has and empty the feed
+    // silently.
     const { data, error } = await supabaseClient.rpc(rpcName, {
         p_app_id: currentApp.id,
         p_category: activeCategory,
         p_genre: activeGenre,
+        p_lat: coords ? coords.lat : null,
+        p_lng: coords ? coords.lng : null,
+        p_radius_miles: radius,
         p_limit: FEED_PAGE_SIZE,
         p_offset: feedOffset
     });
@@ -1520,6 +1938,13 @@ async function loadFeed(append = false) {
 
     if (error) {
         console.error('Failed to load feed:', error);
+        // ⚠️ An error on a FRESH load must not leave the previous filter's
+        // panels on screen — that reads as the new chip having no effect. The
+        // empty state is at least honest about there being nothing to show.
+        if (!append) {
+            feedItems = [];
+            renderFeed();
+        }
         return;
     }
 
@@ -1544,17 +1969,30 @@ function renderFeed() {
 
     if (feedItems.length === 0) {
         container.innerHTML = '';
+        // The scroller is a fixed-height flex child. Left in flow while empty it
+        // would take the whole viewport and push the empty state below the fold.
+        container.style.display = 'none';
         renderFeedEmptyState();
         if (emptyState) emptyState.style.display = 'flex';
         return;
     }
 
     if (emptyState) emptyState.style.display = 'none';
+    container.style.display = '';
 
-    container.innerHTML = feedItems.map(item => renderFeedCard(item)).join('');
+    // ⚠️ The sentinel is rendered INSIDE the scroller, and therefore has to be
+    // re-created on every render because this line replaces the container's
+    // children. An IntersectionObserver rooted on #feed-container cannot see a
+    // sentinel that lives outside it, and the failure is silent: pagination
+    // just stops and the feed looks like it ran out.
+    container.innerHTML =
+        feedItems.map(item => renderFeedCard(item)).join('')
+        + '<div class="load-more-trigger" id="load-more-trigger"></div>';
 
-    // Setup intersection observer for video autoplay
+    // Both observers are rooted on the container and both are rebuilt here, for
+    // the same reason: their targets were destroyed by the line above.
     setupVideoObserver();
+    setupInfiniteScroll();
     refreshSoundButtons();
     feedHasRendered = true;
 }
@@ -1573,35 +2011,76 @@ function renderFeedEmptyState() {
     if (!empty) return;
 
     const following = feedMode === 'following';
+
+    // A live distance scope wins the explanation even in Following mode. It is
+    // the narrowest of the three filters, the likeliest cause of "nothing here",
+    // and the only one with a one-tap fix — which is the test that matters,
+    // because an unexplained empty feed is indistinguishable from a broken app.
+    const scoped = feedRadiusMiles !== null && !!userLocation;
+
     const title = empty.querySelector('h3');
     const body = empty.querySelector('p');
 
-    if (title) {
-        title.setAttribute('data-i18n', following ? 'social.emptyFollowingTitle' : 'social.emptyFeedTitle');
-        title.textContent = following ? 'Nothing from your follows yet' : 'No posts yet';
-    }
-    if (body) {
-        body.setAttribute('data-i18n', following ? 'social.emptyFollowingBody' : 'social.emptyFeedBody');
-        body.textContent = following
-            ? 'Follow some people and venues to fill this up.'
-            : 'Check back later for venue content';
+    let titleKey, titleText, bodyKey, bodyText, ctaKey, ctaText, ctaAction;
+
+    if (scoped) {
+        titleKey = 'social.emptyNearbyTitle';
+        titleText = 'Nothing nearby right now';
+        bodyKey = 'social.emptyNearbyBody';
+        bodyText = `No Viibes within ${feedRadiusMiles} ${feedRadiusMiles === 1 ? 'mile' : 'miles'} of you.`;
+        ctaKey = 'social.showAnyDistance';
+        ctaText = 'Show any distance';
+        ctaAction = () => setRadius(null);
+    } else if (following) {
+        titleKey = 'social.emptyFollowingTitle';
+        titleText = 'Nothing from your follows yet';
+        bodyKey = 'social.emptyFollowingBody';
+        bodyText = 'Follow some people and venues to fill this up.';
+        ctaKey = 'social.discoverMembers';
+        ctaText = 'Discover Members';
+        ctaAction = () => openPeopleSheet('discover');
+    } else {
+        titleKey = 'social.emptyFeedTitle';
+        titleText = 'No posts yet';
+        bodyKey = 'social.emptyFeedBody';
+        bodyText = 'Check back later for venue content';
     }
 
-    let cta = document.getElementById('feed-empty-cta');
-    if (following) {
-        if (!cta) {
-            cta = document.createElement('button');
-            cta.id = 'feed-empty-cta';
-            cta.type = 'button';
-            cta.className = 'auth-btn auth-btn-primary';
-            cta.setAttribute('data-i18n', 'social.discoverMembers');
-            cta.textContent = 'Discover Members';
-            cta.addEventListener('click', () => openPeopleSheet('discover'));
-            empty.appendChild(cta);
+    // The English is written into textContent as well as the data-i18n key:
+    // I18n.t() returns the KEY when a translation is missing and
+    // applyTranslations() then leaves the node alone, so a node that is not
+    // pre-filled would keep the PREVIOUS state's copy.
+    //
+    // ⚠️ The nearby body carries an interpolated radius, so it is not a static
+    // key. translateOr() supplies the params and falls back to the English
+    // built above rather than rendering the key name.
+    if (title) {
+        title.setAttribute('data-i18n', titleKey);
+        title.textContent = titleText;
+    }
+    if (body) {
+        if (scoped) {
+            body.removeAttribute('data-i18n');
+            body.textContent = translateOr('social.emptyNearbyBody', { miles: feedRadiusMiles }, bodyText);
+        } else {
+            body.setAttribute('data-i18n', bodyKey);
+            body.textContent = bodyText;
         }
-        cta.style.display = '';
-    } else if (cta) {
-        cta.style.display = 'none';
+    }
+
+    // Replaced rather than reconfigured: the CTA's action changes with the
+    // state, and addEventListener on a reused node would stack handlers so one
+    // tap fired every action this empty state has ever offered.
+    document.getElementById('feed-empty-cta')?.remove();
+    if (ctaAction) {
+        const cta = document.createElement('button');
+        cta.id = 'feed-empty-cta';
+        cta.type = 'button';
+        cta.className = 'auth-btn auth-btn-primary';
+        cta.setAttribute('data-i18n', ctaKey);
+        cta.textContent = ctaText;
+        cta.addEventListener('click', ctaAction);
+        empty.appendChild(cta);
     }
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
@@ -1749,34 +2228,64 @@ function postHeaderMarkup(identity, { showVenue = true } = {}) {
     `;
 }
 
+// One Viibe, one full-height snap panel (#3, #12).
+//
+// This is a RE-LAYOUT, NOT A REDUCTION. Every affordance the bordered card
+// carried is still here, moved onto the video instead of stacked around it:
+// the author/venue identity block, the "at {venue}" link, the 3-dots options,
+// the caption, the duration pill and the sound toggle — plus the here-tonight
+// badge, which the card never had room for.
+//
+// ⚠️ The class is `.feed-panel`, and `.feed-card` is GONE from this surface.
+// The venue page still renders `.feed-card` (renderVenuePageFeed) and that is
+// deliberate: a venue page is a list of that venue's posts, not a full-screen
+// browse. The two must not share a class or a change to one silently reshapes
+// the other.
+//
+// The photo branch survives even though get_venue_feed_v3 filters to video.
+// It is the rollback path: pointing loadFeed() back at get_venue_feed brings
+// photos with it, and a renderer that could only draw video would then paint
+// nothing, with no error.
 function renderFeedCard(item) {
     const isVideo = item.media_type === 'video';
     const identity = postIdentity(item);
+    const venue = item.venue_id ? getVenueById(item.venue_id) : null;
 
     return `
-        <div class="feed-card" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
-            <div class="feed-card-header">
-                ${postHeaderMarkup(identity)}
-                <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                </button>
-            </div>
+        <article class="feed-panel" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
             <div class="feed-media" onclick="toggleVideoPlay(this)">
                 ${isVideo ? `
-                    <!-- preload="metadata" is the backfill story for the poster
-                         frame: every post that predates thumbnail generation has
-                         thumbnail_url NULL, and metadata makes the browser paint
-                         the first frame instead of a grey block. No data
-                         migration is possible — the column was never written. -->
-                    <video src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="metadata" loop></video>
-                    ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
-                    <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
+                    <!-- preload is decided per post by videoPreloadMode(): "none"
+                         when there is a poster to paint, "metadata" when there is
+                         not. Posts predating thumbnail generation have
+                         thumbnail_url NULL and no backfill is possible, so a
+                         blanket preload="none" would paint them as black. -->
+                    <video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
+                           playsinline muted preload="${videoPreloadMode(item)}" loop></video>
                 ` : `
                     <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
                 `}
             </div>
-            ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
-        </div>
+
+            <!-- Scrim, not a background on the text: the overlay has to stay
+                 legible over a bright video without becoming a solid bar over
+                 the thing people came to watch. -->
+            <div class="feed-panel-scrim" aria-hidden="true"></div>
+
+            <button class="feed-more-btn feed-panel-more" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            </button>
+
+            ${isVideo ? `<button class="video-sound-btn feed-panel-sound" type="button" onclick="toggleFeedSound(event, this)"></button>` : ''}
+
+            <div class="feed-panel-info">
+                ${venue ? hereNowBadge(venue) : ''}
+                ${postHeaderMarkup(identity)}
+                ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
+                ${isVideo && item.duration_seconds
+                    ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
+            </div>
+        </article>
     `;
 }
 
@@ -3652,8 +4161,13 @@ function switchTab(tabId) {
 // One rAF-throttled window listener. Uses transform, never display: body has
 // padding-bottom: calc(var(--nav-height) …), so removing the nav from flow
 // would jump the page by the height of the nav on every scroll.
+// ⚠️ The feed no longer scrolls on `window`. #feed-container is a fixed-height
+// element scroller with scroll-snap, so this listens on the ELEMENT. A
+// window-scroll listener here would fire only on the other tabs, and the
+// symptom would be "back-to-top never appears" with nothing in the console.
 function setupScrollChrome() {
-    window.addEventListener('scroll', () => {
+    const container = document.getElementById('feed-container');
+    container?.addEventListener('scroll', () => {
         if (scrollChromeTicking) return;
         scrollChromeTicking = true;
         requestAnimationFrame(() => {
@@ -3663,30 +4177,40 @@ function setupScrollChrome() {
     }, { passive: true });
 
     document.getElementById('back-to-top')?.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('feed-container')?.scrollTo({ top: 0, behavior: 'smooth' });
     });
 }
 
+// The bottom nav is now PINNED on the feed tab, and that is a deliberate
+// reversal of the hide-on-scroll behaviour rather than an omission.
+//
+// Hide-on-scroll was written for a continuously scrolling card list, where the
+// nav slid away as you read. In a one-panel-per-swipe feed EVERY gesture is a
+// full-viewport scroll, so the nav would slide out and back on every single
+// Viibe — read as flicker, not as chrome getting out of the way. The nav also
+// no longer costs anything: the scroller is sized to sit above it, so it covers
+// nothing.
+//
+// nav.classList.remove('hidden') is still issued unconditionally, because a
+// nav left translated off-screen by an older session's state would otherwise
+// stay there for the rest of the visit.
 function updateScrollChrome() {
     const nav = document.querySelector('.bottom-nav');
     const backToTop = document.getElementById('back-to-top');
-    const y = window.scrollY || window.pageYOffset || 0;
+    const container = document.getElementById('feed-container');
 
-    if (activeTab !== 'feed') {
-        nav?.classList.remove('hidden');
+    nav?.classList.remove('hidden');
+
+    if (activeTab !== 'feed' || !container) {
         backToTop?.classList.remove('visible');
-        lastScrollY = y;
+        lastScrollY = 0;
         return;
     }
 
-    // Scrolling back up brings the nav straight back, at any depth — the
-    // alternative is making someone scroll to the top of a video feed to reach
-    // their own navigation.
-    const scrollingUp = y < lastScrollY;
-    if (nav) nav.classList.toggle('hidden', y > 100 && !scrollingUp);
-
-    const firstCard = document.querySelector('#feed-container .feed-card');
-    const threshold = firstCard ? firstCard.offsetHeight : 400;
+    const y = container.scrollTop;
+    // One panel is one viewport, so "past the first Viibe" is the honest
+    // threshold and it needs no measurement of a child element.
+    const threshold = container.clientHeight * 0.6;
     if (backToTop) backToTop.classList.toggle('visible', y > threshold);
 
     lastScrollY = y;
@@ -3722,9 +4246,18 @@ function availableFilters() {
         venueGenres(v).forEach(g => genres.add(g));
     });
 
+    // …then reordered so the member's onboarding picks lead their group. The
+    // SET of chips is still decided by the venue data — a preference can move a
+    // chip forward, never invent one that has no venues behind it.
     return {
-        categories: (window.VENUE_CATEGORIES || []).filter(c => cats.has(c.slug)),
-        genres: (window.MUSIC_GENRES || []).filter(g => genres.has(g.slug))
+        categories: orderByPreference(
+            (window.VENUE_CATEGORIES || []).filter(c => cats.has(c.slug)),
+            preferredCategories
+        ),
+        genres: orderByPreference(
+            (window.MUSIC_GENRES || []).filter(g => genres.has(g.slug)),
+            preferredGenres
+        )
     };
 }
 
@@ -3759,7 +4292,23 @@ function renderFilterPills() {
                    data-i18n="social.following">Following</button>`
         : '';
 
+    // Distance leads the row and is deliberately NOT role="tab": it is not one
+    // of the mutually exclusive options, it is a scope that combines with them,
+    // and it opens a sheet rather than selecting anything. The label carries the
+    // current value so the row states the scope without the sheet being open.
+    const distanceChip = `
+        <button class="pill pill-distance ${feedRadiusMiles !== null ? 'active' : ''}" type="button"
+                data-filter-kind="distance" data-filter-value="distance"
+                aria-haspopup="dialog">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>${escapeHtml(radiusChipLabel())}</span>
+        </button>
+    `;
+
     container.innerHTML = `
+        ${distanceChip}
         ${followingChip}
         <button class="pill ${allActive && !followingActive ? 'active' : ''}" role="tab"
                 aria-selected="${allActive && !followingActive ? 'true' : 'false'}"
@@ -3785,6 +4334,42 @@ function pinFilterPills() {
     const pills = document.getElementById('filter-pills');
     if (!header || !pills) return;
     pills.style.top = `${header.offsetHeight}px`;
+    sizeFeedViewport();
+}
+
+// ⚠️ The full-screen feed's height is MEASURED, not computed from constants.
+//
+// social.css carries a calc() fallback for first paint, and it subtracts a
+// hardcoded 56px header + 44px pill row (the same arithmetic #map-container has
+// always used). That is wrong the moment anything else lands in normal flow
+// above the tab — the location banner, the sample-data notice, the draft
+// recovery banner — and the symptom is the body becoming scrollable, which
+// un-pins the "fixed" filter row (#4) by exactly the banner's height.
+//
+// Measuring the tab's own top removes both the constants and the whole class
+// of bug.
+function sizeFeedViewport() {
+    const tab = document.getElementById('tab-feed');
+    if (!tab || !tab.classList.contains('active')) return;
+
+    const top = tab.getBoundingClientRect().top + (window.scrollY || window.pageYOffset || 0);
+    const nav = document.querySelector('.bottom-nav');
+    const navHeight = nav ? nav.offsetHeight : 0;
+    const height = Math.max(240, Math.round(window.innerHeight - top - navHeight));
+
+    // ⚠️ The guard is load-bearing, not an optimisation. Writing this height
+    // changes the body's height, which is what a ResizeObserver on the body
+    // fires on — an unconditional write is an infinite loop.
+    if (Math.abs(parseFloat(tab.style.height) - height) < 1) return;
+    tab.style.height = `${height}px`;
+}
+
+// Every in-flow notice, every rotation, every wrap of the pill row. Cheaper and
+// far more reliable than remembering to re-measure at each of the dozen places
+// that can insert or remove a banner.
+function watchFeedViewport() {
+    if (!window.ResizeObserver) return;
+    new ResizeObserver(() => sizeFeedViewport()).observe(document.body);
 }
 
 // Called whenever the venue set changes — a venue added from a phone, or an
@@ -3819,6 +4404,14 @@ function refreshFilterPills() {
 }
 
 function setFilter(kind, value) {
+    // Distance is not a filter state of this row at all — it opens a sheet and
+    // combines with whatever is already selected. Handled first so it can never
+    // fall through and clear the active category.
+    if (kind === 'distance') {
+        openRadiusSheet();
+        return;
+    }
+
     // Following is a third state of the same row: it switches which RPC the
     // feed calls, and every other chip switches back. Category and genre still
     // apply on top of it — one shared pill row that stopped working when you
@@ -3852,6 +4445,259 @@ function setFilter(kind, value) {
     renderFilterPills();
     loadFeed(false);
     refreshVenueSurfaces();
+}
+
+// ===== Distance (#5) =====
+//
+// Distance is a SCOPE, not a category. It combines with whatever category or
+// genre chip is active rather than replacing it, which is exactly why it is not
+// a fourth kind of chip in the single-active row — one row where some chips are
+// mutually exclusive and one is not cannot be read at a glance. It gets its own
+// chip at the left of the row, and that chip opens a sheet.
+
+const RADIUS_PREF_KEY = 'viibe_feed_radius';
+// null = "Any". Also the sheet's row order.
+const RADIUS_OPTIONS = [null, 1, 5, 25];
+
+let feedRadiusMiles = null;
+
+// Precedence: this device's last choice, then the tenant's configured default,
+// then Any. The device wins because the owner sheet describes its value as
+// "just the starting value — anyone can change it for themselves", and a
+// default that overrode a deliberate choice on every reload would make that
+// false.
+//
+// ⚠️ '' is the STORED form of "Any" and is not the same as an absent key. A
+// truthiness check here would silently re-apply the tenant default to everyone
+// who had explicitly chosen Any.
+function loadRadiusPreference() {
+    let stored = null;
+    try {
+        stored = localStorage.getItem(RADIUS_PREF_KEY);
+    } catch (err) {
+        // Storage unavailable; fall through to the tenant default.
+    }
+
+    if (stored !== null) {
+        const parsed = parseFloat(stored);
+        feedRadiusMiles = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        return;
+    }
+
+    const configured = parseFloat(appSettings.feed_radius_default);
+    feedRadiusMiles = Number.isFinite(configured) && configured > 0 ? configured : null;
+}
+
+function writeRadiusPreference() {
+    try {
+        localStorage.setItem(RADIUS_PREF_KEY, feedRadiusMiles === null ? '' : String(feedRadiusMiles));
+    } catch (err) {
+        // Best-effort; the session still honours the choice.
+    }
+}
+
+// I18n.t() returns the KEY when a translation is missing, so every label here
+// falls back to written English rather than rendering "social.radiusMiles".
+function translateOr(key, params, fallback) {
+    const value = window.I18n && typeof window.I18n.t === 'function'
+        ? window.I18n.t(key, params)
+        : key;
+    return value === key ? fallback : value;
+}
+
+function radiusOptionLabel(miles) {
+    if (miles === null) return translateOr('social.radiusAny', null, 'Any distance');
+    if (miles === 1) return translateOr('social.radius1', null, '1 mile');
+    return translateOr('social.radiusMiles', { miles }, `${miles} miles`);
+}
+
+function radiusChipLabel() {
+    if (feedRadiusMiles === null) return translateOr('social.distanceAnyShort', null, 'Any distance');
+    return translateOr('social.distanceShort', { miles: feedRadiusMiles }, `${feedRadiusMiles} mi`);
+}
+
+function openRadiusSheet() {
+    const sheet = document.getElementById('radius-sheet');
+    const backdrop = document.getElementById('radius-backdrop');
+    if (!sheet || !backdrop) return;
+
+    renderRadiusOptions();
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    lockBodyScroll('radius');
+}
+
+function closeRadiusSheet() {
+    document.getElementById('radius-sheet')?.classList.remove('visible');
+    document.getElementById('radius-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('radius');
+}
+
+// ⚠️ With no location fix, every option except "Any" is a filter the server
+// will refuse to apply — see migration 20260907000002 §1. Offering them anyway
+// and quietly returning an unfiltered feed from a chip that reads "1 mi" is the
+// silent-lie failure mode this codebase keeps producing, so the sheet says so
+// and offers the permission prompt instead.
+function renderRadiusOptions() {
+    const body = document.getElementById('radius-body');
+    if (!body) return;
+
+    const noFix = !userLocation;
+    const check = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+    const options = RADIUS_OPTIONS.map(value => {
+        const active = feedRadiusMiles === value;
+        const disabled = noFix && value !== null;
+        return `
+            <button type="button" class="radius-option${active ? ' active' : ''}"
+                    ${disabled ? 'disabled' : ''}
+                    data-radius="${value === null ? '' : value}">
+                <span>${escapeHtml(radiusOptionLabel(value))}</span>
+                ${active ? check : ''}
+            </button>
+        `;
+    }).join('');
+
+    body.innerHTML = noFix
+        ? `<p class="radius-note" data-i18n="social.radiusNeedsLocation">Turn on location to filter by distance.</p>
+           <button type="button" class="auth-btn auth-btn-ghost" id="radius-enable-location"
+                   data-i18n="social.enableLocation">Use my location</button>
+           ${options}`
+        : options;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// Re-asks for the fix. getCurrentCoords() resolves to null on denial AND on
+// timeout, so a null answer gets a toast rather than a silent no-op — the user
+// tapped a button and is owed a response either way.
+async function enableLocationForRadius() {
+    const btn = document.getElementById('radius-enable-location');
+    if (btn) { btn.disabled = true; btn.textContent = translateOr('social.locating', null, 'Locating…'); }
+
+    const coords = await getCurrentCoords();
+    renderRadiusOptions();
+    renderFilterPills();
+
+    if (!coords) {
+        showToast(translateOr('social.locationBlocked', null,
+            'Location is off. Turn it on in your browser settings to filter by distance.'));
+    }
+}
+
+function setRadius(value) {
+    feedRadiusMiles = value;
+    writeRadiusPreference();
+    closeRadiusSheet();
+    renderFilterPills();
+    loadFeed(false);
+}
+
+// ===== App settings (org members only) =====
+//
+// ViibeView already carries org-member-only admin in-app on a phone (add a
+// venue, venue genres). This is the same place, for the same reason: it keeps
+// the change entirely out of the Royalty owner dashboard, where a bug would
+// have a much larger blast radius.
+//
+// The authority is server-side. update_social_app_settings verifies org
+// membership and merges an allow-list; hiding this menu item is presentation,
+// not a security control.
+
+function openAppSettings() {
+    const sheet = document.getElementById('app-settings-sheet');
+    const backdrop = document.getElementById('app-settings-backdrop');
+    if (!sheet || !backdrop || !isOwner) return;
+
+    const error = document.getElementById('app-settings-error');
+    if (error) error.textContent = '';
+
+    // Prefill from the LIVE app row — this is what the RPC merges into.
+    selectWithFallback(document.getElementById('setting-post-ttl'), appSettings.post_ttl_hours,
+        hours => translateOr('social.ttlHours', { hours }, `${hours} hours`));
+    selectWithFallback(document.getElementById('setting-feed-radius'), appSettings.feed_radius_default,
+        miles => translateOr('social.radiusMiles', { miles }, `${miles} miles`));
+
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    lockBodyScroll('app-settings');
+}
+
+function closeAppSettings() {
+    document.getElementById('app-settings-sheet')?.classList.remove('visible');
+    document.getElementById('app-settings-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('app-settings');
+}
+
+// ⚠️ A stored value that is not one of the presets — written by a future admin
+// screen, or by hand in the SQL editor — must NOT silently fall back to the
+// first option. `select.value = '3'` against a list with no "3" leaves the
+// select on "Never expire", and the next Save would then WRITE that, changing a
+// setting nobody touched. Add the missing option instead.
+function selectWithFallback(select, value, labelFor) {
+    if (!select) return;
+    const wanted = (value === null || value === undefined || value === '') ? '' : String(value);
+    if (!Array.from(select.options).some(o => o.value === wanted)) {
+        const option = document.createElement('option');
+        option.value = wanted;
+        option.textContent = labelFor(wanted);
+        select.appendChild(option);
+    }
+    select.value = wanted;
+}
+
+async function saveAppSettings() {
+    const errorEl = document.getElementById('app-settings-error');
+    const ttlRaw = document.getElementById('setting-post-ttl')?.value ?? '';
+    const radiusRaw = document.getElementById('setting-feed-radius')?.value ?? '';
+
+    // '' is the explicit "no expiry" / "any distance" answer and is sent as JSON
+    // null, which the RPC preserves. Omitting the key would mean "leave it
+    // alone" and make the two states impossible to tell apart.
+    const payload = {
+        post_ttl_hours: ttlRaw === '' ? null : Number(ttlRaw),
+        feed_radius_default: radiusRaw === '' ? null : Number(radiusRaw)
+    };
+
+    if (errorEl) errorEl.textContent = '';
+    setSubmitting('app-settings-save', true, translateOr('social.saving', null, 'Saving…'));
+
+    const { data, error } = await supabaseClient.rpc('update_social_app_settings', {
+        p_app_id: currentApp.id,
+        p_settings: payload
+    });
+
+    setSubmitting('app-settings-save', false);
+
+    // ⚠️ BOTH branches. This RPC returns failure in its result row without
+    // setting PostgREST's error — the same shape that let submitPost() report
+    // success on a post that never landed.
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row || row.success === false) {
+        const message = error?.message || row?.error_message
+            || translateOr('social.settingsFailed', null, 'Could not save settings');
+        if (errorEl) errorEl.textContent = message;
+        return;
+    }
+
+    // Keep the in-memory copies in step. currentApp.settings is what a re-open
+    // of this sheet reads and appSettings is what loadRadiusPreference() reads;
+    // leaving either stale means the sheet re-opens showing the value that was
+    // just replaced.
+    appSettings.post_ttl_hours = payload.post_ttl_hours;
+    appSettings.feed_radius_default = payload.feed_radius_default;
+    if (currentApp && currentApp.settings) {
+        currentApp.settings.post_ttl_hours = payload.post_ttl_hours;
+        currentApp.settings.feed_radius_default = payload.feed_radius_default;
+    }
+
+    closeAppSettings();
+    showToast(translateOr('social.settingsSaved', null, 'Settings saved'));
+
+    // The TTL change is visible immediately rather than on the next reload.
+    loadFeed(false);
 }
 
 // The three client-side-filtered surfaces. Both pill rows go through here so
@@ -3911,8 +4757,15 @@ function toggleFeedSound(event, btn) {
 
     // Only the video the user is actually looking at gets the new state
     // applied immediately; the rest pick it up when the observer plays them.
-    const media = btn ? btn.closest('.feed-media') : null;
-    const video = media ? media.querySelector('video') : null;
+    //
+    // ⚠️ Two shapes, deliberately. On the full-screen feed the sound button is a
+    // SIBLING of .feed-media (it is positioned against the panel, not the media
+    // box); on the venue page it is still INSIDE it. Checking .feed-panel first
+    // and falling back to .feed-media covers both — a bare .feed-media lookup
+    // would return null on the main feed and the toggle would silently do
+    // nothing to the video the user is watching.
+    const scope = btn ? (btn.closest('.feed-panel') || btn.closest('.feed-media')) : null;
+    const video = scope ? scope.querySelector('video') : null;
     if (video) {
         applySoundState(video);
         if (video.paused) video.play().catch(() => { /* still blocked; play btn stays */ });
@@ -3929,6 +4782,13 @@ function toggleVideoPlay(mediaEl) {
     const video = mediaEl.querySelector('video');
     if (!video) return;
 
+    // ⚠️ On the full-screen feed a video outside the hydration window has no
+    // src at all, and play() on a src-less element rejects. Tapping a panel is
+    // an explicit request for THIS video, so it gets one regardless of where
+    // the observer thinks the window is. No-op on the venue page, whose videos
+    // carry a plain src and no data-src.
+    ensureVideoSrc(video);
+
     if (video.paused) {
         // Pause all other videos
         document.querySelectorAll('.feed-media video').forEach(v => {
@@ -3944,34 +4804,109 @@ function toggleVideoPlay(mediaEl) {
     }
 }
 
+// ===== Video performance (#9) =====
+//
+// The old feed rendered every card with a real `src` and preload="metadata":
+// twenty metadata round trips per page, and twenty decoders held open, for the
+// one video anyone was looking at.
+//
+// Two changes, and they are complementary rather than alternatives:
+//   * preload="none" wherever there is a poster to paint instead;
+//   * only the visible panel and its immediate neighbours hold a `src` at all.
+
+// How many panels either side of the visible one keep a real src. 1 is the
+// point: the next Viibe must be ready the instant the thumb moves, and nothing
+// beyond that should be holding a buffer or a socket.
+const VIDEO_HYDRATION_WINDOW = 1;
+
+// ⚠️ preload="none" ONLY when there is a poster to paint in its place. Every
+// post predating thumbnail generation has thumbnail_url NULL and NO BACKFILL IS
+// POSSIBLE — the column was never written. A blanket preload="none" would paint
+// those as a black rectangle, which is why this is decided per post rather than
+// set once on the element.
+function videoPreloadMode(item) {
+    return item.thumbnail_url ? 'none' : 'metadata';
+}
+
+// A panel's video carries its URL in data-src and only gains a real src inside
+// the hydration window. This is what bounds the cost of a long scroll.
+function ensureVideoSrc(video) {
+    if (!video || !video.dataset.src) return;
+    if (video.getAttribute('src') !== video.dataset.src) {
+        video.setAttribute('src', video.dataset.src);
+    }
+}
+
+// ⚠️ Called directly after every render as well as from the observer. An
+// IntersectionObserver that never fires — a hidden tab at first paint, a test
+// environment where it is stubbed — would otherwise leave EVERY video without a
+// src, and the feed would render as black panels with nothing in the console.
+// The synchronous seed around index 0 is the floor under that.
+function hydrateVideosAround(index) {
+    document.querySelectorAll('#feed-container .feed-panel').forEach((panel, i) => {
+        const video = panel.querySelector('video[data-src]');
+        if (!video) return;
+
+        if (Math.abs(i - index) <= VIDEO_HYDRATION_WINDOW) {
+            ensureVideoSrc(video);
+            return;
+        }
+
+        if (video.hasAttribute('src')) {
+            video.pause();
+            video.removeAttribute('src');
+            // load() is required, not tidy-up: removeAttribute alone leaves the
+            // element holding the decoded resource and its buffer, which is the
+            // memory this whole mechanism exists to release.
+            video.load();
+        }
+    });
+}
+
 // One observer for the main feed, rebuilt on every render. Rebuilding is fine;
 // LEAKING is not — this used to create a new IntersectionObserver per
 // renderFeed() and never disconnect the old one, so after five pages of
 // infinite scroll five observers were racing to play and pause the same
 // elements.
+//
+// ⚠️ root: container. The feed scrolls on #feed-container now, not on window.
+// It observes .feed-panel (not .feed-media) because the panel is the snap unit
+// and its index is what the hydration window is measured in.
 function setupVideoObserver() {
     if (feedVideoObserver) feedVideoObserver.disconnect();
 
+    const container = document.getElementById('feed-container');
+    if (!container) return;
+
     feedVideoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            const video = entry.target.querySelector('video');
-            if (!video) return;
+            const panel = entry.target;
+            const video = panel.querySelector('video');
 
-            if (entry.isIntersecting) {
-                applySoundState(video);
-                // Autoplay blocked leaves the poster frame showing and the card
-                // tappable, which is the whole affordance now.
-                video.play().catch(() => {});
-            } else {
-                video.pause();
-                video.muted = true;
+            if (!entry.isIntersecting) {
+                if (video) { video.pause(); video.muted = true; }
+                return;
             }
-        });
-    }, { threshold: 0.6 });
 
-    document.querySelectorAll('#feed-container .feed-media').forEach(el => {
-        if (el.querySelector('video')) feedVideoObserver.observe(el);
-    });
+            // Recentre the window BEFORE trying to play: on a fast swipe this
+            // panel can come into view before it has ever held a src.
+            const panels = Array.from(container.querySelectorAll('.feed-panel'));
+            hydrateVideosAround(panels.indexOf(panel));
+
+            if (!video) return;
+            // applySoundState is the SINGLE writer for muted/volume. Do not add
+            // a second path here — see its own comment.
+            applySoundState(video);
+            // Autoplay blocked leaves the poster frame showing and the panel
+            // tappable, which is the whole affordance.
+            video.play().catch(() => {});
+        });
+    }, { root: container, threshold: 0.6 });
+
+    container.querySelectorAll('.feed-panel').forEach(el => feedVideoObserver.observe(el));
+
+    // The floor described above.
+    hydrateVideosAround(0);
 }
 
 // ===== Infinite Scroll =====
@@ -3979,19 +4914,32 @@ function setupVideoObserver() {
 // feed unused. Replaces a window scroll listener doing scrollHeight arithmetic —
 // the observer fires only when the sentinel is actually near the viewport, so it
 // costs nothing while the user is on the Map or Search tabs.
+// ⚠️ TWO things changed with the switch to an element scroller, and BOTH are
+// silent failures if missed:
+//
+//   1. `root: container`. With the default viewport root the sentinel sits at
+//      the bottom of a scroller whose own box never moves, so it is clipped out
+//      of view forever and the callback never fires again after the first page.
+//   2. This is called from renderFeed() on EVERY render, because the sentinel
+//      is re-created by that render. Hence the disconnect — the old observer
+//      would otherwise be left holding a detached node, and after five pages
+//      five observers would each fire loadFeed(true) on the same sentinel.
+//      That is the exact leak setupVideoObserver() was fixed for.
 function setupInfiniteScroll() {
+    const container = document.getElementById('feed-container');
     const trigger = document.getElementById('load-more-trigger');
-    if (!trigger) return;
+    if (feedScrollObserver) feedScrollObserver.disconnect();
+    if (!container || !trigger) return;
 
-    const observer = new IntersectionObserver((entries) => {
+    feedScrollObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
             if (activeTab !== 'feed' || feedLoading || !feedHasMore) return;
             loadFeed(true);
         });
-    }, { rootMargin: '400px' });
+    }, { root: container, rootMargin: '400px' });
 
-    observer.observe(trigger);
+    feedScrollObserver.observe(trigger);
 }
 
 // ===== Event Listeners =====
@@ -4014,6 +4962,30 @@ function setupEventListeners() {
             if (pill) setFilter(pill.dataset.filterKind, pill.dataset.filterValue);
         });
     }
+
+    // Distance sheet. Delegated on the body, which is re-rendered on every open
+    // and whenever the location fix changes.
+    document.getElementById('radius-close')?.addEventListener('click', closeRadiusSheet);
+    document.getElementById('radius-backdrop')?.addEventListener('click', closeRadiusSheet);
+    document.getElementById('radius-body')?.addEventListener('click', (e) => {
+        if (e.target.closest('#radius-enable-location')) {
+            enableLocationForRadius();
+            return;
+        }
+        const option = e.target.closest('.radius-option');
+        if (!option || option.disabled) return;
+        // '' is the DOM spelling of "Any" — an empty data-radius must become
+        // null, not NaN, or the chip label and the RPC argument both break.
+        const raw = option.dataset.radius;
+        setRadius(raw === '' ? null : parseFloat(raw));
+    });
+
+    // App settings (org members only; the button is hidden for everyone else
+    // and update_social_app_settings re-checks membership server-side).
+    document.getElementById('app-settings-btn')?.addEventListener('click', openAppSettings);
+    document.getElementById('app-settings-close')?.addEventListener('click', closeAppSettings);
+    document.getElementById('app-settings-backdrop')?.addEventListener('click', closeAppSettings);
+    document.getElementById('app-settings-save')?.addEventListener('click', saveAppSettings);
 
     // Search input
     const searchInput = document.getElementById('search-input');
@@ -4228,11 +5200,21 @@ function setupEventListeners() {
         });
     }
 
-    // Infinite scroll
+    // Infinite scroll is now (re)wired by renderFeed(), which owns the sentinel.
+    // Kept here for the cold-start case where init()'s first loadFeed() resolved
+    // before this ran, so that render's setupInfiniteScroll() found no listener
+    // ordering problem — and for the empty-feed case, where renderFeed() returns
+    // early and there is nothing to observe. Both are no-ops when the sentinel
+    // is absent.
     setupInfiniteScroll();
 
-    // Nav hide-on-scroll + back-to-top
+    // Back-to-top, and the nav's pinned state. Listens on #feed-container.
     setupScrollChrome();
+
+    // Keeps the snap scroller exactly the height of what is left of the
+    // viewport, whatever else is in flow above it.
+    watchFeedViewport();
+    sizeFeedViewport();
 
     // Add to Home Screen, and the signup prompt that shares its slot
     setupInstallPrompt();
@@ -5089,7 +6071,19 @@ async function startCamera() {
         return;
     }
 
-    const videoConstraints = { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } };
+    // PORTRAIT, and capped (#9). This was 1280×720 landscape, which is the wrong
+    // shape for a feed of 100dvh portrait panels — object-fit: cover then throws
+    // away most of every frame that was paid for in bandwidth and battery.
+    //
+    // Every constraint is `ideal`, deliberately: `exact` raises
+    // OverconstrainedError on any device that cannot match, and being unable to
+    // record at all is far worse than recording at whatever the camera offers.
+    const videoConstraints = {
+        facingMode: 'environment',
+        width: { ideal: 720 },
+        height: { ideal: 1280 },
+        frameRate: { ideal: 30, max: 30 }
+    };
 
     try {
         // Audio first — a Viibe is a video with sound, and the feed has a sound
@@ -5173,7 +6167,24 @@ function startRecording() {
             ? 'video/webm;codecs=vp9'
             : 'video/webm';
 
-    mediaRecorder = new MediaRecorder(cameraStream, { mimeType });
+    // Bitrate cap (#9). At 15 seconds this puts a Viibe at roughly 2–4 MB
+    // instead of the 10–15 MB an uncapped 1080p-class encode produces on a
+    // recent phone. That is the whole performance story on the upload side —
+    // there is no transcoding step and no new vendor.
+    //
+    // ⚠️ Wrapped: MediaRecorder throws NotSupportedError if it dislikes the
+    // options object on some engines, and a capture app that cannot capture is
+    // a total failure where a fatter file is a slower one.
+    try {
+        mediaRecorder = new MediaRecorder(cameraStream, {
+            mimeType,
+            videoBitsPerSecond: 2_500_000,
+            audioBitsPerSecond: 96_000
+        });
+    } catch (err) {
+        console.warn('MediaRecorder rejected the bitrate options, falling back:', err.name);
+        mediaRecorder = new MediaRecorder(cameraStream, { mimeType });
+    }
 
     mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
@@ -5288,15 +6299,35 @@ function updatePostSubmitState() {
  * migrations — so every feed card fell back to a grey block until the video
  * decoded. Resolves to null on any failure: a missing poster is cosmetic, and
  * a failed thumbnail must never fail the post.
+ *
+ * ⚠️ EVERY MISS IS PERMANENT AND COSTS FOREVER (#9). videoPreloadMode() only
+ * gets to use preload="none" when thumbnail_url is set; a post without one is
+ * pinned to preload="metadata" for the rest of its life, on every feed render,
+ * for every visitor. So this is written to succeed rather than to be tidy:
+ *
+ *   * A MediaRecorder blob very often reports duration === Infinity, because
+ *     the container is written without a duration header. Seeking such an
+ *     element may never fire `seeked` at all. When the duration is not a usable
+ *     number this now draws the frame it already has instead of seeking.
+ *   * Even with a finite duration, some engines resolve loadeddata and then
+ *     never fire seeked for these blobs. A 1.2s grace timer draws whatever is
+ *     decoded rather than waiting out the 6s cap and shipping no poster.
+ *
+ * Both fallbacks are strictly better than the previous behaviour: the worst
+ * case is the same null, and the common case is now a frame.
  */
 function generateThumbnail(file) {
     return new Promise((resolve) => {
         let settled = false;
         let objectUrl = null;
+        let timer = null;
+        let graceTimer = null;
 
         const finish = (blob) => {
             if (settled) return;
             settled = true;
+            clearTimeout(timer);
+            clearTimeout(graceTimer);
             if (objectUrl) URL.revokeObjectURL(objectUrl);
             resolve(blob || null);
         };
@@ -5307,35 +6338,46 @@ function generateThumbnail(file) {
             video.muted = true;
             video.playsInline = true;
 
-            // Some browsers never fire seeked for a MediaRecorder blob whose
-            // duration metadata is Infinity. Cap the wait rather than leaving
-            // the composer stuck on "Preparing…".
-            const timer = setTimeout(() => finish(null), 6000);
+            // Nothing has been decoded yet — drawing now would produce a blank
+            // canvas, which is worse than no poster because it LOOKS like one.
+            const draw = () => {
+                if (settled) return;
+                try {
+                    if (!video.videoWidth || !video.videoHeight) {
+                        finish(null);
+                        return;
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((blob) => finish(blob), 'image/jpeg', 0.7);
+                } catch {
+                    finish(null);
+                }
+            };
+
+            // The outer cap, so the composer can never sit on "Preparing…".
+            timer = setTimeout(() => finish(null), 6000);
 
             video.onloadeddata = () => {
+                const duration = video.duration;
+                if (!Number.isFinite(duration) || duration <= 0.2) {
+                    // Infinity, NaN, or a clip too short to seek inside. Take
+                    // the frame that is already decoded.
+                    draw();
+                    return;
+                }
+                graceTimer = setTimeout(draw, 1200);
                 try {
-                    const d = Number.isFinite(video.duration) ? video.duration : 0;
-                    video.currentTime = d > 0.2 ? 0.1 : 0;
+                    video.currentTime = 0.1;
                 } catch {
-                    clearTimeout(timer);
-                    finish(null);
+                    draw();
                 }
             };
 
-            video.onseeked = () => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth || 720;
-                    canvas.height = video.videoHeight || 1280;
-                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                    canvas.toBlob((blob) => { clearTimeout(timer); finish(blob); }, 'image/jpeg', 0.7);
-                } catch {
-                    clearTimeout(timer);
-                    finish(null);
-                }
-            };
-
-            video.onerror = () => { clearTimeout(timer); finish(null); };
+            video.onseeked = draw;
+            video.onerror = () => finish(null);
 
             objectUrl = URL.createObjectURL(file);
             video.src = objectUrl;
@@ -5343,6 +6385,250 @@ function generateThumbnail(file) {
             finish(null);
         }
     });
+}
+
+// ===== Interruption handling (#11) =====
+//
+// The recording is the irreplaceable thing here. Everything else — the caption,
+// the venue, the coordinates — can be retyped; the moment cannot be re-shot.
+// So it is written to IndexedDB BEFORE the first byte is uploaded, and only
+// deleted once the post row exists.
+//
+// Why IndexedDB + retry-with-backoff and NOT resumable/TUS uploads
+// ----------------------------------------------------------------
+// A capped Viibe is 2–4 MB (see startRecording's bitrate cap). Chunked
+// resumption buys very little at that size, and it adds a CDN dependency and a
+// second upload path to keep correct. What actually loses recordings today is
+// not a half-finished transfer — it is the tab being backgrounded, the browser
+// being killed, or the network dropping entirely. A durable draft plus retry
+// addresses all three; TUS addresses none of them on its own.
+//
+// The seam stays clean: publishViibe() is the only uploader, so swapping in a
+// resumable transport later is one function.
+
+const DRAFT_DB_NAME = 'viibeview';
+const DRAFT_DB_VERSION = 1;
+const DRAFT_STORE = 'post_drafts';
+// One draft at a time. A queue would need conflict rules ("which of your three
+// unfinished Viibes did you mean?") for a case that does not exist: the
+// composer holds one recording and cannot be opened twice.
+const DRAFT_KEY = 'pending';
+
+// Attempt delays in ms. Three attempts total; the first is immediate.
+const UPLOAD_RETRY_DELAYS_MS = [0, 1200, 4000];
+
+// Every draft helper resolves rather than rejects. IndexedDB is unavailable in
+// some private-browsing modes and behind some enterprise policies, and losing
+// the SAFETY NET must never take the POST down with it.
+function openDraftDb() {
+    return new Promise((resolve) => {
+        try {
+            if (!window.indexedDB) { resolve(null); return; }
+            const request = window.indexedDB.open(DRAFT_DB_NAME, DRAFT_DB_VERSION);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(DRAFT_STORE)) {
+                    db.createObjectStore(DRAFT_STORE);
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => resolve(null);
+            request.onblocked = () => resolve(null);
+        } catch (err) {
+            resolve(null);
+        }
+    });
+}
+
+function withDraftStore(mode, run) {
+    return openDraftDb().then((db) => {
+        if (!db) return null;
+        return new Promise((resolve) => {
+            let result = null;
+            try {
+                const tx = db.transaction(DRAFT_STORE, mode);
+                const store = tx.objectStore(DRAFT_STORE);
+                const request = run(store);
+                if (request) request.onsuccess = () => { result = request.result; };
+                tx.oncomplete = () => { db.close(); resolve(result ?? null); };
+                tx.onerror = () => { db.close(); resolve(null); };
+                tx.onabort = () => { db.close(); resolve(null); };
+            } catch (err) {
+                db.close();
+                resolve(null);
+            }
+        });
+    });
+}
+
+// ⚠️ Stores the Blob itself, not an object URL. An object URL dies with the
+// document, which is precisely the event this draft exists to survive.
+function saveDraft(draft) {
+    return withDraftStore('readwrite', (store) => store.put(draft, DRAFT_KEY));
+}
+
+function loadDraft() {
+    return withDraftStore('readonly', (store) => store.get(DRAFT_KEY));
+}
+
+function clearDraft() {
+    return withDraftStore('readwrite', (store) => store.delete(DRAFT_KEY));
+}
+
+// Retriable = the request never got a verdict, or the server said it was its
+// own fault. A 4xx (RLS refusal, expired session, bad path) will say the same
+// thing three times, and retrying it just makes the failure slower.
+function isRetriableUploadError(error) {
+    if (!error) return false;
+    const status = parseInt(error.statusCode ?? error.status, 10);
+    if (Number.isFinite(status)) return status >= 500;
+    // No status at all is a fetch/network failure — exactly the case worth
+    // retrying, and the one a phone walking out of a venue produces.
+    return true;
+}
+
+// ⚠️ 409 / "Duplicate" is treated as SUCCESS, not as an error.
+//
+// The uploads use upsert: false, so an attempt whose RESPONSE was lost but
+// whose BYTES landed makes the retry collide with the object it just created.
+// Reporting that as a failure would throw away a recording that is already
+// safely in storage.
+function isAlreadyUploaded(error) {
+    if (!error) return false;
+    const status = parseInt(error.statusCode ?? error.status, 10);
+    if (status === 409) return true;
+    return /duplicate|already exists|resource already/i.test(error.message || '');
+}
+
+async function uploadWithRetry(path, file, onStatus) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt < UPLOAD_RETRY_DELAYS_MS.length; attempt++) {
+        const wait = UPLOAD_RETRY_DELAYS_MS[attempt];
+        if (wait > 0) {
+            onStatus(translateOr('social.uploadRetrying',
+                { attempt: attempt + 1, total: UPLOAD_RETRY_DELAYS_MS.length },
+                `Connection lost — retrying (${attempt + 1}/${UPLOAD_RETRY_DELAYS_MS.length})…`));
+            await new Promise(r => setTimeout(r, wait));
+        }
+
+        const { error } = await supabaseClient.storage
+            .from('venue-media')
+            .upload(path, file, { cacheControl: '3600', upsert: false });
+
+        if (!error || isAlreadyUploaded(error)) return { ok: true };
+
+        lastError = error;
+        if (!isRetriableUploadError(error)) break;
+    }
+
+    return { ok: false, error: lastError };
+}
+
+// ===== Publishing =====
+//
+// The ONE uploader. submitPost() feeds it from the composer's DOM;
+// resumeDraft() feeds it from IndexedDB. Keeping them on one path is what makes
+// "resume" mean the same thing as "post" rather than a second, thinner
+// implementation that drifts.
+//
+// `payload` is exactly what a draft holds, so a draft can be replayed verbatim.
+async function publishViibe(payload, { onProgress, onStatus }) {
+    const progress = onProgress || (() => {});
+    const status = onStatus || (() => {});
+
+    const session = await SocialAuth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) throw new Error('Sign in to post a Viibe');
+
+    progress(20);
+    status(translateOr('social.uploading', null, 'Uploading…'));
+
+    // ⚠️ The storage path is part of the DRAFT, not recomputed on resume.
+    // Recomputing it would mint a new timestamped path on every retry, so a
+    // resumed upload could not collide with — and therefore could not RECOGNISE
+    // — the bytes a previous attempt had already written.
+    const path = payload.path;
+
+    progress(40);
+
+    const uploaded = await uploadWithRetry(path, payload.file, status);
+    if (!uploaded.ok) throw uploaded.error || new Error('Upload failed');
+
+    const { data: urlData } = supabaseClient.storage
+        .from('venue-media')
+        .getPublicUrl(path);
+
+    progress(60);
+
+    // Poster frame. Everything about it is best-effort — but see
+    // generateThumbnail's header: a miss is permanent and costs a metadata
+    // fetch on every future render, so it is worth the seconds it takes.
+    let thumbnailUrl = null;
+    try {
+        const thumbBlob = await generateThumbnail(payload.file);
+        if (thumbBlob) {
+            const thumbPath = `${path.replace(/\.[^.]+$/, '')}-thumb.jpg`;
+            const { error: thumbError } = await supabaseClient.storage
+                .from('venue-media')
+                .upload(thumbPath, thumbBlob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+
+            if (!thumbError || isAlreadyUploaded(thumbError)) {
+                thumbnailUrl = supabaseClient.storage
+                    .from('venue-media')
+                    .getPublicUrl(thumbPath).data.publicUrl;
+            }
+        }
+    } catch (thumbErr) {
+        console.warn('Thumbnail generation failed, posting without one:', thumbErr);
+    }
+
+    progress(80);
+    status(translateOr('social.savingPost', null, 'Saving…'));
+
+    const { data: postData, error: postError } = await supabaseClient.rpc('create_social_post', {
+        p_app_id: payload.appId,
+        p_storage_path: path,
+        p_url: urlData.publicUrl,
+        p_venue_id: payload.venueId || null,
+        p_caption: payload.caption,
+        p_thumbnail_url: thumbnailUrl,
+        p_duration_seconds: payload.durationSeconds,
+        p_file_size_bytes: payload.file.size,
+        p_latitude: payload.latitude,
+        p_longitude: payload.longitude
+    });
+
+    // ⚠️ A SECURITY DEFINER function returning success:false does NOT set
+    // `error`. Testing only postError would swallow every server-side
+    // rejection — rate limit, wrong app's venue, not a member — and show
+    // "Posted!" over a post that does not exist.
+    const row = Array.isArray(postData) ? postData[0] : postData;
+    if (postError) throw postError;
+    if (!row || row.success === false) {
+        throw new Error(row?.error_message || 'Could not publish your Viibe');
+    }
+
+    // venues.media_count is maintained by the trg_venue_media_count trigger
+    // (migration 20260821000001). The client used to do a read-modify-write
+    // here, which lost an increment on concurrent uploads.
+
+    progress(100);
+    return row;
+}
+
+// Everything that has to happen after a Viibe lands, wherever it came from.
+async function afterViibePublished() {
+    // Small delay to ensure DB propagation, then reload + scroll to top
+    await new Promise(r => setTimeout(r, 300));
+    await loadFeed(false);
+    await loadPostPins();
+    if (map) renderPostPins();
+    if (venuePageVenueId) await loadVenuePageFeed(false);
+    // ⚠️ The feed scrolls on #feed-container, not on window. A window.scrollTo
+    // here would do nothing at all and the member would be left mid-feed
+    // wondering where their Viibe went.
+    document.getElementById('feed-container')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function submitPost() {
@@ -5356,125 +6642,152 @@ async function submitPost() {
     if (submitBtn) submitBtn.disabled = true;
     if (progress) progress.style.display = 'block';
     if (progressFill) progressFill.style.width = '10%';
-    if (progressText) progressText.textContent = 'Preparing...';
+    if (progressText) progressText.textContent = translateOr('social.preparing', null, 'Preparing…');
+
+    // ⚠️ These percentages are STAGE markers, not byte progress, and the label
+    // says so ("Uploading…", not "43%"). supabase-js v2's storage.upload() is a
+    // fetch with no progress event, so real byte progress would mean a second
+    // XHR-based upload path. Retry status is the honest thing this UI can add,
+    // and it is what a stalled upload actually needs to say.
+    const setProgress = (percent) => {
+        if (progressFill) progressFill.style.width = `${percent}%`;
+    };
+    const setStatus = (text) => {
+        if (progressText) progressText.textContent = text;
+    };
+
+    const session = await SocialAuth.getSession();
+    const userId = session?.user?.id;
+
+    // Which venue, if any — whatever the picker holds, for everyone.
+    //
+    // There used to be an owner-only branch here that called
+    // getOrCreateDefaultVenue() and auto-minted a venue named "General".
+    // It is gone: venue_id is nullable, the picker is explicit, and an
+    // owner who wants no venue gets no venue, same as a member.
+    const venueId = composerVenueId;
+
+    // Where the clip was actually recorded. Null when location was refused;
+    // the post is still perfectly valid, it just gets no pin of its own.
+    const coords = await getCurrentCoords();
+
+    const timestamp = Date.now();
+    const safeFilename = selectedPostFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    // Owners keep {orgId}/{venueId}/… — that policy and that path are
+    // untouched. Members get their own prefix, which is what the
+    // "Members can upload their own venue media" policy authorizes.
+    const path = (isOwner && ownerOrgId && venueId && userId)
+        ? `${ownerOrgId}/${venueId}/${timestamp}-${safeFilename}`
+        : `members/${userId}/${timestamp}-${safeFilename}`;
+
+    const payload = {
+        appId: currentApp.id,
+        path,
+        file: selectedPostFile,
+        caption: document.getElementById('post-caption')?.value.trim() || null,
+        venueId: venueId || null,
+        durationSeconds: recordedDurationSeconds,
+        latitude: coords ? coords.lat : null,
+        longitude: coords ? coords.lng : null,
+        savedAt: timestamp
+    };
+
+    // ⚠️ BEFORE the first byte goes out. This is the entire point of #11: a
+    // crash, a tab close, or a backgrounded browser from here on costs a retry,
+    // not the recording.
+    await saveDraft(payload);
 
     try {
-        const session = await SocialAuth.getSession();
-        const userId = session?.user?.id;
-        if (!userId) throw new Error('Sign in to post a Viibe');
+        await publishViibe(payload, { onProgress: setProgress, onStatus: setStatus });
 
-        // Which venue, if any — whatever the picker holds, for everyone.
-        //
-        // There used to be an owner-only branch here that called
-        // getOrCreateDefaultVenue() and auto-minted a venue named "General".
-        // It is gone: venue_id is nullable, the picker is explicit, and an
-        // owner who wants no venue gets no venue, same as a member.
-        const venueId = composerVenueId;
+        // Only now. A draft cleared on upload success rather than on POST
+        // success would lose the recording whenever create_social_post refused
+        // it — a rate limit, say, which is a retry-later case by definition.
+        await clearDraft();
 
-        if (progressFill) progressFill.style.width = '20%';
-        if (progressText) progressText.textContent = 'Uploading...';
-
-        const timestamp = Date.now();
-        const safeFilename = selectedPostFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-
-        // Owners keep {orgId}/{venueId}/… — that policy and that path are
-        // untouched. Members get their own prefix, which is what the new
-        // "Members can upload their own venue media" policy authorizes.
-        const path = (isOwner && ownerOrgId && venueId)
-            ? `${ownerOrgId}/${venueId}/${timestamp}-${safeFilename}`
-            : `members/${userId}/${timestamp}-${safeFilename}`;
-
-        if (progressFill) progressFill.style.width = '40%';
-
-        const { error: uploadError } = await supabaseClient.storage
-            .from('venue-media')
-            .upload(path, selectedPostFile, { cacheControl: '3600', upsert: false });
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabaseClient.storage
-            .from('venue-media')
-            .getPublicUrl(path);
-
-        if (progressFill) progressFill.style.width = '60%';
-
-        // Poster frame. Everything about it is best-effort.
-        let thumbnailUrl = null;
-        try {
-            const thumbBlob = await generateThumbnail(selectedPostFile);
-            if (thumbBlob) {
-                const thumbPath = `${path.replace(/\.[^.]+$/, '')}-thumb.jpg`;
-                const { error: thumbError } = await supabaseClient.storage
-                    .from('venue-media')
-                    .upload(thumbPath, thumbBlob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
-
-                if (!thumbError) {
-                    thumbnailUrl = supabaseClient.storage
-                        .from('venue-media')
-                        .getPublicUrl(thumbPath).data.publicUrl;
-                }
-            }
-        } catch (thumbErr) {
-            console.warn('Thumbnail generation failed, posting without one:', thumbErr);
-        }
-
-        if (progressFill) progressFill.style.width = '80%';
-        if (progressText) progressText.textContent = 'Saving...';
-
-        // Where the clip was actually recorded. Null when location was refused;
-        // the post is still perfectly valid, it just gets no pin of its own.
-        const coords = await getCurrentCoords();
-
-        const caption = document.getElementById('post-caption')?.value.trim() || null;
-
-        const { data: postData, error: postError } = await supabaseClient.rpc('create_social_post', {
-            p_app_id: currentApp.id,
-            p_storage_path: path,
-            p_url: urlData.publicUrl,
-            p_venue_id: venueId || null,
-            p_caption: caption,
-            p_thumbnail_url: thumbnailUrl,
-            p_duration_seconds: recordedDurationSeconds,
-            p_file_size_bytes: selectedPostFile.size,
-            p_latitude: coords ? coords.lat : null,
-            p_longitude: coords ? coords.lng : null
-        });
-
-        // ⚠️ A SECURITY DEFINER function returning success:false does NOT set
-        // `error`. Testing only postError would swallow every server-side
-        // rejection — rate limit, wrong app's venue, not a member — and show
-        // "Posted!" over a post that does not exist.
-        const row = Array.isArray(postData) ? postData[0] : postData;
-        if (postError) throw postError;
-        if (!row || row.success === false) {
-            throw new Error(row?.error_message || 'Could not publish your Viibe');
-        }
-
-        // venues.media_count is maintained by the trg_venue_media_count trigger
-        // (migration 20260821000001). The client used to do a read-modify-write
-        // here, which lost an increment on concurrent uploads.
-
-        if (progressFill) progressFill.style.width = '100%';
-        if (progressText) progressText.textContent = 'Posted!';
+        setStatus(translateOr('social.posted', null, 'Posted!'));
 
         setTimeout(async () => {
             closeCreatePost();
             showToast('Post published!');
-            // Small delay to ensure DB propagation, then reload + scroll to top
-            await new Promise(r => setTimeout(r, 300));
-            await loadFeed(false);
-            await loadPostPins();
-            if (map) renderPostPins();
-            if (venuePageVenueId) await loadVenuePageFeed(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            await afterViibePublished();
         }, 500);
 
     } catch (err) {
         console.error('Post upload failed:', err);
-        if (progressFill) progressFill.style.width = '0';
-        if (progressText) progressText.textContent = 'Upload failed';
+        setProgress(0);
+        setStatus(translateOr('social.uploadFailed', null, 'Upload failed'));
         showToast(err.message || 'Failed to post. Try again.');
         if (submitBtn) submitBtn.disabled = false;
+        // The draft is deliberately LEFT in place. The banner on next open is
+        // the second chance, and closing the composer must not be the thing
+        // that discards a recording.
+        refreshDraftBanner();
+    }
+}
+
+// ===== Draft recovery banner =====
+//
+// Shown on boot when a draft outlived its upload. Uses insertBelowFilterRows(),
+// the same in-flow slot as the location banner and the sample-data notice —
+// deliberately NOT a modal: interrupting someone with a dialog before they have
+// seen the app is a worse trade than a row they can act on when ready.
+async function refreshDraftBanner() {
+    document.getElementById('draft-banner')?.remove();
+
+    const draft = await loadDraft();
+    // A draft for a DIFFERENT tenant belongs to a different app on the same
+    // device. Leave it alone rather than offering to post it here.
+    if (!draft || !draft.file || !currentApp || draft.appId !== currentApp.id) return;
+    if (!(await SocialAuth.isSignedIn())) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'draft-banner';
+    banner.className = 'draft-banner';
+    banner.innerHTML = `
+        <span class="draft-banner-text" data-i18n="social.draftPending">Your last Viibe didn't finish uploading.</span>
+        <button type="button" class="draft-banner-action" id="draft-resume" data-i18n="social.draftResume">Resume</button>
+        <button type="button" class="draft-banner-dismiss" id="draft-discard" data-i18n="social.draftDiscard">Discard</button>
+    `;
+
+    banner.querySelector('#draft-resume').addEventListener('click', () => resumeDraft(draft));
+    banner.querySelector('#draft-discard').addEventListener('click', async () => {
+        await clearDraft();
+        banner.remove();
+    });
+
+    insertBelowFilterRows(banner);
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// Replays the stored payload through the same publishViibe() the composer uses.
+// The progress UI belongs to the composer, which is closed here, so status goes
+// to toasts instead.
+async function resumeDraft(draft) {
+    const banner = document.getElementById('draft-banner');
+    const resumeBtn = document.getElementById('draft-resume');
+    if (resumeBtn) {
+        resumeBtn.disabled = true;
+        resumeBtn.textContent = translateOr('social.uploading', null, 'Uploading…');
+    }
+
+    try {
+        await publishViibe(draft, { onStatus: (text) => { if (resumeBtn) resumeBtn.textContent = text; } });
+        await clearDraft();
+        banner?.remove();
+        showToast('Post published!');
+        await afterViibePublished();
+    } catch (err) {
+        console.error('Draft resume failed:', err);
+        showToast(err.message || 'Still could not post that. Try again later.');
+        if (resumeBtn) {
+            resumeBtn.disabled = false;
+            resumeBtn.textContent = translateOr('social.draftResume', null, 'Resume');
+        }
     }
 }
 

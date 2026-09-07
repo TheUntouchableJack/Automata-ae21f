@@ -65,6 +65,19 @@ async function signedInUserId() {
 }
 
 async function loadApp() {
+    // ⚠️ Every Playwright context starts with EMPTY localStorage, which to
+    // ViibeView means "first ever visit" — so the onboarding overlay (#1) covers
+    // the app and intercepts every click in this file. Seed the dismissal so
+    // these specs test what they are actually about.
+    //
+    // addInitScript re-running on page.reload() is CORRECT here: "already
+    // onboarded" is precisely the thing that must stay true across a reload.
+    //
+    // The overlay's own behaviour is covered by the "first run" block, which
+    // deliberately does NOT call this helper.
+    await page.addInitScript(() => {
+        try { localStorage.setItem('viibeview_onboarded_v1', '1'); } catch (e) { /* private mode */ }
+    });
     await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
     await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
 }

@@ -37,14 +37,21 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v12 (2026-09-07): the ViibeView feed is now a full-screen scroll-snap surface
+// reading get_venue_feed_v3. Mandatory, not cosmetic: cached v11 social.html
+// still carries the OLD #load-more-trigger as a static sibling of
+// #feed-container, and cached v11 social.js still scrolls on `window`. Pairing
+// either with the new stylesheet gives a feed that renders but cannot paginate
+// and whose back-to-top never appears — with nothing in the console.
+//
 // v11 (2026-09-04): app.html now reads member.is_me from the leaderboard and no
 // longer renders email/phone. 20260904000008 already reshaped both RPCs in prod,
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v11';
-const STATIC_CACHE = 'royalty-static-v11';
-const DYNAMIC_CACHE = 'royalty-dynamic-v11';
+const CACHE_NAME = 'royalty-rewards-v12';
+const STATIC_CACHE = 'royalty-static-v12';
+const DYNAMIC_CACHE = 'royalty-dynamic-v12';
 
 // Static assets to cache on install.
 //

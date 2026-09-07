@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=13">
+    <link rel="stylesheet" href="/customer-app/social.css?v=14">
 </head>
 <body>
 
@@ -76,8 +76,23 @@
 
     <!-- ===== Tab Content: Feed ===== -->
     <section id="tab-feed" class="tab-view active" role="tabpanel" aria-label="Feed">
+        <!-- ⚠️ #feed-container IS THE SCROLLER. The feed used to scroll on
+             `window`; it is now a fixed-height element with
+             scroll-snap-type: y mandatory, one 100%-height panel per Viibe.
+
+             Three things had to move with it, and all three fail SILENTLY if
+             one is missed:
+               * updateScrollChrome() reads container.scrollTop, not window.scrollY
+               * the infinite-scroll IntersectionObserver needs root: container,
+                 or the default viewport root never sees the sentinel and
+                 pagination simply stops
+               * back-to-top scrolls the container
+
+             #load-more-trigger is rendered INSIDE this element by renderFeed(),
+             not left here as a sibling — an observer rooted on the container
+             cannot see a sentinel that lives outside it. -->
         <div class="feed-container" id="feed-container">
-            <!-- Dynamic feed cards injected here -->
+            <!-- Dynamic feed panels + the load-more sentinel injected here -->
         </div>
 
         <!-- Loading shimmer -->
@@ -138,9 +153,6 @@
             <h3 data-i18n="social.emptyFeedTitle">No posts yet</h3>
             <p data-i18n="social.emptyFeedBody">Check back later for venue content</p>
         </div>
-
-        <!-- Load more trigger -->
-        <div class="load-more-trigger" id="load-more-trigger"></div>
     </section>
 
     <!-- ===== Tab Content: Map ===== -->
@@ -332,6 +344,17 @@
                     </svg>
                     <span data-i18n="social.addVenue">Add a venue</span>
                 </button>
+                <!-- Org members only, same gate as Add a venue. Deliberately
+                     lives HERE and not in the Royalty owner dashboard: the
+                     settings it writes are ViibeView's alone, and keeping the
+                     UI in this app means a bug in it cannot reach a Royalty
+                     screen. See migration 20260907000002 §3. -->
+                <button class="profile-menu-item profile-menu-item-admin" id="app-settings-btn" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span data-i18n="social.appSettings">App settings</span>
+                </button>
                 <button class="profile-menu-item" id="contact-us-btn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -351,6 +374,79 @@
             <button class="profile-danger-btn" id="delete-account-btn" data-i18n="social.deleteAccount">Delete Account</button>
         </div>
     </section>
+
+    <!-- ===== Onboarding Overlay =====
+         Three intro panels plus a "what are you into?" picker, shown once per
+         device on first open.
+
+         ⚠️ It sits ABOVE the auth overlay (z-index 2100 vs 2000) and is shown to
+         EVERYONE, including signed-out browsers — anonymous browsing is a
+         supported mode here, so gating the intro behind an account would mean
+         most first-time visitors never see it.
+
+         The panels are a native horizontal scroll-snap track rather than a JS
+         carousel: swipe, momentum and accessibility come free, and the dots are
+         driven from scrollLeft. The chips on the last panel are rendered by
+         social.js from the SHARED vocabularies (/js/venue-categories.js,
+         /js/music-genres.js) — there is no parallel taxonomy here. -->
+    <div class="onboarding-overlay" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome">
+        <button class="onboarding-skip" id="onboarding-skip" type="button" data-i18n="social.obSkip">Skip</button>
+
+        <div class="onboarding-track" id="onboarding-track">
+            <section class="onboarding-panel" data-ob-panel="0">
+                <div class="onboarding-art onboarding-art-1" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 10l4.55-2.27A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.89L15 14"/>
+                        <rect x="3" y="6" width="12" height="12" rx="2"/>
+                    </svg>
+                </div>
+                <h2 data-i18n="social.ob1Title">See what tonight looks like</h2>
+                <p data-i18n="social.ob1Body">Short Viibes from the venues around you — posted tonight, not last year.</p>
+            </section>
+
+            <section class="onboarding-panel" data-ob-panel="1">
+                <div class="onboarding-art onboarding-art-2" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="2" width="12" height="20" rx="3"/>
+                        <path d="M10 8l5 3-5 3z" fill="currentColor" stroke="none"/>
+                    </svg>
+                </div>
+                <h2 data-i18n="social.ob2Title">Swipe through the night</h2>
+                <p data-i18n="social.ob2Body">One place at a time, full screen. Tap to hear the room.</p>
+            </section>
+
+            <section class="onboarding-panel" data-ob-panel="2">
+                <div class="onboarding-art onboarding-art-3" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <h2 data-i18n="social.ob3Title">Find what's near you</h2>
+                <p data-i18n="social.ob3Body">Filter by distance, venue type and what's playing. Allow location for the best results.</p>
+            </section>
+
+            <section class="onboarding-panel onboarding-panel-picker" data-ob-panel="3">
+                <h2 data-i18n="social.obPickTitle">What are you into?</h2>
+                <p data-i18n="social.obPickBody">Pick a few. We put them first — you still see everything.</p>
+
+                <div class="onboarding-group">
+                    <h3 data-i18n="social.obCategories">Venue types</h3>
+                    <div class="onboarding-chips" id="onboarding-categories"></div>
+                </div>
+
+                <div class="onboarding-group">
+                    <h3 data-i18n="social.obGenres">Music</h3>
+                    <div class="onboarding-chips" id="onboarding-genres"></div>
+                </div>
+            </section>
+        </div>
+
+        <div class="onboarding-footer">
+            <div class="onboarding-dots" id="onboarding-dots" aria-hidden="true"></div>
+            <button class="auth-btn auth-btn-primary" id="onboarding-next" type="button" data-i18n="social.obNext">Next</button>
+        </div>
+    </div>
 
     <!-- ===== Auth Overlay =====
          One full-screen overlay with four views (splash, login, signup, forgot,
@@ -967,6 +1063,71 @@
         <div class="post-options-body" id="post-options-body"></div>
     </div>
 
+    <!-- ===== Distance sheet (#5) =====
+         Opened by the distance chip that leads the filter row.
+
+         Distance is a SCOPE, not a category: it combines with whatever category
+         or genre chip is active rather than replacing it. That is why it is not
+         a fourth kind of pill in the single-active row — one row where some
+         chips are exclusive and others are not would be unreadable. -->
+    <div class="sheet-backdrop" id="radius-backdrop"></div>
+    <div class="app-sheet radius-sheet" id="radius-sheet" role="dialog" aria-modal="true" aria-label="Distance">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.distanceTitle">How far?</h3>
+            <button class="app-sheet-close" id="radius-close" aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <!-- Rendered by renderRadiusOptions(): the options, plus the
+             "location off" explainer when there is no fix to measure from. -->
+        <div class="radius-body" id="radius-body"></div>
+    </div>
+
+    <!-- ===== App settings (admin, mobile) =====
+         Gated on isOwner, same as Add a venue. Writes through
+         update_social_app_settings, which verifies org membership server-side
+         and merges only an allow-list of keys.
+
+         🔴 There is deliberately NO table-level UPDATE grant on customer_apps
+         behind this — that table holds every Royalty tenant's row. -->
+    <div class="sheet-backdrop" id="app-settings-backdrop"></div>
+    <div class="app-sheet" id="app-settings-sheet" role="dialog" aria-modal="true" aria-label="App settings">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.appSettings">App settings</h3>
+            <button class="app-sheet-close" id="app-settings-close" aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="app-settings-body">
+            <div class="app-settings-field">
+                <label for="setting-post-ttl" data-i18n="social.postLifetime">How long Viibes stay in the feed</label>
+                <select id="setting-post-ttl">
+                    <option value="" data-i18n="social.ttlNever">Never expire</option>
+                    <option value="6" data-i18n="social.ttl6">6 hours</option>
+                    <option value="12" data-i18n="social.ttl12">12 hours</option>
+                    <option value="24" data-i18n="social.ttl24">24 hours</option>
+                    <option value="48" data-i18n="social.ttl48">48 hours</option>
+                    <option value="168" data-i18n="social.ttl168">7 days</option>
+                </select>
+                <p class="app-settings-hint" data-i18n="social.postLifetimeHint">Home feed only. Viibes stay on venue pages, profiles and the map.</p>
+            </div>
+
+            <div class="app-settings-field">
+                <label for="setting-feed-radius" data-i18n="social.defaultRadius">Opening distance filter</label>
+                <select id="setting-feed-radius">
+                    <option value="" data-i18n="social.radiusAny">Any distance</option>
+                    <option value="1" data-i18n="social.radius1">1 mile</option>
+                    <option value="5" data-i18n="social.radius5">5 miles</option>
+                    <option value="25" data-i18n="social.radius25">25 miles</option>
+                </select>
+                <p class="app-settings-hint" data-i18n="social.defaultRadiusHint">Just the starting value — anyone can change it for themselves.</p>
+            </div>
+
+            <div class="app-settings-error" id="app-settings-error"></div>
+            <button class="auth-btn auth-btn-primary" id="app-settings-save" type="button" data-i18n="social.saveSettings">Save</button>
+        </div>
+    </div>
+
     <!-- ===== Venue picker (composer) =====
          Opened from #create-post-venue. Lists real venues nearest-first with
          distance and "here tonight", plus an explicit "Don't attach a venue"
@@ -1180,7 +1341,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=2"></script>
+    <script src="/i18n/i18n.js?v=3"></script>
     <script src="/js/venue-categories.js?v=1"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1197,7 +1358,7 @@
     <script src="/customer-app/social-auth.js?v=3"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=16"></script>
+    <script src="/customer-app/social.js?v=17"></script>
 
 </body>
 </html>

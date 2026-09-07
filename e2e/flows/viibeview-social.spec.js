@@ -25,6 +25,19 @@ const TEST_PASSWORD = process.env.VIIBEVIEW_TEST_PASSWORD;
 const CAN_SIGN_IN = !!(TEST_EMAIL && TEST_PASSWORD);
 
 async function loadApp(page, url = PRETTY_URL) {
+    // ⚠️ Every Playwright context starts with EMPTY localStorage, which to
+    // ViibeView means "first ever visit" — so the onboarding overlay (#1) covers
+    // the app and intercepts every click in this file. Seed the dismissal so
+    // these specs test what they are actually about.
+    //
+    // addInitScript re-running on page.reload() is CORRECT here: "already
+    // onboarded" is precisely the thing that must stay true across a reload.
+    //
+    // The overlay's own behaviour is covered by the "first run" block, which
+    // deliberately does NOT call this helper.
+    await page.addInitScript(() => {
+        try { localStorage.setItem('viibeview_onboarded_v1', '1'); } catch (e) { /* private mode */ }
+    });
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
 }
@@ -159,6 +172,9 @@ test.describe('ViibeView social app', () => {
             const kind = await pill.getAttribute('data-filter-kind');
             const slug = await pill.getAttribute('data-filter-value');
             if (kind === 'genre') continue;   // covered by the genre test below
+            // The distance chip is a scope, not a category: it carries no
+            // venues.category slug and never reaches p_category.
+            if (kind === 'distance') continue;
 
             sent.length = 0;
             await pill.click();
@@ -223,9 +239,14 @@ test.describe('ViibeView social app', () => {
         await page.waitForTimeout(1500);
         const before = sent.length;
 
-        // Any chip other than "All" — the list is derived, so "rooftop" is not
+        // Any selectable chip — the list is derived, so "rooftop" is not
         // guaranteed to exist for every tenant.
-        await page.click('#filter-pills .pill:not([data-filter-kind="all"])');
+        // ⚠️ `:not([data-filter-kind="all"])` is NOT enough any more. The row
+        // now leads with the DISTANCE chip (#5), which is also a .pill but is
+        // not one of the mutually exclusive options — it opens a sheet and never
+        // takes .active. Ask for a selectable chip explicitly.
+        const SELECTABLE = '#filter-pills .pill[data-filter-kind="category"], #filter-pills .pill[data-filter-kind="genre"]';
+        await page.locator(SELECTABLE).first().click();
         await page.waitForTimeout(800);
 
         expect(sent.length, 'category change did not refetch the feed').toBeGreaterThan(before);
@@ -252,7 +273,12 @@ test.describe('ViibeView social app', () => {
         // Uses whichever chip the app actually renders — hardcoding "bar" made
         // this fail on any tenant without a bar, which is a data fact, not a
         // regression.
-        const chip = page.locator('#filter-pills .pill:not([data-filter-kind="all"])').first();
+        // ⚠️ `:not([data-filter-kind="all"])` is NOT enough any more. The row
+        // now leads with the DISTANCE chip (#5), which is also a .pill but is
+        // not one of the mutually exclusive options — it opens a sheet and never
+        // takes .active. Ask for a selectable chip explicitly.
+        const SELECTABLE = '#filter-pills .pill[data-filter-kind="category"], #filter-pills .pill[data-filter-kind="genre"]';
+        const chip = page.locator(SELECTABLE).first();
         await chip.click({ timeout: 5000 });
         await expect(chip).toHaveClass(/active/);
     });
@@ -712,6 +738,251 @@ test.describe('ViibeView social app', () => {
 
         await loadApp(page);
         await page.waitForTimeout(2000);
+
+        expect(errors, errors.join('\n')).toEqual([]);
+    });
+});
+
+/**
+ * The 12-feature batch: onboarding (#1, #2), the distance chip (#5) and the
+ * full-screen snap feed (#3, #4, #12).
+ *
+ * ⚠️ Prod holds one venue and two posts, so anything phrased as "every result
+ * is within N miles" passes VACUOUSLY over an empty array. Nothing here is
+ * phrased that way: these assert STRUCTURE (what the client sends, what the
+ * scroller is, which observer roots where) — the parts that cannot be observed
+ * against a two-post tenant at all, and the parts that fail silently.
+ */
+test.describe('ViibeView — onboarding, distance and the full-screen feed', () => {
+
+    // Deliberately NOT loadApp(): this block is about the FIRST-RUN state that
+    // loadApp() seeds away.
+    test.describe('first run', () => {
+        test('the onboarding overlay covers the app on a fresh device', async ({ page }) => {
+            await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+
+            const overlay = page.locator('#onboarding-overlay');
+            await expect(overlay).toHaveClass(/visible/);
+            // Four panels: three intro, one picker.
+            await expect(page.locator('#onboarding-track [data-ob-panel]')).toHaveCount(4);
+            // Shown to signed-OUT visitors too — anonymous browsing is a
+            // supported mode, so gating the intro behind an account would mean
+            // most first-time visitors never saw it.
+            await expect(page.locator('#auth-overlay')).not.toHaveClass(/visible/);
+        });
+
+        test('Skip closes it and it does not come back on reload', async ({ page }) => {
+            await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+            await page.click('#onboarding-skip');
+            await expect(page.locator('#onboarding-overlay')).not.toHaveClass(/visible/);
+
+            await page.reload({ waitUntil: 'networkidle' });
+            await expect(page.locator('#onboarding-overlay')).not.toHaveClass(/visible/);
+        });
+
+        test('the picker offers the shared vocabularies and remembers the picks', async ({ page }) => {
+            await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+
+            // Not a parallel taxonomy: the chips come from
+            // /js/venue-categories.js and /js/music-genres.js.
+            const expected = await page.evaluate(() => ({
+                categories: VENUE_CATEGORIES.length,
+                genres: MUSIC_GENRES.length
+            }));
+            expect(expected.categories).toBeGreaterThan(0);   // not vacuous
+            expect(expected.genres).toBeGreaterThan(0);
+            await expect(page.locator('#onboarding-categories .onboarding-chip'))
+                .toHaveCount(expected.categories);
+            await expect(page.locator('#onboarding-genres .onboarding-chip'))
+                .toHaveCount(expected.genres);
+
+            const firstChip = page.locator('#onboarding-categories .onboarding-chip').first();
+            const slug = await firstChip.getAttribute('data-ob-slug');
+            await firstChip.click();
+            await expect(page.locator(`.onboarding-chip[data-ob-slug="${slug}"]`))
+                .toHaveAttribute('aria-pressed', 'true');
+
+            await page.click('#onboarding-skip');
+
+            const stored = await page.evaluate(() => localStorage.getItem('viibeview_prefs_v1'));
+            expect(JSON.parse(stored).categories).toContain(slug);
+        });
+
+        test('the intro never blocks the app permanently — the feed is behind it', async ({ page }) => {
+            await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+            await page.click('#onboarding-skip');
+            // The four tabs are reachable the moment it closes.
+            await page.click('.nav-item[data-tab="map"]');
+            await expect(page.locator('#tab-map')).toHaveClass(/active/);
+        });
+    });
+
+    test('the distance chip leads the filter row and opens a sheet', async ({ page }) => {
+        await loadApp(page);
+
+        const chip = page.locator('#filter-pills .pill-distance');
+        await expect(chip).toBeVisible();
+        // It leads the row: distance is a SCOPE, not one of the mutually
+        // exclusive options, and it opens a dialog rather than selecting.
+        await expect(page.locator('#filter-pills > *').first()).toHaveClass(/pill-distance/);
+        await expect(chip).toHaveAttribute('aria-haspopup', 'dialog');
+
+        await chip.click();
+        await expect(page.locator('#radius-sheet')).toHaveClass(/visible/);
+        // Any / 1 / 5 / 25
+        await expect(page.locator('#radius-body .radius-option')).toHaveCount(4);
+    });
+
+    test('⚠️ choosing a distance never CLEARS the active category', async ({ page }) => {
+        await loadApp(page);
+
+        const category = page.locator('#filter-pills .pill[data-filter-kind="category"]').first();
+        const count = await page.locator('#filter-pills .pill[data-filter-kind="category"]').count();
+        test.skip(count === 0, 'this tenant has no category chips to combine with');
+
+        const slug = await category.getAttribute('data-filter-value');
+        await category.click();
+        await page.waitForTimeout(500);
+
+        await page.click('#filter-pills .pill-distance');
+        await page.click('#radius-body .radius-option[data-radius=""]');   // "Any"
+        await page.waitForTimeout(800);
+
+        // Still selected. A distance that reset the category would read as the
+        // filter row being broken.
+        expect(await page.evaluate(() => activeCategory)).toBe(slug);
+    });
+
+    test('⚠️ with no location fix the client sends NO radius', async ({ page, context }) => {
+        // A denied location permission must NEVER produce an empty feed. This
+        // is the client half of that guarantee; the RPC guards it as well.
+        await context.clearPermissions();
+        await loadApp(page);
+
+        const sent = await page.evaluate(async () => {
+            const calls = [];
+            const original = supabaseClient.rpc.bind(supabaseClient);
+            supabaseClient.rpc = (name, args) => { calls.push({ name, args }); return original(name, args); };
+            await loadFeed(false);
+            supabaseClient.rpc = original;
+            return calls;
+        });
+
+        const feedCall = sent.find(c => c.name.startsWith('get_venue_feed')
+                                     || c.name.startsWith('get_following_feed'));
+        expect(feedCall, 'loadFeed made no feed RPC call at all').toBeTruthy();
+        expect(feedCall.name).toMatch(/_v3$/);
+        // Without userLocation both the coords AND the radius must be null.
+        const noFix = await page.evaluate(() => !userLocation);
+        if (noFix) {
+            expect(feedCall.args.p_radius_miles).toBeNull();
+            expect(feedCall.args.p_lat).toBeNull();
+        }
+    });
+
+    test('🔴 the feed scrolls on #feed-container, not on window', async ({ page }) => {
+        await loadApp(page);
+
+        const shape = await page.evaluate(() => {
+            const el = document.getElementById('feed-container');
+            const style = getComputedStyle(el);
+            return {
+                overflowY: style.overflowY,
+                snap: style.scrollSnapType,
+                // The body must not be the scroller on this tab.
+                bodyScrollable: document.documentElement.scrollHeight
+                                > document.documentElement.clientHeight + 8
+            };
+        });
+
+        expect(shape.overflowY).toBe('auto');
+        expect(shape.snap).toContain('y');
+        expect(shape.bodyScrollable).toBe(false);
+    });
+
+    test('the filter row stays pinned above the scroller', async ({ page }) => {
+        await loadApp(page);
+
+        // ⚠️ Measured against #tab-feed, not #feed-container: the scroller is
+        // display:none while the feed is empty (so the empty state is not
+        // pushed below the fold), and boundingBox() on a hidden element is
+        // null — which would make this fail against perfectly correct code on
+        // a tenant with no posts.
+        const pills = await page.locator('#filter-pills').boundingBox();
+        const tab = await page.locator('#tab-feed').boundingBox();
+        expect(pills).toBeTruthy();
+        expect(tab).toBeTruthy();
+
+        // Chrome above content, by construction rather than by position:sticky.
+        expect(pills.y + pills.height).toBeLessThanOrEqual(tab.y + 1);
+
+        // And the tab ends at the nav rather than running under it — this is
+        // what sizeFeedViewport() measures, and what a hardcoded calc() gets
+        // wrong the moment a banner lands in flow above it.
+        const nav = await page.locator('.bottom-nav').boundingBox();
+        expect(Math.abs((tab.y + tab.height) - nav.y)).toBeLessThan(2);
+    });
+
+    test('panels are one viewport tall and carry every affordance', async ({ page }) => {
+        await loadApp(page);
+
+        const panels = page.locator('#feed-container .feed-panel');
+        const n = await panels.count();
+        // ⚠️ Not vacuous: zero panels would make every assertion below trivially
+        // true. If prod has no video posts this must SAY so, not pass.
+        test.skip(n === 0, 'this tenant has no video posts to render as panels');
+
+        const first = panels.first();
+        const box = await first.boundingBox();
+        const containerBox = await page.locator('#feed-container').boundingBox();
+        // One panel, one viewport — within a rounding pixel.
+        expect(Math.abs(box.height - containerBox.height)).toBeLessThan(2);
+
+        // Nothing was lost in the move to full screen.
+        await expect(first.locator('.feed-media')).toBeVisible();
+        await expect(first.locator('.feed-panel-more')).toBeVisible();
+        await expect(first.locator('.feed-venue-info')).toHaveCount(1);
+    });
+
+    test('the load-more sentinel lives INSIDE the scroller', async ({ page }) => {
+        await loadApp(page);
+        const n = await page.locator('#feed-container .feed-panel').count();
+        test.skip(n === 0, 'no panels rendered, so renderFeed() never emitted a sentinel');
+
+        // An IntersectionObserver rooted on the container cannot see a sentinel
+        // outside it, and the failure is silent: pagination just stops.
+        await expect(page.locator('#feed-container > #load-more-trigger')).toHaveCount(1);
+    });
+
+    test('only the visible panel and its neighbours hold a video src', async ({ page }) => {
+        await loadApp(page);
+        const n = await page.locator('#feed-container .feed-panel video').count();
+        test.skip(n < 4, 'needs at least four video panels to observe the hydration window');
+
+        const hydrated = await page.evaluate(() =>
+            Array.from(document.querySelectorAll('#feed-container .feed-panel video'))
+                 .map(v => v.hasAttribute('src')));
+        expect(hydrated.filter(Boolean).length).toBeLessThanOrEqual(3);   // index 0 ± 1
+        expect(hydrated[0]).toBe(true);
+    });
+
+    test('the owner settings entry point is hidden from a signed-out visitor', async ({ page }) => {
+        await loadApp(page);
+        await page.click('.nav-item[data-tab="profile"]');
+        await expect(page.locator('#app-settings-btn')).toBeHidden();
+    });
+
+    test('loads without console errors, with onboarding on screen', async ({ page }) => {
+        // The overlay renders chips, dots and translations before init()'s
+        // awaits resolve — the most likely place for a boot-time throw.
+        const errors = [];
+        page.on('pageerror', e => errors.push(e.message));
+        page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+
+        await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+        await page.waitForTimeout(2000);
+        await page.click('#onboarding-skip');
+        await page.waitForTimeout(500);
 
         expect(errors, errors.join('\n')).toEqual([]);
     });
