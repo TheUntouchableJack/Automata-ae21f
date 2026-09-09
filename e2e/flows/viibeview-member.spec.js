@@ -33,7 +33,10 @@
  * which sources .env for this one command.
  */
 
-import { test, expect } from '@playwright/test';
+// Stubs public venue-media GETs with a tiny decodable clip — see the header of
+// e2e/fixtures/test.js. Do NOT import '@playwright/test' directly here; that
+// silently reinstates ~230 MB of production egress per run.
+import { test, expect } from '../fixtures/test.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 

@@ -37,6 +37,11 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v13 (2026-09-09): egress work. social.html now loads social.js?v=18, and the
+// venue page's post videos carry `data-src` instead of `src` — a returning PWA
+// serving cached v12 social.js against the new HTML would render that grid with
+// no hydration path at all, i.e. a column of black rectangles. Mandatory.
+//
 // v12 (2026-09-07): the ViibeView feed is now a full-screen scroll-snap surface
 // reading get_venue_feed_v3. Mandatory, not cosmetic: cached v11 social.html
 // still carries the OLD #load-more-trigger as a static sibling of
@@ -49,9 +54,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v12';
-const STATIC_CACHE = 'royalty-static-v12';
-const DYNAMIC_CACHE = 'royalty-dynamic-v12';
+const CACHE_NAME = 'royalty-rewards-v13';
+const STATIC_CACHE = 'royalty-static-v13';
+const DYNAMIC_CACHE = 'royalty-dynamic-v13';
 
 // Static assets to cache on install.
 //

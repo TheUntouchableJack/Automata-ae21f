@@ -10,7 +10,10 @@
  * (playwright.config.js starts it) and network access to Supabase.
  */
 
-import { test, expect } from '@playwright/test';
+// Stubs public venue-media GETs with a tiny decodable clip — see the header of
+// e2e/fixtures/test.js. Do NOT import '@playwright/test' directly here; that
+// silently reinstates ~230 MB of production egress per run.
+import { test, expect } from '../fixtures/test.js';
 
 const PRETTY_URL = '/a/viibeview/social';
 const QUERY_URL = '/customer-app/social.html?slug=viibeview';
@@ -985,5 +988,42 @@ test.describe('ViibeView — onboarding, distance and the full-screen feed', () 
         await page.waitForTimeout(500);
 
         expect(errors, errors.join('\n')).toEqual([]);
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The one test that still touches real production media.
+//
+// Everything above this line now gets a ~3 KB stub instead of the real venue
+// videos (see e2e/fixtures/test.js). That is worth ~230 MB of Supabase cached
+// egress per run, but it means those specs no longer prove that a
+// `venue_media.url` actually resolves to bytes — a dead URL would render a
+// black panel and every assertion would still pass.
+//
+// This buys that guarantee back for one byte. Deliberately ungated: it is the
+// compensating control for the stub, so it must run on every plain
+// `npx playwright test`.
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe('venue media integrity', () => {
+
+    test('a feed post URL resolves to real video bytes in production storage', async ({ page, request }) => {
+        await loadApp(page);
+
+        // The stub fulfils requests; it does not rewrite the DOM, so data-src
+        // still holds the genuine production URL.
+        const url = await page.locator('.feed-panel video[data-src]').first()
+            .getAttribute('data-src');
+
+        expect(url, 'no feed video rendered — cannot verify media integrity')
+            .toBeTruthy();
+        expect(url).toContain('/storage/v1/object/public/venue-media/');
+
+        // `request` is a standalone APIRequestContext, not the page's network
+        // stack, so page.route() does not apply and this genuinely leaves the
+        // machine. One byte.
+        const res = await request.fetch(url, { headers: { Range: 'bytes=0-0' } });
+
+        expect(res.status(), `HEAD-equivalent range request to ${url}`).toBe(206);
+        expect(res.headers()['content-type']).toBe('video/mp4');
     });
 });

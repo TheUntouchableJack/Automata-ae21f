@@ -444,6 +444,43 @@ describe('video performance (#9)', () => {
         expect(fn.slice(0, 2600)).toMatch(/hydrateVideosAround\(0\);/);
     });
 
+    it('the VENUE PAGE grid is lazy too, and its observer hydrates', () => {
+        // ⚠️ Prod holds ONE post on the one venue, so a browser walkthrough
+        // cannot tell "seeds the first card" from "hydrates every card" — both
+        // look like one loaded video. Pinned here instead.
+        //
+        // This grid renders every post a venue has with no limit. It used to
+        // carry a plain src at preload="metadata", i.e. a connection per card
+        // on first paint.
+        const render = js.slice(js.indexOf('<div class="feed-card"'));
+        expect(render.length, 'venue page card markup not found').toBeGreaterThan(500);
+        const card = render.slice(0, 1800);
+        expect(card).toMatch(/<video data-src="\$\{escapeHtml\(item\.url\)\}"/);
+        expect(card).toMatch(/preload="\$\{videoPreloadMode\(item\)\}"/);
+
+        // Slice to the function's own closing brace rather than a byte count —
+        // a fixed window silently truncated past the seed line and the
+        // assertion below failed for the wrong reason.
+        const fnStart = js.indexOf('function setupVideoObserverIn(container)');
+        expect(fnStart, 'setupVideoObserverIn not found').toBeGreaterThan(-1);
+        const fn = js.slice(fnStart);
+        const end = fn.indexOf('\n}');
+        expect(end, 'setupVideoObserverIn is unterminated').toBeGreaterThan(500);
+        const body = fn.slice(0, end);
+
+        // play() on a data-src-only element rejects — the card would stay a
+        // poster forever, silently.
+        expect(body).toMatch(/ensureVideoSrc\(video\);/);
+
+        // ⚠️ And the synchronous seed, for the same reason hydrateVideosAround(0)
+        // exists on the main feed: an observer that never fires would leave the
+        // whole grid black with nothing in the console.
+        expect(body).toMatch(/querySelector\('\.feed-media video\[data-src\]'\)/);
+        // querySelector, NOT querySelectorAll — seeding all of them is exactly
+        // the cost this change removes.
+        expect(body).not.toMatch(/querySelectorAll\('\.feed-media video\[data-src\]'\)/);
+    });
+
     it('tapping a panel hydrates it even outside the window', () => {
         // play() on a src-less element rejects.
         const fn = js.slice(js.indexOf('function toggleVideoPlay(mediaEl)'));
@@ -453,7 +490,12 @@ describe('video performance (#9)', () => {
     it('capture is portrait and bitrate-capped, with ideal (never exact) constraints', () => {
         expect(js).toMatch(/width: \{ ideal: 720 \}/);
         expect(js).toMatch(/height: \{ ideal: 1280 \}/);
-        expect(js).toMatch(/videoBitsPerSecond: 2_500_000/);
+        // Lowered from 2_500_000 / 96_000 on 2026-09-09 — every stored byte is
+        // re-paid on every feed load, and the org went over its free-tier
+        // Supabase egress. The assertion stays: the point is that a cap EXISTS,
+        // so an uncapped 1080p phone encode can never reach storage.
+        expect(js).toMatch(/videoBitsPerSecond: 1_200_000/);
+        expect(js).toMatch(/audioBitsPerSecond: 64_000/);
         // `exact` raises OverconstrainedError and being unable to record at all
         // is worse than recording at whatever the camera offers.
         const camera = js.slice(js.indexOf('const videoConstraints = {'));
@@ -468,6 +510,22 @@ describe('video performance (#9)', () => {
         expect(fn.slice(0, 3000)).toMatch(/graceTimer = setTimeout\(draw, 1200\)/);
         // A blank canvas LOOKS like a poster, which is worse than none.
         expect(fn.slice(0, 3000)).toMatch(/if \(!video\.videoWidth \|\| !video\.videoHeight\)/);
+    });
+
+    it('the poster is downscaled, not drawn at full source resolution', () => {
+        // With preload="none" the poster is the ONLY byte cost of a panel
+        // nobody scrolls to, so it is paid on every post while the video is
+        // paid on one. Full-resolution at 0.7 made an 82 KB poster for a 5s clip.
+        expect(js).toMatch(/const POSTER_MAX_EDGE_PX = 720;/);
+        expect(js).toMatch(/const POSTER_JPEG_QUALITY = 0\.6;/);
+
+        const fn = js.slice(js.indexOf('function generateThumbnail(file)'));
+        expect(fn.length, 'generateThumbnail not found').toBeGreaterThan(1000);
+        const body = fn.slice(0, 3000);
+        expect(body).toMatch(/POSTER_MAX_EDGE_PX/);
+        expect(body).toMatch(/toBlob\(\(blob\) => finish\(blob\), 'image\/jpeg', POSTER_JPEG_QUALITY\)/);
+        // The bug this replaces: canvas sized straight off the source.
+        expect(body).not.toMatch(/canvas\.width = video\.videoWidth;/);
     });
 });
 
@@ -537,14 +595,14 @@ describe('interruption handling (#11)', () => {
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=17');
+        expect(html).toContain('/customer-app/social.js?v=18');
         expect(html).toContain('/customer-app/social.css?v=14');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v12'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v12'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v12'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v13'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v13'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v13'");
     });
 
     it('new translation keys can actually reach a returning visitor', () => {

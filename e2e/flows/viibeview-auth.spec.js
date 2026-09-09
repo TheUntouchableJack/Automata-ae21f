@@ -7,7 +7,10 @@
  * SOCIAL_AUTH_LIVE=true, since this repo points at Royalty PRODUCTION.
  */
 
-import { test, expect } from '@playwright/test';
+// Stubs public venue-media GETs with a tiny decodable clip — see the header of
+// e2e/fixtures/test.js. Do NOT import '@playwright/test' directly here; that
+// silently reinstates ~230 MB of production egress per run.
+import { test, expect } from '../fixtures/test.js';
 
 const URL = '/a/viibeview/social';
 const LIVE = process.env.SOCIAL_AUTH_LIVE === 'true';

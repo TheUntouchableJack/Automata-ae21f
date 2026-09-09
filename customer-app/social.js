@@ -9,6 +9,26 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// `Cache-Control: max-age` written onto every venue-media object at upload time.
+// One year, because EVERY path this app writes is timestamped — `members/{id}/
+// {ts}-{name}`, `{org}/{venue}/{ts}-{name}`, `members/{id}/avatar-{ts}.jpg`, and
+// the `-thumb.jpg` derived from those — so the bytes at a given URL are
+// immutable by construction and a new upload is always a new URL.
+//
+// ⚠️ What would break this: a future migration adding an UPDATE policy on
+// storage.objects for `venue-media` *together with* a stable (non-timestamped)
+// path. That combination would let an overwrite pin stale bytes in browser
+// caches for a year with no way to bust them. Keep paths timestamped.
+//
+// This governs the BROWSER only. It does not reduce Supabase CDN egress — the
+// edge already holds these objects for days regardless (measured
+// `cf-cache-status: HIT, age: 664473` against `max-age=3600`). The win here is
+// repeat real-user views, nothing else.
+//
+// Existing objects keep the header they were uploaded with; there is no
+// metadata-only API, so changing this only affects new uploads.
+const MEDIA_CACHE_CONTROL = '31536000';
+
 // ===== State =====
 let currentApp = null;
 let appFeatures = {};   // customer_apps.features — App Builder toggles
@@ -2257,9 +2277,10 @@ function renderFeedCard(item) {
                 ${isVideo ? `
                     <!-- preload is decided per post by videoPreloadMode(): "none"
                          when there is a poster to paint, "metadata" when there is
-                         not. Posts predating thumbnail generation have
-                         thumbnail_url NULL and no backfill is possible, so a
-                         blanket preload="none" would paint them as black. -->
+                         not. A NULL thumbnail_url has no poster, so a blanket
+                         preload="none" would paint that post as black.
+                         See videoPreloadMode() for why this stays per-post even
+                         though the legacy NULLs have been backfilled. -->
                     <video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
                            playsinline muted preload="${videoPreloadMode(item)}" loop></video>
                 ` : `
@@ -2469,9 +2490,14 @@ function openPostPreview(postId) {
         || [pin.author_first_name, pin.author_last_name].filter(Boolean).join(' ');
     const byline = authorName || (pin.venue_id ? (pin.venue_name || '') : 'Someone');
 
+    // ⚠️ NOT a saving, just a removed contradiction. `autoplay` overrides
+    // `preload` — the element fetches and plays regardless — so
+    // preload="metadata" here only described the intent inaccurately. And the
+    // intent is right: this modal opens because the user tapped a pin to watch
+    // this specific video. It should download it.
     mediaEl.innerHTML = `
         <video src="${escapeHtml(pin.url)}" poster="${escapeHtml(pin.thumbnail_url || '')}"
-               playsinline muted loop autoplay preload="metadata"></video>
+               playsinline muted loop autoplay></video>
     `;
 
     // The byline opens the author's profile when there is one to open. Closing
@@ -3257,7 +3283,15 @@ function renderVenuePageFeed() {
                 </div>
                 <div class="feed-media" onclick="toggleVideoPlay(this)">
                     ${isVideo ? `
-                        <video src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="metadata" loop></video>
+                        <!-- data-src, not src: the venue page renders EVERY post
+                             this venue has, and a plain src at preload="metadata"
+                             opened a connection per card on first paint. The
+                             observer below hydrates what scrolls into view. Same
+                             mechanism as the main feed (:VIDEO_HYDRATION_WINDOW),
+                             and preload is still decided per post by
+                             videoPreloadMode() because a NULL thumbnail_url has
+                             no poster to paint. -->
+                        <video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="${videoPreloadMode(item)}" loop></video>
                         ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
                         <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
                     ` : `
@@ -3283,6 +3317,12 @@ function setupVideoObserverIn(container) {
             const video = entry.target.querySelector('video');
             if (!video) return;
             if (entry.isIntersecting) {
+                // ⚠️ Before play(). These cards carry data-src and no src, so
+                // play() on a bare element rejects and the card stays a poster
+                // forever. This observer used to call play() without ever
+                // hydrating anything, which worked only because the src was
+                // eager — the thing this change removed.
+                ensureVideoSrc(video);
                 applySoundState(video);
                 // Autoplay blocked leaves the poster frame showing and the card
                 // tappable, which is the whole affordance now.
@@ -3297,6 +3337,19 @@ function setupVideoObserverIn(container) {
     container.querySelectorAll('.feed-media').forEach(el => {
         if (el.querySelector('video')) venueVideoObserver.observe(el);
     });
+
+    // ⚠️ Seed the first card synchronously. Identical reasoning to
+    // hydrateVideosAround(0) on the main feed: an IntersectionObserver that
+    // never fires — a hidden tab at first paint, a stubbed environment, a
+    // container that is display:none when this runs — would otherwise leave
+    // EVERY card without a src, and the venue page would render as a column of
+    // black rectangles with nothing in the console.
+    //
+    // Only the first: hydrating the rest is exactly the cost this change exists
+    // to remove. Cards keep their src once hydrated (unlike the main feed's ±1
+    // window) because this list is a venue's own posts, not an endless scroll.
+    const firstVideo = container.querySelector('.feed-media video[data-src]');
+    if (firstVideo) ensureVideoSrc(firstVideo);
 }
 
 function closeVenuePage() {
@@ -4061,7 +4114,7 @@ async function handleEditProfileSubmit(e) {
             const { error: uploadError } = await supabaseClient.storage
                 .from('venue-media')
                 .upload(path, editProfileAvatarFile, {
-                    cacheControl: '3600',
+                    cacheControl: MEDIA_CACHE_CONTROL,
                     upsert: false,
                     contentType: 'image/jpeg'
                 });
@@ -4767,6 +4820,10 @@ function toggleFeedSound(event, btn) {
     const scope = btn ? (btn.closest('.feed-panel') || btn.closest('.feed-media')) : null;
     const video = scope ? scope.querySelector('video') : null;
     if (video) {
+        // Same reason as toggleVideoPlay: on both surfaces a card outside the
+        // hydration window holds only data-src, and play() on it rejects.
+        // Un-muting a video is an explicit request to hear THIS one.
+        ensureVideoSrc(video);
         applySoundState(video);
         if (video.paused) video.play().catch(() => { /* still blocked; play btn stays */ });
     }
@@ -4785,8 +4842,10 @@ function toggleVideoPlay(mediaEl) {
     // ⚠️ On the full-screen feed a video outside the hydration window has no
     // src at all, and play() on a src-less element rejects. Tapping a panel is
     // an explicit request for THIS video, so it gets one regardless of where
-    // the observer thinks the window is. No-op on the venue page, whose videos
-    // carry a plain src and no data-src.
+    // the observer thinks the window is.
+    //
+    // The venue page's cards now carry data-src too (renderVenuePageFeed),
+    // so this is the tap path for both surfaces, not just the feed.
     ensureVideoSrc(video);
 
     if (video.paused) {
@@ -4819,11 +4878,22 @@ function toggleVideoPlay(mediaEl) {
 // beyond that should be holding a buffer or a socket.
 const VIDEO_HYDRATION_WINDOW = 1;
 
-// ⚠️ preload="none" ONLY when there is a poster to paint in its place. Every
-// post predating thumbnail generation has thumbnail_url NULL and NO BACKFILL IS
-// POSSIBLE — the column was never written. A blanket preload="none" would paint
-// those as a black rectangle, which is why this is decided per post rather than
-// set once on the element.
+// ⚠️ preload="none" ONLY when there is a poster to paint in its place. A post
+// with thumbnail_url NULL has nothing to show, and a blanket preload="none"
+// would paint it as a black rectangle — which is why this is decided per post
+// rather than set once on the element.
+//
+// This used to say no backfill was possible. That is true only FROM THE CLIENT:
+// there is no UPDATE policy on storage.objects for `venue-media`, and the
+// browser cannot re-derive a poster for a clip it never recorded. It is
+// perfectly possible out-of-band — a poster generated with ffmpeg, PUT with the
+// service-role key, and PATCHed onto venue_media.thumbnail_url. That is how the
+// legacy NULLs were cleared on 2026-09-09.
+//
+// So this stays per-post anyway: generateThumbnail() is best-effort by design
+// (it resolves null rather than failing a post), so a FUTURE post can still
+// arrive with thumbnail_url NULL. The condition is about what a given row
+// holds, not about an era.
 function videoPreloadMode(item) {
     return item.thumbnail_url ? 'none' : 'metadata';
 }
@@ -6167,10 +6237,16 @@ function startRecording() {
             ? 'video/webm;codecs=vp9'
             : 'video/webm';
 
-    // Bitrate cap (#9). At 15 seconds this puts a Viibe at roughly 2–4 MB
+    // Bitrate cap (#9). At 15 seconds this puts a Viibe at roughly 1.5–2.5 MB
     // instead of the 10–15 MB an uncapped 1080p-class encode produces on a
     // recent phone. That is the whole performance story on the upload side —
     // there is no transcoding step and no new vendor.
+    //
+    // Lowered from 2.5 Mbps / 96 kbps on 2026-09-09. The clips this produces
+    // are 5–15 s of a bar or a street at phone-portrait size, watched on a
+    // phone — 1.2 Mbps is not visibly worse there, and every stored byte is
+    // paid for again on every feed load. The org had just gone over its
+    // free-tier Supabase egress on two videos.
     //
     // ⚠️ Wrapped: MediaRecorder throws NotSupportedError if it dislikes the
     // options object on some engines, and a capture app that cannot capture is
@@ -6178,8 +6254,8 @@ function startRecording() {
     try {
         mediaRecorder = new MediaRecorder(cameraStream, {
             mimeType,
-            videoBitsPerSecond: 2_500_000,
-            audioBitsPerSecond: 96_000
+            videoBitsPerSecond: 1_200_000,
+            audioBitsPerSecond: 64_000
         });
     } catch (err) {
         console.warn('MediaRecorder rejected the bitrate options, falling back:', err.name);
@@ -6292,6 +6368,13 @@ function updatePostSubmitState() {
     if (submitBtn) submitBtn.disabled = !selectedPostFile;
 }
 
+// Poster frames are drawn at most this many pixels on the long edge, at this
+// JPEG quality. Was full source resolution at 0.7, which produced an 82 KB
+// poster for a 5-second clip — for an element that is never wider than ~430 CSS
+// px on a phone. ~25 KB at these settings.
+const POSTER_MAX_EDGE_PX = 720;
+const POSTER_JPEG_QUALITY = 0.6;
+
 /**
  * Grabs a poster frame from the recorded clip.
  *
@@ -6347,11 +6430,22 @@ function generateThumbnail(file) {
                         finish(null);
                         return;
                     }
+                    // ⚠️ Downscale. This used to be the full source resolution
+                    // at quality 0.7, which put a 5-second clip's poster at
+                    // 82 KB. That matters more than it looks: with
+                    // preload="none" the poster is the ONLY byte cost of a
+                    // panel nobody scrolls to, so at feed scale it is paid on
+                    // every post while the video is paid on one.
+                    //
+                    // 720 on the long edge is above the CSS pixel size of the
+                    // element on any phone, so this costs no visible sharpness.
+                    const scale = Math.min(1, POSTER_MAX_EDGE_PX /
+                        Math.max(video.videoWidth, video.videoHeight));
                     const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+                    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
                     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                    canvas.toBlob((blob) => finish(blob), 'image/jpeg', 0.7);
+                    canvas.toBlob((blob) => finish(blob), 'image/jpeg', POSTER_JPEG_QUALITY);
                 } catch {
                     finish(null);
                 }
@@ -6514,7 +6608,7 @@ async function uploadWithRetry(path, file, onStatus) {
 
         const { error } = await supabaseClient.storage
             .from('venue-media')
-            .upload(path, file, { cacheControl: '3600', upsert: false });
+            .upload(path, file, { cacheControl: MEDIA_CACHE_CONTROL, upsert: false });
 
         if (!error || isAlreadyUploaded(error)) return { ok: true };
 
@@ -6571,7 +6665,7 @@ async function publishViibe(payload, { onProgress, onStatus }) {
             const thumbPath = `${path.replace(/\.[^.]+$/, '')}-thumb.jpg`;
             const { error: thumbError } = await supabaseClient.storage
                 .from('venue-media')
-                .upload(thumbPath, thumbBlob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+                .upload(thumbPath, thumbBlob, { cacheControl: MEDIA_CACHE_CONTROL, upsert: false, contentType: 'image/jpeg' });
 
             if (!thumbError || isAlreadyUploaded(thumbError)) {
                 thumbnailUrl = supabaseClient.storage

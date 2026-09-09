@@ -924,6 +924,14 @@
             object-fit: cover;
         }
 
+        /* These <video>s are preload="none", so a row whose venue_media row has
+           thumbnail_url NULL has no poster to paint and nothing decoded. Black
+           reads as "a video that has not started"; the tertiary-bg tile behind
+           it reads as a failed load. */
+        .media-item video {
+            background: #000;
+        }
+
         .media-item-overlay {
             position: absolute;
             inset: 0;
@@ -1551,6 +1559,19 @@
     // silently erase hours the grid could not represent.
     let editingVenueOriginalHours = null;
     let legacyHoursDismissed = false;
+
+    // `Cache-Control: max-age` for venue-media uploads — one year. Both upload
+    // paths on this page are timestamped (`{org}/{type}-{ts}.{ext}` and
+    // `{org}/{venue}/{ts}-{name}`), so the bytes at a URL never change and a
+    // re-upload is always a new URL.
+    //
+    // ⚠️ Only safe while that stays true. An UPDATE policy on storage.objects
+    // for `venue-media` combined with a stable path would pin stale bytes in
+    // browser caches for a year with no way to bust them.
+    //
+    // Mirrors MEDIA_CACHE_CONTROL in customer-app/social.js. Separate copy
+    // because these two pages share no module — change both together.
+    const MEDIA_CACHE_CONTROL = '31536000';
 
     // Derived from the shared VENUE_CATEGORIES list (/js/venue-categories.js),
     // which the customer app renders its filter pills from. Keeping a second
@@ -2659,7 +2680,7 @@
         const { data, error } = await supabase.storage
             .from('venue-media')
             .upload(path, file, {
-                cacheControl: '3600',
+                cacheControl: MEDIA_CACHE_CONTROL,
                 upsert: false
             });
 
@@ -2891,7 +2912,7 @@
             const { data, error } = await supabase.storage
                 .from('venue-media')
                 .upload(path, selectedMediaFile, {
-                    cacheControl: '3600',
+                    cacheControl: MEDIA_CACHE_CONTROL,
                     upsert: false
                 });
 
@@ -2973,8 +2994,23 @@
                 return `
                     <div class="media-item">
                         ${isVideo
-                            ? `<video src="${AppUtils.escapeHtml(item.url)}" muted></video>`
-                            : `<img src="${AppUtils.escapeHtml(item.url)}" alt="${AppUtils.escapeHtml(item.caption || '')}">`}
+                            // ⚠️ preload="none" is load-bearing, not tidy-up. This
+                            // grid renders one <video> per row from a .select('*')
+                            // with NO limit, and Chrome defaults to
+                            // preload="metadata" — so opening a venue with 30 clips
+                            // pulled the head of all 30 files from the CDN before
+                            // anyone clicked anything. That is what put this org
+                            // over its free-tier Supabase egress.
+                            //
+                            // The poster is what makes "none" safe: with nothing to
+                            // paint, the element is a black box. thumbnail_url is
+                            // NULL on posts predating thumbnail generation, so
+                            // .media-item video also carries background:#000 — a
+                            // deliberate black tile reads as media, a collapsed box
+                            // reads as a bug.
+                            ? `<video src="${AppUtils.escapeHtml(item.url)}" muted preload="none"
+                                      poster="${AppUtils.escapeHtml(item.thumbnail_url || '')}"></video>`
+                            : `<img src="${AppUtils.escapeHtml(item.url)}" alt="${AppUtils.escapeHtml(item.caption || '')}" loading="lazy">`}
                         ${item.caption ? `<div class="media-caption">${AppUtils.escapeHtml(item.caption)}</div>` : ''}
                         <div class="media-item-overlay">
                             <button class="media-delete-btn" onclick="deleteMedia('${item.id}', '${venueId}')" title="Delete media">
