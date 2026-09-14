@@ -30,6 +30,11 @@
  * fragment is identical either way, so we ask for the prod URL, never follow
  * the redirect in a browser, and replay the fragment locally.
  *
+ * For the record, `https://royaltyapp.ai/a/viibeview/social` IS allow-listed and
+ * its path survives — verified with throwaway invalid tokens against
+ * GET /auth/v1/verify. So a real user clicking a real reset email lands on the
+ * app, not on the marketing homepage.
+ *
  * Run it with:  npm run test:viibeview:reset:live
  */
 
@@ -82,10 +87,16 @@ async function mintRecoveryLink() {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
         method: 'POST',
         headers: adminHeaders(),
+        // ⚠️ redirect_to is TOP-LEVEL here. Nesting it under `options` — which is
+        // where supabase-js puts it, and the obvious guess — is SILENTLY IGNORED
+        // by the admin endpoint: the action_link comes back carrying the project
+        // Site URL (https://royaltyapp.ai) with the path dropped. Measured. It
+        // does not fail, it just quietly sends you somewhere else, which reads
+        // exactly like "/a/viibeview/social is not allow-listed" when it is.
         body: JSON.stringify({
             type: 'recovery',
             email: TEST_EMAIL,
-            options: { redirect_to: 'https://royaltyapp.ai/a/viibeview/social' }
+            redirect_to: 'https://royaltyapp.ai/a/viibeview/social'
         })
     });
     const body = await res.json();
