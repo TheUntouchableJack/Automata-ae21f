@@ -24,8 +24,10 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = '/Users/jaywhitley/AI Projects/Automata';
+// Derived, never hard-coded — see the note in tests/viibeview-feed-v3.test.js.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const MIGRATIONS = path.join(ROOT, 'supabase/migrations');
 
 const FILES = [

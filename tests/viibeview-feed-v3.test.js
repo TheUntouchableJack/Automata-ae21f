@@ -13,8 +13,13 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = '/Users/jaywhitley/AI Projects/Automata';
+// Derived, never hard-coded. An absolute path to one checkout makes every
+// file-reading test in here silently read THAT tree — so a `git worktree`
+// baseline at an older commit reads the CURRENT files and reports them as
+// passing. That cost a wrong "these failures are pre-existing" conclusion once.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIGRATIONS = path.join(ROOT, 'supabase/migrations');
 
 const v3Sql = fs.readFileSync(
@@ -595,21 +600,31 @@ describe('interruption handling (#11)', () => {
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=18');
+        expect(html).toContain('/customer-app/social.js?v=19');
+        expect(html).toContain('/customer-app/social-auth.js?v=4');
         expect(html).toContain('/customer-app/social.css?v=14');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v13'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v13'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v13'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v14'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v14'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v14'");
     });
 
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 14;');
-        expect(html).toContain('/i18n/i18n.js?v=3');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 15;');
+        expect(html).toContain('/i18n/i18n.js?v=4');
+    });
+
+    it('supabase-js is pinned, not floating on a major', () => {
+        // The recovery landing turns detectSessionInUrl off and takes ownership
+        // of the URL, so exactly one library behaviour is load-bearing. A silent
+        // minor bump changing it is a password reset nobody can complete, with
+        // nothing in the console.
+        expect(html).toMatch(/@supabase\/supabase-js@\d+\.\d+\.\d+/);
+        expect(html).not.toContain('@supabase/supabase-js@2"');
     });
 
     it('every i18n key the new UI references exists in en.json', () => {

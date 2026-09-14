@@ -18,8 +18,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { JSDOM } from 'jsdom';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = '/Users/jaywhitley/AI Projects/Automata';
+// Derived, never hard-coded. An absolute path to one checkout makes every
+// file-reading test in here silently read THAT tree — so a `git worktree`
+// baseline at an older commit reads the CURRENT files and reports them as
+// passing. That cost a wrong "these failures are pre-existing" conclusion once.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 let w;
 
@@ -40,6 +45,10 @@ beforeAll(() => {
 
     w.eval(fs.readFileSync(path.join(ROOT, 'js/venue-categories.js'), 'utf8'));
     w.eval(fs.readFileSync(path.join(ROOT, 'js/music-genres.js'), 'utf8'));
+    // ⚠️ BEFORE social.js, exactly as social.html loads them (:1393 then :1396).
+    // social.js calls SocialAuth.bindClient() at parse time; without this the
+    // whole file fails to collect with "SocialAuth is not defined".
+    w.eval(fs.readFileSync(path.join(ROOT, 'customer-app/social-auth.js'), 'utf8'));
     w.eval(fs.readFileSync(path.join(ROOT, 'customer-app/social.js'), 'utf8'));
 });
 

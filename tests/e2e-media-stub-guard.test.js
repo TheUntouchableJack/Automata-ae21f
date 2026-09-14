@@ -22,8 +22,13 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = '/Users/jaywhitley/AI Projects/Automata';
+// Derived, never hard-coded. An absolute path to one checkout makes every
+// file-reading test in here silently read THAT tree — so a `git worktree`
+// baseline at an older commit reads the CURRENT files and reports them as
+// passing. That cost a wrong "these failures are pre-existing" conclusion once.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FLOWS = path.join(ROOT, 'e2e/flows');
 
 /** Skipped outright — see the header. */

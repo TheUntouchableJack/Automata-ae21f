@@ -19,8 +19,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { JSDOM } from 'jsdom';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = '/Users/jaywhitley/AI Projects/Automata';
+// Derived, never hard-coded. An absolute path to one checkout makes every
+// file-reading test in here silently read THAT tree — so a `git worktree`
+// baseline at an older commit reads the CURRENT files and reports them as
+// passing. That cost a wrong "these failures are pre-existing" conclusion once.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 let w, d;
 
@@ -61,6 +66,14 @@ beforeEach(() => {
     };
     load('js/venue-categories.js');
     load('js/music-genres.js');
+    // ⚠️ BEFORE social.js, exactly as social.html loads them (:1393 then :1396).
+    // social.js calls SocialAuth.bindClient() at parse time, so without this the
+    // script throws "SocialAuth is not defined" on insertion — and because the
+    // throw happens before `let currentUserId` and friends are initialised, every
+    // later w.eval() fails with an unrelated-looking "Cannot access X before
+    // initialization". Loading the real dependency rather than stubbing it also
+    // means these tests exercise the pairing the page actually ships.
+    load('customer-app/social-auth.js');
     load('customer-app/social.js');
 
     // ⚠️ Do NOT drop this. social.js registers init() on DOMContentLoaded
