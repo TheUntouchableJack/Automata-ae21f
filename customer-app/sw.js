@@ -37,6 +37,16 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v14 (2026-09-14): password-recovery landing. social.html now loads
+// social-auth.js?v=4 and social.js?v=19. Mandatory, not cosmetic: cached v13
+// social.js still calls SocialAuth.isRecoveryRedirect() to decide whether to
+// open the reset view — against the new social-auth.js that is a deprecated
+// stub returning false, so a returning PWA user clicking a recovery link would
+// get the feed and no password form at all. The reverse pairing is worse:
+// cached v13 social.html has no #reset-expired panel and no reset-close button
+// for the new social.js to show, and it leaves detectSessionInUrl on, which is
+// the race this release exists to remove.
+//
 // v13 (2026-09-09): egress work. social.html now loads social.js?v=18, and the
 // venue page's post videos carry `data-src` instead of `src` — a returning PWA
 // serving cached v12 social.js against the new HTML would render that grid with
@@ -54,9 +64,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v13';
-const STATIC_CACHE = 'royalty-static-v13';
-const DYNAMIC_CACHE = 'royalty-dynamic-v13';
+const CACHE_NAME = 'royalty-rewards-v14';
+const STATIC_CACHE = 'royalty-static-v14';
+const DYNAMIC_CACHE = 'royalty-dynamic-v14';
 
 // Static assets to cache on install.
 //

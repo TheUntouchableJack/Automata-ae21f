@@ -2078,6 +2078,8 @@
     "forgotPassword": "忘记密码？",
     "resetPassword": "重置密码",
     "resetBlurb": "输入邮箱，我们会发送重置密码的链接。",
+    "resetLinkExpired": "该重置链接已过期或已被使用。重置链接仅能使用一次，且有效期很短。",
+    "requestNewLink": "获取新链接",
     "sendResetLink": "发送链接",
     "noAccount": "还没有账户？",
     "haveAccount": "已有账户？",

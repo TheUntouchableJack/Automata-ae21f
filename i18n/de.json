@@ -2078,6 +2078,8 @@
     "forgotPassword": "Passwort vergessen?",
     "resetPassword": "Passwort zurücksetzen",
     "resetBlurb": "Gib deine E-Mail ein und wir senden dir einen Link für ein neues Passwort.",
+    "resetLinkExpired": "Dieser Link zum Zurücksetzen ist abgelaufen oder wurde bereits verwendet. Links funktionieren nur einmal und nur für kurze Zeit.",
+    "requestNewLink": "Neuen Link anfordern",
     "sendResetLink": "Link senden",
     "noAccount": "Noch kein Konto?",
     "haveAccount": "Schon ein Konto?",

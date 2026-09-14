@@ -7,7 +7,45 @@
 const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocG1tZmhmd25wbWF2eXRvb21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTgyMDYsImV4cCI6MjA4NTE3NDIwNn0.6JmfnTTR8onr3ZgFpzdZa4BbVBraUyePVEUHOJgxmuk';
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        // SocialAuth.handleRecoveryLink() owns the auth URL end to end.
+        //
+        // Leaving the library's detector on means two consumers racing for the
+        // same ONE-SHOT payload: detectSessionInUrl consumes the recovery
+        // fragment and strips it after an awaited GET /auth/v1/user, so whether
+        // our code still saw `type=recovery` came down to network latency. Some
+        // testers got the New Password form; some silently landed on the feed.
+        //
+        // Safe here because recovery is the only URL-delivered auth this page
+        // has: there is no signInWithOAuth, no signInWithOtp and no magic link
+        // anywhere in customer-app/.
+        // ⚠️ If any of those are ever added, this must be revisited —
+        // handleRecoveryLink() would have to learn those payloads first, or
+        // they will arrive and be thrown away silently.
+        detectSessionInUrl: false
+
+        // flowType stays implicit (the library default), deliberately. PKCE
+        // stores its verifier in the REQUESTING browser's localStorage, which
+        // breaks the ordinary request-on-phone / open-on-desktop path, and the
+        // email template ({{ .ConfirmationURL }}) is project-wide and shared
+        // with the owner app — an implicit-URL-against-pkce-client mismatch is
+        // a hard throw, not a graceful fallback.
+        //
+        // persistSession / autoRefreshToken keep their defaults.
+    }
+});
+
+// Bind before anything awaits: recovery must not wait on the customer_apps
+// fetch in init(), which needs a network round trip it has no use for.
+// SocialAuth.init() assigns the client again — both are idempotent.
+SocialAuth.bindClient(supabaseClient);
+
+// Deliberately NOT awaited here. The setSession round trip overlaps the
+// customer_apps fetch below, and it is awaited once, at the point in init()
+// where the result is actually applied. Correctness comes from the URL snapshot
+// taken in social-auth.js, not from winning this race.
+const recoveryOutcome = SocialAuth.handleRecoveryLink();
 
 // `Cache-Control: max-age` written onto every venue-media object at upload time.
 // One year, because EVERY path this app writes is timestamped — `members/{id}/
@@ -500,6 +538,17 @@ async function init() {
         loadSoundPreference();
 
         setupAuthListeners();
+
+        // Sits between these two calls deliberately.
+        //
+        // AFTER setupAuthListeners(): #reset-form's submit handler and the eye
+        // toggles have to exist before the view is shown, or pressing Enter in
+        // the password field does a native GET submit and throws the page away.
+        //
+        // BEFORE renderProfileIdentity(): that reads the session, which this
+        // may have just created from the recovery tokens.
+        applyRecoveryOutcome(await recoveryOutcome);
+
         await renderProfileIdentity();
 
         // renderProfileIdentity() is what loads the member row, so this is the
@@ -1196,11 +1245,54 @@ function hideAuth() {
     unlockBodyScroll('auth');
 }
 
+// Maps the result of SocialAuth.handleRecoveryLink() onto the overlay. This is
+// the only thing that decides whether the reset view opens on page load.
+function applyRecoveryOutcome(outcome) {
+    switch (outcome?.status) {
+        case 'ready':
+            showAuth('reset');
+            break;
+
+        case 'expired':
+        case 'failed':
+            // Show the panel, not an error string. The raw GoTrue wording
+            // ("Auth session missing!", "Email link is invalid or has expired")
+            // is what a tester was handed, and it tells them nothing about what
+            // to do next.
+            console.warn('Password recovery link rejected:', outcome.code || outcome.status, outcome.detail || '');
+            showAuth('reset');
+            setResetMode('expired');
+            break;
+
+        default:
+            // 'signed-in' and 'none'. Leave the overlay shut — browsing without
+            // an account is this app's front door and must stay that way.
+            break;
+    }
+}
+
+// #auth-view-reset holds two panels: the form, and the "this link is spent"
+// message. One view rather than two so the header, close button and the
+// [data-auth-view] back-stack behave identically either way.
+function setResetMode(mode) {
+    const form = document.getElementById('reset-form');
+    const expired = document.getElementById('reset-expired');
+    if (form) form.style.display = mode === 'expired' ? 'none' : '';
+    if (expired) expired.style.display = mode === 'expired' ? '' : 'none';
+}
+
 function setAuthView(view) {
     ['splash', 'login', 'signup', 'forgot', 'reset'].forEach(v => {
         const el = document.getElementById(`auth-view-${v}`);
         if (el) el.style.display = v === view ? '' : 'none';
     });
+
+    // Reset to the form every time the view is entered. Without this, the
+    // signed-in "Change Password" button inherits whatever panel a failed
+    // recovery landing left behind — telling someone with a perfectly good
+    // session that their link has expired.
+    if (view === 'reset') setResetMode('form');
+
     clearAuthErrors();
 
     // Autofocus the first real input, but not on the splash (no form there)
@@ -1395,16 +1487,23 @@ function setupAuthListeners() {
     document.getElementById('change-password-btn')?.addEventListener('click', () => showAuth('reset'));
     document.getElementById('delete-account-btn')?.addEventListener('click', confirmDeleteAccount);
 
+    // The reset view is the one place a recovery link can drop someone who
+    // never opened the overlay themselves, and it had no exit at all — every
+    // other view has a back arrow or a "browse without an account". Without
+    // this the app is simply stuck behind the password form.
+    document.getElementById('reset-close')?.addEventListener('click', hideAuth);
+
     ['contact-us-btn', 'contact-us-btn-out'].forEach(id => {
         document.getElementById(id)?.addEventListener('click', openContactSheet);
     });
     document.getElementById('contact-close')?.addEventListener('click', closeContactSheet);
     document.getElementById('contact-backdrop')?.addEventListener('click', closeContactSheet);
 
-    // Arriving from a password-recovery email
-    if (SocialAuth.isRecoveryRedirect()) {
-        showAuth('reset');
-    }
+    // Arriving from a password-recovery email is NOT decided here any more.
+    // Sniffing window.location at this point raced supabase-js for the same
+    // one-shot fragment and lost about as often as it won. init() now applies
+    // SocialAuth.handleRecoveryLink(), which reads a snapshot taken before any
+    // client existed — see applyRecoveryOutcome().
 }
 
 async function handleLoginSubmit(e) {
@@ -1523,11 +1622,18 @@ async function handleResetSubmit(e) {
     setSubmitting('reset-submit', false);
 
     if (!result.ok) {
+        // There is no session to update against — the link was spent before the
+        // password was typed, or it expired while the form sat open. An error
+        // under the submit button would just invite a retry that cannot work,
+        // so swap to the panel that offers a fresh link.
+        if (result.code === 'no_session') setResetMode('expired');
         setFormMessage('reset-form', result.error);
         return;
     }
 
-    // Clear the recovery fragment so a refresh doesn't reopen this view
+    // handleRecoveryLink() already scrubbed the landing payload, but the
+    // signed-in "Change Password" path never had one — and a stale fragment
+    // from any other source must not survive a successful change either.
     history.replaceState(null, '', window.location.pathname + window.location.search);
     hideAuth();
     await onSignedIn();

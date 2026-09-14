@@ -17,6 +17,41 @@
 (function (global) {
     'use strict';
 
+    /**
+     * Snapshot of the URL as the page was OPENED — taken before any Supabase
+     * client exists anywhere on the page.
+     *
+     * social-auth.js is loaded at social.html:1358 and social.js at :1361.
+     * Classic scripts run in document order, so this IIFE has already finished
+     * by the time createClient() is called. That is an HTML-spec guarantee,
+     * which is the point: it does not depend on any reasoning about library
+     * internals against a CDN build.
+     *
+     * Why snapshot at all: GoTrue delivers the recovery payload in the URL, and
+     * supabase-js's detectSessionInUrl CONSUMES and then STRIPS it after an
+     * awaited network round trip. Anything that reads window.location later is
+     * racing that strip, and the race is decided by network latency — which is
+     * why some testers got the New Password form and some silently landed on
+     * the feed. social.js turns detectSessionInUrl off and reads from here.
+     */
+    const RECOVERY = (function snapshotLanding() {
+        const h = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const q = new URLSearchParams(window.location.search);
+        // Query first: the ?token_hash= form arrives there, the implicit tokens
+        // arrive in the fragment, and nothing emits both.
+        const pick = (k) => q.get(k) ?? h.get(k);
+        return {
+            accessToken: pick('access_token'),
+            refreshToken: pick('refresh_token'),
+            type: pick('type'),
+            code: pick('code'),
+            tokenHash: pick('token_hash'),
+            error: pick('error'),
+            errorCode: pick('error_code'),
+            errorDesc: pick('error_description')
+        };
+    })();
+
     let client = null;
     let currentAppId = null;
     let currentMember = null;
@@ -146,6 +181,26 @@
         }
         if (raw.includes('password should be')) {
             return `Use at least ${PASSWORD_MIN} characters.`;
+        }
+        // Recovery-link failures. Left unmapped, GoTrue's own wording reaches
+        // the user verbatim via the fallback at the bottom of this function —
+        // a tester was shown the raw string "Auth session missing!" after
+        // typing a new password behind a spent link.
+        if (raw.includes('auth session missing') ||
+            raw.includes('session_not_found') ||
+            raw.includes('session from session_id claim in jwt does not exist')) {
+            return 'That reset link is no longer valid. Request a new one and try again.';
+        }
+        if (raw.includes('token has expired or is invalid') ||
+            raw.includes('otp_expired') ||
+            raw.includes('email link is invalid')) {
+            return 'That link has expired or has already been used. Request a new one.';
+        }
+        if (raw.includes('new password should be different') || raw.includes('same_password')) {
+            return 'Choose a password different from your current one.';
+        }
+        if (raw.includes('reauthentication')) {
+            return 'For security, log in again before changing your password.';
         }
         if (raw.includes('rate limit') || raw.includes('too many')) {
             return 'Too many attempts. Wait a minute and try again.';
@@ -335,16 +390,36 @@
         const problem = validateEmail(email);
         if (problem) return { ok: false, error: problem };
 
-        // Land back on this app, in the reset view, so the recovery session is
-        // picked up where the user can actually set a new password.
-        const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}#reset-password`;
+        // Land back on this app. Deliberately NO #reset-password marker: GoTrue
+        // REPLACES the fragment with its own payload, so a marker we put there
+        // can never survive the round trip (measured against live GoTrue — an
+        // invalid token sent to `…/social#reset-password` came back redirected
+        // to `…/social#error=access_denied&error_code=otp_expired&…`). Which
+        // view opens is decided from the auth payload instead, by
+        // handleRecoveryLink().
+        const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
 
         const { error } = await client.auth.resetPasswordForEmail(email.trim(), { redirectTo });
 
         // Never reveal whether the address exists — that would turn this form
         // into an account-enumeration oracle.
         if (error && !/rate limit|too many/i.test(error.message || '')) {
-            console.warn('Password reset error:', error.message);
+            if (/redirect|invalid.*url/i.test(error.message || '')) {
+                // Swallowing this one silently is how a rejected redirect_to
+                // comes to look exactly like a successful send: the user is
+                // told the link is on its way and no email ever arrives. An
+                // origin that is not in Supabase Auth → URL Configuration →
+                // Redirect URLs lands here (measured: localhost is not
+                // allow-listed on this project).
+                console.error(
+                    `Password reset REDIRECT REJECTED for ${redirectTo} — no email was sent, ` +
+                    `but the user was told one was. Add this URL to Supabase Auth → ` +
+                    `URL Configuration → Redirect URLs.`,
+                    error
+                );
+            } else {
+                console.warn('Password reset error:', error.message);
+            }
         }
         if (error && /rate limit|too many/i.test(error.message || '')) {
             return { ok: false, error: friendlyAuthError(error, 'send the reset email') };
@@ -358,6 +433,23 @@
             validatePassword(password) ||
             validatePasswordMatch(password, confirmPassword);
         if (problem) return { ok: false, error: problem };
+
+        // Gate on a live session before calling updateUser, mirroring
+        // deleteAccount() below. A spent or expired recovery link leaves no
+        // session at all, and updateUser() then fails with GoTrue's own
+        // "Auth session missing!" — which is exactly the raw string a tester
+        // was shown. The CODE is what matters to the caller: it swaps the view
+        // to the "request a new link" panel rather than printing library text.
+        const session = await getSession();
+        if (!session) {
+            return {
+                ok: false,
+                code: 'no_session',
+                // One place owns this copy; pass the message GoTrue would have
+                // produced so the mapping stays in friendlyAuthError().
+                error: friendlyAuthError({ message: 'Auth session missing!' }, 'update your password')
+            };
+        }
 
         const { error } = await client.auth.updateUser({ password });
         if (error) return { ok: false, error: friendlyAuthError(error, 'update your password') };
@@ -411,13 +503,158 @@
         return { ok: true };
     }
 
-    /** True when the page was opened from a password-recovery email link. */
+    // ===== Password recovery landing =====
+
+    // Everything GoTrue can put on the URL for an auth redirect. Scrubbed
+    // together so a refresh cannot replay a one-shot payload, and so a spent
+    // token is not left sitting in the address bar to be pasted or shared.
+    const RECOVERY_PARAMS = [
+        'access_token', 'refresh_token', 'expires_in', 'expires_at', 'token_type',
+        'provider_token', 'provider_refresh_token',
+        'type', 'code', 'token_hash',
+        'error', 'error_code', 'error_description'
+    ];
+
+    /**
+     * Strips the auth payload from the address bar, keeping every other query
+     * param — `?slug=` is how the app finds itself when it is not reached
+     * through the /a/{slug} rewrite, so a blanket `pathname`-only replace would
+     * break that entry point.
+     */
+    function scrubRecoveryUrl() {
+        try {
+            const q = new URLSearchParams(window.location.search);
+            RECOVERY_PARAMS.forEach(k => q.delete(k));
+            const search = q.toString();
+            history.replaceState(null, '', window.location.pathname + (search ? `?${search}` : ''));
+        } catch (e) {
+            // replaceState is unavailable in a few embedded webviews. The URL
+            // staying dirty is cosmetic; failing the recovery over it is not.
+            console.warn('Could not clear the recovery URL:', e);
+        }
+    }
+
+    /**
+     * The single owner of every password-recovery landing.
+     *
+     * Reads the snapshot taken at module load (see RECOVERY at the top of this
+     * file) rather than window.location, so it cannot lose a race with
+     * supabase-js's own URL detector.
+     *
+     * Returns a discriminated result, never English:
+     *   ready      — a recovery session is live; show the New Password form
+     *   expired    — the link was spent or timed out; offer a new one
+     *   failed     — a payload was present but could not be exchanged
+     *   signed-in  — the link established a session but was not a recovery link
+     *   none       — an ordinary page load
+     *
+     * The caller maps those onto i18n copy. Nothing user-facing lives here.
+     */
+    async function handleRecoveryLink() {
+        if (!client) return { status: 'none' };
+
+        try {
+            // GoTrue REPLACES the fragment when verify fails, so by the time the
+            // browser gets here there is no token left to exchange — the error
+            // IS the entire payload. This is a common path, not an edge case:
+            // recovery tokens are single-use and mail scanners and link
+            // prefetchers routinely burn them before the human clicks.
+            if (RECOVERY.error || RECOVERY.errorCode) {
+                scrubRecoveryUrl();
+                return {
+                    status: 'expired',
+                    code: RECOVERY.errorCode || RECOVERY.error,
+                    detail: RECOVERY.errorDesc
+                };
+            }
+
+            // The implicit flow — what this project emits today.
+            if (RECOVERY.accessToken && RECOVERY.refreshToken) {
+                const { error } = await client.auth.setSession({
+                    access_token: RECOVERY.accessToken,
+                    refresh_token: RECOVERY.refreshToken
+                });
+                scrubRecoveryUrl();
+                if (error) return { status: 'failed', code: error.code || null, detail: error.message };
+                // A recovery link carries type=recovery; anything else that
+                // hands us a session is just a sign-in and must not pop the
+                // password form at someone who did not ask for it.
+                return { status: RECOVERY.type === 'recovery' ? 'ready' : 'signed-in' };
+            }
+
+            // PKCE. Unreachable while flowType stays implicit (see the comment
+            // on createClient in social.js), kept so flipping that is a one-line
+            // change. `?code=` carries no type, but recovery is the only
+            // URL-delivered auth this app has — there is no OAuth and no magic
+            // link anywhere in customer-app/.
+            if (RECOVERY.code) {
+                const { error } = await client.auth.exchangeCodeForSession(RECOVERY.code);
+                scrubRecoveryUrl();
+                if (error) return { status: 'failed', code: error.code || null, detail: error.message };
+                return { status: 'ready' };
+            }
+
+            // ?token_hash=…&type=recovery — verification done by the client.
+            // Not emitted by this project today; it is the branch the
+            // credential-free e2e can drive, since a token_hash can be minted
+            // by an admin call without sending any mail.
+            if (RECOVERY.tokenHash && RECOVERY.type === 'recovery') {
+                const { error } = await client.auth.verifyOtp({
+                    token_hash: RECOVERY.tokenHash,
+                    type: 'recovery'
+                });
+                scrubRecoveryUrl();
+                if (error) {
+                    // Here the failure comes back as an error object rather than
+                    // a redirect, so spent-vs-broken has to be told apart from
+                    // the message.
+                    const raw = (error.message || '').toLowerCase();
+                    const spent = /expired|invalid/.test(raw);
+                    return {
+                        status: spent ? 'expired' : 'failed',
+                        code: error.code || null,
+                        detail: error.message
+                    };
+                }
+                return { status: 'ready' };
+            }
+
+            return { status: 'none' };
+        } catch (e) {
+            // This runs un-awaited at module scope in social.js, so an escaping
+            // rejection would surface as an unhandled error with no recovery
+            // path. Degrade to the "request a new link" panel instead.
+            console.error('Recovery link handling failed:', e);
+            scrubRecoveryUrl();
+            return { status: 'failed', code: null, detail: e?.message || String(e) };
+        }
+    }
+
+    /**
+     * Deprecated, kept for ONE release.
+     *
+     * Removing the export outright would make a cached v13 social.html paired
+     * with this file throw inside setupAuthListeners() — taking every auth
+     * listener on the page down with it, not just recovery. Returning false is
+     * the safe reading for old callers: the overlay stays shut.
+     */
     function isRecoveryRedirect() {
-        return window.location.hash.includes('reset-password') ||
-               window.location.hash.includes('type=recovery');
+        return false;
     }
 
     // ===== Init =====
+
+    /**
+     * Attaches the Supabase client and nothing else.
+     *
+     * init() below needs appId, which is only known after the customer_apps
+     * fetch resolves — but recovery must not wait on a network round trip it
+     * has no use for. This lets social.js bind the client the moment it is
+     * created. init() assigns `client` again; both are idempotent.
+     */
+    function bindClient(supabaseClient) {
+        client = supabaseClient;
+    }
 
     function init({ supabaseClient, appId, appSlug, supabaseUrl, supabaseAnonKey }) {
         client = supabaseClient;
@@ -430,15 +667,19 @@
     }
 
     global.SocialAuth = {
-        init,
+        init, bindClient,
         // session
         getSession, isSignedIn, loadMember, getMember,
         // actions
         signUp, signIn, signOut, linkMembership,
         requestPasswordReset, updatePassword, deleteAccount,
+        // password recovery
+        handleRecoveryLink,
         // helpers
         validateEmail, validatePassword, validatePasswordMatch, validatePhone,
-        passwordStrength, formatPhone, toE164, friendlyAuthError, isRecoveryRedirect,
+        passwordStrength, formatPhone, toE164, friendlyAuthError,
+        // deprecated — remove once v13 HTML has aged out of every PWA cache
+        isRecoveryRedirect,
         PASSWORD_MIN, NANP_DIAL
     };
 })(window);

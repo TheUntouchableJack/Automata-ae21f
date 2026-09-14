@@ -2078,6 +2078,8 @@
     "forgotPassword": "Forgot your password?",
     "resetPassword": "Reset Password",
     "resetBlurb": "Enter your email and we will send you a link to set a new password.",
+    "resetLinkExpired": "That reset link has expired or has already been used. Reset links work once, and only for a short time.",
+    "requestNewLink": "Request a New Link",
     "sendResetLink": "Send Reset Link",
     "noAccount": "No account yet?",
     "haveAccount": "Already have an account?",

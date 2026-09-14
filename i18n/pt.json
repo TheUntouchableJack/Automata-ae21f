@@ -2078,6 +2078,8 @@
     "forgotPassword": "Esqueceu sua senha?",
     "resetPassword": "Redefinir senha",
     "resetBlurb": "Digite seu e-mail e enviaremos um link para definir uma nova senha.",
+    "resetLinkExpired": "Esse link de redefinição expirou ou já foi utilizado. Os links funcionam apenas uma vez e por pouco tempo.",
+    "requestNewLink": "Solicitar um novo link",
     "sendResetLink": "Enviar link",
     "noAccount": "Ainda não tem conta?",
     "haveAccount": "Já tem uma conta?",

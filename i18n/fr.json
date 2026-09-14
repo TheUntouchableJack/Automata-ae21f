@@ -2078,6 +2078,8 @@
     "forgotPassword": "Mot de passe oublié ?",
     "resetPassword": "Réinitialiser le mot de passe",
     "resetBlurb": "Saisissez votre e-mail et nous vous enverrons un lien pour définir un nouveau mot de passe.",
+    "resetLinkExpired": "Ce lien de réinitialisation a expiré ou a déjà été utilisé. Les liens ne fonctionnent qu’une seule fois et pendant une courte durée.",
+    "requestNewLink": "Demander un nouveau lien",
     "sendResetLink": "Envoyer le lien",
     "noAccount": "Pas encore de compte ?",
     "haveAccount": "Vous avez déjà un compte ?",

@@ -2078,6 +2078,8 @@
     "forgotPassword": "¿Olvidaste tu contraseña?",
     "resetPassword": "Restablecer contraseña",
     "resetBlurb": "Introduce tu correo y te enviaremos un enlace para crear una nueva contraseña.",
+    "resetLinkExpired": "Ese enlace de restablecimiento ha caducado o ya se ha utilizado. Los enlaces solo funcionan una vez y durante poco tiempo.",
+    "requestNewLink": "Solicitar un nuevo enlace",
     "sendResetLink": "Enviar enlace",
     "noAccount": "¿Aún no tienes cuenta?",
     "haveAccount": "¿Ya tienes cuenta?",

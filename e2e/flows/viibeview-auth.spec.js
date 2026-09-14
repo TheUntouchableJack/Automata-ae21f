@@ -266,6 +266,152 @@ test.describe('ViibeView member accounts', () => {
         expect(errors, errors.join('\n')).toEqual([]);
     });
 
+    // ===== Password recovery landing =====
+    //
+    // A tester clicked a reset link, typed a new password, and was shown the raw
+    // GoTrue string "Auth session missing!". Three separate defects sat behind
+    // that; these tests pin the two that can be driven without credentials.
+    //
+    // The fragment below is not invented. It is what live GoTrue actually
+    // redirects to when /auth/v1/verify is given a spent or invalid recovery
+    // token — measured with a deliberately bad token against the production
+    // project. Recovery tokens are single-use and short-lived, and mail scanners
+    // and link prefetchers burn them routinely, so this is a common landing.
+    test.describe('password recovery landing', () => {
+
+        const EXPIRED_HASH =
+            '#error=access_denied&error_code=otp_expired' +
+            '&error_description=Email+link+is+invalid+or+has+expired&sb=';
+
+        async function loadRecoveryLanding(page, suffix) {
+            await page.addInitScript(() => {
+                try { localStorage.setItem('viibeview_onboarded_v1', '1'); } catch (e) { /* private mode */ }
+            });
+            await page.goto(URL + suffix, { waitUntil: 'networkidle' });
+            await page.waitForSelector('#filter-pills .pill', { timeout: 15000 });
+        }
+
+        test('a spent link explains itself instead of showing the form', async ({ page }) => {
+            await loadRecoveryLanding(page, EXPIRED_HASH);
+
+            // Before the fix isRecoveryRedirect() did not match `error=`, so
+            // NOTHING was shown at all — the user landed on the feed with no
+            // idea their link had failed.
+            await expect(page.locator('#auth-overlay')).toHaveClass(/visible/);
+            await expect(page.locator('#auth-view-reset')).toBeVisible();
+
+            await expect(page.locator('#reset-expired')).toBeVisible();
+            await expect(page.locator('#reset-form')).toBeHidden();
+        });
+
+        test('the spent payload is scrubbed from the URL', async ({ page }) => {
+            await loadRecoveryLanding(page, EXPIRED_HASH);
+            await expect(page.locator('#reset-expired')).toBeVisible();
+
+            // The scrub contract. A refresh must not replay a one-shot payload,
+            // and a dead token must not sit in the address bar to be pasted.
+            expect(page.url()).not.toContain('error_code');
+            expect(page.url()).not.toContain('access_denied');
+        });
+
+        test('the expired panel offers a fresh link', async ({ page }) => {
+            await loadRecoveryLanding(page, EXPIRED_HASH);
+            await expect(page.locator('#reset-expired')).toBeVisible();
+
+            await page.click('#reset-expired [data-auth-view="forgot"]');
+            await expect(page.locator('#auth-view-forgot')).toBeVisible();
+            await expect(page.locator('#auth-view-reset')).toBeHidden();
+        });
+
+        test('the reset view can be closed', async ({ page }) => {
+            // Until now this was the only auth view with no way out, so a
+            // recovery landing trapped the user behind the password form.
+            await loadRecoveryLanding(page, EXPIRED_HASH);
+            await expect(page.locator('#auth-overlay')).toHaveClass(/visible/);
+
+            await page.click('#reset-close');
+            await expect(page.locator('#auth-overlay')).not.toHaveClass(/visible/);
+        });
+
+        test('an ordinary load leaves the overlay shut', async ({ page }) => {
+            // The canary for applyRecoveryOutcome() misfiring on status 'none'.
+            // The anonymous-browsing guarantee is the whole front door of this
+            // app; a recovery handler that pops the password form at every
+            // visitor would be a worse bug than the one being fixed.
+            await loadApp(page);
+
+            await expect(page.locator('#auth-overlay')).not.toHaveClass(/visible/);
+            await expect(page.locator('#reset-expired')).toBeHidden();
+        });
+
+        test('"Change Password" never inherits a stale expired panel', async ({ page }) => {
+            // Same page load: land expired, then open the reset view the way a
+            // signed-in member does. setAuthView() resets the mode, so the form
+            // must come back.
+            await loadRecoveryLanding(page, EXPIRED_HASH);
+            await expect(page.locator('#reset-expired')).toBeVisible();
+
+            await page.click('#reset-close');
+            await page.evaluate(() => showAuth('reset'));
+
+            await expect(page.locator('#reset-form')).toBeVisible();
+            await expect(page.locator('#reset-expired')).toBeHidden();
+        });
+
+        test('both confirm-password fields have a working eye toggle', async ({ page }) => {
+            await loadApp(page);
+            await openProfileTab(page);
+            await page.click('#profile-signup-btn');
+
+            // Signup: the New password field had a toggle and Confirm did not,
+            // which is exactly where a typo goes unnoticed.
+            const signupConfirm = page.locator('#signup-confirm');
+            await signupConfirm.fill('ValidPass1');
+            await expect(signupConfirm).toHaveAttribute('type', 'password');
+
+            await page.click('[data-toggle-password="signup-confirm"]');
+            await expect(signupConfirm).toHaveAttribute('type', 'text');
+            // Revealing must not clear or submit anything.
+            await expect(signupConfirm).toHaveValue('ValidPass1');
+            await expect(page.locator('#auth-view-signup')).toBeVisible();
+
+            await page.click('[data-toggle-password="signup-confirm"]');
+            await expect(signupConfirm).toHaveAttribute('type', 'password');
+
+            // Reset view: same gap, same fix.
+            await page.evaluate(() => showAuth('reset'));
+            const resetConfirm = page.locator('#reset-confirm');
+            await resetConfirm.fill('ValidPass1');
+
+            await page.click('[data-toggle-password="reset-confirm"]');
+            await expect(resetConfirm).toHaveAttribute('type', 'text');
+            await expect(resetConfirm).toHaveValue('ValidPass1');
+
+            await page.click('[data-toggle-password="reset-confirm"]');
+            await expect(resetConfirm).toHaveAttribute('type', 'password');
+        });
+
+        test('submitting the form with no session offers a new link, not GoTrue wording', async ({ page }) => {
+            // The screenshot bug, end to end and with no credentials: open the
+            // reset form while signed out and submit. updatePassword() now gates
+            // on getSession() and returns code 'no_session' instead of letting
+            // updateUser() fail with "Auth session missing!".
+            await loadApp(page);
+            await page.evaluate(() => showAuth('reset'));
+            await expect(page.locator('#reset-form')).toBeVisible();
+
+            await page.fill('#reset-password', 'ValidPass1');
+            await page.fill('#reset-confirm', 'ValidPass1');
+            await page.click('#reset-submit');
+
+            await expect(page.locator('#reset-expired')).toBeVisible({ timeout: 10000 });
+            await expect(page.locator('#reset-form')).toBeHidden();
+
+            // The raw library string must never reach a user.
+            await expect(page.locator('#auth-view-reset')).not.toContainText(/auth session missing/i);
+        });
+    });
+
     // ===== Bottom banner slot =====
     //
     // #install-banner and #signup-banner share ONE fixed slot above the nav.

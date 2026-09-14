@@ -562,7 +562,12 @@
 
                 <div class="auth-field">
                     <label for="signup-confirm" data-i18n="social.confirmPassword">Confirm password</label>
-                    <input type="password" id="signup-confirm" autocomplete="new-password" required>
+                    <div class="auth-password-wrap">
+                        <input type="password" id="signup-confirm" autocomplete="new-password" required>
+                        <button type="button" class="auth-password-toggle" data-toggle-password="signup-confirm" aria-label="Show password">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                     <div class="auth-field-error" id="signup-confirm-error"></div>
                 </div>
 
@@ -610,8 +615,26 @@
         <!-- Set a new password (arrives here from the emailed recovery link) -->
         <div class="auth-view" id="auth-view-reset" style="display:none;">
             <div class="auth-header">
+                <!-- The only view a user can land in without having opened the
+                     overlay themselves, and until now the only one with no way
+                     out — a recovery landing trapped them behind this form. -->
+                <button class="auth-back" id="reset-close" aria-label="Close" data-i18n-aria="social.close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
                 <h2 data-i18n="social.newPassword">New Password</h2>
             </div>
+
+            <!-- Shown INSTEAD of the form when the recovery link is spent.
+                 Recovery tokens are single-use and short-lived, and mail
+                 scanners and link prefetchers burn them routinely, so this is a
+                 common landing rather than an edge case.
+                 No JS wiring: setupAuthListeners() already binds every
+                 [data-auth-view], and this markup is static at DOMContentLoaded. -->
+            <div class="auth-form" id="reset-expired" style="display:none;">
+                <p class="auth-blurb" data-i18n="social.resetLinkExpired">That reset link has expired or has already been used. Reset links work once, and only for a short time.</p>
+                <button type="button" class="auth-btn auth-btn-primary" data-auth-view="forgot" data-i18n="social.requestNewLink">Request a New Link</button>
+            </div>
+
             <form class="auth-form" id="reset-form" novalidate>
                 <div class="auth-field">
                     <label for="reset-password" data-i18n="social.newPassword">New password</label>
@@ -628,7 +651,14 @@
                 </div>
                 <div class="auth-field">
                     <label for="reset-confirm" data-i18n="social.confirmPassword">Confirm password</label>
-                    <input type="password" id="reset-confirm" autocomplete="new-password" required>
+                    <!-- type="button" is load-bearing: the default submit type
+                         would fire this form on every reveal. -->
+                    <div class="auth-password-wrap">
+                        <input type="password" id="reset-confirm" autocomplete="new-password" required>
+                        <button type="button" class="auth-password-toggle" data-toggle-password="reset-confirm" aria-label="Show password">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                     <div class="auth-field-error" id="reset-confirm-error"></div>
                 </div>
                 <div class="auth-form-error" id="reset-form-error"></div>
@@ -1334,14 +1364,19 @@
     </button>
 
     <!-- ===== Scripts ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Pinned, not floating on @2. The recovery landing depends on exactly one
+         library behaviour — detectSessionInUrl consuming and stripping the URL —
+         and social.js switches it off (see the createClient comment there). A
+         silent minor bump changing that is a password reset nobody can complete,
+         with nothing in the console. -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
     <!-- i18n must load before social.js: this page is covered in data-i18n
          attributes that were inert until now because it was never included. -->
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=3"></script>
+    <script src="/i18n/i18n.js?v=4"></script>
     <script src="/js/venue-categories.js?v=1"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1355,10 +1390,10 @@
     <!-- The Nominatim client behind the mobile "Add venue" flow, shared with
          app/venues.html so there is one rate-limit queue for the whole site. -->
     <script src="/js/venue-places.js?v=1"></script>
-    <script src="/customer-app/social-auth.js?v=3"></script>
+    <script src="/customer-app/social-auth.js?v=4"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=18"></script>
+    <script src="/customer-app/social.js?v=19"></script>
 
 </body>
 </html>
