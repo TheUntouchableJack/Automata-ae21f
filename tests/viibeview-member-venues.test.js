@@ -86,6 +86,22 @@ beforeEach(() => {
     // getElementById below returns null, from a body that was fully populated
     // when this hook finished.
     w.showEmptyState = () => {};
+
+    // ⚠️ jsdom ships no IntersectionObserver, and as of Phase 4 the MEMBER
+    // PROFILE is the surface that needs one: renderMemberList() renders
+    // full-width cards with data-src and hands the list to
+    // setupVideoObserverIn(). Before Phase 4 that call lived on the venue page,
+    // which this file never rendered — hence no stub was needed here.
+    //
+    // A recording stub rather than a no-op: `observed` is what lets a test
+    // assert the lazy path is actually wired, instead of merely not crashing.
+    w.__observed = [];
+    w.IntersectionObserver = class {
+        constructor(cb) { this.cb = cb; }
+        observe(el) { w.__observed.push(el); }
+        unobserve() {}
+        disconnect() { w.__observed.length = 0; }
+    };
 });
 
 /** One row of get_member_posts. */
@@ -120,66 +136,66 @@ function venue(over = {}) {
 }
 
 // The source-slice trap this repo has been bitten by: a selector that matches
-// nothing makes every not.toContain() below pass. Assert the grid is non-empty
+// nothing makes every not.toContain() below pass. Assert the list is non-empty
 // before asserting anything about what is in it.
-function renderGrid(posts) {
-    w.eval(`memberPagePosts = ${JSON.stringify(posts)}; renderMemberGrid();`);
-    const grid = d.getElementById('member-page-grid');
-    if (posts.length) expect(grid.querySelectorAll('.member-grid-tile').length).toBe(posts.length);
-    return grid;
+//
+// ⚠️ Phase 4 INVERTED this surface. The member profile used to render
+// .member-grid-tile and now renders .feed-card — the venue page took the grid.
+// The unit under test is renderMemberList(), and the non-emptiness guard
+// counts the class this surface actually ships now. A guard still counting
+// .member-grid-tile would match zero elements and quietly pass every
+// assertion below it, which is the exact failure this helper exists to stop.
+function renderList(posts) {
+    w.eval(`memberPagePosts = ${JSON.stringify(posts)}; renderMemberList();`);
+    const list = d.getElementById('member-page-grid');
+    if (posts.length) expect(list.querySelectorAll('.feed-card').length).toBe(posts.length);
+    return list;
 }
 
-describe('renderMemberGrid — the venue chip', () => {
-    it('renders the venue name the grid used to throw away', () => {
-        // venue_name has always been on the row. It went into aria-label only,
-        // where no sighted visitor ever saw it.
-        const grid = renderGrid([post({ venue_id: 'venue-1', venue_name: 'Blue Room' })]);
-        const chip = grid.querySelector('.member-grid-venue');
-        expect(chip).toBeTruthy();
-        expect(chip.textContent.trim()).toBe('Blue Room');
+describe('renderMemberList — the venue link', () => {
+    // The venue name has always been on the row and, before the card that used
+    // to carry it existed, went into an aria-label no sighted visitor saw. The
+    // affordance survived the grid→list inversion; only its markup changed,
+    // from an inert .member-grid-venue chip to a real .feed-card-venue-link
+    // button. These tests follow it rather than being deleted with the chip.
+
+    it('renders the venue name, as a real control this time', () => {
+        const list = renderList([post({ venue_id: 'venue-1', venue_name: 'Blue Room' })]);
+        const link = list.querySelector('.feed-card-venue-link');
+        expect(link).toBeTruthy();
+        expect(link.textContent.trim()).toBe('Blue Room');
     });
 
-    it('an unattached Viibe gets no chip and stays untappable', () => {
-        // A venue-less post has no venue page to open, so the tile must not be
-        // made to look tappable — the rule the grid already had.
-        const grid = renderGrid([post()]);
-        expect(grid.querySelector('.member-grid-venue')).toBeNull();
-        expect(grid.querySelector('.member-grid-tile').getAttribute('onclick')).toBeNull();
+    it('the link opens the venue page, closing the profile first', () => {
+        // Both overlays cannot be mounted at once — the venue page would open
+        // underneath a profile that is still covering it.
+        const list = renderList([post({ venue_id: 'venue-1', venue_name: 'Blue Room' })]);
+        const onclick = list.querySelector('.feed-card-venue-link').getAttribute('onclick');
+        expect(onclick).toContain('closeMemberProfile()');
+        expect(onclick).toContain("openVenuePage('venue-1')");
     });
 
-    it('the chip is inert — the whole tile is the button', () => {
-        // It sits inside the <button>. If it swallowed the tap, the top of
-        // every tile would open the venue and the bottom would do nothing.
-        const grid = renderGrid([post({ venue_id: 'venue-1', venue_name: 'Blue Room' })]);
-        const css = fs.readFileSync(path.join(ROOT, 'customer-app/social.css'), 'utf8');
-        const block = css.slice(css.indexOf('.member-grid-venue {'));
-        expect(block.slice(0, block.indexOf('}'))).toContain('pointer-events: none');
-        expect(grid.querySelector('.member-grid-venue').getAttribute('onclick')).toBeNull();
+    it('an unattached Viibe gets no link and no dead control', () => {
+        // A venue-less post has no venue page to open. Same rule the grid had.
+        const list = renderList([post()]);
+        expect(list.querySelector('.feed-card-venue-link')).toBeNull();
+        // ...and the header collapses rather than leaving an empty row where a
+        // name would have been.
+        expect(list.querySelector('.feed-card-header').className)
+            .toContain('feed-card-header-compact');
     });
 
-    it('a video tile marks the chip .has-duration so the badge keeps its corner', () => {
-        // .member-grid-tile .video-duration is pinned bottom-RIGHT and the chip
-        // spans the full width. Without the class they overlap.
-        const grid = renderGrid([post({
-            venue_id: 'venue-1', venue_name: 'Blue Room',
-            media_type: 'video', duration_seconds: 12,
-        })]);
-        const chip = grid.querySelector('.member-grid-venue');
-        expect(chip.classList.contains('has-duration')).toBe(true);
-        // And the chip comes FIRST, so its scrim cannot paint over the badge.
-        const kids = [...grid.querySelector('.member-grid-tile').children].map(e => e.className);
-        expect(kids.indexOf('member-grid-venue has-duration')).toBeLessThan(kids.indexOf('video-duration'));
+    it('the options button survives on every card, linked or not', () => {
+        // Delete-vs-Report is decided from uploaded_by_user_id and is the one
+        // affordance that must exist on a post with no venue too.
+        const list = renderList([post(), post({ id: 'post-2', venue_id: 'v1', venue_name: 'Blue Room' })]);
+        expect(list.querySelectorAll('.feed-more-btn').length).toBe(2);
     });
 
-    it('an image tile does not', () => {
-        const grid = renderGrid([post({ venue_id: 'venue-1', venue_name: 'Blue Room' })]);
-        expect(grid.querySelector('.member-grid-venue').classList.contains('has-duration')).toBe(false);
-    });
-
-    it('escapes the venue name into the chip', () => {
-        const grid = renderGrid([post({ venue_id: 'v1', venue_name: '<img src=x onerror=alert(1)>' })]);
-        expect(grid.querySelector('.member-grid-venue img')).toBeNull();
-        expect(grid.innerHTML).toContain('&lt;img');
+    it('escapes the venue name into the link', () => {
+        const list = renderList([post({ venue_id: 'v1', venue_name: '<img src=x onerror=alert(1)>' })]);
+        expect(list.querySelector('.feed-card-venue-link img')).toBeNull();
+        expect(list.innerHTML).toContain('&lt;img');
     });
 });
 

@@ -37,6 +37,24 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v15 (2026-09-22): the five-phase ViibeView batch — Follow fixes, manual venue
+// entry, post permanence, the venue page rebuild and the feed header strip.
+// social.html now loads social.js?v=20, social.css?v=15 and i18n.js?v=5.
+//
+// Mandatory in BOTH pairings, and the venue page is the worst of them:
+//   - cached v14 social.js against the new HTML renders the old card stack into
+//     #venue-page-feed, which now carries .member-grid — a 3-column 9:16 grid
+//     with full-width cards crammed into each cell.
+//   - new social.js against cached v14 social.html finds no
+//     #venue-page-feed-header, #venue-page-feed-divider or
+//     #venue-page-followers at all, so hide-when-empty silently does nothing
+//     and the follower count has nowhere to render.
+//   - the home feed is worse still: new social.css makes .feed-panel a flex
+//     column and DELETES the scrim and the light-on-dark colour overrides,
+//     while cached v14 social.js still emits .feed-panel-scrim and
+//     .feed-panel-info. The result is white text on a white strip — invisible,
+//     with nothing in the console.
+//
 // v14 (2026-09-14): password-recovery landing. social.html now loads
 // social-auth.js?v=4 and social.js?v=19. Mandatory, not cosmetic: cached v13
 // social.js still calls SocialAuth.isRecoveryRedirect() to decide whether to
@@ -64,9 +82,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v14';
-const STATIC_CACHE = 'royalty-static-v14';
-const DYNAMIC_CACHE = 'royalty-dynamic-v14';
+const CACHE_NAME = 'royalty-rewards-v15';
+const STATIC_CACHE = 'royalty-static-v15';
+const DYNAMIC_CACHE = 'royalty-dynamic-v15';
 
 // Static assets to cache on install.
 //

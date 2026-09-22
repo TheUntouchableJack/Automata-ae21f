@@ -413,7 +413,7 @@ test.describe('ViibeView signed-in member', () => {
         }
     });
 
-    test('the grid chips each tile with its venue and "Been to" dedupes them', async () => {
+    test('each card links its venue and "Been to" dedupes them', async () => {
         test.skip(!CAN_SIGN_IN, 'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD');
 
         await loadApp();
@@ -421,28 +421,36 @@ test.describe('ViibeView signed-in member', () => {
         await page.evaluate(id => window.openMemberProfile(id), myId);
         await page.waitForTimeout(2000);
 
-        // ⚠️ ViibeView prod has two posts, neither of them a venue-attached post
-        // by this member, so this normally skips. That skip is honest but it is
-        // NOT coverage — the markup, the dedup, the six-row cap and the
+        // ⚠️ RETARGETED IN PHASE 4. The profile used to render
+        // .member-grid-tile with an inert .member-grid-venue chip; it renders
+        // .feed-card with a real .feed-card-venue-link button now — the venue
+        // page took the grid. The affordance survived the inversion, so this
+        // test follows it rather than being deleted with the chip.
+        //
+        // ⚠️ ViibeView prod has two posts, neither of them a venue-attached
+        // post by this member, so this normally skips. That skip is honest but
+        // it is NOT coverage — the markup, the dedup, the six-row cap and the
         // ellipsis rule are pinned in tests/viibeview-member-venues.test.js
         // against fabricated rows, precisely because this cannot run.
-        const tiles = await page.locator('#member-page-grid .member-grid-tile').count();
-        const chips = await page.locator('#member-page-grid .member-grid-venue').count();
-        test.skip(chips === 0,
-            `this member has no venue-attached posts (${tiles} tiles, 0 with a venue) — ` +
+        const cards = await page.locator('#member-page-grid .feed-card').count();
+        const links = await page.locator('#member-page-grid .feed-card-venue-link').count();
+        test.skip(links === 0,
+            `this member has no venue-attached posts (${cards} cards, 0 with a venue) — ` +
             'covered by tests/viibeview-member-venues.test.js instead');
 
-        // Every chip names something.
-        for (const text of await page.locator('.member-grid-venue').allTextContents()) {
+        // Every link names something, and opens something.
+        for (const text of await page.locator('.feed-card-venue-link').allTextContents()) {
             expect(text.trim()).not.toBe('');
         }
+        await expect(page.locator('.feed-card-venue-link').first())
+            .toHaveAttribute('onclick', /openVenuePage/);
 
-        // "Been to" appears, and holds no more rows than there are chipped
-        // tiles — the whole claim of deduping by venue.
+        // "Been to" appears, and holds no more rows than there are linked
+        // cards — the whole claim of deduping by venue.
         await expect(page.locator('#member-page-venues')).toBeVisible();
         const rows = await page.locator('#member-page-venues-list .people-row').count();
         expect(rows).toBeGreaterThan(0);
-        expect(rows, 'the venue list is not deduped').toBeLessThanOrEqual(chips);
+        expect(rows, 'the venue list is not deduped').toBeLessThanOrEqual(links);
 
         // Each row says how many and when.
         const meta = await page.locator('#member-page-venues-list .people-row-meta').first().textContent();

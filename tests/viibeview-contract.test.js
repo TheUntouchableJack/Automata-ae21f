@@ -75,8 +75,22 @@ describe('ViibeView markup + vocabularies', () => {
             'add-venue-step-search', 'add-venue-step-confirm', 'add-venue-back',
             'add-venue-name', 'add-venue-address', 'add-venue-city', 'add-venue-state',
             'add-venue-postal', 'add-venue-country', 'add-venue-coords',
+            // Manual venue entry. #add-venue-coords above is now the STATUS
+            // LINE, not the coordinates — these three are the real inputs, and
+            // #add-venue-manual-btn is the escape hatch out of a dead-end
+            // search. Static in the markup, not injected by runPlaceSearch(),
+            // precisely so this assertion is possible.
+            'add-venue-lat', 'add-venue-lng', 'add-venue-geocode-btn', 'add-venue-manual-btn',
             'add-venue-category', 'add-venue-genres', 'add-venue-save', 'add-venue-error',
             'add-venue-btn', 'search-add-venue-btn',
+            // The venue follower count writes into its own span; re-rendering
+            // #venue-page-identity to update one number is the trap it exists
+            // to avoid.
+            'venue-page-followers',
+            // Hidden TOGETHER with the grid when a venue has no posts. Without
+            // ids they could not be hidden at all, and a venue with nothing to
+            // show rendered a rule and a heading over empty space.
+            'venue-page-feed-header', 'venue-page-feed-divider',
             'install-banner-icon', 'install-banner-btn', 'install-banner-dismiss',
             'signup-banner-icon', 'signup-banner-btn', 'signup-banner-dismiss',
             'ios-install-close',

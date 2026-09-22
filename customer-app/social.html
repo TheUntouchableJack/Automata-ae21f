@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=14">
+    <link rel="stylesheet" href="/customer-app/social.css?v=15">
 </head>
 <body>
 
@@ -840,6 +840,14 @@
             <!-- Venue identity -->
             <div class="venue-page-identity" id="venue-page-identity"></div>
 
+            <!-- Follower count.
+                 A SIBLING of #venue-page-identity, not a child: openVenuePage()
+                 rewrites that block's innerHTML wholesale, so a count living
+                 inside it could only be updated by re-rendering the avatar,
+                 name, rating and badge too. renderVenueFollowerCount() owns
+                 this element and writes nothing else. -->
+            <div class="venue-page-followers" id="venue-page-followers" style="display:none;"></div>
+
             <!-- Quick actions -->
             <div class="venue-page-actions" id="venue-page-actions"></div>
 
@@ -852,30 +860,35 @@
             <!-- Description + tags -->
             <div class="venue-page-about" id="venue-page-about"></div>
 
-            <!-- Section divider -->
-            <div class="venue-page-divider"></div>
+            <!-- Section divider.
+                 ⚠️ These three elements are hidden TOGETHER by
+                 renderVenuePageGrid() when the venue has no posts. The divider
+                 and the header had no ids until Phase 4; without them, a venue
+                 with nothing to show rendered a rule and a "Recent Posts"
+                 heading over empty space, which is worse than the empty state
+                 it replaced. Both are registered in the contract test. -->
+            <div class="venue-page-divider" id="venue-page-feed-divider"></div>
 
             <!-- Feed header -->
-            <div class="venue-page-feed-header">
+            <div class="venue-page-feed-header" id="venue-page-feed-header">
                 <h4 data-i18n="social.recentPosts">Recent Posts</h4>
             </div>
 
-            <!-- Venue-specific feed -->
-            <div class="venue-page-feed" id="venue-page-feed"></div>
+            <!-- The venue's posts, as a reels grid. `venue-page-feed` keeps its
+                 id (every caller and the e2e spec reach for it) and gains
+                 .member-grid, which is the 3-column 9:16 geometry the member
+                 profile used to own. -->
+            <div class="venue-page-feed member-grid" id="venue-page-feed"></div>
 
             <!-- Loading shimmer -->
             <div class="venue-page-loading" id="venue-page-loading" style="display:none;">
                 <div class="shimmer-card"><div class="shimmer-image"></div></div>
             </div>
 
-            <!-- Empty state -->
-            <div class="venue-page-empty" id="venue-page-empty" style="display:none;">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="23,7 16,12 23,17 23,7"/>
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                </svg>
-                <p>No posts yet</p>
-            </div>
+            <!-- #venue-page-empty is GONE. "Show nothing until there is
+                 something" makes an empty state unreachable on this surface.
+                 The .venue-page-empty CLASS stays in the stylesheet —
+                 #member-page-empty still wears it. -->
         </div>
     </section>
 
@@ -1139,7 +1152,7 @@
                     <option value="48" data-i18n="social.ttl48">48 hours</option>
                     <option value="168" data-i18n="social.ttl168">7 days</option>
                 </select>
-                <p class="app-settings-hint" data-i18n="social.postLifetimeHint">Home feed only. Viibes stay on venue pages, profiles and the map.</p>
+                <p class="app-settings-hint" data-i18n="social.postLifetimeHint">Applies to the home feed, venue pages and the map. Posts from your team never expire, and everyone keeps their own posts on their profile.</p>
             </div>
 
             <div class="app-settings-field">
@@ -1212,6 +1225,16 @@
                        aria-label="Search for a place">
             </div>
             <div class="place-results" id="place-results"></div>
+
+            <!-- The escape hatch. STATIC, not injected by runPlaceSearch(), for
+                 two reasons: data-i18n resolves at load so it is translated
+                 before anyone searches, and the contract test can assert it
+                 exists. runPlaceSearch() adds .is-prominent on a zero-result
+                 search, which swaps it to the same blue primary treatment
+                 #search-add-venue-btn wears — so the always-available link and
+                 the "can't find it?" prompt are ONE control, not two. -->
+            <button class="add-venue-manual-btn" id="add-venue-manual-btn" type="button"
+                    data-i18n="social.addVenueManual">Can't find it? Enter the details yourself</button>
         </div>
 
         <!-- Step 2: confirm and classify -->
@@ -1250,11 +1273,35 @@
                 </div>
             </div>
 
-            <!-- Coordinates come from the chosen OSM result and are required:
-                 venues_active_requires_coordinates rejects an active venue
-                 without them. Shown read-only so the owner can see the venue
-                 will land on the map, and can go back if it looks wrong. -->
-            <div class="add-venue-coords" id="add-venue-coords"></div>
+            <!-- Coordinates. Editable now, because this form is reached two
+                 ways: by picking an OSM result (which fills them) and by
+                 "enter the details yourself" (which does not).
+
+                 venues_active_requires_coordinates (20260823000002) rejects an
+                 ACTIVE venue without both, so saveNewVenue() computes is_active
+                 from these two fields rather than passing a literal true — a
+                 venue with no coordinates saves HIDDEN instead of throwing a
+                 23514 the owner cannot act on.
+
+                 ⚠️ #add-venue-coords keeps its id and stays the status line.
+                 It is the element choosePlace() and geocodeVenueAddress() write
+                 their confirmation into, and the contract test asserts it. -->
+            <div class="add-venue-field">
+                <label data-i18n="social.venueCoords">Coordinates</label>
+                <div class="add-venue-row">
+                    <div class="add-venue-field">
+                        <label for="add-venue-lat" data-i18n="social.venueLat">Latitude</label>
+                        <input type="number" id="add-venue-lat" step="any" inputmode="decimal" autocomplete="off">
+                    </div>
+                    <div class="add-venue-field">
+                        <label for="add-venue-lng" data-i18n="social.venueLng">Longitude</label>
+                        <input type="number" id="add-venue-lng" step="any" inputmode="decimal" autocomplete="off">
+                    </div>
+                </div>
+                <button class="add-venue-geocode-btn" id="add-venue-geocode-btn" type="button"
+                        data-i18n="social.findCoords">Find coordinates from the address</button>
+                <div class="add-venue-coords" id="add-venue-coords"></div>
+            </div>
 
             <div class="add-venue-field">
                 <label for="add-venue-category" data-i18n="social.venueCategory">Category</label>
@@ -1376,7 +1423,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=4"></script>
+    <script src="/i18n/i18n.js?v=5"></script>
     <script src="/js/venue-categories.js?v=1"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1393,7 +1440,7 @@
     <script src="/customer-app/social-auth.js?v=4"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=19"></script>
+    <script src="/customer-app/social.js?v=20"></script>
 
 </body>
 </html>

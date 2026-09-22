@@ -185,6 +185,19 @@ const MEMBER_VENUES_PREVIEW = 6;
 let followingKeys = new Set();
 let followingLoaded = false;
 
+// In-flight follow writes, keyed by followKey(). A double-tap otherwise races
+// follow_target against unfollow_target and the later-resolving one wins,
+// leaving followingKeys disagreeing with the table until the next reload.
+const followInFlight = new Set();
+
+// The follow a signed-out visitor tapped, held across the signup overlay so
+// onSignedIn() can finish it. Mirrors hasPendingComposer/pendingComposerVenueId
+// exactly — without it the tap is silently discarded and the button still reads
+// "Follow" over a brand-new account.
+let hasPendingFollow = false;
+let pendingFollowType;
+let pendingFollowId;
+
 // People sheet: 'followers' | 'following' | 'discover', plus whose lists are
 // being shown (null = the signed-in user's own).
 let peopleSheetMode = 'followers';
@@ -237,6 +250,13 @@ let venuePickerQuery = '';
 let placeResults = [];
 let pendingPlace = null;
 let pendingPlaceGenres = [];
+
+// The two-tap "save it hidden" confirmation for a venue with no coordinates.
+// First Save warns; second Save writes is_active:false. Same two-choice
+// contract as app/venues.html's showCoordsRequiredModal(), with no new markup.
+// Reset in openAddVenue() and startManualVenue() so the confirmation cannot
+// carry over from a previous venue the owner already dealt with.
+let coordlessSaveConfirmed = false;
 let placeSearchTimeout = null;
 
 // PWA install. `deferredInstallPrompt` is Chrome's beforeinstallprompt event,
@@ -1148,7 +1168,15 @@ async function loadFollowingState({ force = false } = {}) {
         // Non-fatal: every follow button falls back to "Follow", and tapping it
         // is idempotent server-side (ON CONFLICT DO NOTHING), so the worst case
         // is a button that says the wrong thing until the next load.
+        //
+        // ⚠️ Empty, not stale. Keeping the previous Set would paint "Following"
+        // from a session that may have ended — and nothing retries, so that lie
+        // survives for the rest of the page's life. An empty Set is wrong in the
+        // recoverable direction: the button says "Follow", and tapping it is a
+        // no-op server-side if the edge already exists.
         console.warn('Failed to load follow state:', error.message);
+        followingKeys = new Set();
+        followingLoaded = false;
         return;
     }
 
@@ -1169,7 +1197,11 @@ async function loadFollowingState({ force = false } = {}) {
 async function toggleFollow(type, id) {
     if (!currentApp || !id) return;
 
-    if (!(await requireAccount('Create an account to follow'))) return;
+    // Hand the intent to requireAccount BEFORE it opens the overlay, so
+    // onSignedIn() can finish the tap on the account that is about to exist.
+    if (!(await requireAccount('Create an account to follow', {
+        pendingFollow: { type, id },
+    }))) return;
 
     // requireAccount() only guarantees a session; currentUserId is set by
     // checkOwnerAccess(), which onSignedIn() runs. Read it again rather than
@@ -1177,32 +1209,52 @@ async function toggleFollow(type, id) {
     if (!currentUserId) await checkOwnerAccess();
 
     const key = followKey(type, id);
+
+    // ⚠️ Second tap while the first write is open is dropped, not queued. The
+    // two RPCs are opposites; resolving out of order leaves followingKeys and
+    // the table disagreeing, and the optimistic rollback below then "restores"
+    // a state that was never true.
+    if (followInFlight.has(key)) return;
+    followInFlight.add(key);
+
     const wasFollowing = followingKeys.has(key);
 
     if (wasFollowing) followingKeys.delete(key); else followingKeys.add(key);
     repaintFollowButtons();
 
-    const { data, error } = await supabaseClient.rpc(
-        wasFollowing ? 'unfollow_target' : 'follow_target',
-        { p_app_id: currentApp.id, p_target_type: type, p_target_id: id }
-    );
+    try {
+        const { data, error } = await supabaseClient.rpc(
+            wasFollowing ? 'unfollow_target' : 'follow_target',
+            { p_app_id: currentApp.id, p_target_type: type, p_target_id: id }
+        );
 
-    const row = Array.isArray(data) ? data[0] : data;
-    if (error || !row || row.success === false) {
-        if (wasFollowing) followingKeys.add(key); else followingKeys.delete(key);
+        const row = Array.isArray(data) ? data[0] : data;
+        if (error || !row || row.success === false) {
+            if (wasFollowing) followingKeys.add(key); else followingKeys.delete(key);
+            showToast(row?.error_message || error?.message || 'Could not update that');
+            return;
+        }
+
+        // The server's follower count is authoritative — it excludes soft-deleted
+        // members, which the client cannot see and therefore cannot compute.
+        if (memberPageProfile && type === 'user' && memberPageUserId === id) {
+            memberPageProfile.follower_count = row.follower_count ?? memberPageProfile.follower_count;
+            renderMemberStats();
+        }
+
+        // Both RPCs return it; the venue page only started rendering a count in
+        // 20260922000001, so this arm used to be thrown away.
+        if (type === 'venue' && venuePageVenue && venuePageVenueId === id
+            && row.follower_count !== null && row.follower_count !== undefined) {
+            venuePageVenue.follower_count = row.follower_count;
+            renderVenueFollowerCount();
+        }
+    } finally {
+        // In a finally: an exception from the RPC layer would otherwise wedge
+        // this key permanently and the button would never respond again.
+        followInFlight.delete(key);
         repaintFollowButtons();
-        showToast(row?.error_message || error?.message || 'Could not update that');
-        return;
     }
-
-    // The server's follower count is authoritative — it excludes soft-deleted
-    // members, which the client cannot see and therefore cannot compute.
-    if (memberPageProfile && type === 'user' && memberPageUserId === id) {
-        memberPageProfile.follower_count = row.follower_count ?? memberPageProfile.follower_count;
-        renderMemberStats();
-    }
-
-    repaintFollowButtons();
 }
 
 // Every visible follow control, repainted from followingKeys. One writer, so
@@ -1210,19 +1262,53 @@ async function toggleFollow(type, id) {
 function repaintFollowButtons() {
     const memberBtn = document.getElementById('member-page-follow-btn');
     if (memberBtn && memberPageUserId) {
-        paintFollowButton(memberBtn, isFollowing('user', memberPageUserId));
+        paintFollowButton(memberBtn, isFollowing('user', memberPageUserId),
+            followInFlight.has(followKey('user', memberPageUserId)));
     }
 
     const venueBtn = document.getElementById('venue-page-follow-btn');
     if (venueBtn && venuePageVenueId) {
-        paintFollowButton(venueBtn, isFollowing('venue', venuePageVenueId));
+        paintFollowButton(venueBtn, isFollowing('venue', venuePageVenueId),
+            followInFlight.has(followKey('venue', venuePageVenueId)));
     }
 }
 
-function paintFollowButton(btn, following) {
+// `busy` sets the disabled attribute, which is what finally activates the
+// .follow-btn:disabled rule that has been sitting in social.css unreachable —
+// no CSS change is needed here.
+function paintFollowButton(btn, following, busy = false) {
     btn.classList.toggle('following', following);
+    btn.disabled = !!busy;
     btn.setAttribute('data-i18n', following ? 'social.followingState' : 'social.follow');
     btn.textContent = following ? 'Following' : 'Follow';
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// The venue follower count writes into its OWN span and nothing else.
+//
+// ⚠️ Deliberately NOT a re-render of #venue-page-identity: that block owns the
+// avatar, name, rating, here-now badge and distance, and rebuilding all of it
+// to change one number is the repaintVenueGenres() mistake — an outerHTML swap
+// that throws away every piece of state the surrounding markup was holding.
+function renderVenueFollowerCount() {
+    const el = document.getElementById('venue-page-followers');
+    if (!el) return;
+
+    const count = venuePageVenue?.follower_count;
+    if (count === null || count === undefined) {
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+
+    // Reuses `social.followers`, the key the member profile's stat row already
+    // ships in all 8 locales — no new key, so no TRANSLATION_VERSION bump is
+    // owed by this phase.
+    el.style.display = '';
+    el.innerHTML = `<strong>${escapeHtml(String(count))}</strong> `
+        + `<span data-i18n="social.followers">Followers</span>`;
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
     }
@@ -1356,12 +1442,18 @@ function renderStrengthMeter(meterId, password) {
 // `pendingVenueId` records what the visitor was trying to do so onSignedIn()
 // can finish it. Auth first, composer second — deliberately, so a recording is
 // never held across an email-confirmation redirect that discards the page.
-async function requireAccount(reason, { pendingVenueId } = {}) {
+async function requireAccount(reason, { pendingVenueId, pendingFollow } = {}) {
     if (await SocialAuth.isSignedIn()) return true;
 
     if (pendingVenueId !== undefined) {
         pendingComposerVenueId = pendingVenueId;
         hasPendingComposer = true;
+    }
+
+    if (pendingFollow && pendingFollow.type && pendingFollow.id) {
+        pendingFollowType = pendingFollow.type;
+        pendingFollowId = pendingFollow.id;
+        hasPendingFollow = true;
     }
 
     if (reason) showToast(reason);
@@ -1443,6 +1535,9 @@ function setupAuthListeners() {
     document.getElementById('auth-browse-btn')?.addEventListener('click', () => {
         hasPendingComposer = false;
         pendingComposerVenueId = undefined;
+        hasPendingFollow = false;
+        pendingFollowType = undefined;
+        pendingFollowId = undefined;
         hideAuth();
     });
 
@@ -1651,6 +1746,15 @@ async function onSignedIn() {
 
     await checkOwnerAccess();
     await loadFollowingState({ force: true });
+
+    // ⚠️ The venue / member page is still mounted UNDERNEATH the auth overlay,
+    // painted from a followingKeys that was empty for the whole signed-out
+    // session. Reloading the state without repainting leaves a correct Set
+    // behind a stale label — which is exactly what "I signed up and it still
+    // says Follow" looked like. Must come after checkOwnerAccess(), which is
+    // what sets currentUserId and therefore what loadFollowingState() needs.
+    repaintFollowButtons();
+
     await renderProfileIdentity();
 
     // The Following chip only exists for a signed-in visitor, and
@@ -1674,6 +1778,20 @@ async function onSignedIn() {
     refreshDraftBanner();
 
     // Finish what the visitor was doing when the overlay interrupted them.
+    if (hasPendingFollow) {
+        const type = pendingFollowType;
+        const id = pendingFollowId;
+        hasPendingFollow = false;
+        pendingFollowType = undefined;
+        pendingFollowId = undefined;
+        // Not awaited: the follow is a side effect of the signup, not something
+        // the rest of onSignedIn() depends on, and toggleFollow() repaints on
+        // its own. Deliberately before the composer — a pending follow cannot
+        // coexist with a pending composer, but if both were somehow set, the
+        // composer is the one that opens a sheet and should win the foreground.
+        toggleFollow(type, id);
+    }
+
     if (hasPendingComposer) {
         const venueId = pendingComposerVenueId;
         hasPendingComposer = false;
@@ -2363,10 +2481,13 @@ function postHeaderMarkup(identity, { showVenue = true } = {}) {
 // badge, which the card never had room for.
 //
 // ⚠️ The class is `.feed-panel`, and `.feed-card` is GONE from this surface.
-// The venue page still renders `.feed-card` (renderVenuePageFeed) and that is
-// deliberate: a venue page is a list of that venue's posts, not a full-screen
-// browse. The two must not share a class or a change to one silently reshapes
-// the other.
+//
+// `.feed-card` now belongs to the MEMBER PROFILE (renderMemberList), not the
+// venue page — they swapped in Phase 4: the venue page became a reels grid
+// (`.member-grid`, renderVenuePageGrid) and the profile took the scrollable
+// card list. The separation is the same and exists for the same reason: a
+// change to the full-screen browse must not silently reshape a list of one
+// person's or one venue's posts. Only the surface on the other side changed.
 //
 // The photo branch survives even though get_venue_feed_v3 filters to video.
 // It is the rollback path: pointing loadFeed() back at get_venue_feed brings
@@ -2379,6 +2500,13 @@ function renderFeedCard(item) {
 
     return `
         <article class="feed-panel" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
+            <!-- ⚠️ NOTHING IS OVERLAID ON THE VIDEO ANY MORE. The panel is a
+                 flex column: an opaque venue strip, the media, an opaque meta
+                 footer. The scrim and .feed-panel-info are gone, and with them
+                 the light-on-dark colour overrides that existed only because
+                 this text used to sit on a moving image. -->
+            ${venueStripMarkup(item, identity)}
+
             <div class="feed-media" onclick="toggleVideoPlay(this)">
                 ${isVideo ? `
                     <!-- preload is decided per post by videoPreloadMode(): "none"
@@ -2394,25 +2522,72 @@ function renderFeedCard(item) {
                 `}
             </div>
 
-            <!-- Scrim, not a background on the text: the overlay has to stay
-                 legible over a bright video without becoming a solid bar over
-                 the thing people came to watch. -->
-            <div class="feed-panel-scrim" aria-hidden="true"></div>
-
-            <button class="feed-more-btn feed-panel-more" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-            </button>
-
-            ${isVideo ? `<button class="video-sound-btn feed-panel-sound" type="button" onclick="toggleFeedSound(event, this)"></button>` : ''}
-
-            <div class="feed-panel-info">
-                ${venue ? hereNowBadge(venue) : ''}
-                ${postHeaderMarkup(identity)}
+            <footer class="feed-panel-meta">
+                <!-- ⚠️ showVenue:false. The strip above is already the venue —
+                     the "at {venue}" line would repeat it two elements later.
+                     This is the SAME flag the venue page passes, so
+                     postHeaderMarkup needs no new branch and is not touched by
+                     this phase. -->
+                ${postHeaderMarkup(identity, { showVenue: false })}
                 ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
                 ${isVideo && item.duration_seconds
                     ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
-            </div>
+                ${isVideo ? `<button class="video-sound-btn feed-panel-sound" type="button" onclick="toggleFeedSound(event, this)"></button>` : ''}
+            </footer>
         </article>
+    `;
+}
+
+// The white strip above the video: the VENUE's photo, name and location.
+//
+// ⚠️ This is venue-primary, which INVERTS postIdentity()'s author-first logic —
+// and it is forked at the CALL SITE rather than by adding a mode to
+// postHeaderMarkup(). social.css:503 and the comment on renderFeedCard both
+// warn that the browse surface and the post-list surfaces must not share a
+// renderer, because a change made for one silently reshapes the other.
+// postHeaderMarkup() still renders the author, in the footer, unchanged.
+//
+// No SQL is needed: get_venue_feed_v3 already returns venue_name, venue_handle,
+// venue_city, venue_state and venue_profile_image_url on every row.
+function venueStripMarkup(item, identity) {
+    const name = item.venue_name || (item.venue_handle ? `@${item.venue_handle}` : '');
+    const where = [item.venue_city, item.venue_state].filter(Boolean).join(', ');
+    const venue = item.venue_id ? getVenueById(item.venue_id) : null;
+
+    // ⚠️ An unattached Viibe has no venue at all. Rendering the strip anyway
+    // gives it an empty white bar above the video — worse than the overlay it
+    // replaced. Fall back to the author, who is the only identity such a post
+    // has, and keep the strip's geometry so the panel still lays out the same.
+    const hasVenue = !!(item.venue_id && name);
+    const title = hasVenue ? name : identity.title;
+    const subtitle = hasVenue ? where : '';
+    const imageUrl = hasVenue ? item.venue_profile_image_url : identity.imageUrl;
+    const letter = hasVenue ? (name.replace(/^@/, '') || '?')[0].toUpperCase() : identity.letter;
+
+    const open = hasVenue
+        ? ` onclick="openVenuePage('${escapeHtml(item.venue_id)}')"`
+        : identity.userId
+            ? ` onclick="openMemberProfile('${escapeHtml(identity.userId)}')"`
+            : '';
+
+    return `
+        <header class="feed-panel-venue">
+            <div class="feed-panel-venue-id${open ? '' : ' feed-venue-info-inert'}"${open}>
+                <div class="venue-avatar">
+                    ${imageUrl
+                        ? `<img src="${escapeHtml(imageUrl)}" alt="">`
+                        : `<div class="venue-avatar-placeholder">${escapeHtml(letter)}</div>`}
+                </div>
+                <div class="venue-meta">
+                    <div class="venue-handle">${escapeHtml(title)}</div>
+                    ${subtitle ? `<div class="venue-location">${escapeHtml(subtitle)}</div>` : ''}
+                </div>
+            </div>
+            ${venue ? hereNowBadge(venue) : ''}
+            <button class="feed-more-btn feed-panel-more" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            </button>
+        </header>
     `;
 }
 
@@ -2937,6 +3112,11 @@ async function openVenuePage(venueId) {
     venuePageOffset = 0;
     venuePageHasMore = true;
     venuePageLoading = false;
+    // ⚠️ Reset, or an expanded "Who's here" on one venue silently carries into
+    // the next venue the visitor opens — and so does the previous venue's mix.
+    resetVenueSections();
+    venueCrowdMix = null;
+    expandedVenuePostId = null;
 
     // Show page immediately (content loads inside)
     page.classList.add('visible');
@@ -3069,11 +3249,21 @@ async function openVenuePage(venueId) {
         }
         actionsEl.innerHTML = actions;
         actionsEl.style.display = actions ? 'flex' : 'none';
+
+        // ⚠️ Before the repaint, not after. loadFollowingState() no-ops once
+        // loaded, so on the happy path this costs nothing — but after a failed
+        // load (which now empties the Set rather than keeping it stale) it is
+        // the only thing that ever retries. Without it, one transient error at
+        // boot means every Follow button lies for the rest of the session.
+        await loadFollowingState();
+
         // The button ships with no label; repaintFollowButtons() is the single
         // writer of Follow/Following text so the two follow surfaces cannot
         // disagree about the same edge.
         repaintFollowButtons();
     }
+
+    renderVenueFollowerCount();
 
     // Render address
     const addressEl = document.getElementById('venue-page-address');
@@ -3157,7 +3347,12 @@ async function openVenuePage(venueId) {
         if (venue.description) {
             about += `<p class="venue-page-description">${escapeHtml(venue.description)}</p>`;
         }
+        // Three collapsible sections. Sound first because it is the one that is
+        // open by default and the one an owner edits; distance and crowd are
+        // reference, not action.
         about += renderVenueGenreSection(venue);
+        about += renderVenueDistanceSection(venue);
+        about += renderVenueCrowdSection(venue);
         if (venue.tags && venue.tags.length > 0) {
             about += `<div class="venue-page-tags">${venue.tags.map(t => `<span class="venue-page-tag">${escapeHtml(t)}</span>`).join('')}</div>`;
         }
@@ -3172,6 +3367,13 @@ async function openVenuePage(venueId) {
     // Load venue feed
     await loadVenuePageFeed();
 
+    // The crowd section reads two things the first paint could not have: the
+    // recent-poster faces come from venuePageFeed (just loaded above) and the
+    // gender mix from its own RPC. Repaint it once both have landed rather
+    // than blocking the whole page on a section nobody has scrolled to.
+    await loadVenueCrowdMix(venue.id);
+    if (venuePageVenueId === venue.id) repaintVenueSection('crowd');
+
     // Setup infinite scroll
     const scrollEl = document.getElementById('venue-page-scroll');
     if (scrollEl) {
@@ -3184,6 +3386,68 @@ async function openVenuePage(venueId) {
         };
         scrollEl.addEventListener('scroll', venuePageScrollHandler);
     }
+}
+
+// ===== Venue page collapsible sections =====
+//
+// No accordion existed in ViibeView — no <details>, no aria-expanded, no toggle
+// helper anywhere. The vocabulary is ported from customer-app/app.css's FAQ
+// (.faq-item / toggleFaq) and renamed, so the two surfaces stay recognisably
+// the same pattern without sharing a stylesheet they do not otherwise share.
+//
+// ⚠️ COLLAPSE STATE LIVES HERE, NOT IN THE DOM.
+//
+// repaintVenueGenres() does `block.outerHTML = renderVenueGenreSection(...)`,
+// which destroys and rebuilds the entire block — on EVERY genre chip tap. A
+// state held in a CSS class on that element is therefore gone the moment
+// someone changes what is playing: the section they had open snaps shut under
+// their finger. renderVenueSection() reads this object, so the rebuilt block
+// comes back already-open.
+//
+// openVenuePage() resets it, so an expanded "Who's here" on one venue does not
+// leak into the next venue the visitor opens.
+const VENUE_SECTION_DEFAULTS = { sound: true, distance: false, crowd: false };
+let venueSectionsOpen = { ...VENUE_SECTION_DEFAULTS };
+
+function resetVenueSections() {
+    venueSectionsOpen = { ...VENUE_SECTION_DEFAULTS };
+}
+
+// The shared wrapper. `body` is already-escaped HTML from the caller.
+function renderVenueSection(key, titleKey, titleText, body) {
+    const open = !!venueSectionsOpen[key];
+    return `
+        <div class="venue-section${open ? ' open' : ''}" data-section="${escapeHtml(key)}">
+            <button class="venue-section-head" type="button"
+                    aria-expanded="${open ? 'true' : 'false'}"
+                    onclick="toggleVenueSection('${escapeHtml(key)}')">
+                <span data-i18n="${escapeHtml(titleKey)}">${escapeHtml(titleText)}</span>
+                <svg class="venue-section-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6,9 12,15 18,9"/>
+                </svg>
+            </button>
+            <div class="venue-section-body">${body}</div>
+        </div>
+    `;
+}
+
+// ⚠️ Toggles the CLASS and the module state, and re-renders NOTHING.
+//
+// Calling repaintVenueGenres() from here would be the trap this whole design
+// exists to avoid: an outerHTML swap on every expand, throwing away focus and
+// any in-progress interaction inside the body. The class does the visual work;
+// the state object is only read on the next genuine rebuild.
+function toggleVenueSection(key) {
+    if (!Object.prototype.hasOwnProperty.call(venueSectionsOpen, key)) return;
+
+    venueSectionsOpen[key] = !venueSectionsOpen[key];
+    const open = venueSectionsOpen[key];
+
+    const el = document.querySelector(`.venue-section[data-section="${key}"]`);
+    if (!el) return;
+    el.classList.toggle('open', open);
+    el.querySelector('.venue-section-head')?.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
 // ===== Tonight's sound (venue page) =====
@@ -3204,31 +3468,150 @@ function renderVenueGenreSection(venue) {
     // report success. Show what they "play" and nothing more.
     const editable = isOwner && !isDemoVenueId(venue.id);
 
+    // ⚠️ KEEP returning '' here. A quiet venue with no genres and no owner
+    // looking at it has nothing to show — and wrapping nothing in an accordion
+    // gives every such venue an empty head that expands to a blank box. The
+    // section must not exist at all, not merely be collapsed.
     if (!editable) {
         if (genres.length === 0) return '';
+        return renderVenueSection('sound', 'social.tonightsSound', "Tonight's sound", `
+            <div class="genre-chips">
+                ${genres.map(g => `<span class="genre-chip on">${escapeHtml(genreLabel(g))}</span>`).join('')}
+            </div>
+        `);
+    }
+
+    const all = window.MUSIC_GENRES || [];
+    return renderVenueSection('sound', 'social.tonightsSound', "Tonight's sound", `
+        <p class="venue-page-genres-hint" data-i18n="social.tonightsSoundHint">Tap to change what is playing. Saves instantly.</p>
+        <div class="genre-chips" id="venue-genre-chips">
+            ${all.map(g => `
+                <button class="genre-chip genre-chip-btn ${genres.includes(g.slug) ? 'on' : ''}"
+                        type="button" aria-pressed="${genres.includes(g.slug) ? 'true' : 'false'}"
+                        onclick="toggleVenueGenre('${escapeHtml(g.slug)}')"
+                        data-i18n="${g.labelKey}">${escapeHtml(g.label)}</button>
+            `).join('')}
+        </div>
+    `);
+}
+
+// ===== Distance from you (venue page) =====
+//
+// The Google Maps link already lives in the actions row; this section answers
+// "how far is that?", which the actions row never did.
+function renderVenueDistanceSection(venue) {
+    let body;
+
+    const miles = userLocation
+        ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude)
+        : null;
+
+    if (miles === null) {
+        // ⚠️ Not a blank section. With no fix we know nothing, and an empty
+        // accordion body reads as a bug — so the body IS the thing that would
+        // fix it. Wired to the same request path the location banner uses, so
+        // there is one permission prompt in this app and not two.
+        body = `
+            <p class="venue-section-hint" data-i18n="social.distanceNeedsLocation">Turn on location to see how far this is.</p>
+            <button class="venue-section-action" type="button" onclick="enableLocationForVenuePage()"
+                    data-i18n="social.turnOnLocation">Turn on location</button>
+        `;
+    } else {
+        const km = miles * 1.609344;
+        body = `
+            <p class="venue-distance-value">
+                <strong>${miles.toFixed(1)} mi</strong>
+                <span class="venue-distance-alt">${km.toFixed(1)} km</span>
+            </p>
+        `;
+        if (venue.address_line1) {
+            const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent([venue.address_line1, venue.city, venue.state].filter(Boolean).join(', '))}`;
+            body += `<a class="venue-section-action" href="${mapsUrl}" target="_blank" rel="noopener noreferrer"
+                        data-i18n="social.openInMaps">Open in Maps</a>`;
+        }
+    }
+
+    return renderVenueSection('distance', 'social.distanceFromYou', 'Distance from you', body);
+}
+
+// ===== Who's here (venue page) =====
+//
+// Three things, none of which needs a new query except the gender mix:
+//   - here_now, already on get_venue_detail (distinct posters, last 4h)
+//   - distinct recent-poster avatars, already on get_venue_page_feed
+//   - the gender split bar, which has no data yet and says so
+function renderVenueCrowdSection(venue) {
+    const hereNow = Number(venue.here_now) || 0;
+
+    let body = `
+        <p class="venue-crowd-count">
+            <strong>${hereNow}</strong>
+            <span data-i18n="${hereNow === 1 ? 'social.personHereNow' : 'social.peopleHereNow'}">${hereNow === 1 ? 'person posting in the last 4 hours' : 'people posting in the last 4 hours'}</span>
+        </p>
+    `;
+
+    // Distinct posters from the feed already in memory — deduped by author,
+    // because one person posting six clips is one person, not six.
+    const seen = new Set();
+    const faces = [];
+    for (const post of venuePageFeed) {
+        if (!post.uploaded_by_user_id || seen.has(post.uploaded_by_user_id)) continue;
+        seen.add(post.uploaded_by_user_id);
+        faces.push(post);
+        if (faces.length >= 8) break;
+    }
+
+    if (faces.length > 0) {
+        body += `<div class="venue-crowd-faces">${faces.map(f => {
+            const name = f.author_display_name || '';
+            return f.author_avatar_url
+                ? `<img class="venue-crowd-face" src="${escapeHtml(f.author_avatar_url)}" alt="${escapeHtml(name)}" loading="lazy">`
+                : `<span class="venue-crowd-face venue-crowd-face-initial" aria-label="${escapeHtml(name)}">${escapeHtml((name || '?')[0])}</span>`;
+        }).join('')}</div>`;
+    }
+
+    body += renderGenderMixBar(venueCrowdMix);
+
+    return renderVenueSection('crowd', 'social.whosHere', "Who's here", body);
+}
+
+// A pure-CSS two-segment stacked bar. NO CHART LIBRARY.
+//
+// social.html ships none today — supabase-js, Leaflet, i18n and five small
+// local modules — and ApexCharts is ~130KB into a PWA whose entire premise is a
+// fast cold start. A flex bar with width:{pct}% plus role="img" and an
+// aria-label summary is this, and is fully accessible, in twenty lines.
+//
+// `mix` is null until get_venue_crowd_mix returns rows, which it refuses to do
+// below the suppression threshold. That null state is rendered honestly rather
+// than as a 50/50 bar over no data.
+function renderGenderMixBar(mix) {
+    const total = mix ? (Number(mix.female_count) || 0) + (Number(mix.male_count) || 0) : 0;
+
+    if (!mix || total === 0) {
         return `
-            <div class="venue-page-genres">
-                <h4 class="venue-page-genres-title" data-i18n="social.tonightsSound">Tonight's sound</h4>
-                <div class="genre-chips">
-                    ${genres.map(g => `<span class="genre-chip on">${escapeHtml(genreLabel(g))}</span>`).join('')}
-                </div>
+            <div class="venue-gender-mix">
+                <h5 class="venue-section-subhead" data-i18n="social.genderMix">Gender mix</h5>
+                <p class="venue-section-hint" data-i18n="social.genderMixLocked">Gender mix unlocks once enough members share it.</p>
             </div>
         `;
     }
 
-    const all = window.MUSIC_GENRES || [];
+    const femalePct = Math.round((Number(mix.female_count) / total) * 100);
+    const malePct = 100 - femalePct;
+    const summary = `${femalePct}% women, ${malePct}% men, from ${total} members who shared it`;
+
     return `
-        <div class="venue-page-genres">
-            <h4 class="venue-page-genres-title" data-i18n="social.tonightsSound">Tonight's sound</h4>
-            <p class="venue-page-genres-hint" data-i18n="social.tonightsSoundHint">Tap to change what is playing. Saves instantly.</p>
-            <div class="genre-chips" id="venue-genre-chips">
-                ${all.map(g => `
-                    <button class="genre-chip genre-chip-btn ${genres.includes(g.slug) ? 'on' : ''}"
-                            type="button" aria-pressed="${genres.includes(g.slug) ? 'true' : 'false'}"
-                            onclick="toggleVenueGenre('${escapeHtml(g.slug)}')"
-                            data-i18n="${g.labelKey}">${escapeHtml(g.label)}</button>
-                `).join('')}
+        <div class="venue-gender-mix">
+            <h5 class="venue-section-subhead" data-i18n="social.genderMix">Gender mix</h5>
+            <div class="gender-bar" role="img" aria-label="${escapeHtml(summary)}">
+                <span class="gender-bar-seg gender-bar-female" style="width:${femalePct}%"></span>
+                <span class="gender-bar-seg gender-bar-male" style="width:${malePct}%"></span>
             </div>
+            <p class="gender-bar-legend" aria-hidden="true">
+                <span class="gender-bar-key gender-bar-female"></span>${femalePct}%
+                <span class="gender-bar-key gender-bar-male"></span>${malePct}%
+            </p>
         </div>
     `;
 }
@@ -3283,15 +3666,99 @@ async function toggleVenueGenre(slug) {
 
 // Re-renders only the genre block, so an edit does not blow away the hours
 // table or scroll the page.
+//
+// ⚠️ The selector had to move with the markup. `.venue-page-genres` no longer
+// exists — the block is now `.venue-section[data-section="sound"]`, and a
+// querySelector that still matched the old class would return null and make
+// every genre tap silently fail to repaint (optimistic state applied, chip
+// never lit, rollback on error invisible).
+//
+// This is still an outerHTML swap, which is why venueSectionsOpen exists:
+// renderVenueGenreSection() reads it, so a section the visitor had expanded
+// comes back expanded rather than snapping shut on every chip tap.
 function repaintVenueGenres() {
     const aboutEl = document.getElementById('venue-page-about');
-    const block = aboutEl?.querySelector('.venue-page-genres');
+    const block = aboutEl?.querySelector('.venue-section[data-section="sound"]');
     if (!block || !venuePageVenue) return;
 
     block.outerHTML = renderVenueGenreSection(venuePageVenue);
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
     }
+}
+
+// Re-asks for a fix from inside the venue page's distance section, then
+// repaints only that section. Uses getCurrentCoords() — the same helper the
+// radius sheet and the composer use — so there is one geolocation call site
+// shape in this app and one permission prompt.
+async function enableLocationForVenuePage() {
+    const coords = await getCurrentCoords();
+
+    if (!coords) {
+        showToast(translateOr('social.locationBlocked', null,
+            'Location is off. Turn it on in your browser settings to filter by distance.'));
+        return;
+    }
+
+    // Open it: the visitor just asked for this number, so hiding it behind a
+    // collapsed head would be the app ignoring what they did.
+    venueSectionsOpen.distance = true;
+    repaintVenueSection('distance');
+
+    // The fix is new to the whole app, not just this page.
+    renderVenueSwimLane();
+}
+
+// Swap one section in place. Same outerHTML mechanism as repaintVenueGenres,
+// and safe for the same reason: renderVenueSection() reads venueSectionsOpen,
+// so the replacement comes back in whatever state the visitor left it.
+function repaintVenueSection(key) {
+    const block = document.querySelector(`.venue-section[data-section="${key}"]`);
+    if (!block || !venuePageVenue) return;
+
+    const markup = key === 'distance' ? renderVenueDistanceSection(venuePageVenue)
+                 : key === 'crowd'    ? renderVenueCrowdSection(venuePageVenue)
+                 : key === 'sound'    ? renderVenueGenreSection(venuePageVenue)
+                 : '';
+    if (!markup) return;
+
+    block.outerHTML = markup;
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// The all-time gender split for the venue currently open, or null.
+//
+// ⚠️ null is the NORMAL state, not an error. get_venue_crowd_mix returns ZERO
+// ROWS below the suppression threshold, by design — see 20260922000005. The
+// bar renders an honest locked state for null and must never fall back to a
+// 50/50 split over no data.
+let venueCrowdMix = null;
+
+async function loadVenueCrowdMix(venueId) {
+    venueCrowdMix = null;
+    if (!currentApp || !venueId || isDemoVenueId(venueId)) return;
+
+    const { data, error } = await supabaseClient.rpc('get_venue_crowd_mix', {
+        p_app_id: currentApp.id,
+        p_venue_id: venueId,
+    });
+
+    // Navigated away mid-flight — writing here would put one venue's mix on
+    // another venue's page.
+    if (venuePageVenueId !== venueId) return;
+
+    if (error) {
+        // Non-fatal and deliberately quiet: the locked state is the same thing
+        // the visitor sees when there is genuinely not enough data, and it is
+        // the honest answer either way.
+        console.warn('Failed to load crowd mix:', error.message);
+        return;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    venueCrowdMix = row || null;
 }
 
 async function loadVenuePageFeed(append = false) {
@@ -3309,7 +3776,7 @@ async function loadVenuePageFeed(append = false) {
         venuePageLoading = false;
         venuePageHasMore = false;
         venuePageFeed = [];
-        renderVenuePageFeed();
+        renderVenuePageGrid();
         return;
     }
 
@@ -3349,69 +3816,113 @@ async function loadVenuePageFeed(append = false) {
     }
 
     venuePageOffset += (data || []).length;
-    renderVenuePageFeed();
+    renderVenuePageGrid();
 }
 
-function renderVenuePageFeed() {
+// The venue's posts as an Instagram-style reels grid.
+//
+// Renamed from renderVenuePageFeed(): this surface no longer renders a card
+// stack. The `.feed-card` markup it used to own has moved to the member
+// profile (renderMemberList), which is the inverse swap — the CSS at
+// social.css:503+ stays exactly where it is and serves a different surface.
+//
+// ⚠️ NO IntersectionObserver AND NO AUTOPLAY ON THIS GRID. The comment that
+// used to sit on renderMemberGrid() was right and the reasoning transfers
+// wholesale: a popular venue holds dozens of clips, and forty <video> elements
+// all calling play() is how a phone runs out of memory. Tiles are posters
+// (thumbnail_url as <img loading="lazy">); a <video preload="metadata">
+// fallback covers the legacy rows whose thumbnail_url is NULL and can never be
+// backfilled. Hydration happens on TAP and nowhere else.
+function renderVenuePageGrid() {
     const container = document.getElementById('venue-page-feed');
-    const emptyEl = document.getElementById('venue-page-empty');
     if (!container) return;
 
-    if (venuePageFeed.length === 0) {
+    // Hide-when-empty. All three elements, not just the grid: a lone "Recent
+    // Posts" header over a divider and nothing else is worse than the empty
+    // state it replaced. #venue-page-empty is gone entirely — "show nothing
+    // until there is something" makes it unreachable.
+    const header = document.getElementById('venue-page-feed-header');
+    const divider = document.getElementById('venue-page-feed-divider');
+    const isEmpty = venuePageFeed.length === 0;
+
+    container.style.display = isEmpty ? 'none' : '';
+    if (header) header.style.display = isEmpty ? 'none' : '';
+    if (divider) divider.style.display = isEmpty ? 'none' : '';
+
+    if (isEmpty) {
         container.innerHTML = '';
-        if (emptyEl) emptyEl.style.display = 'flex';
         return;
     }
 
-    if (emptyEl) emptyEl.style.display = 'none';
-
     container.innerHTML = venuePageFeed.map(item => {
         const isVideo = item.media_type === 'video';
-        // The author, not the venue — the whole page is already this venue, so
-        // showVenue:false drops the "at {venue}" line that would just repeat
-        // the page header above.
-        //
-        // A pre-UGC post has no recorded author and no backfill is possible, so
-        // there is nothing to name. It keeps the old headerless card rather
-        // than an inert "Someone / ?" row: on a page that is already one venue,
-        // that row would add a name nobody can use and an avatar nobody can
-        // open. The main feed still says "Someone" there, because a feed card
-        // with no header at all reads as broken.
-        const identity = postIdentity({ ...item, venue_id: null });
-        const headerless = identity.primary === 'none';
+        const expanded = expandedVenuePostId === item.id;
+        const label = item.caption || item.author_display_name || '';
+
+        // The tile's media. Expanded tiles carry a real <video> with data-src
+        // so openVenuePost() can hydrate it; collapsed ones carry a poster
+        // only. Deliberately NOT the same element in both states: leaving a
+        // <video> in every collapsed tile is the memory cost this grid exists
+        // to avoid, thumbnail or no thumbnail.
+        const media = !isVideo
+            ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(label)}" loading="lazy">`
+            : expanded
+                ? `<video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
+                          playsinline muted preload="${videoPreloadMode(item)}" loop></video>`
+                : item.thumbnail_url
+                    ? `<img src="${escapeHtml(item.thumbnail_url)}" alt="${escapeHtml(label)}" loading="lazy">`
+                    // ⚠️ preload="metadata", NOT "none". Every post predating
+                    // thumbnail generation has thumbnail_url NULL with no
+                    // possible backfill, and "none" paints those tiles solid
+                    // black. metadata paints the first frame, which is the
+                    // whole point of the fallback.
+                    : `<video src="${escapeHtml(item.url)}" muted playsinline preload="metadata"></video>`;
+
         return `
-            <div class="feed-card" data-media-id="${escapeHtml(item.id)}">
-                <div class="feed-card-header${headerless ? ' feed-card-header-compact' : ''}">
-                    ${headerless ? '' : postHeaderMarkup(identity, { showVenue: false })}
-                    <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                    </button>
-                </div>
-                <div class="feed-media" onclick="toggleVideoPlay(this)">
-                    ${isVideo ? `
-                        <!-- data-src, not src: the venue page renders EVERY post
-                             this venue has, and a plain src at preload="metadata"
-                             opened a connection per card on first paint. The
-                             observer below hydrates what scrolls into view. Same
-                             mechanism as the main feed (:VIDEO_HYDRATION_WINDOW),
-                             and preload is still decided per post by
-                             videoPreloadMode() because a NULL thumbnail_url has
-                             no poster to paint. -->
-                        <video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}" playsinline muted preload="${videoPreloadMode(item)}" loop></video>
-                        ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
-                        <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
-                    ` : `
-                        <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
-                    `}
-                </div>
-                ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
-            </div>
+            <button class="member-grid-tile${expanded ? ' is-expanded' : ''}" type="button"
+                    data-media-id="${escapeHtml(item.id)}"
+                    aria-label="${escapeHtml(label)}"
+                    onclick="openVenuePost('${escapeHtml(item.id)}')">
+                ${media}
+                ${expanded && isVideo
+                    ? `<button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>`
+                    : ''}
+                ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
+            </button>
         `;
     }).join('');
 
-    // Setup video autoplay observers for venue page feed
-    setupVideoObserverIn(container);
+    // ⚠️ setupVideoObserverIn() is deliberately NOT called here. See the
+    // header comment. The observer now lives on the member profile, which is
+    // the surface that renders full-width cards and therefore needs it.
+    if (expandedVenuePostId) hydrateExpandedVenuePost();
     refreshSoundButtons();
+}
+
+// Which grid tile is expanded to full width, or null. One at a time — the
+// previous one collapses, which is what stops two clips playing at once
+// without any new "pause everything else" bookkeeping.
+let expandedVenuePostId = null;
+
+function openVenuePost(id) {
+    // Tapping the open tile closes it. Without this the only way out of an
+    // expanded tile is to open a different one.
+    expandedVenuePostId = (expandedVenuePostId === id) ? null : id;
+    renderVenuePageGrid();
+}
+
+// Hydrate and play the one expanded tile. Reuses ensureVideoSrc and
+// applySoundState unchanged — applySoundState stays the single writer of
+// video.muted, so the grid inherits the sound toggle's state rather than
+// inventing a second source of truth for it.
+function hydrateExpandedVenuePost() {
+    const tile = document.querySelector('.member-grid-tile.is-expanded');
+    const video = tile?.querySelector('video[data-src]');
+    if (!video) return;
+
+    ensureVideoSrc(video);
+    applySoundState(video);
+    video.play().catch(() => {});
 }
 
 // Same leak, same fix, for the venue page's own feed.
@@ -3472,15 +3983,22 @@ function closeVenuePage() {
         venuePageScrollHandler = null;
     }
 
-    // Pause any playing videos in venue page
+    // ⚠️ CLEAR the grid, do not merely pause it. Mirrors closeMemberProfile()'s
+    // reasoning: a paused <video> left in the DOM keeps its buffer and keeps
+    // downloading. Pausing was enough when this surface held one hydrated card;
+    // with a grid that can hold an expanded clip plus dozens of poster frames,
+    // leaving the markup behind holds media for a page nobody is looking at.
     const pageEl = document.getElementById('venue-page-feed');
     if (pageEl) {
         pageEl.querySelectorAll('video').forEach(v => { v.pause(); v.muted = true; });
+        pageEl.innerHTML = '';
     }
 
     venuePageVenueId = null;
     venuePageVenue = null;
     venuePageFeed = [];
+    venueCrowdMix = null;
+    expandedVenuePostId = null;
 }
 
 // ===== Member Profile Page =====
@@ -3577,8 +4095,19 @@ function closeMemberProfile() {
     document.getElementById('member-page-backdrop')?.classList.remove('visible');
     unlockBodyScroll('member-page');
 
-    // Clearing the grid stops any <video> that was decoding a poster frame; a
+    // Clearing the list stops any <video> that was decoding a poster frame; a
     // paused video left in the DOM keeps its buffer and keeps downloading.
+    //
+    // ⚠️ The observer has to go too, now that this surface owns it. An
+    // IntersectionObserver still holding torn-down .feed-media elements is a
+    // leak across every profile the visitor opens in a session — and on the
+    // next open, setupVideoObserverIn() would disconnect only the most recent
+    // one, because there is a single module-level handle.
+    if (venueVideoObserver) {
+        venueVideoObserver.disconnect();
+        venueVideoObserver = null;
+    }
+
     const grid = document.getElementById('member-page-grid');
     if (grid) grid.innerHTML = '';
 
@@ -3704,53 +4233,78 @@ async function loadMemberPosts() {
         memberPagePosts = data || [];
     }
 
-    renderMemberGrid();
+    renderMemberList();
 }
 
-// A grid of poster frames, not a stack of autoplaying clips. A profile can hold
-// dozens of Viibes and this overlay has no IntersectionObserver of its own —
-// forty <video> elements all calling play() is how a phone runs out of memory.
-// Tiles with no thumbnail_url (every post predating thumbnail generation) fall
-// back to preload="metadata", which paints the first frame.
-function renderMemberGrid() {
-    const grid = document.getElementById('member-page-grid');
+// A scrollable list of full-width cards — the inverse of what this function
+// used to render, and of what the venue page now renders.
+//
+// Renamed from renderMemberGrid(). It takes over the `.feed-card` markup the
+// venue page vacated, so social.css:503+ stays exactly where it is and simply
+// serves a different surface.
+//
+// ⚠️ LAZY VIDEO IS REINSTATED HERE, and it is not optional. A profile with 24
+// full-width autoplaying clips is precisely the failure the old grid comment
+// was written to prevent — the risk did not go away when the layout changed,
+// it MOVED. Cards carry data-src, preload comes from videoPreloadMode(), and
+// the relocated setupVideoObserverIn() hydrates what scrolls into view.
+function renderMemberList() {
+    const list = document.getElementById('member-page-grid');
     const emptyEl = document.getElementById('member-page-empty');
-    if (!grid) return;
+    if (!list) return;
 
     if (memberPagePosts.length === 0) {
-        grid.innerHTML = '';
+        list.innerHTML = '';
         if (emptyEl) emptyEl.style.display = 'flex';
         return;
     }
     if (emptyEl) emptyEl.style.display = 'none';
 
-    grid.innerHTML = memberPagePosts.map(post => {
-        // A tile opens the venue it was posted at. An unattached Viibe has no
-        // venue page to open, so its tile is not made to look tappable.
-        const onclick = post.venue_id
-            ? ` onclick="closeMemberProfile(); openVenuePage('${escapeHtml(post.venue_id)}')"`
+    list.innerHTML = memberPagePosts.map(post => {
+        const isVideo = post.media_type !== 'photo';
+        // The VENUE, not the author — the whole page is already this member, so
+        // the useful identity on each card is where it was shot. That is the
+        // mirror of the venue page's old showVenue:false, and it is why the
+        // cards route to openVenuePage rather than to a profile.
+        const venueLink = post.venue_id
+            ? `<button class="feed-card-venue-link" type="button"
+                       onclick="closeMemberProfile(); openVenuePage('${escapeHtml(post.venue_id)}')">
+                   ${escapeHtml(post.venue_name || 'View venue')}
+               </button>`
             : '';
-        const label = post.venue_name || post.caption || '';
 
         return `
-            <button class="member-grid-tile" type="button"${onclick}
-                    aria-label="${escapeHtml(label)}">
-                ${post.thumbnail_url
-                    ? `<img src="${escapeHtml(post.thumbnail_url)}" alt="" loading="lazy">`
-                    : `<video src="${escapeHtml(post.url)}" muted playsinline preload="metadata"></video>`}
-                ${post.venue_name
-                    // BEFORE the duration badge, not after: the chip's scrim
-                    // spans the full tile width and would paint over the badge
-                    // otherwise. .has-duration is what reserves the badge's
-                    // corner — done with a class rather than a CSS :has()
-                    // sibling rule, which is both newer than this app's
-                    // baseline and silent when it fails to match.
-                    ? `<span class="member-grid-venue${post.duration_seconds ? ' has-duration' : ''}">${escapeHtml(post.venue_name)}</span>`
-                    : ''}
-                ${post.duration_seconds ? `<span class="video-duration">${formatDuration(post.duration_seconds)}</span>` : ''}
-            </button>
+            <div class="feed-card" data-media-id="${escapeHtml(post.id)}">
+                <div class="feed-card-header${venueLink ? '' : ' feed-card-header-compact'}">
+                    ${venueLink}
+                    <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(post.id)}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    </button>
+                </div>
+                <div class="feed-media" onclick="toggleVideoPlay(this)">
+                    ${isVideo ? `
+                        <!-- data-src, not src. See the function header: this is
+                             the surface that can hold dozens of clips now, and a
+                             plain src opens a connection per card on first
+                             paint. preload stays per-post via videoPreloadMode()
+                             because a NULL thumbnail_url has no poster to
+                             paint and would render black at preload="none". -->
+                        <video data-src="${escapeHtml(post.url)}" poster="${escapeHtml(post.thumbnail_url || '')}" playsinline muted preload="${videoPreloadMode(post)}" loop></video>
+                        ${post.duration_seconds ? `<span class="video-duration">${formatDuration(post.duration_seconds)}</span>` : ''}
+                        <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
+                    ` : `
+                        <img src="${escapeHtml(post.url)}" alt="${escapeHtml(post.caption || '')}" loading="lazy">
+                    `}
+                </div>
+                ${post.caption ? `<div class="feed-caption">${escapeHtml(post.caption)}</div>` : ''}
+            </div>
         `;
     }).join('');
+
+    // The observer moved here from the venue page, where it is now actively
+    // harmful (40 autoplaying tiles) and here is necessary.
+    setupVideoObserverIn(list);
+    refreshSoundButtons();
 }
 
 // ===== "Been to" — venues derived from posts =====
@@ -5355,6 +5909,8 @@ function setupEventListeners() {
     document.getElementById('add-venue-backdrop')?.addEventListener('click', closeAddVenue);
     document.getElementById('add-venue-back')?.addEventListener('click', () => showAddVenueStep('search'));
     document.getElementById('add-venue-save')?.addEventListener('click', saveNewVenue);
+    document.getElementById('add-venue-manual-btn')?.addEventListener('click', startManualVenue);
+    document.getElementById('add-venue-geocode-btn')?.addEventListener('click', geocodeVenueAddress);
 
     const placeInput = document.getElementById('place-search-input');
     if (placeInput) {
@@ -5563,7 +6119,7 @@ async function deletePost(mediaId) {
     postPins = postPins.filter(i => i.id !== mediaId);
 
     renderFeed();
-    if (venuePageVenueId) renderVenuePageFeed();
+    if (venuePageVenueId) renderVenuePageGrid();
     if (map) renderPostPins();
 
     showToast('Post deleted');
@@ -5617,7 +6173,38 @@ function escapeHtml(text) {
 
 function calcDistance(lat1, lon1, lat2, lon2) {
     // Haversine formula — returns distance in miles
-    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    //
+    // ⚠️ Number.isFinite over the COERCED values, not a truthiness test. The
+    // old guard was `if (!lat1 || !lon1 || !lat2 || !lon2) return null`, which
+    // had two failure modes, both silent:
+    //
+    //   - longitude 0 is the prime meridian, which runs through London. A
+    //     venue there returned "no distance" forever.
+    //   - venues.latitude/longitude are DECIMAL, which PostgREST returns as
+    //     STRINGS on some paths. "0" is truthy, so that one slipped through —
+    //     but the arithmetic below then ran on strings, and (lat2 - lat1) on
+    //     two strings coerces fine while Math.cos(lat1 * Math.PI / 180) does
+    //     too. It worked by accident; it is now explicit.
+    //
+    // Fixing it here also corrects the venue-page distance line, the swim
+    // lane, the search results and the per-result distance in runPlaceSearch —
+    // every caller reads this one function.
+    // ⚠️ REJECT null/undefined/'' BEFORE coercing. Number(null) is 0 and
+    // Number('') is 0 — both perfectly finite — so a bare
+    // `Number.isFinite(Number(x))` turns a genuinely missing coordinate into
+    // the equator and happily returns a distance to it. That is a worse bug
+    // than the truthiness check this replaced, because it is confidently
+    // wrong rather than silently absent.
+    const coord = v => {
+        if (v === null || v === undefined || v === '') return NaN;
+        return Number(v);
+    };
+    const a1 = coord(lat1), o1 = coord(lon1);
+    const a2 = coord(lat2), o2 = coord(lon2);
+    if (!Number.isFinite(a1) || !Number.isFinite(o1)
+        || !Number.isFinite(a2) || !Number.isFinite(o2)) return null;
+    lat1 = a1; lon1 = o1; lat2 = a2; lon2 = o2;
+
     const R = 3959; // Earth radius in miles
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -5981,11 +6568,13 @@ function openAddVenue() {
     placeResults = [];
     pendingPlace = null;
     pendingPlaceGenres = [];
+    coordlessSaveConfirmed = false;
 
     const input = document.getElementById('place-search-input');
     if (input) input.value = '';
     const results = document.getElementById('place-results');
     if (results) results.innerHTML = '';
+    document.getElementById('add-venue-manual-btn')?.classList.remove('is-prominent');
     setFormMessage('add-venue', '');
 
     showAddVenueStep('search');
@@ -6032,11 +6621,17 @@ async function runPlaceSearch(query) {
 
     if (placeResults.length === 0) {
         container.innerHTML = `<p class="place-results-status" data-i18n="social.noPlacesFound">Nothing found. Try the street name too.</p>`;
+        // The dead end this phase exists to remove. The manual button is always
+        // there; a zero-result search is the moment it stops being a quiet link
+        // and becomes the primary action.
+        document.getElementById('add-venue-manual-btn')?.classList.add('is-prominent');
         if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
             window.I18n.applyTranslations();
         }
         return;
     }
+
+    document.getElementById('add-venue-manual-btn')?.classList.remove('is-prominent');
 
     container.innerHTML = placeResults.map((place, i) => {
         const distance = userLocation
@@ -6075,16 +6670,14 @@ function choosePlace(index) {
     set('add-venue-state', place.state);
     set('add-venue-postal', place.postal_code);
     set('add-venue-country', place.country);
+    // The coordinate fields are real inputs now, and they are the ONLY thing
+    // saveNewVenue() reads — pendingPlace.lat/lng is no longer consulted. An
+    // OSM pick that skipped this would save a venue with no coordinates.
+    set('add-venue-lat', place.lat.toFixed(6));
+    set('add-venue-lng', place.lng.toFixed(6));
 
-    const coords = document.getElementById('add-venue-coords');
-    if (coords) {
-        coords.innerHTML = `
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
-            <span>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}</span>
-        `;
-    }
+    coordlessSaveConfirmed = false;
+    setCoordsStatus(`${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
 
     renderAddVenueCategoryOptions(window.VenuePlaces.guessCategory(place));
     renderAddVenueGenreChips();
@@ -6092,13 +6685,113 @@ function choosePlace(index) {
     showAddVenueStep('confirm');
 }
 
+// The second way into #add-venue-step-confirm. Deliberately NOT a third step:
+// that form already holds every column the insert writes, so a separate manual
+// form would be a second writer to keep in sync with the first.
+function startManualVenue() {
+    if (!isOwner) return;   // presentation guard; RLS is the real one
+
+    pendingPlace = null;
+    pendingPlaceGenres = [];
+    coordlessSaveConfirmed = false;
+
+    for (const id of ['add-venue-name', 'add-venue-address', 'add-venue-city',
+                      'add-venue-state', 'add-venue-postal', 'add-venue-country',
+                      'add-venue-lat', 'add-venue-lng']) {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    }
+
+    setCoordsStatus('');
+    // No `selected` argument: there is no OSM tag to guess from, so the
+    // placeholder option wins and the owner has to choose.
+    renderAddVenueCategoryOptions(null);
+    renderAddVenueGenreChips();
+    setFormMessage('add-venue', '');
+    showAddVenueStep('confirm');
+
+    const name = document.getElementById('add-venue-name');
+    if (name && !('ontouchstart' in window)) setTimeout(() => name.focus(), 50);
+}
+
+// #add-venue-coords is the status line, shared by the OSM pick and the
+// geocoder. One writer, so the two paths cannot leave contradictory text.
+function setCoordsStatus(text, kind = 'ok') {
+    const coords = document.getElementById('add-venue-coords');
+    if (!coords) return;
+
+    coords.classList.toggle('is-error', kind === 'error');
+    if (!text) {
+        coords.innerHTML = '';
+        return;
+    }
+
+    coords.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>${escapeHtml(text)}</span>
+    `;
+}
+
+// A port of app/venues.html's geocodeAddress(), onto the SAME
+// window.VenuePlaces.geocodeAddress() seam — one Nominatim client, one queue.
+// Two independent queues against a service that allows ~1 req/sec from a single
+// source is how both surfaces get rate-limited at once.
+async function geocodeVenueAddress() {
+    const parts = [
+        document.getElementById('add-venue-address')?.value,
+        document.getElementById('add-venue-city')?.value,
+        document.getElementById('add-venue-state')?.value,
+        document.getElementById('add-venue-postal')?.value,
+        document.getElementById('add-venue-country')?.value,
+    ].map(v => (v || '').trim()).filter(Boolean);
+
+    if (parts.length === 0) {
+        setCoordsStatus(translateOr('social.coordsNeedAddress', null,
+            'Enter an address or city first'), 'error');
+        return;
+    }
+
+    setSubmitting('add-venue-geocode-btn', true,
+        translateOr('social.searchingPlaces', null, 'Searching…'));
+    const result = await window.VenuePlaces.geocodeAddress(parts.join(', '));
+    setSubmitting('add-venue-geocode-btn', false);
+
+    if (!result) {
+        setCoordsStatus(translateOr('social.coordsNotFound', null,
+            'Address not found. Try adding more detail.'), 'error');
+        return;
+    }
+
+    const lat = document.getElementById('add-venue-lat');
+    const lng = document.getElementById('add-venue-lng');
+    if (lat) lat.value = result.lat.toFixed(6);
+    if (lng) lng.value = result.lng.toFixed(6);
+
+    // The owner just changed the coordinates, so a pending "save it hidden"
+    // confirmation no longer describes what the next Save would do.
+    coordlessSaveConfirmed = false;
+    setCoordsStatus(`${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}`);
+}
+
 function renderAddVenueCategoryOptions(selected) {
     const select = document.getElementById('add-venue-category');
     if (!select) return;
     const cats = window.VENUE_CATEGORIES || [];
-    select.innerHTML = cats
+    // ⚠️ An empty placeholder FIRST. Without it a manual save silently lands on
+    // whatever VENUE_CATEGORIES[0] happens to be — the owner never chose it and
+    // never saw a prompt. With it, saveNewVenue()'s existing isValidCategory
+    // guard produces "Choose a category", which is the right message.
+    const placeholder = `<option value="" ${selected ? '' : 'selected'} disabled`
+        + ` data-i18n="social.chooseCategory">Choose a category…</option>`;
+    select.innerHTML = placeholder + cats
         .map(c => `<option value="${escapeHtml(c.slug)}"${c.slug === selected ? ' selected' : ''}>${escapeHtml(c.label)}</option>`)
         .join('');
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
 }
 
 function renderAddVenueGenreChips() {
@@ -6137,8 +6830,27 @@ function slugifyVenueName(name) {
     return `${base || 'venue'}-${Date.now().toString(36)}`;
 }
 
+// Reads a coordinate input as a number, or null.
+//
+// ⚠️ Number.isFinite over the COERCED value, never a truthiness test: 0 is a
+// perfectly good latitude (the equator) and a perfectly good longitude (the
+// prime meridian, which runs through London). `if (!lat)` would reject both.
+function readCoordInput(id, max) {
+    const raw = document.getElementById(id)?.value;
+    if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    if (n < -max || n > max) return null;
+    return n;
+}
+
 async function saveNewVenue() {
-    if (!pendingPlace || !currentApp) return;
+    // ⚠️ pendingPlace is NO LONGER a gate. It is null on the manual path by
+    // definition, and the old `if (!pendingPlace) return` is precisely why
+    // "enter the details yourself" could not exist. ownerOrgId is what the
+    // insert actually needs — it is the organization_id column, and RLS tests
+    // for a membership row in it.
+    if (!currentApp || !ownerOrgId) return;
 
     const name = document.getElementById('add-venue-name')?.value.trim();
     if (!name) {
@@ -6152,6 +6864,24 @@ async function saveNewVenue() {
     // behind every pill. Fail here, where the message can say so.
     if (!isValidCategory(category)) {
         setFormMessage('add-venue', 'Choose a category');
+        return;
+    }
+
+    const latitude = readCoordInput('add-venue-lat', 90);
+    const longitude = readCoordInput('add-venue-lng', 180);
+    const hasCoords = latitude !== null && longitude !== null;
+
+    // ⚠️ HONOUR venues_active_requires_coordinates (20260823000002), do not
+    // trip it. Sending is_active:true with a null latitude is a 23514 whose
+    // message names a constraint the owner has no way to understand or fix.
+    // Instead: say what will happen, and let a second tap confirm it — the
+    // same two-choice contract app/venues.html's showCoordsRequiredModal()
+    // offers, with no new markup.
+    if (!hasCoords && !coordlessSaveConfirmed) {
+        coordlessSaveConfirmed = true;
+        setFormMessage('add-venue', translateOr('social.venueNoCoordsWarning', null,
+            'Without coordinates this venue will be hidden from the map and search. '
+            + 'Tap Save again to add it anyway, or use "Find coordinates" above.'));
         return;
     }
 
@@ -6177,9 +6907,15 @@ async function saveNewVenue() {
             city: document.getElementById('add-venue-city')?.value.trim() || null,
             state: document.getElementById('add-venue-state')?.value.trim() || null,
             postal_code: document.getElementById('add-venue-postal')?.value.trim() || null,
-            latitude: pendingPlace.lat,
-            longitude: pendingPlace.lng,
-            is_active: true,
+            // A real pre-existing bug: #add-venue-country was populated by
+            // choosePlace() and then never read, so every venue added from this
+            // sheet took the DB default 'US' — including the one in Perpignan.
+            country: document.getElementById('add-venue-country')?.value.trim() || null,
+            latitude,
+            longitude,
+            // Computed, never the literal true. See the constraint note above.
+            is_active: hasCoords,
+            created_by_user_id: currentUserId || null,
             media_count: 0
         })
         .select()
@@ -6202,20 +6938,29 @@ async function saveNewVenue() {
     // here_now is 0 for a venue nobody has posted at yet; every other column
     // comes back from .select(). Adding it locally makes it immediately
     // pickable in the composer, searchable and mapped, with no reload.
-    const created = { ...data, here_now: 0 };
-    if (usingDemoVenues) {
-        // The first real venue REPLACES the sample set. Appending would leave
-        // one real venue sitting among five fictional ones, which is worse
-        // than either state on its own.
-        venues = [created];
-        usingDemoVenues = false;
-        document.getElementById('sample-data-notice')?.remove();
-    } else {
-        venues.push(created);
+    //
+    // ⚠️ ONLY when it is active. get_venues_for_map filters on is_active, so a
+    // hidden venue pushed into the local array shows a pin and a swim-lane card
+    // that both vanish on the next reload — which reads as the save having
+    // failed after the fact.
+    if (data.is_active) {
+        const created = { ...data, here_now: 0 };
+        if (usingDemoVenues) {
+            // The first real venue REPLACES the sample set. Appending would leave
+            // one real venue sitting among five fictional ones, which is worse
+            // than either state on its own.
+            venues = [created];
+            usingDemoVenues = false;
+            document.getElementById('sample-data-notice')?.remove();
+        } else {
+            venues.push(created);
+        }
     }
 
     closeAddVenue();
-    showToast(`${name} added`);
+    showToast(data.is_active
+        ? `${name} added`
+        : translateOr('social.venueAddedHidden', null, `${name} added, hidden from the map`));
 
     refreshFilterPills();
     renderVenueSwimLane();

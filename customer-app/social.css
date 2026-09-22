@@ -361,9 +361,18 @@ body {
     display: none;
 }
 
-/* JS-generated: <article class="feed-panel"> — one Viibe, one viewport. */
+/* JS-generated: <article class="feed-panel"> — one Viibe, one viewport.
+
+   A FLEX COLUMN, not a stack of absolutely-positioned layers: an opaque venue
+   strip, the media, an opaque meta footer. Nothing sits on the video.
+
+   ⚠️ The panel is still EXACTLY ONE SCROLLER-HEIGHT — only its internals
+   changed. That is what keeps scroll-snap-align/scroll-snap-stop meaning what
+   they meant, and it is the property to re-check after any edit here. */
 .feed-panel {
     position: relative;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
     scroll-snap-align: start;
@@ -397,18 +406,30 @@ body {
     justify-content: center;
 }
 
-/* Edge to edge. object-fit: cover is what makes a portrait phone video fill a
-   portrait phone screen; a letterboxed 15-second clip is the thing this
-   replaces. */
+/* The media, as the FLEXIBLE middle of the column.
+
+   ⚠️ THIS RULE REPLACES THE `position: absolute; inset: 0` THAT USED TO BE
+   HERE. It does not sit after it. An appended rule would lose: `inset: 0` and
+   `position: absolute` would still apply from the earlier declaration, the
+   video would go back to covering the whole panel, and the strips would be
+   drawn UNDER it — a layout that looks almost right and is completely wrong.
+   If you are reading this because the strips vanished, that is what happened.
+
+   `min-height: 0` is not optional either: a flex item's default min-height is
+   auto, which refuses to shrink below the video's intrinsic height, so a tall
+   clip pushes the footer off the bottom of the panel. */
 .feed-panel .feed-media {
-    position: absolute;
-    inset: 0;
+    position: static;
+    flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
-    height: 100%;
+    height: auto;
     aspect-ratio: auto;
     background: #000;
 }
 
+/* object-fit: cover is what makes a portrait phone video fill the space it is
+   given; a letterboxed 15-second clip is the thing this replaces. */
 .feed-panel .feed-media video,
 .feed-panel .feed-media img {
     width: 100%;
@@ -416,93 +437,103 @@ body {
     object-fit: cover;
 }
 
-/* Legibility over an arbitrary video without covering it. Only the bottom
-   third is darkened, because that is where the overlay text sits. */
-.feed-panel-scrim {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.35) 0%,
-        rgba(0, 0, 0, 0) 22%,
-        rgba(0, 0, 0, 0) 45%,
-        rgba(0, 0, 0, 0.78) 100%
-    );
+/* ===== The venue strip =====
+   Opaque, above the video, carrying the VENUE's photo, name and location. This
+   is what "nothing sitting on the video itself" means. */
+.feed-panel-venue {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
 }
 
-/* The overlaid affordances. Nothing was dropped in the move to full screen —
-   identity, the "at {venue}" link, here-tonight, caption, duration, sound and
-   the 3-dots are all still here, layered instead of stacked. */
-.feed-panel-info {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: var(--spacing-md);
-    padding-right: 60px;   /* clear of .feed-panel-sound */
+.feed-panel-venue-id {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 0;             /* lets the name ellipsis rather than push */
+    cursor: pointer;
+}
+
+.feed-panel-venue-id.feed-venue-info-inert {
+    cursor: default;
+}
+
+.feed-panel-venue .venue-handle,
+.feed-panel-venue .venue-location {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===== The meta footer =====
+   Also opaque. Author byline, caption, duration, sound toggle. */
+.feed-panel-meta {
+    flex: 0 0 auto;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-xs);
-    color: #fff;
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-right: 60px;      /* clear of .feed-panel-sound */
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    /* ⚠️ A cap, so a long caption cannot eat the video it belongs to. The
+       panel is a fixed height and the media is the flexible item — without
+       this, every extra line of caption is a line taken off the clip. */
+    max-height: 26%;
+    overflow: hidden;
 }
 
 .feed-panel-more {
-    position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    z-index: 2;
-    color: #fff;
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+    flex: 0 0 auto;
+    color: var(--color-text-secondary);
 }
 
 .feed-panel-sound {
+    position: absolute;
     bottom: var(--spacing-md);
     right: var(--spacing-md);
     z-index: 2;
 }
 
-/* Colour overrides for the shared header markup, which is written for a light
-   card surface. postHeaderMarkup() is deliberately NOT forked — the venue page
-   renders the same function and must keep the light treatment. */
-.feed-panel .feed-venue-info,
-.feed-panel .venue-handle {
-    color: #fff;
-}
-
-.feed-panel .venue-location {
-    color: rgba(255, 255, 255, 0.82);
-}
-
-.feed-panel .venue-avatar {
-    background: rgba(255, 255, 255, 0.2);
-}
+/* ⚠️ THE COLOUR OVERRIDES ARE GONE, and their absence is the point.
+   There used to be ~30 lines here forcing white text, a translucent avatar and
+   ghosted genre chips onto the shared header markup, because that markup is
+   written for a light card and it was being drawn over a video. Both strips
+   are light surfaces now, so postHeaderMarkup()'s own treatment is simply
+   correct, unmodified. This is the largest net simplification in the phase —
+   re-adding any of it would mean the strips have stopped being opaque. */
 
 .feed-panel .feed-caption {
     padding: 0;
-    color: rgba(255, 255, 255, 0.95);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    /* Long captions must not push the identity block off the panel. */
-    max-height: 4.5em;
+    /* Reduced from 4.5em together with the footer cap above: at 4.5em a
+       three-line caption plus the byline already exceeds 26% on a short
+       phone, and `overflow: hidden` would clip mid-word with no sign. */
+    max-height: 3em;
     overflow: hidden;
 }
 
-/* Static in the overlay rather than absolutely positioned in the media box —
-   bottom-left down there is now occupied by the identity block. */
+/* Static in the footer rather than absolutely positioned in the media box —
+   there is nothing overlaid on the media any more. */
 .feed-panel .video-duration {
     position: static;
 }
 
-.feed-panel .genre-chip {
-    border-color: rgba(255, 255, 255, 0.35);
-    color: rgba(255, 255, 255, 0.9);
-}
+/* JS-generated: <div class="feed-card"> — MEMBER PROFILE ONLY.
+   The main feed renders .feed-panel; the VENUE PAGE renders .member-grid.
 
-/* JS-generated: <div class="feed-card"> — VENUE PAGE ONLY.
-   The main feed renders .feed-panel. Keeping the two class names apart is what
-   stops a change to the browse experience silently reshaping a venue's own
-   list of posts, which is a scrolling card list on purpose. */
+   ⚠️ This used to say "VENUE PAGE ONLY". The two surfaces swapped in Phase 4:
+   the venue page became an Instagram-style reels grid and the member profile
+   took this scrolling card list. Nothing about these rules changed — only who
+   reads them — and the separation from .feed-panel is intact and exists for
+   the same reason: a change to the full-screen browse must not silently
+   reshape one person's list of posts. */
 .feed-card {
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
@@ -2139,6 +2170,19 @@ body {
     flex-wrap: wrap;
 }
 
+/* Follower count. A sibling of .venue-page-identity, not part of it — see the
+   comment on #venue-page-followers in social.html for why. */
+.venue-page-followers {
+    padding: 0 16px 4px;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.venue-page-followers strong {
+    color: #1e293b;
+    font-weight: 700;
+}
+
 .venue-page-rating {
     display: flex;
     align-items: center;
@@ -2214,6 +2258,196 @@ body {
 /* About */
 .venue-page-about {
     padding: 0 16px 16px;
+}
+
+/* ===== Venue page collapsible sections =====
+   Vocabulary ported from customer-app/app.css's FAQ accordion and renamed.
+
+   ⚠️ display, NOT max-height. The genre block holds 19 chips that wrap to an
+   unknowable number of rows depending on locale and viewport width, so any
+   fixed max-height either clips it or animates to a guess. No transition on
+   the body for the same reason — there is nothing to animate between. */
+.venue-section {
+    border-top: 1px solid var(--color-border);
+}
+
+.venue-section:first-child {
+    border-top: none;
+}
+
+.venue-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 0;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.venue-section-chevron {
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+    transition: transform 0.2s;
+}
+
+.venue-section.open .venue-section-chevron {
+    transform: rotate(180deg);
+}
+
+.venue-section-body {
+    display: none;
+    padding-bottom: 14px;
+}
+
+.venue-section.open .venue-section-body {
+    display: block;
+}
+
+.venue-section-hint {
+    margin: 0 0 10px;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.venue-section-subhead {
+    margin: 16px 0 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+}
+
+/* Shared by the "Turn on location" button and the "Open in Maps" link, so the
+   two read as the same affordance despite being a <button> and an <a>. */
+.venue-section-action {
+    display: inline-block;
+    padding: 9px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #fff;
+    color: var(--app-primary);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Distance */
+.venue-distance-value {
+    margin: 0 0 10px;
+    font-size: 1.125rem;
+    color: var(--color-text);
+}
+
+.venue-distance-value strong {
+    font-weight: 700;
+}
+
+.venue-distance-alt {
+    margin-left: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+/* Who's here */
+.venue-crowd-count {
+    margin: 0 0 12px;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.venue-crowd-count strong {
+    margin-right: 4px;
+    font-size: 1.125rem;
+    color: var(--color-text);
+}
+
+.venue-crowd-faces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.venue-crowd-face {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--color-bg);
+}
+
+.venue-crowd-face-initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+/* ===== Gender mix bar =====
+   A two-segment flex bar. NO CHART LIBRARY — social.html ships none, and
+   ApexCharts is ~130KB into a PWA whose premise is a fast cold start.
+
+   The colours are chosen to stay distinguishable without relying on hue alone:
+   they differ in lightness as well, so the boundary is visible in greyscale and
+   under the common forms of colour-vision deficiency. The numeric legend under
+   the bar carries the same information in text, and the bar itself is
+   role="img" with an aria-label spelling out both percentages. */
+.venue-gender-mix {
+    margin-top: 4px;
+}
+
+.gender-bar {
+    display: flex;
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--color-bg);
+}
+
+.gender-bar-seg {
+    display: block;
+    height: 100%;
+}
+
+.gender-bar-female {
+    background: #7c3aed;
+}
+
+.gender-bar-male {
+    background: #0ea5e9;
+}
+
+.gender-bar-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.gender-bar-key {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+.gender-bar-key + .gender-bar-key {
+    margin-left: 10px;
 }
 
 .venue-page-description {
@@ -3651,9 +3885,11 @@ body {
     gap: var(--spacing-sm);
 }
 
-/* Read-only, because they come from the chosen OSM result. Shown rather than
-   hidden so the owner can see the venue will actually land on the map —
-   venues_active_requires_coordinates rejects an active venue without them. */
+/* The coordinate STATUS LINE. It used to be the coordinates themselves; they
+   are real inputs now, because this form is reached both by picking an OSM
+   result and by "enter the details yourself". setCoordsStatus() is the only
+   writer — shared by choosePlace() and geocodeVenueAddress() so the two paths
+   cannot leave contradictory text. Empty until one of them says something. */
 .add-venue-coords {
     display: flex;
     align-items: center;
@@ -3665,6 +3901,59 @@ body {
     font-size: 0.75rem;
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
+}
+
+.add-venue-coords:empty {
+    display: none;
+}
+
+.add-venue-coords.is-error {
+    color: var(--color-error, #dc2626);
+}
+
+.add-venue-geocode-btn {
+    width: 100%;
+    margin-bottom: var(--spacing-sm);
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #fff;
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.add-venue-geocode-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* The escape hatch out of a dead-end search. Quiet by default — it sits under
+   every result list, including a good one. .is-prominent is added by
+   runPlaceSearch() on a zero-result search and takes the same blue primary
+   treatment #search-add-venue-btn wears, so the "can't find it?" prompt and
+   the always-available link are one control rather than two. */
+.add-venue-manual-btn {
+    display: block;
+    width: 100%;
+    margin-top: var(--spacing-sm);
+    padding: 12px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--app-primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+}
+
+.add-venue-manual-btn.is-prominent {
+    background: var(--app-primary);
+    color: #fff;
+    padding: 14px;
+    font-size: 0.9375rem;
 }
 
 .place-results {
@@ -3867,19 +4156,16 @@ body {
     color: var(--app-primary);
 }
 
-/* ===== Tonight's sound (venue page) ===== */
-.venue-page-genres {
-    margin-top: var(--spacing-md);
-}
-
-.venue-page-genres-title {
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--color-text);
-}
-
+/* ===== Tonight's sound (venue page) =====
+   ⚠️ `.venue-page-genres` and `.venue-page-genres-title` were DELETED in Phase
+   4, not merely stopped being used. The block is a collapsible
+   `.venue-section[data-section="sound"]` now, and its heading is the section
+   head's own <button> — leaving two dead rules that look like the heading's
+   styling is how the next person spends an afternoon editing rules that reach
+   nothing. The hint below is still rendered inside the section body. */
 .venue-page-genres-hint {
     margin-top: 2px;
+    margin-bottom: 10px;
     font-size: 0.75rem;
     color: var(--color-text-secondary);
 }
@@ -4148,10 +4434,18 @@ body {
     min-width: 0;
 }
 
-/* ===== Member post grid ===== */
-/* A grid of poster frames, not a stack of autoplaying videos: a profile can
-   hold dozens of clips and #member-page has no IntersectionObserver of its
-   own. Tapping a tile opens the venue page when the post has one. */
+/* ===== Reels grid ===== */
+/* A grid of poster frames, not a stack of autoplaying videos: a popular venue
+   holds dozens of clips and rendering forty <video> elements that all call
+   play() is how a phone runs out of memory. Tapping a tile expands it in place
+   and hydrates exactly that one.
+
+   ⚠️ This used to belong to the MEMBER PROFILE. It is the VENUE PAGE's now —
+   #venue-page-feed wears .member-grid, and the profile renders .feed-card. The
+   class name is kept rather than renamed because the geometry is the same
+   geometry and every rule below is unchanged; renaming it would have been a
+   diff across two files that proved nothing. Both surfaces are named here so
+   the next reader is not misled the way this comment used to mislead. */
 .member-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4183,37 +4477,55 @@ body {
     bottom: 4px;
 }
 
-/* The venue a tile was shot at. It used to exist only inside the tile's
-   aria-label, which no sighted visitor ever sees.
+/* The tapped tile, expanded in place across the full grid width. `1 / -1` is
+   the whole row regardless of how many columns the grid has, so this survives
+   a future change to grid-template-columns. The aspect ratio relaxes because a
+   9:16 clip at full width would be taller than the viewport. */
+.member-grid-tile.is-expanded {
+    grid-column: 1 / -1;
+    aspect-ratio: 4 / 5;
+    cursor: default;
+}
 
-   ⚠️ ellipsis + nowrap are load-bearing, not polish. This sits in a 1/3-width
-   column on a phone — roughly 120px — and real venue names ("The Blue Room
-   Perpignan") are several times that. Without them the name wraps to three
-   lines and covers the thumbnail it is labelling. The scrim is the other half:
-   white text over a bright daytime photo is unreadable on its own. */
-.member-grid-venue {
+.member-grid-tile.is-expanded .video-sound-btn {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 12px 5px 4px;
-    font-size: 0.625rem;
+    right: 10px;
+    bottom: 10px;
+    z-index: 2;
+}
+
+/* The venue a profile card was shot at. Takes the place of the author identity
+   block the venue page's cards carried — on a profile, the author is the page
+   and the venue is the useful link. */
+.feed-card-venue-link {
+    flex: 1;
+    padding: 0;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.875rem;
     font-weight: 600;
-    line-height: 1.2;
-    color: #fff;
+    color: var(--color-text);
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
-    pointer-events: none;   /* the whole tile is the button */
+    cursor: pointer;
 }
 
-/* On a video tile the duration badge already owns the bottom-right corner
-   (see .member-grid-tile .video-duration above). Give it back. */
-.member-grid-venue.has-duration {
-    padding-right: 42px;
-}
+/* ⚠️ `.member-grid-venue` and `.member-grid-venue.has-duration` were DELETED
+   in Phase 4. The chip named the venue a tile was shot at, which mattered on
+   the member profile — a grid of one person's posts across many venues. The
+   grid belongs to the VENUE PAGE now, where every tile is the same venue and
+   the label would repeat the page header on every cell. The profile names its
+   venue in `.feed-card-venue-link` above, as a real control rather than an
+   inert overlay.
+
+   Recorded rather than silently removed because the rules carried a
+   non-obvious constraint worth not re-learning: ellipsis + nowrap were
+   load-bearing at 1/3 phone width, and the scrim existed because white text
+   over a bright daytime photo is unreadable on its own. Any future overlay
+   label on a tile needs both. */
 
 /* ===== "Been to" — venues derived from posts ===== */
 /* Rows are .people-row, shared with the people sheet (peopleRowMarkup), so the

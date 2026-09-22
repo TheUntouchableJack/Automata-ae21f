@@ -386,7 +386,7 @@ test.describe('ViibeView social app', () => {
         await loadApp(page);
         await page.waitForTimeout(2000);
 
-        const cards = page.locator('#feed-container .feed-card');
+        const cards = page.locator('#feed-container .feed-panel');
         const count = await cards.count();
         test.skip(count === 0, 'no posts in this app yet — nothing to scroll');
 
@@ -400,7 +400,7 @@ test.describe('ViibeView social app', () => {
         await expect(page.locator('.bottom-nav')).toHaveClass(/hidden/);
 
         const reach = await page.evaluate(() => {
-            const card = document.querySelector('#feed-container .feed-card');
+            const card = document.querySelector('#feed-container .feed-panel');
             const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
             const threshold = card ? card.offsetHeight : 400;
             if (maxScroll <= threshold) return { ok: false, maxScroll, threshold };
@@ -426,7 +426,7 @@ test.describe('ViibeView social app', () => {
         await loadApp(page);
         await page.waitForTimeout(2000);
 
-        const cards = page.locator('#feed-container .feed-card');
+        const cards = page.locator('#feed-container .feed-panel');
         const count = await cards.count();
         test.skip(count === 0, 'no posts in this app yet');
 
@@ -523,7 +523,7 @@ test.describe('ViibeView social app', () => {
         await loadApp(page);
         await page.waitForTimeout(2000);
 
-        const venueCards = page.locator('#feed-container .feed-card:not([data-venue-id=""])');
+        const venueCards = page.locator('#feed-container .feed-panel:not([data-venue-id=""])');
         const count = await venueCards.count();
         test.skip(count === 0, 'no venue-attached posts in this app yet');
 
@@ -546,21 +546,27 @@ test.describe('ViibeView social app', () => {
         await expect(page.locator('#venue-page')).not.toHaveClass(/visible/);
     });
 
-    test('venue page posts show who posted them', async ({ page }) => {
-        // These cards used to carry a header holding nothing but the ⋮ button:
-        // the venue page fetched its posts with a raw venue_media select that
-        // asked for no author name or avatar. get_venue_page_feed exists to
-        // supply them, and it ships without a grant footer so this works signed
-        // out — which is how it is exercised here.
+    test('the venue page renders a reels grid, and exactly one tile expands', async ({ page }) => {
+        // ⚠️ REWRITTEN IN PHASE 4. This used to assert author headers on
+        // `#venue-page-feed .feed-card`. The venue page no longer renders
+        // cards — it renders an Instagram-style grid of poster frames, and a
+        // tile has no header to attribute. The author-attribution invariant
+        // did not disappear; it moved to the MEMBER PROFILE, which is where
+        // `.feed-card` lives now.
+        //
+        // What is asserted here instead is the grid's own invariant, and it is
+        // the one a two-post tenant can still prove: tiles render media, and
+        // tapping expands EXACTLY ONE. "One at a time" is what keeps a single
+        // clip playing and is impossible to verify by eye on a short feed.
         await loadApp(page);
         await page.waitForTimeout(2000);
 
-        // ⚠️ Navigate by id, not by clicking the feed card's header. The header
-        // is author-primary when the post has an author and venue-primary when
-        // it does not, so a click path would silently depend on which shape
-        // this tenant's data happens to produce.
+        // ⚠️ Navigate by id, not by clicking a panel's header. The header is
+        // author-primary when the post has an author and venue-primary when it
+        // does not, so a click path would silently depend on which shape this
+        // tenant's data happens to produce.
         const venueId = await page.evaluate(() => {
-            const c = document.querySelector('#feed-container .feed-card:not([data-venue-id=""])');
+            const c = document.querySelector('#feed-container .feed-panel:not([data-venue-id=""])');
             return c?.getAttribute('data-venue-id') || null;
         });
         test.skip(!venueId, 'no venue-attached posts in this app yet');
@@ -569,29 +575,43 @@ test.describe('ViibeView social app', () => {
         await expect(page.locator('#venue-page')).toHaveClass(/visible/);
         await page.waitForTimeout(2500);
 
-        const posts = page.locator('#venue-page-feed .feed-card');
-        const count = await posts.count();
+        const tiles = page.locator('#venue-page-feed .member-grid-tile');
+        const count = await tiles.count();
         test.skip(count === 0, 'this venue has no approved posts');
 
-        // The invariant, asserted for EVERY card: a post whose author was
-        // recorded names them and opens their profile; a pre-UGC post, whose
-        // author never was and cannot be backfilled, keeps the old headerless
-        // card. What must not happen is a header that names nobody, or one that
-        // names someone with no way to reach them.
+        // Hide-when-empty, from the other direction: with posts, all three
+        // elements are showing. The empty case is unit-tested — a tenant with
+        // an empty venue is not something this suite can arrange.
+        await expect(page.locator('#venue-page-feed-header')).toBeVisible();
+        await expect(page.locator('#venue-page-feed-divider')).toBeVisible();
+
+        // Every tile paints something. A tile with neither an <img> nor a
+        // <video> is a black square, which is what a wrong preload looks like.
         for (let i = 0; i < count; i++) {
-            const card = posts.nth(i);
-            const info = card.locator('.feed-venue-info');
-
-            if (await info.count() === 0) {
-                await expect(card.locator('.feed-card-header-compact')).toHaveCount(1);
-                continue;
-            }
-
-            await expect(info).toHaveAttribute('onclick', /openMemberProfile/);
-            await expect(card.locator('.venue-handle')).not.toBeEmpty();
-            // No "at {venue}" line here — the whole page is already that venue.
-            await expect(card.locator('.venue-location-link')).toHaveCount(0);
+            const media = tiles.nth(i).locator('img, video');
+            expect(await media.count(), `tile ${i} rendered no media`).toBeGreaterThan(0);
         }
+
+        // Nothing is expanded until something is tapped.
+        await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(0);
+
+        await tiles.first().click();
+        await page.waitForTimeout(600);
+        await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(1);
+
+        // A second tile, when there is one, REPLACES the first rather than
+        // joining it. This is the assertion that two clips cannot play at once.
+        if (count > 1) {
+            await tiles.nth(1).click();
+            await page.waitForTimeout(600);
+            await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(1);
+        }
+
+        // Tapping the open tile closes it — otherwise the only way out is to
+        // open a different one.
+        await page.locator('#venue-page-feed .member-grid-tile.is-expanded').click();
+        await page.waitForTimeout(600);
+        await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(0);
     });
 
     test('a private profile explains itself instead of opening blank', async ({ page }) => {

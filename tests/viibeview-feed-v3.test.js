@@ -34,6 +34,57 @@ const js = fs.readFileSync(path.join(ROOT, 'customer-app/social.js'), 'utf8');
 const html = fs.readFileSync(path.join(ROOT, 'customer-app/social.html'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'customer-app/social.css'), 'utf8');
 
+/**
+ * The source of ONE top-level function, sliced to its own closing brace.
+ *
+ * ⚠️ Returns null when the signature is not found, and every caller asserts
+ * that before asserting anything about the body. A fixed byte window is the
+ * other way to do this and it has already bitten this file once: the window
+ * truncated past the line under test and the assertion failed for a reason
+ * that had nothing to do with the code.
+ *
+ * `\n}` is a safe terminator only because this file's functions are top-level
+ * and its style indents every nested brace — which is asserted by the length
+ * guard each caller applies.
+ */
+function fnBody(signature) {
+    const start = js.indexOf(signature);
+    if (start < 0) return null;
+    const rest = js.slice(start);
+    const end = rest.indexOf('\n}');
+    if (end < 0) return null;
+    return rest.slice(0, end);
+}
+
+/**
+ * fnBody with comments removed, for assertions about ABSENCE.
+ *
+ * ⚠️ This repo has been bitten by exactly this before: a test asserting that
+ * something does NOT appear matched the code's own warning saying not to add
+ * it. The only way to make such a test pass is then to DELETE THE WARNING,
+ * which is the opposite of what the test wanted. Any `.not.toContain` /
+ * `.not.toMatch` over source must run through here.
+ *
+ * TWO comment syntaxes, because this file renders markup from template
+ * literals and documents it in `<!-- -->` inside those literals — which is
+ * source to a `.not.toContain` and prose to a human. Both were caught here:
+ * the JS one by the venue grid's "NOT called here" note, the HTML one by
+ * renderFeedCard's "the scrim and .feed-panel-info are gone".
+ *
+ * Whole-line JS comments only. An inline trailing `//` is left alone on
+ * purpose — stripping it needs a string/regex-literal parser, and getting THAT
+ * wrong silently removes real code from the text under test.
+ */
+function fnCode(signature) {
+    const body = fnBody(signature);
+    if (body === null) return null;
+    return body
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .split('\n')
+        .filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l))
+        .join('\n');
+}
+
 /** Same parser as viibeview-follows.test.js — see that file's header. */
 function returnsTableOf(sql, fnName) {
     const start = sql.search(
@@ -393,20 +444,127 @@ describe('full-screen feed (#3, #4, #12)', () => {
         expect(js).not.toMatch(/window\.scrollTo\(\{ top: 0, behavior: 'smooth' \}\)/);
     });
 
-    it('no affordance was lost in the re-layout', () => {
-        const fn = js.slice(js.indexOf('function renderFeedCard(item)'));
-        const panel = fn.slice(0, 3000);
+    it('no affordance was lost in EITHER re-layout', () => {
+        // ⚠️ This list is the guard against a layout change quietly dropping
+        // the sound toggle or the here-tonight badge. Phase 5 moved the chrome
+        // off the video and into two opaque strips — items may MOVE between
+        // renderFeedCard and venueStripMarkup, but nothing may leave.
+        //
+        // Both functions are searched together, because that is the honest
+        // boundary now: the panel is what the two of them render jointly.
+        const card = fnBody('function renderFeedCard(item)');
+        const strip = fnBody('function venueStripMarkup(item, identity)');
+        expect(card, 'renderFeedCard not found').toBeTruthy();
+        expect(strip, 'venueStripMarkup not found').toBeTruthy();
+        const panel = card + '\n' + strip;
+
+        // ⚠️ The strip's CALL is asserted against renderFeedCard alone, before
+        // the two are concatenated. In the combined text `venueStripMarkup(`
+        // is satisfied by the function's own DEFINITION — a mutation deleting
+        // the call from renderFeedCard left the suite green, with the panel
+        // rendering a bare video and no venue at all.
+        expect(card, 'renderFeedCard no longer renders the venue strip')
+            .toMatch(/\$\{venueStripMarkup\(item, identity\)\}/);
+
         for (const affordance of [
-            'postHeaderMarkup(identity)',   // author + "at {venue}" link
+            // ⚠️ `{ showVenue: false }` now, not the bare call. The strip above
+            // the video IS the venue, so the "at {venue}" subtitle would repeat
+            // it two elements later. This is the same flag the venue page has
+            // always passed — postHeaderMarkup itself is NOT forked.
+            'postHeaderMarkup(identity, { showVenue: false })',
+            'venueStripMarkup(',            // the venue strip (new)
             'showPostOptions(',             // 3-dots
             'toggleFeedSound(',             // sound
             'toggleVideoPlay(this)',        // play/pause
             'formatDuration(',              // duration pill
-            'hereNowBadge(venue)',          // here tonight (new)
+            'hereNowBadge(venue)',          // here tonight
             'feed-caption'                  // caption
         ]) {
             expect(panel, `the full-screen panel dropped ${affordance}`).toContain(affordance);
         }
+    });
+
+    it('⚠️ Phase 5: nothing is overlaid on the video any more', () => {
+        const card = fnBody('function renderFeedCard(item)');
+        expect(card, 'renderFeedCard not found').toBeTruthy();
+
+        // The two opaque strips exist...
+        expect(card).toContain('feed-panel-meta');
+        expect(fnBody('function venueStripMarkup(item, identity)')).toContain('feed-panel-venue');
+
+        // ...and the two overlay elements are gone. fnCode, not fnBody:
+        // renderFeedCard's own comment says "The scrim and .feed-panel-info are
+        // gone", so asserting absence over the raw body would fail against
+        // correct code and the only fix would be deleting the explanation.
+        const code = fnCode('function renderFeedCard(item)');
+        expect(code, 'the scrim is back').not.toContain('feed-panel-scrim');
+        expect(code, 'the overlay info block is back').not.toContain('feed-panel-info');
+
+        // CSS: the single most dangerous line in the phase. `position:absolute;
+        // inset:0` on .feed-panel .feed-media must have been REPLACED, not
+        // appended to — an appended rule loses and the video covers the strips.
+        const mediaRule = css.slice(css.indexOf('.feed-panel .feed-media {'));
+        const block = mediaRule.slice(0, mediaRule.indexOf('}'));
+        expect(block).toContain('position: static');
+        expect(block).toContain('flex: 1 1 auto');
+        // min-height:0 — without it a tall clip refuses to shrink and pushes
+        // the footer off the bottom of the panel.
+        expect(block).toContain('min-height: 0');
+        expect(block, 'the absolute-positioning rule survived').not.toContain('inset: 0');
+
+        // Exactly ONE `.feed-panel .feed-media {` rule, so there is no second
+        // declaration further down the file quietly restoring the old one.
+        expect(css.split('.feed-panel .feed-media {').length - 1).toBe(1);
+
+        // .feed-panel is a flex column.
+        const panelRule = css.slice(css.indexOf('\n.feed-panel {'));
+        const panelBlock = panelRule.slice(0, panelRule.indexOf('}'));
+        expect(panelBlock).toContain('display: flex');
+        expect(panelBlock).toContain('flex-direction: column');
+        // ...and snap survived. The panel is still exactly one scroller-height.
+        expect(panelBlock).toContain('scroll-snap-align: start');
+        expect(panelBlock).toContain('scroll-snap-stop: always');
+        expect(panelBlock).toContain('height: 100%');
+    });
+
+    it('⚠️ postHeaderMarkup itself was NOT forked for the feed', () => {
+        // The strip is venue-primary, which inverts postHeaderMarkup's
+        // author-first logic — and the inversion is forked at the CALL SITE,
+        // in venueStripMarkup. Adding a mode to the shared function would make
+        // a browse change reshape the member profile, which renders it too.
+        const fn = fnBody('function postHeaderMarkup(identity, { showVenue = true } = {})');
+        expect(fn, 'postHeaderMarkup signature changed').toBeTruthy();
+        // The default is still true — the member profile relies on it.
+        expect(fn).toContain('showVenue = true');
+    });
+
+    it('an unattached Viibe falls back to the author, not an empty white bar', () => {
+        // venue_id is nullable. A strip rendered from nothing is a blank
+        // surface above the video — worse than the overlay it replaced.
+        const strip = fnBody('function venueStripMarkup(item, identity)');
+        expect(strip, 'venueStripMarkup not found').toBeTruthy();
+        expect(strip).toMatch(/const hasVenue = !!\(item\.venue_id && name\)/);
+        expect(strip).toMatch(/hasVenue \? name : identity\.title/);
+        expect(strip).toMatch(/hasVenue \? item\.venue_profile_image_url : identity\.imageUrl/);
+    });
+
+    it('the light-on-dark colour overrides are GONE, not merely unused', () => {
+        // ~30 lines forcing white text onto the shared header markup existed
+        // only because that markup was drawn over a video. Both strips are
+        // light surfaces now. Leaving the overrides in place would paint white
+        // text on a white strip — invisible, with nothing in the console.
+        const panelCss = css.slice(css.indexOf('\n.feed-panel {'), css.indexOf('.feed-card {'));
+        expect(panelCss.length, 'the .feed-panel CSS block was not found').toBeGreaterThan(500);
+        expect(panelCss).not.toMatch(/\.feed-panel \.venue-handle \{[^}]*color: #fff/);
+        expect(panelCss).not.toMatch(/\.feed-panel-scrim \{/);
+        expect(panelCss).not.toMatch(/\.feed-panel-info \{/);
+    });
+
+    it('a long caption cannot eat the video', () => {
+        const metaRule = css.slice(css.indexOf('.feed-panel-meta {'));
+        expect(metaRule.slice(0, metaRule.indexOf('}'))).toContain('max-height: 26%');
+        const capRule = css.slice(css.indexOf('.feed-panel .feed-caption {'));
+        expect(capRule.slice(0, capRule.indexOf('}'))).toContain('max-height: 3em');
     });
 
     it('the photo branch survives as the rollback path', () => {
@@ -415,9 +573,28 @@ describe('full-screen feed (#3, #4, #12)', () => {
         expect(fn.slice(0, 3000)).toMatch(/<img src="\$\{escapeHtml\(item\.url\)\}"/);
     });
 
-    it('the venue page keeps .feed-card and is untouched', () => {
+    it('⚠️ the two surfaces INVERTED in Phase 4, and did not merge', () => {
+        // The venue page renders the reels grid; the MEMBER PROFILE renders
+        // .feed-card. Both classes still exist and neither surface renders
+        // both — the separation from .feed-panel is what stops a browse change
+        // reshaping someone's own list of posts, and it survived the swap.
         expect(js).toMatch(/<div class="feed-card" data-media-id=/);
         expect(css).toMatch(/^\.feed-card \{/m);
+
+        const grid = fnBody('function renderVenuePageGrid()');
+        expect(grid, 'renderVenuePageGrid not found').toBeTruthy();
+        expect(grid).toContain('member-grid-tile');
+        expect(grid, 'the venue page is still rendering the old card stack')
+            .not.toContain('class="feed-card"');
+
+        const list = fnBody('function renderMemberList()');
+        expect(list, 'renderMemberList not found').toBeTruthy();
+        expect(list).toContain('class="feed-card"');
+        expect(list, 'the member profile is still rendering the old tile grid')
+            .not.toContain('member-grid-tile');
+
+        // ...and #venue-page-feed wears the grid geometry in the markup.
+        expect(html).toMatch(/class="venue-page-feed member-grid" id="venue-page-feed"/);
     });
 
     it('the sound toggle resolves both the panel and the venue-page shapes', () => {
@@ -449,29 +626,25 @@ describe('video performance (#9)', () => {
         expect(fn.slice(0, 2600)).toMatch(/hydrateVideosAround\(0\);/);
     });
 
-    it('the VENUE PAGE grid is lazy too, and its observer hydrates', () => {
+    it('the MEMBER PROFILE list is lazy, and its observer hydrates', () => {
         // ⚠️ Prod holds ONE post on the one venue, so a browser walkthrough
         // cannot tell "seeds the first card" from "hydrates every card" — both
         // look like one loaded video. Pinned here instead.
         //
-        // This grid renders every post a venue has with no limit. It used to
-        // carry a plain src at preload="metadata", i.e. a connection per card
-        // on first paint.
-        const render = js.slice(js.indexOf('<div class="feed-card"'));
-        expect(render.length, 'venue page card markup not found').toBeGreaterThan(500);
-        const card = render.slice(0, 1800);
-        expect(card).toMatch(/<video data-src="\$\{escapeHtml\(item\.url\)\}"/);
-        expect(card).toMatch(/preload="\$\{videoPreloadMode\(item\)\}"/);
+        // Phase 4 moved this list from the venue page to the profile. The risk
+        // MOVED WITH IT and did not shrink: a profile renders every post a
+        // member has with no limit, and a plain src at preload="metadata" is a
+        // connection per card on first paint.
+        const list = fnBody('function renderMemberList()');
+        expect(list, 'renderMemberList not found').toBeTruthy();
+        expect(list.length, 'renderMemberList body is suspiciously short').toBeGreaterThan(500);
+        expect(list).toMatch(/<video data-src="\$\{escapeHtml\(post\.url\)\}"/);
+        expect(list).toMatch(/preload="\$\{videoPreloadMode\(post\)\}"/);
+        expect(list, 'the profile list lost its observer').toMatch(/setupVideoObserverIn\(list\)/);
 
-        // Slice to the function's own closing brace rather than a byte count —
-        // a fixed window silently truncated past the seed line and the
-        // assertion below failed for the wrong reason.
-        const fnStart = js.indexOf('function setupVideoObserverIn(container)');
-        expect(fnStart, 'setupVideoObserverIn not found').toBeGreaterThan(-1);
-        const fn = js.slice(fnStart);
-        const end = fn.indexOf('\n}');
-        expect(end, 'setupVideoObserverIn is unterminated').toBeGreaterThan(500);
-        const body = fn.slice(0, end);
+        const body = fnBody('function setupVideoObserverIn(container)');
+        expect(body, 'setupVideoObserverIn not found').toBeTruthy();
+        expect(body.length, 'setupVideoObserverIn is unterminated').toBeGreaterThan(500);
 
         // play() on a data-src-only element rejects — the card would stay a
         // poster forever, silently.
@@ -479,11 +652,45 @@ describe('video performance (#9)', () => {
 
         // ⚠️ And the synchronous seed, for the same reason hydrateVideosAround(0)
         // exists on the main feed: an observer that never fires would leave the
-        // whole grid black with nothing in the console.
+        // whole list black with nothing in the console.
         expect(body).toMatch(/querySelector\('\.feed-media video\[data-src\]'\)/);
         // querySelector, NOT querySelectorAll — seeding all of them is exactly
         // the cost this change removes.
         expect(body).not.toMatch(/querySelectorAll\('\.feed-media video\[data-src\]'\)/);
+    });
+
+    it('⚠️ the VENUE PAGE grid has NO observer and NO autoplay', () => {
+        // 40 autoplaying tiles OOM a phone. This is the assertion the plan
+        // called for and the one a browser pass on a two-post tenant can never
+        // make: every tile there is visible at once, so "the grid autoplays
+        // everything" and "the grid autoplays the one post" look identical.
+        const grid = fnBody('function renderVenuePageGrid()');
+        expect(grid, 'renderVenuePageGrid not found').toBeTruthy();
+        expect(grid.length, 'renderVenuePageGrid body is suspiciously short').toBeGreaterThan(500);
+
+        // ⚠️ fnCode, not fnBody. renderVenuePageGrid's own header comment says
+        // "setupVideoObserverIn() is deliberately NOT called here" — asserting
+        // absence over the raw body fails against CORRECT code, and the only
+        // way to go green would be to delete the warning.
+        const code = fnCode('function renderVenuePageGrid()');
+        expect(code, 'the venue grid attached the lazy-autoplay observer')
+            .not.toContain('setupVideoObserverIn');
+        expect(code, 'the venue grid autoplays').not.toMatch(/\.play\(\)/);
+
+        // A collapsed tile is a poster, not a video element. The <img> branch
+        // has to be there or the "no autoplay" assertion above is satisfied by
+        // markup that still holds 40 <video> elements.
+        expect(grid).toMatch(/<img src="\$\{escapeHtml\(item\.thumbnail_url\)\}"[^>]*loading="lazy"/);
+
+        // ⚠️ ...and preload="metadata" for the legacy rows whose thumbnail_url
+        // is NULL and can never be backfilled. "none" paints those solid black.
+        expect(grid).toMatch(/preload="metadata"/);
+
+        // Hydration happens on tap, in its own function, and nowhere else.
+        const tap = fnBody('function hydrateExpandedVenuePost()');
+        expect(tap, 'hydrateExpandedVenuePost not found').toBeTruthy();
+        expect(tap).toMatch(/ensureVideoSrc\(video\)/);
+        expect(tap).toMatch(/applySoundState\(video\)/);
     });
 
     it('tapping a panel hydrates it even outside the window', () => {
@@ -600,22 +807,26 @@ describe('interruption handling (#11)', () => {
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=19');
+        expect(html).toContain('/customer-app/social.js?v=20');
         expect(html).toContain('/customer-app/social-auth.js?v=4');
-        expect(html).toContain('/customer-app/social.css?v=14');
+        expect(html).toContain('/customer-app/social.css?v=15');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v14'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v14'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v14'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v15'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v15'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v15'");
+        // ...and the generation carries its own dated rationale, in the style
+        // every previous one does. A bump with no note is a bump nobody can
+        // later tell was mandatory or cosmetic.
+        expect(sw).toMatch(/\/\/ v15 \(2026-09-22\):/);
     });
 
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 15;');
-        expect(html).toContain('/i18n/i18n.js?v=4');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 16;');
+        expect(html).toContain('/i18n/i18n.js?v=5');
     });
 
     it('supabase-js is pinned, not floating on a major', () => {
@@ -644,7 +855,14 @@ describe('release plumbing', () => {
 
     it('the new migrations do not reuse an existing number', () => {
         const files = fs.readdirSync(MIGRATIONS).filter(f => f.endsWith('.sql'));
-        for (const stamp of ['20260907000001', '20260907000002']) {
+        for (const stamp of [
+            '20260907000001', '20260907000002',
+            // The 2026-09-22 batch. One file per stamp — two files sharing one
+            // would apply in an order the filesystem decides, and 000004
+            // references a column 000003 creates.
+            '20260922000001', '20260922000002', '20260922000003',
+            '20260922000004', '20260922000005',
+        ]) {
             expect(files.filter(f => f.startsWith(stamp)).length,
                 `${stamp} is claimed by more than one file`).toBe(1);
         }
