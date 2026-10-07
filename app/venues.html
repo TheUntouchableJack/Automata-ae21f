@@ -486,6 +486,55 @@
             background: rgba(239, 68, 68, 0.06);
         }
 
+        .member-remove-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Venue owners (edit modal). Rows reuse the Members tab's
+           .member-name / .member-email / .member-remove-btn. */
+        .venue-owners-list {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .venue-owners-list:empty {
+            display: none;
+        }
+
+        .venue-owner-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--color-border-light);
+        }
+
+        .venue-owner-row:last-child {
+            border-bottom: none;
+        }
+
+        .venue-owner-who {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .venue-owner-add {
+            display: flex;
+            gap: 8px;
+        }
+
+        .venue-owner-add input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .venue-owner-add .btn {
+            flex-shrink: 0;
+            padding: 0 16px;
+        }
+
         .venue-card-meta {
             display: flex;
             justify-content: space-between;
@@ -1441,6 +1490,27 @@
                         </label>
                     </div>
                 </form>
+
+                <!-- Venue owners. Edit mode only: a venue being created has no
+                     id to attach an owner to. Outside #venue-form on purpose —
+                     add/remove save immediately through their own RPCs, so Enter
+                     in the email box must not submit the venue form, and these
+                     buttons must not count as its submit. -->
+                <div id="venue-owners-section" style="display: none;">
+                    <div class="form-section-title" data-i18n="venues.ownersTitle">Venue owners</div>
+                    <div class="form-group">
+                        <div class="hint" style="margin: 0 0 12px;" data-i18n="venues.ownersHelp">Owners can delete posts at this venue and add flyers from the ViibeView app.</div>
+                        <div class="venue-owners-list" id="venue-owners-list"></div>
+                        <div class="hint" id="venue-owners-empty" style="display: none; margin: 0;" data-i18n="venues.ownersEmpty">No owners yet.</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="venue-owner-email" data-i18n="venues.ownersEmailLabel">Add an owner by email</label>
+                        <div class="venue-owner-add">
+                            <input type="email" id="venue-owner-email" placeholder="name@example.com" autocomplete="off" spellcheck="false">
+                            <button type="button" class="btn btn-secondary" id="venue-owner-add-btn" onclick="addVenueOwner()" data-i18n="venues.ownersAdd">Add owner</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeVenueModal()">Cancel</button>
@@ -1547,6 +1617,11 @@
     let memberSearchQuery = '';
     let membersLoaded = false;
     let editingVenueId = null;
+    // Bumped by every owners load and by closing the modal. A list_venue_owners
+    // response paints only if it is still the latest request AND the modal is
+    // still on the venue it asked about — switching venues mid-flight must not
+    // show venue A's owners under venue B's name.
+    let venueOwnersRequestSeq = 0;
     let mediaVenueId = null;
     let selectedMediaFile = null;
     let pendingProfileImage = null;
@@ -2092,6 +2167,21 @@
         // Media file handler
         document.getElementById('media-file-input').addEventListener('change', handleMediaFileSelect);
 
+        // Venue owners: Enter in the email box adds (the section sits outside
+        // #venue-form, so Enter would otherwise do nothing), and Remove is
+        // delegated on the list, which is repainted on every load.
+        document.getElementById('venue-owner-email').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addVenueOwner();
+            }
+        });
+        document.getElementById('venue-owners-list').addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-owner-index]');
+            if (!btn || btn.disabled) return;
+            removeVenueOwner(venueOwnersShown[Number(btn.dataset.ownerIndex)], btn);
+        });
+
         // Close dropdowns on outside click
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.venue-card-menu')) {
@@ -2179,11 +2269,27 @@
         populateHoursForm(editingVenueOriginalHours);
         renderGenreOptions();
 
+        // Venue owners: edit mode only. Cleared first so the previous venue's
+        // list never shows while this one loads.
+        const ownersSection = document.getElementById('venue-owners-section');
+        document.getElementById('venue-owners-list').innerHTML = '';
+        document.getElementById('venue-owners-empty').style.display = 'none';
+        document.getElementById('venue-owner-email').value = '';
+        document.getElementById('venue-owner-add-btn').disabled = false;
+        if (venue) {
+            ownersSection.style.display = '';
+            loadVenueOwners(venue.id);
+        } else {
+            ownersSection.style.display = 'none';
+            venueOwnersRequestSeq++;
+        }
+
         modal.classList.add('active');
     }
 
     function closeVenueModal() {
         document.getElementById('venue-modal').classList.remove('active');
+        venueOwnersRequestSeq++;
         editingVenueId = null;
         pendingProfileImage = null;
         pendingCoverImage = null;
@@ -2202,6 +2308,123 @@
 
         const venue = allVenues.find(v => v.id === venueId);
         if (venue) openVenueModal(venue);
+    }
+
+    // ===== Venue owners (edit modal) =====
+    //
+    // A venue owner is a ViibeView account that can delete posts at ONE venue
+    // and add flyers to it from the app (20261006000001). Only org members can
+    // list, add or remove them; the RPCs RAISE with user-facing text, so
+    // error.message is shown as-is.
+
+    // The rows currently painted, so a Remove click (delegated on the list,
+    // bound once in setupEventListeners) can find its owner by index.
+    let venueOwnersShown = [];
+
+    function venueOwnerName(o) {
+        return o.display_name
+            || [o.first_name, o.last_name].filter(Boolean).join(' ')
+            || o.email
+            || '';
+    }
+
+    async function loadVenueOwners(venueId) {
+        if (!venueId) return;
+        const seq = ++venueOwnersRequestSeq;
+
+        const { data, error } = await supabase.rpc('list_venue_owners', { p_venue_id: venueId });
+
+        // Stale: another load started, the modal closed, or it switched venues.
+        if (seq !== venueOwnersRequestSeq || editingVenueId !== venueId) return;
+
+        if (error) {
+            console.error('Failed to load venue owners:', error);
+            showToast(error.message || AppUtils.tr('venues.ownersLoadFailed', 'Could not load owners'), 'error');
+            return;
+        }
+
+        renderVenueOwners(data || []);
+    }
+
+    function renderVenueOwners(owners) {
+        const list = document.getElementById('venue-owners-list');
+        const empty = document.getElementById('venue-owners-empty');
+        venueOwnersShown = owners;
+
+        empty.style.display = owners.length ? 'none' : '';
+        const removeLabel = AppUtils.escapeHtml(AppUtils.tr('venues.ownersRemove', 'Remove'));
+
+        list.innerHTML = owners.map((o, i) => {
+            const name = venueOwnerName(o);
+            // When the name fell back to the email, don't print it twice.
+            const emailLine = o.email && o.email !== name
+                ? `<div class="member-email">${AppUtils.escapeHtml(o.email)}</div>`
+                : '';
+            return `
+                <div class="venue-owner-row">
+                    <div class="venue-owner-who">
+                        <div class="member-name">${AppUtils.escapeHtml(name)}</div>
+                        ${emailLine}
+                    </div>
+                    <button type="button" class="member-remove-btn" data-owner-index="${i}">${removeLabel}</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function addVenueOwner() {
+        const venueId = editingVenueId;
+        if (!venueId) return;
+
+        const input = document.getElementById('venue-owner-email');
+        const btn = document.getElementById('venue-owner-add-btn');
+        if (btn.disabled) return; // an add is already in flight (Enter twice)
+        const email = input.value.trim();
+        if (!email) {
+            showToast(AppUtils.tr('venues.ownersEmailRequired', 'Enter an email address'), 'error');
+            input.focus();
+            return;
+        }
+
+        btn.disabled = true;
+        try {
+            const { error } = await supabase.rpc('add_venue_owner', { p_venue_id: venueId, p_email: email });
+            if (error) {
+                showToast(error.message || AppUtils.tr('venues.ownersAddFailed', 'Could not add owner'), 'error');
+                return;
+            }
+            showToast(AppUtils.tr('venues.ownersAdded', 'Owner added'), 'success');
+            // The add landed on venueId whatever the modal shows now; only
+            // touch the form if it is still that venue.
+            if (editingVenueId === venueId) {
+                input.value = '';
+                await loadVenueOwners(venueId);
+            }
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function removeVenueOwner(owner, btn) {
+        const venueId = editingVenueId;
+        if (!venueId || !owner) return;
+
+        const name = venueOwnerName(owner);
+        if (!confirm(AppUtils.tr(
+            'venues.ownersRemoveConfirm',
+            'Remove {name} as an owner of this venue? They will no longer be able to delete posts or add flyers here.',
+            { name }
+        ))) return;
+
+        if (btn) btn.disabled = true;
+        const { error } = await supabase.rpc('remove_venue_owner', { p_venue_id: venueId, p_user_id: owner.user_id });
+        if (error) {
+            if (btn) btn.disabled = false;
+            showToast(error.message || AppUtils.tr('venues.ownersRemoveFailed', 'Could not remove owner'), 'error');
+            return;
+        }
+        showToast(AppUtils.tr('venues.ownersRemoved', 'Owner removed'), 'success');
+        if (editingVenueId === venueId) await loadVenueOwners(venueId);
     }
 
     // ===== Hours editor =====
@@ -2937,7 +3160,9 @@
                     media_type: isVideo ? 'video' : 'image',
                     caption: document.getElementById('media-caption').value.trim() || null,
                     status: 'approved',
-                    storage_path: path
+                    storage_path: path,
+                    // Dashboard images are venue flyers: they pin to the top of the venue page and never expire.
+                    ...(isVideo ? {} : { is_flyer: true, is_permanent: true })
                 });
 
             if (insertError) throw insertError;

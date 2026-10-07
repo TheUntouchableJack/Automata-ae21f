@@ -526,7 +526,9 @@
             const q = new URLSearchParams(window.location.search);
             RECOVERY_PARAMS.forEach(k => q.delete(k));
             const search = q.toString();
-            history.replaceState(null, '', window.location.pathname + (search ? `?${search}` : ''));
+            // history.state passed through: social.js keeps its back-button
+            // guard marker there.
+            history.replaceState(history.state, '', window.location.pathname + (search ? `?${search}` : ''));
         } catch (e) {
             // replaceState is unavailable in a few embedded webviews. The URL
             // staying dirty is cosmetic; failing the recovery over it is not.

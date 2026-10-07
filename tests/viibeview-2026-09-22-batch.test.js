@@ -14,6 +14,13 @@
  * two posts, so anything asserted against live data here would be trivially
  * true. These pin the things a two-post tenant CANNOT demonstrate.
  *
+ * ⚠️ 2026-10-06: these assertions read the 2026-09-22 FILES. Four of the
+ * functions they cover were re-created since (get_venue_feed_v3,
+ * get_following_feed_v3, get_venue_page_feed, get_recent_post_pins — the 7am
+ * reset in 20261006000003). The LIVE definitions — what prod actually runs —
+ * are asserted in viibeview-2026-10-06-batch.test.js via latestDefinition().
+ * A green run here proves the history, not the present.
+ *
  * ⚠️ EVERY BLOCK OPENS WITH A NON-EMPTINESS GUARD. A slice that finds nothing
  * makes every not.toContain() below it pass, which is the failure mode this
  * repo has been bitten by more than once.

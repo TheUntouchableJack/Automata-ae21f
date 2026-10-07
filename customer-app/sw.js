@@ -37,6 +37,19 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v16 (2026-10-06): Jay's 15-item round — five tabs (Feed, Map, Search, Me,
+// Settings), back-button navigation, the 7am feed reset, venue owners and
+// flyers, phone-only 9:16 recording, the photo onboarding. social.html now
+// loads social.js?v=21, social.css?v=16, social-auth.js?v=5 and i18n.js?v=6.
+//
+// Mandatory in both pairings:
+//   - cached v15 social.html has #tab-profile and four nav items; new social.js
+//     builds the Me tab into #tab-me, which does not exist there, and binds
+//     the Settings listeners to ids the old tab still has — a half-wired app.
+//   - new social.html against cached v15 social.js has a nav item for "me"
+//     and "settings" that switchTab() knows nothing about, so two of the five
+//     tabs open to a blank screen.
+//
 // v15 (2026-09-22): the five-phase ViibeView batch — Follow fixes, manual venue
 // entry, post permanence, the venue page rebuild and the feed header strip.
 // social.html now loads social.js?v=20, social.css?v=15 and i18n.js?v=5.
@@ -82,9 +95,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v15';
-const STATIC_CACHE = 'royalty-static-v15';
-const DYNAMIC_CACHE = 'royalty-dynamic-v15';
+const CACHE_NAME = 'royalty-rewards-v16';
+const STATIC_CACHE = 'royalty-static-v16';
+const DYNAMIC_CACHE = 'royalty-dynamic-v16';
 
 // Static assets to cache on install.
 //

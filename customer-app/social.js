@@ -92,6 +92,10 @@ let selectedVenueId = null;
 let searchTimeout = null;
 let isOwner = false;
 let ownerOrgId = null;
+// Venues the signed-in user OWNS (venue_owners, assigned from the dashboard).
+// An owner may delete posts at that venue and add flyers to it — nothing else.
+// Presentation only: delete_social_post and add_venue_flyer re-check in SQL.
+let ownedVenueIds = new Set();
 let selectedPostFile = null;
 let cameraStream = null;
 let mediaRecorder = null;
@@ -865,30 +869,71 @@ function setOnboardingIndex(index, { scroll = true } = {}) {
     const next = document.getElementById('onboarding-next');
     if (next) {
         const last = onboardingIndex === ONBOARDING_PANELS - 1;
-        next.setAttribute('data-i18n', last ? 'social.obDone' : 'social.obNext');
-        next.textContent = last ? 'Show me' : 'Next';
+        next.setAttribute('data-i18n', last ? 'social.obDone' : 'social.obContinue');
+        next.textContent = last ? 'Show me' : 'Continue';
     }
+
+    // The back chevron, from panel 2 on.
+    const back = document.getElementById('onboarding-back');
+    if (back) back.style.visibility = onboardingIndex > 0 ? 'visible' : 'hidden';
+
+    // The picker panel is dark, not a photo; the overlay tracks which it is on.
+    document.getElementById('onboarding-overlay')
+        ?.classList.toggle('on-picker', onboardingIndex === ONBOARDING_PANELS - 1);
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
     }
 }
 
-// ⚠️ This owns its own listeners rather than waiting for setupEventListeners(),
-// which runs at the END of init() behind four awaits. Wiring them there would
-// leave Skip and Next dead for as long as the venue and feed queries take —
-// on a slow connection, the entire time the intro is on screen.
+// First open on this device: show the intro once.
 function maybeShowOnboarding() {
     if (hasOnboarded()) return;
+    showOnboarding();
+}
+
+// The onboarding photos (Jay's design) are exported from Figma into
+// customer-app/img/onboarding/{1,2,3}.jpg. Until they exist the panels show a
+// solid --app-secondary background — flip this to true in the same deploy
+// that adds the files, or every first open logs three 404s.
+const ONBOARDING_PHOTOS_READY = false;
+
+let onboardingWired = false;
+
+/**
+ * Shows the intro. `force` skips the per-device flag: a NEW ACCOUNT always
+ * sees it, even on a browser that dismissed it before (Jay, 2026-10-06 — a
+ * fresh signup on Tester 1's phone got no onboarding at all, because
+ * viibeview_onboarded_v1 is per-browser and signup never looked again).
+ *
+ * ⚠️ This owns its own listeners rather than waiting for setupEventListeners(),
+ * which runs at the END of init() behind four awaits. Wiring them there would
+ * leave Skip and Next dead for as long as the venue and feed queries take —
+ * on a slow connection, the entire time the intro is on screen. They are wired
+ * ONCE: a forced second showing must not double every handler.
+ */
+function showOnboarding({ force = false } = {}) {
+    if (!force && hasOnboarded()) return;
 
     const overlay = document.getElementById('onboarding-overlay');
     const track = document.getElementById('onboarding-track');
     if (!overlay || !track) return;
+    if (overlay.classList.contains('visible')) return;
+
+    if (ONBOARDING_PHOTOS_READY) {
+        overlay.querySelectorAll('[data-ob-photo]').forEach(panel => {
+            panel.style.backgroundImage = `url('${panel.dataset.obPhoto}')`;
+        });
+    }
 
     renderOnboardingChips();
     overlay.classList.add('visible');
     lockBodyScroll('onboarding');
+    track.scrollLeft = 0;
     setOnboardingIndex(0, { scroll: false });
+
+    if (onboardingWired) return;
+    onboardingWired = true;
 
     document.getElementById('onboarding-skip')
         ?.addEventListener('click', () => finishOnboarding());
@@ -896,6 +941,10 @@ function maybeShowOnboarding() {
     document.getElementById('onboarding-next')?.addEventListener('click', () => {
         if (onboardingIndex >= ONBOARDING_PANELS - 1) finishOnboarding();
         else setOnboardingIndex(onboardingIndex + 1);
+    });
+
+    document.getElementById('onboarding-back')?.addEventListener('click', () => {
+        if (onboardingIndex > 0) setOnboardingIndex(onboardingIndex - 1);
     });
 
     // Delegated: the chips are re-rendered on every tap.
@@ -1064,7 +1113,7 @@ async function handleLogout() {
     window.location.reload();
 }
 
-// Swaps the Profile tab between its signed-out invitation and the real card.
+// Swaps the Settings tab between its signed-out invitation and the real card.
 // Browsing is deliberately anonymous — an account is only needed to post,
 // follow, or keep a profile — so this is a prompt, never a wall.
 async function renderProfileIdentity() {
@@ -1115,24 +1164,12 @@ async function renderProfileIdentity() {
             : avatarEl.dataset.placeholder;
     }
 
-    // Counts come from get_member_profile, which computes them rather than
-    // reading a stored column — see migration 20260903000001 §4 for why there
-    // is no counter. A failure here must not blank the whole tab, so the row
-    // simply keeps its zeros.
-    const userId = session.user?.id;
-    if (userId && currentApp) {
-        const { data } = await supabaseClient.rpc('get_member_profile', {
-            p_app_id: currentApp.id,
-            p_user_id: userId
-        });
-        const profile = Array.isArray(data) ? data[0] : data;
-        if (profile) {
-            const followers = document.getElementById('profile-followers-count');
-            const following = document.getElementById('profile-following-count');
-            if (followers) followers.textContent = profile.follower_count ?? 0;
-            if (following) following.textContent = profile.following_count ?? 0;
-        }
-    }
+    // The follower counts moved to the Me tab, which fetches them every time
+    // it opens (loadMeTab). They used to be painted here, at boot, sign-in and
+    // profile save only — so a follow made in between left "0 Following" on
+    // screen until a reload (Jay, 2026-10-06). If the Me tab is the one
+    // showing, it is repainted with the new identity too.
+    if (activeTab === 'me') loadMeTab();
 }
 
 // ===== Follow state =====
@@ -1249,6 +1286,11 @@ async function toggleFollow(type, id) {
             venuePageVenue.follower_count = row.follower_count;
             renderVenueFollowerCount();
         }
+
+        // My own Following count changed. The Me tab refetches on every open,
+        // but it can be the tab UNDER the overlay this follow happened in, and
+        // closing the overlay must not reveal a stale number.
+        refreshMeCounts();
     } finally {
         // In a finally: an exception from the RPC layer would otherwise wedge
         // this key permanently and the button would never respond again.
@@ -1261,7 +1303,8 @@ async function toggleFollow(type, id) {
 // the venue page's button and the member page's button cannot disagree.
 function repaintFollowButtons() {
     const memberBtn = document.getElementById('member-page-follow-btn');
-    if (memberBtn && memberPageUserId) {
+    // Not on your own profile: that slot is Edit profile (renderMemberProfile).
+    if (memberBtn && memberPageUserId && memberPageUserId !== currentUserId) {
         paintFollowButton(memberBtn, isFollowing('user', memberPageUserId),
             followInFlight.has(followKey('user', memberPageUserId)));
     }
@@ -1527,6 +1570,8 @@ function setupAuthListeners() {
     // Entry points from the Profile tab
     document.getElementById('profile-signup-btn')?.addEventListener('click', () => showAuth('signup'));
     document.getElementById('profile-login-btn')?.addEventListener('click', () => showAuth('login'));
+    document.getElementById('me-signup-btn')?.addEventListener('click', () => showAuth('signup'));
+    document.getElementById('me-login-btn')?.addEventListener('click', () => showAuth('login'));
     // "Browse without an account" abandons whatever the overlay interrupted.
     // Without this, a visitor who taps Create, backs out, and signs in an hour
     // later from the Profile tab gets a composer they never asked for.
@@ -1677,6 +1722,9 @@ async function handleSignupSubmit(e) {
     hideAuth();
     await onSignedIn();
     showToast('Welcome to ViibeView');
+
+    // A new account always gets the intro, whatever this browser saw before.
+    showOnboarding({ force: true });
 }
 
 async function handleForgotSubmit(e) {
@@ -1729,7 +1777,8 @@ async function handleResetSubmit(e) {
     // handleRecoveryLink() already scrubbed the landing payload, but the
     // signed-in "Change Password" path never had one — and a stale fragment
     // from any other source must not survive a successful change either.
-    history.replaceState(null, '', window.location.pathname + window.location.search);
+    // history.state passed through: the back-navigation guard lives in it.
+    history.replaceState(history.state, '', window.location.pathname + window.location.search);
     hideAuth();
     await onSignedIn();
     showToast('Password updated');
@@ -1927,11 +1976,19 @@ function showConfirm({ title, body, acceptLabel, onAccept }) {
 async function checkOwnerAccess() {
     isOwner = false;
     ownerOrgId = null;
+    ownedVenueIds = new Set();
 
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         currentUserId = session?.user?.id || null;
         if (!session) return;
+
+        // Per-venue ownership. RLS returns only this user's own rows.
+        const { data: owned } = await supabaseClient
+            .from('venue_owners')
+            .select('venue_id')
+            .eq('user_id', session.user.id);
+        ownedVenueIds = new Set((owned || []).map(r => r.venue_id));
 
         // Check if this user is an org member for the current app's organization
         const { data: membership } = await supabaseClient
@@ -1966,6 +2023,15 @@ function applyOwnerAffordances() {
         const el = document.getElementById(id);
         if (el) el.style.display = isOwner ? '' : 'none';
     });
+
+    // The open venue page's "Add flyer", for a sign-in that happened on top of it.
+    const flyerBtn = document.getElementById('venue-page-flyer-btn');
+    if (flyerBtn) flyerBtn.style.display = canManageVenue(venuePageVenueId) ? '' : 'none';
+}
+
+// Org members manage every venue; an owner manages theirs.
+function canManageVenue(venueId) {
+    return isOwner || (!!venueId && ownedVenueIds.has(venueId));
 }
 
 // ===== Geolocation =====
@@ -2284,8 +2350,10 @@ function renderFeedEmptyState() {
         ctaText = 'Discover Members';
         ctaAction = () => openPeopleSheet('discover');
     } else {
+        // The home feed clears at 7am Pacific, so an empty feed is the normal
+        // morning state, not an empty app (Jay, 2026-10-06).
         titleKey = 'social.emptyFeedTitle';
-        titleText = 'No posts yet';
+        titleText = 'No live posts available right now';
         bodyKey = 'social.emptyFeedBody';
         bodyText = 'Check back later for venue content';
     }
@@ -2496,15 +2564,13 @@ function postHeaderMarkup(identity, { showVenue = true } = {}) {
 function renderFeedCard(item) {
     const isVideo = item.media_type === 'video';
     const identity = postIdentity(item);
-    const venue = item.venue_id ? getVenueById(item.venue_id) : null;
 
     return `
         <article class="feed-panel" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
-            <!-- ⚠️ NOTHING IS OVERLAID ON THE VIDEO ANY MORE. The panel is a
-                 flex column: an opaque venue strip, the media, an opaque meta
-                 footer. The scrim and .feed-panel-info are gone, and with them
-                 the light-on-dark colour overrides that existed only because
-                 this text used to sit on a moving image. -->
+            <!-- The panel is a flex column: an opaque venue strip, then the
+                 media. Jay, 2026-10-06: no author, caption or duration in the
+                 home feed — the bottom strip is gone. The only control on the
+                 video is the sound toggle, bottom-right, inside .feed-media. -->
             ${venueStripMarkup(item, identity)}
 
             <div class="feed-media" onclick="toggleVideoPlay(this)">
@@ -2517,23 +2583,11 @@ function renderFeedCard(item) {
                          though the legacy NULLs have been backfilled. -->
                     <video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
                            playsinline muted preload="${videoPreloadMode(item)}" loop></video>
+                    <button class="video-sound-btn feed-panel-sound" type="button" onclick="toggleFeedSound(event, this)"></button>
                 ` : `
                     <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
                 `}
             </div>
-
-            <footer class="feed-panel-meta">
-                <!-- ⚠️ showVenue:false. The strip above is already the venue —
-                     the "at {venue}" line would repeat it two elements later.
-                     This is the SAME flag the venue page passes, so
-                     postHeaderMarkup needs no new branch and is not touched by
-                     this phase. -->
-                ${postHeaderMarkup(identity, { showVenue: false })}
-                ${item.caption ? `<div class="feed-caption">${escapeHtml(item.caption)}</div>` : ''}
-                ${isVideo && item.duration_seconds
-                    ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
-                ${isVideo ? `<button class="video-sound-btn feed-panel-sound" type="button" onclick="toggleFeedSound(event, this)"></button>` : ''}
-            </footer>
         </article>
     `;
 }
@@ -2545,7 +2599,8 @@ function renderFeedCard(item) {
 // postHeaderMarkup(). social.css:503 and the comment on renderFeedCard both
 // warn that the browse surface and the post-list surfaces must not share a
 // renderer, because a change made for one silently reshapes the other.
-// postHeaderMarkup() still renders the author, in the footer, unchanged.
+// The feed no longer shows the author at all (Jay, 2026-10-06); postHeaderMarkup()
+// is still used, unchanged, by the post-list surfaces.
 //
 // No SQL is needed: get_venue_feed_v3 already returns venue_name, venue_handle,
 // venue_city, venue_state and venue_profile_image_url on every row.
@@ -3036,11 +3091,47 @@ function renderVenueCards(list) {
     }).join('');
 }
 
+// 'venues' | 'members'. The segmented control above the input.
+let searchScope = 'venues';
+let memberSearchSeq = 0;
+
+function setSearchScope(scope) {
+    if (scope !== 'venues' && scope !== 'members') return;
+    searchScope = scope;
+
+    document.querySelectorAll('.search-scope-btn').forEach(btn => {
+        const on = btn.dataset.scope === scope;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+
+    const input = document.getElementById('search-input');
+    if (input) {
+        const [key, english] = scope === 'members'
+            ? ['social.searchMembers', 'Search members...']
+            : ['social.searchPlaceholder', 'Search venues, bars, clubs...'];
+        input.setAttribute('data-i18n-placeholder', key);
+        const translated = window.I18n?.t ? window.I18n.t(key) : key;
+        input.placeholder = translated === key ? english : translated;
+        input.setAttribute('aria-label', scope === 'members' ? 'Search members' : 'Search venues');
+    }
+
+    handleSearch((input?.value || '').trim());
+}
+
 function handleSearch(query) {
     const resultsContainer = document.getElementById('search-results');
     const emptyHint = document.getElementById('search-empty');
     const recentsWrap = document.getElementById('recent-searches');
     if (!resultsContainer) return;
+
+    if (searchScope === 'members') {
+        searchMembers(query);
+        return;
+    }
+
+    // A venue render supersedes any member search still in flight.
+    memberSearchSeq++;
 
     // Below the 2-character threshold, browse. An empty tab that says "Search
     // for venues nearby" tells a first-time visitor nothing about what is in
@@ -3080,6 +3171,60 @@ function handleSearch(query) {
     }
 
     resultsContainer.innerHTML = renderVenueCards(results);
+}
+
+/**
+ * Search → Members. discover_members is anon-readable (20260903000003), so
+ * this works signed out too. Under two characters it lists members to browse,
+ * the same way the venue scope lists every venue.
+ *
+ * ⚠️ Stale-response guard: every keystroke is a round trip, and an earlier,
+ * slower query landing last would paint results for text no longer in the box.
+ */
+async function searchMembers(query) {
+    const resultsContainer = document.getElementById('search-results');
+    const emptyHint = document.getElementById('search-empty');
+    const recentsWrap = document.getElementById('recent-searches');
+    if (!resultsContainer || !currentApp) return;
+
+    // Recents are venue searches; the "no venues yet" hint is a venue state.
+    if (emptyHint) emptyHint.style.display = 'none';
+    if (recentsWrap) recentsWrap.style.display = 'none';
+
+    const q = (query || '').trim();
+    const seq = ++memberSearchSeq;
+
+    const { data, error } = await supabaseClient.rpc('discover_members', {
+        p_app_id: currentApp.id,
+        p_query: q.length >= 2 ? q : null,
+        p_limit: 50,
+        p_offset: 0
+    });
+
+    if (seq !== memberSearchSeq || searchScope !== 'members') return;
+
+    if (error) {
+        console.error('Member search failed:', error);
+        resultsContainer.innerHTML = '<div class="search-empty">Could not search members</div>';
+        return;
+    }
+
+    // Never yourself — Me is its own tab.
+    const rows = (data || []).filter(row => row.target_id !== currentUserId);
+
+    if (rows.length === 0) {
+        const key = 'social.noMembersFound';
+        const translated = window.I18n?.t ? window.I18n.t(key) : key;
+        resultsContainer.innerHTML =
+            `<div class="search-empty">${escapeHtml(translated === key ? 'No members found' : translated)}</div>`;
+        return;
+    }
+
+    resultsContainer.innerHTML = `
+        <div class="search-members-list">
+            ${rows.map(row => peopleRowMarkup(row, `openMemberProfile('${escapeHtml(row.target_id)}')`)).join('')}
+        </div>
+    `;
 }
 
 // Selecting a search result takes you to the venue's page. It used to only
@@ -3215,6 +3360,17 @@ async function openVenuePage(venueId) {
         if (!isDemoVenueId(venue.id)) {
             actions += `<button class="venue-action-btn follow-btn" id="venue-page-follow-btn" type="button"
                 onclick="toggleFollow('venue', '${escapeHtml(venue.id)}')"></button>`;
+        }
+
+        // Add flyer — org members and this venue's owners. Always rendered for
+        // a real venue and shown/hidden by applyOwnerAffordances() too, so a
+        // sign-in on top of the open page reveals it without a reopen.
+        if (!isDemoVenueId(venue.id)) {
+            actions += `<button class="venue-action-btn venue-flyer-btn" id="venue-page-flyer-btn" type="button"
+                ${canManageVenue(venue.id) ? '' : 'style="display:none;"'} onclick="openFlyerPicker()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span data-i18n="social.addFlyer">Add flyer</span>
+            </button>`;
         }
 
         // Navigate button (demo placeholder)
@@ -3385,6 +3541,81 @@ async function openVenuePage(venueId) {
             }
         };
         scrollEl.addEventListener('scroll', venuePageScrollHandler);
+    }
+}
+
+// ===== Flyers (org members and venue owners) =====
+//
+// A flyer is an image on the venue page, pinned to the top and never expiring.
+// The image is resized here (≤1600px, JPEG 0.85), uploaded to the member's own
+// prefix, then recorded by add_venue_flyer — which re-checks the caller, the
+// path, the object's owner and the URL. Nothing about the row is trusted from
+// here. Desktop is allowed: a flyer is a file, not a recording.
+
+const FLYER_MAX_PX = 1600;
+const FLYER_QUALITY = 0.85;
+let flyerUploading = false;
+
+function openFlyerPicker() {
+    if (!canManageVenue(venuePageVenueId)) return;
+    document.getElementById('venue-flyer-input')?.click();
+}
+
+async function handleFlyerPick(event) {
+    const input = event?.target;
+    const file = input?.files?.[0];
+    if (input) input.value = '';   // picking the same file again must still fire
+    const venueId = venuePageVenueId;
+    if (!file || !venueId || !currentApp || flyerUploading) return;
+    if (!currentUserId || !canManageVenue(venueId)) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+        showToast('Choose an image for the flyer');
+        return;
+    }
+
+    flyerUploading = true;
+    const btn = document.getElementById('venue-page-flyer-btn');
+    if (btn) btn.disabled = true;
+    showToast('Uploading flyer…');
+
+    let uploadedPath = null;
+    try {
+        const blob = await downscaleImage(file, FLYER_MAX_PX, FLYER_QUALITY);
+        if (!blob) throw new Error('Could not read that image');
+
+        const path = `members/${currentUserId}/flyer-${Date.now()}.jpg`;
+        const { error: uploadError } = await supabaseClient.storage
+            .from('venue-media')
+            .upload(path, blob, { cacheControl: MEDIA_CACHE_CONTROL, upsert: false, contentType: 'image/jpeg' });
+        if (uploadError) throw uploadError;
+        uploadedPath = path;
+
+        const { data: urlData } = supabaseClient.storage.from('venue-media').getPublicUrl(path);
+        const { error } = await supabaseClient.rpc('add_venue_flyer', {
+            p_venue_id: venueId,
+            p_storage_path: path,
+            p_url: urlData.publicUrl,
+            p_caption: null
+        });
+        if (error) throw error;
+        uploadedPath = null;   // recorded — it is the row's file now
+
+        showToast('Flyer added');
+        if (venuePageVenueId === venueId) {
+            expandedVenuePostId = null;
+            await loadVenuePageFeed();
+        }
+    } catch (err) {
+        console.error('Flyer upload failed:', err);
+        showToast(err?.message || 'Could not add that flyer');
+        // An upload no row points at is a file nothing will ever show. The
+        // member-prefix DELETE policy lets the uploader remove their own.
+        if (uploadedPath) {
+            supabaseClient.storage.from('venue-media').remove([uploadedPath]).catch(() => {});
+        }
+    } finally {
+        flyerUploading = false;
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -3854,49 +4085,21 @@ function renderVenuePageGrid() {
         return;
     }
 
-    container.innerHTML = venuePageFeed.map(item => {
-        const isVideo = item.media_type === 'video';
-        const expanded = expandedVenuePostId === item.id;
-        const label = item.caption || item.author_display_name || '';
-
-        // The tile's media. Expanded tiles carry a real <video> with data-src
-        // so openVenuePost() can hydrate it; collapsed ones carry a poster
-        // only. Deliberately NOT the same element in both states: leaving a
-        // <video> in every collapsed tile is the memory cost this grid exists
-        // to avoid, thumbnail or no thumbnail.
-        const media = !isVideo
-            ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(label)}" loading="lazy">`
-            : expanded
-                ? `<video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
-                          playsinline muted preload="${videoPreloadMode(item)}" loop></video>`
-                : item.thumbnail_url
-                    ? `<img src="${escapeHtml(item.thumbnail_url)}" alt="${escapeHtml(label)}" loading="lazy">`
-                    // ⚠️ preload="metadata", NOT "none". Every post predating
-                    // thumbnail generation has thumbnail_url NULL with no
-                    // possible backfill, and "none" paints those tiles solid
-                    // black. metadata paints the first frame, which is the
-                    // whole point of the fallback.
-                    : `<video src="${escapeHtml(item.url)}" muted playsinline preload="metadata"></video>`;
-
-        return `
-            <button class="member-grid-tile${expanded ? ' is-expanded' : ''}" type="button"
-                    data-media-id="${escapeHtml(item.id)}"
-                    aria-label="${escapeHtml(label)}"
-                    onclick="openVenuePost('${escapeHtml(item.id)}')">
-                ${media}
-                ${expanded && isVideo
-                    ? `<button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>`
-                    : ''}
-                ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
-            </button>
-        `;
-    }).join('');
+    container.innerHTML = venuePageFeed.map(item => reelsTileMarkup(item, {
+        expanded: expandedVenuePostId === item.id,
+        onTap: `openVenuePost('${escapeHtml(item.id)}')`
+    })).join('');
 
     // ⚠️ setupVideoObserverIn() is deliberately NOT called here. See the
     // header comment. The observer now lives on the member profile, which is
     // the surface that renders full-width cards and therefore needs it.
     if (expandedVenuePostId) hydrateExpandedVenuePost();
     refreshSoundButtons();
+
+    // The flyer badge carries data-i18n.
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
 }
 
 // Which grid tile is expanded to full width, or null. One at a time — the
@@ -3916,13 +4119,77 @@ function openVenuePost(id) {
 // video.muted, so the grid inherits the sound toggle's state rather than
 // inventing a second source of truth for it.
 function hydrateExpandedVenuePost() {
-    const tile = document.querySelector('.member-grid-tile.is-expanded');
+    hydrateExpandedTileIn(document.getElementById('venue-page-feed'));
+}
+
+// Scoped to one grid: the venue page and the Me tab can each hold an expanded
+// tile at once, and a document-wide lookup would hydrate the wrong one.
+function hydrateExpandedTileIn(container) {
+    const tile = container?.querySelector('.member-grid-tile.is-expanded');
     const video = tile?.querySelector('video[data-src]');
     if (!video) return;
 
     ensureVideoSrc(video);
     applySoundState(video);
     video.play().catch(() => {});
+}
+
+/**
+ * One reels-grid tile. Shared by the venue page and the Me tab so the two
+ * grids cannot drift into looking different.
+ *
+ * ⚠️ A <div role="button">, not a <button>. The expanded tile carries its own
+ * sound and options buttons, and a <button> inside a <button> is not nestable
+ * HTML: the parser closes the outer tile at the inner start tag and the inner
+ * controls land OUTSIDE it, unpositioned.
+ *
+ * Collapsed tiles are posters only — no <video> unless there is no thumbnail.
+ * See renderVenuePageGrid() for why.
+ */
+function reelsTileMarkup(item, { expanded = false, onTap = '' } = {}) {
+    const isVideo = item.media_type === 'video';
+    const label = item.caption || item.author_display_name || '';
+    const id = escapeHtml(item.id);
+
+    // The tile's media. Expanded tiles carry a real <video> with data-src so
+    // the hydrate step can play it; collapsed ones carry a poster only.
+    // Deliberately NOT the same element in both states: leaving a <video> in
+    // every collapsed tile is the memory cost this grid exists to avoid,
+    // thumbnail or no thumbnail.
+    const media = !isVideo
+        ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(label)}" loading="lazy">`
+        : expanded
+            ? `<video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
+                      playsinline muted preload="${videoPreloadMode(item)}" loop></video>`
+            : item.thumbnail_url
+                ? `<img src="${escapeHtml(item.thumbnail_url)}" alt="${escapeHtml(label)}" loading="lazy">`
+                // ⚠️ preload="metadata", NOT "none". Every post predating
+                // thumbnail generation has thumbnail_url NULL with no possible
+                // backfill, and "none" paints those tiles solid black.
+                // metadata paints the first frame, which is the whole point of
+                // the fallback.
+                : `<video src="${escapeHtml(item.url)}" muted playsinline preload="metadata"></video>`;
+
+    return `
+        <div class="member-grid-tile${expanded ? ' is-expanded' : ''}${item.is_flyer ? ' is-flyer' : ''}"
+             role="button" tabindex="0"
+             data-media-id="${id}"
+             aria-label="${escapeHtml(label)}"
+             onclick="${onTap}"
+             onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); ${onTap}; }">
+            ${media}
+            ${item.is_flyer ? `<span class="flyer-badge" data-i18n="social.flyerBadge">Flyer</span>` : ''}
+            ${expanded ? `
+                <button class="feed-more-btn tile-more-btn" type="button" aria-label="Post options"
+                        onclick="event.stopPropagation(); showPostOptions('${id}')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                </button>` : ''}
+            ${expanded && isVideo
+                ? `<button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>`
+                : ''}
+            ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
+        </div>
+    `;
 }
 
 // Same leak, same fix, for the venue page's own feed.
@@ -4003,9 +4270,10 @@ function closeVenuePage() {
 
 // ===== Member Profile Page =====
 //
-// An overlay, not a fifth tab: the bottom nav is exactly four items (a contract
-// test asserts it), and a profile tab would have nothing to show the signed-out
-// visitors who are most of this app's traffic.
+// An overlay for OTHER people's profiles (and yours, when you tap your own
+// name). Your own profile is also the Me tab, which has its own state — see
+// loadMeTab(). This one stays an overlay because it opens from inside the
+// venue page and the people sheet.
 //
 // Mirrors openVenuePage(): show the page FIRST, then fetch. A tap that appears
 // to do nothing for 400ms reads as a broken button, and every failure path below
@@ -4172,15 +4440,28 @@ function renderMemberProfile() {
 
     const followBtn = document.getElementById('member-page-follow-btn');
     if (followBtn) {
-        // No follow button on your own profile: social_follows_no_self would
-        // reject the write, so offering it would be a control that can only
-        // ever produce an error message.
+        // Your own profile gets Edit profile in the Follow slot.
+        // social_follows_no_self would reject a self-follow, so a Follow
+        // button here could only ever produce an error message.
         const isSelf = !!currentUserId && currentUserId === p.user_id;
-        followBtn.style.display = isSelf ? 'none' : '';
-        if (!isSelf) {
+        followBtn.style.display = '';
+        if (isSelf) {
+            paintEditProfileButton(followBtn);
+        } else {
             followBtn.onclick = () => toggleFollow('user', p.user_id);
             paintFollowButton(followBtn, isFollowing('user', p.user_id));
         }
+    }
+}
+
+function paintEditProfileButton(btn) {
+    btn.classList.add('following');
+    btn.disabled = false;
+    btn.setAttribute('data-i18n', 'social.editProfile');
+    btn.textContent = 'Edit Profile';
+    btn.onclick = () => openEditProfile();
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
     }
 }
 
@@ -4191,6 +4472,19 @@ function renderMemberStats() {
     const p = memberPageProfile;
     if (!el || !p) return;
 
+    el.innerHTML = memberStatsMarkup(p);
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+/**
+ * The three stat buttons for one get_member_profile row. Shared by the member
+ * page and the Me tab, so the two cannot disagree about what a stat is or
+ * where tapping it goes.
+ */
+function memberStatsMarkup(p) {
     const stat = (value, labelKey, label, onclick) => `
         <button class="member-stat" type="button" ${onclick ? `onclick="${onclick}"` : 'disabled'}>
             <span class="member-stat-value">${escapeHtml(String(value ?? 0))}</span>
@@ -4199,14 +4493,9 @@ function renderMemberStats() {
     `;
 
     const uid = escapeHtml(p.user_id);
-    el.innerHTML =
-        stat(p.post_count, 'social.posts', 'Posts', null) +
+    return stat(p.post_count, 'social.posts', 'Posts', null) +
         stat(p.follower_count, 'social.followers', 'Followers', `openPeopleSheet('followers', '${uid}')`) +
         stat(p.following_count, 'social.following', 'Following', `openPeopleSheet('following', '${uid}')`);
-
-    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
-        window.I18n.applyTranslations();
-    }
 }
 
 async function loadMemberPosts() {
@@ -4261,7 +4550,9 @@ function renderMemberList() {
     if (emptyEl) emptyEl.style.display = 'none';
 
     list.innerHTML = memberPagePosts.map(post => {
-        const isVideo = post.media_type !== 'photo';
+        // 'image', not 'photo' — venue_media has never stored 'photo', so the
+        // old check made every image a broken <video>.
+        const isVideo = post.media_type !== 'image';
         // The VENUE, not the author — the whole page is already this member, so
         // the useful identity on each card is where it was shot. That is the
         // mirror of the venue page's old showVenue:false, and it is why the
@@ -4305,6 +4596,176 @@ function renderMemberList() {
     // harmful (40 autoplaying tiles) and here is necessary.
     setupVideoObserverIn(list);
     refreshSoundButtons();
+}
+
+// ===== Me tab =====
+//
+// Your own profile as a tab. Its own state, deliberately separate from
+// memberPage*: #member-page is a singleton overlay that can be open ON TOP of
+// this tab showing someone else, and sharing state would let one repaint the
+// other mid-flight.
+//
+// loadMeTab() refetches every time the tab opens. That is the fix for
+// "0 Following" — the old Profile tab painted its counts at boot, sign-in and
+// profile save only, so a follow made in between never showed up.
+
+let meProfile = null;
+let mePosts = [];
+let meLoadSeq = 0;
+let expandedMePostId = null;
+
+async function loadMeTab() {
+    const signedOut = document.getElementById('me-signed-out');
+    const signedIn = document.getElementById('me-signed-in');
+
+    const session = await SocialAuth.getSession();
+    const userId = session?.user?.id || null;
+
+    if (!userId || !currentApp) {
+        meLoadSeq++;   // a late response for a signed-out session must not paint
+        meProfile = null;
+        mePosts = [];
+        expandedMePostId = null;
+        if (signedOut) signedOut.style.display = '';
+        if (signedIn) signedIn.style.display = 'none';
+        const grid = document.getElementById('me-grid');
+        if (grid) grid.innerHTML = '';
+        return;
+    }
+
+    if (signedOut) signedOut.style.display = 'none';
+    if (signedIn) signedIn.style.display = '';
+
+    // A different account from the one painted last: clear, don't flash it.
+    if (meProfile && meProfile.user_id !== userId) {
+        meProfile = null;
+        mePosts = [];
+        expandedMePostId = null;
+    }
+
+    const seq = ++meLoadSeq;
+    renderMeTab();   // whatever is cached, immediately
+
+    const loadingEl = document.getElementById('me-loading');
+    if (loadingEl && mePosts.length === 0) loadingEl.style.display = 'block';
+
+    const [profileRes, postsRes] = await Promise.all([
+        supabaseClient.rpc('get_member_profile', { p_app_id: currentApp.id, p_user_id: userId }),
+        supabaseClient.rpc('get_member_posts', {
+            p_app_id: currentApp.id,
+            p_user_id: userId,
+            p_limit: 48,
+            p_offset: 0
+        })
+    ]);
+
+    // A newer load (or a sign-out) started while this one was in flight.
+    if (seq !== meLoadSeq) return;
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    const profile = Array.isArray(profileRes.data) ? profileRes.data[0] : profileRes.data;
+    if (profileRes.error) console.error('Failed to load your profile:', profileRes.error);
+    if (profile) meProfile = profile;
+
+    if (postsRes.error) {
+        console.error('Failed to load your posts:', postsRes.error);
+    } else {
+        mePosts = postsRes.data || [];
+    }
+
+    renderMeTab();
+}
+
+// Just the counts — after a follow, or a delete, from wherever it happened.
+async function refreshMeCounts() {
+    if (!meProfile || !currentApp) return;
+    const userId = meProfile.user_id;
+    const seq = meLoadSeq;
+
+    const { data } = await supabaseClient.rpc('get_member_profile', {
+        p_app_id: currentApp.id,
+        p_user_id: userId
+    });
+
+    if (seq !== meLoadSeq || !meProfile || meProfile.user_id !== userId) return;
+    const profile = Array.isArray(data) ? data[0] : data;
+    if (!profile) return;
+    meProfile = profile;
+    renderMeStats();
+}
+
+function renderMeTab() {
+    const p = meProfile;
+
+    setText('me-name', p?.display_name || '');
+
+    const bioEl = document.getElementById('me-bio');
+    if (bioEl) {
+        bioEl.textContent = p?.bio || '';
+        bioEl.style.display = p?.bio ? '' : 'none';
+    }
+
+    const locEl = document.getElementById('me-location');
+    if (locEl) {
+        locEl.textContent = p?.location || '';
+        locEl.style.display = p?.location ? '' : 'none';
+    }
+
+    const avatar = document.getElementById('me-avatar');
+    if (avatar) {
+        avatar.innerHTML = p?.avatar_url
+            ? `<img src="${escapeHtml(p.avatar_url)}" alt="">`
+            : escapeHtml((p?.display_name || '?').charAt(0).toUpperCase());
+    }
+
+    renderMeStats();
+    renderMeGrid();
+}
+
+function renderMeStats() {
+    const el = document.getElementById('me-stats');
+    if (!el) return;
+    el.innerHTML = meProfile ? memberStatsMarkup(meProfile) : '';
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// The same reels grid as the venue page, through the same tile markup.
+function renderMeGrid() {
+    const grid = document.getElementById('me-grid');
+    const emptyEl = document.getElementById('me-empty');
+    if (!grid) return;
+
+    if (mePosts.length === 0) {
+        grid.innerHTML = '';
+        grid.style.display = 'none';
+        // "No posts yet" only once a load has answered — not while the first
+        // fetch is still in flight.
+        if (emptyEl) emptyEl.style.display = meProfile ? 'flex' : 'none';
+        return;
+    }
+
+    grid.style.display = '';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    grid.innerHTML = mePosts.map(item => reelsTileMarkup(item, {
+        expanded: expandedMePostId === item.id,
+        onTap: `openMePost('${escapeHtml(item.id)}')`
+    })).join('');
+
+    if (expandedMePostId) hydrateExpandedTileIn(grid);
+    refreshSoundButtons();
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+function openMePost(id) {
+    expandedMePostId = (expandedMePostId === id) ? null : id;
+    renderMeGrid();
 }
 
 // ===== "Been to" — venues derived from posts =====
@@ -4553,8 +5014,12 @@ function renderPeopleList(rows) {
         // A venue row opens the venue page, a member row opens their profile.
         // Both close the sheet first: the sheet sits ABOVE #member-page in the
         // ladder, so leaving it open would cover the thing it just opened.
+        //
+        // A venue row ALSO closes the member page: #member-page (2700) sits
+        // above #venue-page (2500), so the venue opened BEHIND the profile the
+        // list came from (Jay, 2026-10-06).
         const onclick = isVenue
-            ? `closePeopleSheet(); openVenuePage('${escapeHtml(row.target_id)}')`
+            ? `closePeopleSheet(); closeMemberProfile(); openVenuePage('${escapeHtml(row.target_id)}')`
             : `closePeopleSheet(); openMemberProfile('${escapeHtml(row.target_id)}')`;
 
         return peopleRowMarkup(row, onclick);
@@ -4829,7 +5294,7 @@ async function handleEditProfileSubmit(e) {
 
 // ===== Tab Navigation =====
 // Tabs the category filter actually applies to. Search has its own query and
-// Profile has no venue list, so showing the pills there was dead chrome that
+// Me/Settings have no venue list, so showing the pills there was dead chrome that
 // implied a filter which did nothing.
 const CATEGORY_TABS = ['feed', 'map'];
 
@@ -4863,11 +5328,24 @@ function switchTab(tabId) {
         handleSearch((input?.value || '').trim());
     }
 
+    // Me refetches on every open — the counts and posts are never older than
+    // the last time you looked. Leaving it collapses the expanded tile, which
+    // drops its <video> rather than leaving it playing behind another tab.
+    if (tabId === 'me') {
+        loadMeTab();
+    } else if (expandedMePostId) {
+        expandedMePostId = null;
+        renderMeGrid();
+    }
+
     // Chrome hiding is scoped to the feed: #map-container's height subtracts
     // var(--nav-height), so a hidden nav on the map tab would leave a dead
     // strip. Re-run on every tab change so leaving the feed mid-scroll restores
     // the nav rather than stranding it offscreen.
     updateScrollChrome();
+
+    // Leaving Feed gives the back button something to do: return to Feed.
+    syncBackGuard();
 }
 
 // ===== Scroll chrome =====
@@ -5471,12 +5949,11 @@ function toggleFeedSound(event, btn) {
     // Only the video the user is actually looking at gets the new state
     // applied immediately; the rest pick it up when the observer plays them.
     //
-    // ⚠️ Two shapes, deliberately. On the full-screen feed the sound button is a
-    // SIBLING of .feed-media (it is positioned against the panel, not the media
-    // box); on the venue page it is still INSIDE it. Checking .feed-panel first
-    // and falling back to .feed-media covers both — a bare .feed-media lookup
-    // would return null on the main feed and the toggle would silently do
-    // nothing to the video the user is watching.
+    // The button now sits INSIDE .feed-media on every surface (the feed's
+    // bottom strip is gone, so it moved onto the video). .feed-panel is still
+    // checked first: it is the widest scope on the main feed, and the panel
+    // holds exactly one video. .feed-media covers the member list and the
+    // expanded grid tile.
     const scope = btn ? (btn.closest('.feed-panel') || btn.closest('.feed-media')) : null;
     const video = scope ? scope.querySelector('video') : null;
     if (video) {
@@ -5717,6 +6194,12 @@ function setupEventListeners() {
     document.getElementById('app-settings-backdrop')?.addEventListener('click', closeAppSettings);
     document.getElementById('app-settings-save')?.addEventListener('click', saveAppSettings);
 
+    // Search scope: Venues | Members
+    document.getElementById('search-scope')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.search-scope-btn');
+        if (btn) setSearchScope(btn.dataset.scope);
+    });
+
     // Search input
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
@@ -5792,6 +6275,9 @@ function setupEventListeners() {
         venuePostBtn.addEventListener('click', () => openCreatePost(venuePageVenueId));
     }
 
+    // Venue page: flyer picker (the button is rendered by openVenuePage)
+    document.getElementById('venue-flyer-input')?.addEventListener('change', handleFlyerPick);
+
     // Member profile overlay
     document.getElementById('member-page-back')?.addEventListener('click', closeMemberProfile);
     document.getElementById('member-page-backdrop')?.addEventListener('click', closeMemberProfile);
@@ -5806,14 +6292,10 @@ function setupEventListeners() {
         peopleSearchTimeout = setTimeout(loadPeople, 300);
     });
 
-    // Profile tab entry points
+    // Settings + Me tab entry points. Followers/Following live on the Me tab
+    // now, painted by memberStatsMarkup() with their own inline handlers.
     document.getElementById('edit-profile-btn')?.addEventListener('click', openEditProfile);
-    document.getElementById('discover-members-btn')?.addEventListener('click', () => openPeopleSheet('discover'));
-    document.getElementById('profile-followers-btn')?.addEventListener('click', () => openPeopleSheet('followers'));
-    document.getElementById('profile-following-btn')?.addEventListener('click', () => openPeopleSheet('following'));
-    document.getElementById('view-my-profile-btn')?.addEventListener('click', () => {
-        if (currentUserId) openMemberProfile(currentUserId);
-    });
+    document.getElementById('me-edit-profile-btn')?.addEventListener('click', openEditProfile);
 
     // Edit profile sheet
     document.getElementById('edit-profile-close')?.addEventListener('click', closeEditProfile);
@@ -5952,6 +6434,9 @@ function setupEventListeners() {
     setupInstallPrompt();
     setupSignupPrompt();
 
+    // Upright-only recording.
+    watchComposerOrientation();
+
     // Re-measure the sticky offsets when the header or the pill rows can change
     // height. Both rows wrap, so a rotation changes the genre row's offset.
     window.addEventListener('resize', pinFilterPills);
@@ -5998,6 +6483,8 @@ function findPostById(mediaId) {
     return feedItems.find(i => i.id === mediaId)
         || venuePageFeed.find(i => i.id === mediaId)
         || postPins.find(i => i.id === mediaId)
+        || memberPagePosts.find(i => i.id === mediaId)
+        || mePosts.find(i => i.id === mediaId)
         || null;
 }
 
@@ -6033,8 +6520,11 @@ function renderPostOptionsMain() {
     // (including Jay's test post) offer Report only; the isOwner branch is what
     // still lets Jay delete his own. No backfill is possible: the authorship was
     // never recorded, and guessing it would be worse than admitting it.
+    //
+    // An owner of the post's venue may delete it too (venue_owners).
     const canDelete = isOwner ||
-        (!!currentUserId && !!item && item.uploaded_by_user_id === currentUserId);
+        (!!currentUserId && !!item && item.uploaded_by_user_id === currentUserId) ||
+        (!!item && !!item.venue_id && ownedVenueIds.has(item.venue_id));
 
     body.innerHTML = `
         ${canDelete ? `
@@ -6098,6 +6588,52 @@ function confirmDeletePost() {
 async function deletePost(mediaId) {
     if (!mediaId) return;
 
+    const result = await requestPostDelete(mediaId);
+    if (!result.ok) {
+        showToast(result.message || 'Could not delete that post');
+        return;
+    }
+
+    removePostEverywhere(mediaId);
+    showToast('Post deleted');
+}
+
+/**
+ * Deletes through the delete-social-post edge function, which authorizes and
+ * deletes the row AS THE CALLER (delete_social_post) and then removes the files
+ * through the Storage API. The RPC alone can no longer touch storage — Supabase
+ * refuses a direct DELETE on its tables, and that refusal was rolling every
+ * delete back (Jay's 403, 2026-10-06).
+ *
+ * Falls back to the RPC on a 404, i.e. the function is not deployed yet. That
+ * deletes the row and leaves the files, which is still the fix for the user.
+ */
+async function requestPostDelete(mediaId) {
+    const session = await SocialAuth.getSession();
+    const token = session?.access_token;
+    if (!token) return { ok: false, message: 'You must be signed in' };
+
+    try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-social-post`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ media_id: mediaId })
+        });
+
+        if (res.status !== 404) {
+            const body = await res.json().catch(() => ({}));
+            return (res.ok && body.success !== false)
+                ? { ok: true }
+                : { ok: false, message: body.error };
+        }
+    } catch (err) {
+        return { ok: false, message: 'Could not reach the server. Try again.' };
+    }
+
     const { data, error } = await supabaseClient.rpc('delete_social_post', {
         p_media_id: mediaId
     });
@@ -6107,22 +6643,41 @@ async function deletePost(mediaId) {
     // rejected delete and leave the card on screen until the next reload.
     const row = Array.isArray(data) ? data[0] : data;
     if (error || !row || row.success === false) {
-        showToast(row?.error_message || error?.message || 'Could not delete that post');
-        return;
+        return { ok: false, message: row?.error_message || error?.message };
     }
+    return { ok: true };
+}
 
-    // Drop it from every list that could still be showing it, rather than
-    // refetching — the feed is paginated and a reload would jump the scroll
-    // position back to the top.
+// Drop it from every list that could still be showing it, rather than
+// refetching — the feed is paginated and a reload would jump the scroll
+// position back to the top. Five lists, and a post count on each profile that
+// held it.
+function removePostEverywhere(mediaId) {
+    const inMember = memberPagePosts.some(i => i.id === mediaId);
+    const inMe = mePosts.some(i => i.id === mediaId);
+
     feedItems = feedItems.filter(i => i.id !== mediaId);
     venuePageFeed = venuePageFeed.filter(i => i.id !== mediaId);
     postPins = postPins.filter(i => i.id !== mediaId);
+    memberPagePosts = memberPagePosts.filter(i => i.id !== mediaId);
+    mePosts = mePosts.filter(i => i.id !== mediaId);
+
+    if (inMember && memberPageProfile) {
+        memberPageProfile.post_count = Math.max(0, (Number(memberPageProfile.post_count) || 0) - 1);
+        renderMemberStats();
+    }
+    if (inMe && meProfile) {
+        meProfile.post_count = Math.max(0, (Number(meProfile.post_count) || 0) - 1);
+    }
+    if (expandedVenuePostId === mediaId) expandedVenuePostId = null;
+    if (expandedMePostId === mediaId) expandedMePostId = null;
 
     renderFeed();
     if (venuePageVenueId) renderVenuePageGrid();
     if (map) renderPostPins();
-
-    showToast('Post deleted');
+    if (memberPageUserId) renderMemberList();
+    renderMeStats();
+    renderMeGrid();
 }
 
 async function submitReport(reason) {
@@ -6353,14 +6908,22 @@ async function openCreatePost(venueId) {
     selectedPostFile = null;
     recordedChunks = [];
     recordedDurationSeconds = null;
+    stopCountdownUi();
     const caption = document.getElementById('post-caption');
     if (caption) caption.value = '';
     const countEl = document.getElementById('caption-count');
     if (countEl) countEl.textContent = '0';
     const preview = document.getElementById('upload-preview');
     if (preview) { preview.innerHTML = ''; preview.style.display = 'none'; }
+    // ⚠️ Phones only, decided AFTER requireAccount — a desktop visitor still
+    // gets the account prompt first, so "post" leads somewhere, and then this
+    // panel instead of a camera. startCamera() re-checks, so nothing else can
+    // reach getUserMedia on a desktop.
+    const isPhone = isPhoneDevice();
     const placeholder = document.getElementById('upload-placeholder');
-    if (placeholder) placeholder.style.display = 'flex';
+    if (placeholder) placeholder.style.display = isPhone ? 'flex' : 'none';
+    const desktopBlock = document.getElementById('upload-desktop-block');
+    if (desktopBlock) desktopBlock.style.display = isPhone ? 'none' : 'flex';
     const viewfinder = document.getElementById('camera-viewfinder');
     if (viewfinder) viewfinder.style.display = 'none';
     const controls = document.getElementById('recording-controls');
@@ -6383,6 +6946,8 @@ async function openCreatePost(venueId) {
     modal.classList.add('visible');
     backdrop.classList.add('visible');
     lockBodyScroll('create-post');
+
+    applyComposerOrientation();
 }
 
 // The composer's venue row. ALWAYS visible now, and always a button.
@@ -6975,17 +7540,198 @@ function closeCreatePost() {
     if (modal) modal.classList.remove('visible');
     if (backdrop) backdrop.classList.remove('visible');
     unlockBodyScroll('create-post');
+
+    // ⚠️ Detach onstop BEFORE anything stops the recorder. stopCamera() ends
+    // the tracks, which stops a live MediaRecorder, whose onstop then builds a
+    // File and paints a preview into a composer that is already closed — and
+    // leaves selectedPostFile set for the next open.
+    if (mediaRecorder) {
+        mediaRecorder.onstop = null;
+        mediaRecorder.ondataavailable = null;
+        if (mediaRecorder.state !== 'inactive') {
+            try { mediaRecorder.stop(); } catch { /* already stopping */ }
+        }
+    }
+
     selectedPostFile = null;
     recordedChunks = [];
     recordedDurationSeconds = null;
     composerVenueId = null;
     stopCamera();
+    stopCountdownUi();
+    applyComposerOrientation();
 }
 
 // ===== Camera & Recording =====
 
+// ----- Phones only, upright only, 9:16 (Jay, 2026-10-06) -----
+
+/**
+ * True on a phone. userAgentData.mobile where the browser has it (Chromium);
+ * otherwise an iPhone, or an Android UA that says Mobile AND has a coarse
+ * pointer — Android tablets drop "Mobile" from their UA, and a desktop with a
+ * spoofed UA still has a fine pointer. iPads are not phones here.
+ */
+function isPhoneDevice() {
+    const nav = window.navigator || {};
+    if (nav.userAgentData && nav.userAgentData.mobile === true) return true;
+
+    const ua = nav.userAgent || '';
+    if (/iPhone|iPod/.test(ua)) return true;
+
+    const coarse = typeof window.matchMedia === 'function'
+        && window.matchMedia('(pointer: coarse)').matches;
+    return /Android/.test(ua) && /Mobile/.test(ua) && coarse;
+}
+
+/**
+ * The PHYSICAL orientation. screen.orientation first, then iOS's legacy
+ * window.orientation, and the CSS media query only as a last resort: on
+ * Android the soft keyboard shrinks the viewport, and `(orientation:
+ * landscape)` would then report a portrait phone as landscape while someone
+ * types a caption.
+ */
+function isLandscape() {
+    const type = window.screen?.orientation?.type;
+    if (typeof type === 'string') return type.startsWith('landscape');
+    if (typeof window.orientation === 'number') return Math.abs(window.orientation) === 90;
+    return typeof window.matchMedia === 'function'
+        && window.matchMedia('(orientation: landscape)').matches;
+}
+
+// "Turn your phone upright", over the camera area, while the composer is open
+// and there is no clip yet. Rotating mid-take stops the recording and KEEPS the
+// clip — stopRecording()'s onstop builds the preview as usual.
+function applyComposerOrientation() {
+    const overlay = document.getElementById('rotate-overlay');
+    const recordBtn = document.getElementById('record-btn');
+    const open = !!document.getElementById('create-post-modal')?.classList.contains('visible');
+    const landscape = open && isPhoneDevice() && isLandscape();
+
+    if (landscape && mediaRecorder && mediaRecorder.state === 'recording') {
+        stopRecording();
+        showToast('Recording stopped — keep your phone upright');
+    }
+
+    if (overlay) overlay.style.display = (landscape && !selectedPostFile) ? 'flex' : 'none';
+    if (recordBtn) recordBtn.disabled = landscape;
+}
+
+function watchComposerOrientation() {
+    const handler = () => applyComposerOrientation();
+    if (window.screen?.orientation?.addEventListener) {
+        window.screen.orientation.addEventListener('change', handler);
+    }
+    window.addEventListener('orientationchange', handler);
+}
+
+/** m:ss. `0:${s}` was wrong for anything over 59 — a 60s cap read "0:60". */
+function formatClock(totalSeconds) {
+    const n = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+}
+
+const RECORD_RING_CIRCUMFERENCE = 188.5;   // 2π × r=30, matching social.css
+
+function stopCountdownUi() {
+    const countdown = document.getElementById('recording-countdown');
+    if (countdown) {
+        countdown.style.display = 'none';
+        countdown.textContent = '';
+        countdown.classList.remove('urgent');
+    }
+    const ring = document.getElementById('record-ring-fill');
+    if (ring) ring.style.strokeDashoffset = String(RECORD_RING_CIRCUMFERENCE);
+}
+
+const CLIP_ASPECT = 9 / 16;
+const CLIP_WIDTH = 720;
+const CLIP_HEIGHT = 1280;
+
+/**
+ * The centred 9:16 window inside a source frame, or null when the source is
+ * already close enough (within 2%) that cropping would only cost quality.
+ */
+function cropRectFor(srcW, srcH, aspect = CLIP_ASPECT) {
+    const w = Number(srcW), h = Number(srcH);
+    if (!(w > 0) || !(h > 0)) return null;
+    const ratio = w / h;
+    if (Math.abs(ratio - aspect) / aspect <= 0.02) return null;
+
+    if (ratio > aspect) {
+        // Too wide: trim the sides.
+        const sw = Math.round(h * aspect);
+        return { sx: Math.round((w - sw) / 2), sy: 0, sw, sh: h };
+    }
+    // Too tall: trim top and bottom.
+    const sh = Math.round(w / aspect);
+    return { sx: 0, sy: Math.round((h - sh) / 2), sw: w, sh };
+}
+
+let cropFrameHandle = null;
+let cropCanvasStream = null;
+
+/**
+ * A 720×1280 canvas fed with the centre crop of the viewfinder, plus the
+ * camera's own audio track. Returns that stream, or null when no crop is needed
+ * or the canvas route is unavailable — the caller then records the camera.
+ */
+function startCropPipeline(video) {
+    stopCropPipeline();
+    if (!video || !cameraStream) return null;
+    if (!cropRectFor(video.videoWidth, video.videoHeight)) return null;
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = CLIP_WIDTH;
+        canvas.height = CLIP_HEIGHT;
+        const ctx = canvas.getContext('2d');
+        if (!ctx || typeof canvas.captureStream !== 'function') return null;
+
+        const draw = () => {
+            // Re-read per frame: the track can renegotiate its size.
+            const rect = cropRectFor(video.videoWidth, video.videoHeight)
+                || { sx: 0, sy: 0, sw: video.videoWidth, sh: video.videoHeight };
+            if (rect.sw > 0 && rect.sh > 0) {
+                ctx.drawImage(video, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, CLIP_WIDTH, CLIP_HEIGHT);
+            }
+            cropFrameHandle = requestAnimationFrame(draw);
+        };
+        draw();
+
+        const stream = canvas.captureStream(30);
+        cameraStream.getAudioTracks().forEach(track => stream.addTrack(track));
+        cropCanvasStream = stream;
+        return stream;
+    } catch (err) {
+        console.warn('9:16 crop unavailable, recording the camera directly:', err?.name || err);
+        stopCropPipeline();
+        return null;
+    }
+}
+
+function stopCropPipeline() {
+    if (cropFrameHandle !== null) {
+        cancelAnimationFrame(cropFrameHandle);
+        cropFrameHandle = null;
+    }
+    if (cropCanvasStream) {
+        // Only the canvas's own video track — the audio track belongs to
+        // cameraStream, which stopCamera() ends.
+        cropCanvasStream.getVideoTracks().forEach(track => track.stop());
+        cropCanvasStream = null;
+    }
+}
+
+
 async function startCamera() {
     if (cameraStream) return; // Already running
+
+    // Belt and braces with openCreatePost(): no camera request on a desktop.
+    if (!isPhoneDevice()) {
+        showToast('Open ViibeView on your phone to post');
+        return;
+    }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showToast('Camera not supported on this device');
@@ -7064,6 +7810,7 @@ async function startCamera() {
 }
 
 function stopCamera() {
+    stopCropPipeline();
     if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
@@ -7077,9 +7824,19 @@ function stopCamera() {
 
 function startRecording() {
     if (!cameraStream) return;
+    // Upright only. The button is disabled in landscape; this is the backstop.
+    if (isLandscape()) {
+        applyComposerOrientation();
+        return;
+    }
 
     recordedChunks = [];
     recordedDurationSeconds = null;
+
+    // Every clip is 9:16. If the camera did not hand us that shape, record a
+    // centre-cropped canvas instead; if the canvas route fails, the camera.
+    const viewfinder = document.getElementById('camera-viewfinder');
+    const source = startCropPipeline(viewfinder) || cameraStream;
 
     // Pick supported mimeType
     const mimeType = MediaRecorder.isTypeSupported('video/mp4')
@@ -7103,14 +7860,23 @@ function startRecording() {
     // options object on some engines, and a capture app that cannot capture is
     // a total failure where a fatter file is a slower one.
     try {
-        mediaRecorder = new MediaRecorder(cameraStream, {
+        mediaRecorder = new MediaRecorder(source, {
             mimeType,
             videoBitsPerSecond: 1_200_000,
             audioBitsPerSecond: 64_000
         });
     } catch (err) {
         console.warn('MediaRecorder rejected the bitrate options, falling back:', err.name);
-        mediaRecorder = new MediaRecorder(cameraStream, { mimeType });
+        try {
+            mediaRecorder = new MediaRecorder(source, { mimeType });
+        } catch (sourceErr) {
+            // The cropped canvas stream is the one most likely to be refused
+            // here. Recording the camera uncropped beats not recording.
+            if (source === cameraStream) throw sourceErr;
+            console.warn('MediaRecorder refused the cropped stream, recording the camera:', sourceErr.name);
+            stopCropPipeline();
+            mediaRecorder = new MediaRecorder(cameraStream, { mimeType });
+        }
     }
 
     mediaRecorder.ondataavailable = (e) => {
@@ -7147,11 +7913,28 @@ function startRecording() {
     if (timer) timer.classList.add('active');
 
     // Count DOWN from the cap rather than up — the limit is the point, and the
-    // user needs to see it coming.
+    // user needs to see it coming. Big number over the viewfinder, a ring on
+    // the button, the small clock above it.
+    const countdown = document.getElementById('recording-countdown');
+    const ring = document.getElementById('record-ring-fill');
+    const paintCountdown = (elapsed) => {
+        const remaining = Math.max(0, Math.ceil(maxSeconds - elapsed));
+        if (timer) timer.textContent = formatClock(remaining);
+        if (countdown) {
+            countdown.textContent = String(remaining);
+            countdown.style.display = '';
+            countdown.classList.toggle('urgent', remaining <= 3);
+        }
+        if (ring) {
+            const used = Math.min(1, Math.max(0, elapsed / maxSeconds));
+            ring.style.strokeDashoffset = String(RECORD_RING_CIRCUMFERENCE * (1 - used));
+        }
+    };
+    paintCountdown(0);
+
     recordingTimerInterval = setInterval(() => {
         const elapsed = (Date.now() - recordingStartTime) / 1000;
-        const remaining = Math.max(0, Math.ceil(maxSeconds - elapsed));
-        if (timer) timer.textContent = `0:${remaining.toString().padStart(2, '0')}`;
+        paintCountdown(elapsed);
 
         // Hard stop at the cap. settings.video_max_duration was seeded at 15s
         // for ViibeView but nothing enforced it, so recordings ran unbounded.
@@ -7179,6 +7962,7 @@ function stopRecording() {
     if (viewfinder) viewfinder.style.display = 'none';
     const controls = document.getElementById('recording-controls');
     if (controls) controls.style.display = 'none';
+    stopCountdownUi();
 }
 
 function showRecordingPreview(blob) {
@@ -7209,8 +7993,10 @@ function retakeRecording() {
     if (retakeBtn) retakeBtn.style.display = 'none';
     const timer = document.getElementById('recording-timer');
     if (timer) { timer.textContent = '0:00'; timer.classList.remove('active'); }
+    stopCountdownUi();
 
     updatePostSubmitState();
+    applyComposerOrientation();
     startCamera();
 }
 
@@ -8031,6 +8817,179 @@ function closeIosInstall() {
     document.getElementById('ios-install-backdrop')?.classList.remove('visible');
     unlockBodyScroll('ios-install');
 }
+
+// ===== Back navigation =====
+//
+// Android's back button (and the browser's) used to leave the app from
+// anywhere: ViibeView made no history entries at all, and the manifest is
+// `standalone`, so one press from inside a venue page closed the whole PWA
+// (Jay, 2026-10-06).
+//
+// The model: ONE guard entry. Whenever anything is open, or a tab other than
+// Feed is showing, a single extra history entry sits on top of the page's own.
+// Back pops it; popstate closes the top-most open surface (BACK_SURFACES is in
+// stacking order, top first) or returns to Feed, and then re-arms the guard if
+// there is still something to go back from. Back from Feed with nothing open
+// leaves — in the installed app, only after "Press back again to exit".
+//
+// ⚠️ THE PUSH WAITS FOR THE FIRST USER GESTURE. Chrome marks a history entry
+// as skippable when it is added by a document that has never had user
+// activation, and back then jumps straight over it — out of the app. A guard
+// pushed at boot (deep-linked venue page, first-run onboarding) would make the
+// very first back press exit. Once the user has tapped anything the activation
+// is sticky and every later push, including the re-arm inside popstate, holds.
+//
+// ⚠️ A popstate that lands ON a guard entry is the forward button, not back;
+// it is ignored. history.state is passed through by every replaceState in this
+// app (social.js and social-auth.js) so the guard's marker is never wiped.
+
+const BACK_SURFACES = [
+    { id: 'onboarding-overlay', back: () => {
+        if (onboardingIndex > 0) setOnboardingIndex(onboardingIndex - 1);
+        else finishOnboarding();
+    } },
+    // Through its own Cancel button, so showConfirm's close() runs.
+    { id: 'confirm-dialog',      back: () => document.getElementById('confirm-cancel')?.click() },
+    { id: 'venue-picker-sheet',  back: () => closeVenuePicker() },
+    { id: 'create-post-modal',   back: () => backFromComposer() },
+    { id: 'auth-overlay',        back: () => backFromAuth() },
+    { id: 'edit-profile-sheet',  back: () => closeEditProfile() },
+    { id: 'post-options-sheet',  back: () => closePostOptions() },
+    { id: 'people-sheet',        back: () => closePeopleSheet() },
+    { id: 'member-page',         back: () => closeMemberProfile() },
+    { id: 'venue-page',          back: () => closeVenuePage() },
+    { id: 'post-preview-modal',  back: () => closePostPreview() },
+    { id: 'add-venue-sheet',     back: () => closeAddVenue() },
+    { id: 'app-settings-sheet',  back: () => closeAppSettings() },
+    { id: 'radius-sheet',        back: () => closeRadiusSheet() },
+    { id: 'contact-sheet',       back: () => closeContactSheet() },
+    { id: 'ios-install-sheet',   back: () => closeIosInstall() },
+];
+
+const BACK_GUARD_STATE = 'viibeBackGuard';
+let backGuardArmed = false;
+let backHadGesture = false;
+let backExitWarned = false;
+
+function topOpenSurface() {
+    return BACK_SURFACES.find(s =>
+        document.getElementById(s.id)?.classList.contains('visible')) || null;
+}
+
+// Whether back has anything to do inside the app. In the installed app the
+// answer is always yes — the guard is what lets us say "press back again".
+function needsBackGuard() {
+    if (topOpenSurface() || activeTab !== 'feed') return true;
+    return installedApp() && !backExitWarned;
+}
+
+// isStandalone(), tolerant of an environment with no matchMedia (jsdom, some
+// webviews) — this runs inside a global pointerdown listener.
+function installedApp() {
+    try { return isStandalone(); } catch { return window.navigator?.standalone === true; }
+}
+
+function syncBackGuard() {
+    if (backGuardArmed || !backHadGesture || !needsBackGuard()) return;
+    try {
+        const base = history.state && typeof history.state === 'object' ? history.state : {};
+        history.pushState({ ...base, [BACK_GUARD_STATE]: true }, '');
+        backGuardArmed = true;
+    } catch {
+        // Some embedded webviews refuse pushState. Back then behaves as it
+        // always did, which is the worst case, not a new one.
+    }
+}
+
+function onBackPopState(event) {
+    // Forward onto our own guard entry — not a back press.
+    if (event.state && event.state[BACK_GUARD_STATE]) {
+        backGuardArmed = true;
+        return;
+    }
+    backGuardArmed = false;
+
+    const surface = topOpenSurface();
+    if (surface) {
+        surface.back();
+        syncBackGuard();
+        return;
+    }
+
+    if (activeTab !== 'feed') {
+        switchTab('feed');
+        syncBackGuard();
+        return;
+    }
+
+    // Feed, nothing open: this press is a request to leave.
+    if (installedApp()) {
+        // No re-arm: the NEXT press goes past the page's first entry and the
+        // OS closes the app. Any tap in between re-arms (onBackGesture).
+        backExitWarned = true;
+        showToast(translateOr('social.pressBackToExit', null, 'Press back again to exit'));
+        return;
+    }
+    // A browser tab: the guard we just consumed was left over from a surface
+    // closed by its own button. Take the press the rest of the way.
+    history.back();
+}
+
+function onBackGesture() {
+    backHadGesture = true;
+    backExitWarned = false;
+    syncBackGuard();
+}
+
+function backFromComposer() {
+    const recording = !!mediaRecorder && mediaRecorder.state === 'recording';
+    if (selectedPostFile || recording) {
+        showConfirm({
+            title: translateOr('social.discardViibeTitle', null, 'Discard this Viibe?'),
+            body: translateOr('social.discardViibeBody', null, 'Your clip will be lost.'),
+            acceptLabel: translateOr('social.discard', null, 'Discard'),
+            onAccept: () => closeCreatePost()
+        });
+        return;
+    }
+    closeCreatePost();
+}
+
+function currentAuthView() {
+    return ['reset', 'forgot', 'login', 'signup', 'splash'].find(v => {
+        const el = document.getElementById(`auth-view-${v}`);
+        return el && el.style.display !== 'none';
+    }) || 'splash';
+}
+
+// One view back: forgot → login → splash → closed.
+function backFromAuth() {
+    const view = currentAuthView();
+    if (view === 'forgot') setAuthView('login');
+    else if (view === 'login' || view === 'signup') setAuthView('splash');
+    else hideAuth();
+}
+
+function setupBackNavigation() {
+    window.addEventListener('popstate', onBackPopState);
+    // Capture phase: the first tap anywhere counts, even one a handler stops.
+    ['pointerdown', 'keydown'].forEach(type =>
+        document.addEventListener(type, onBackGesture, { capture: true, passive: true }));
+
+    // Opening any surface arms the guard — whatever opened it. One observer
+    // over every registered element, on its class attribute only.
+    if (typeof MutationObserver === 'function') {
+        const observer = new MutationObserver(() => syncBackGuard());
+        BACK_SURFACES.forEach(s => {
+            const el = document.getElementById(s.id);
+            if (el) observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+        });
+    }
+}
+
+// At PARSE time — the script tag sits at the end of <body>, so every surface
+// already exists, and a popstate must be caught even before init() resolves.
+setupBackNavigation();
 
 // ===== Service Worker =====
 // sw.js already precaches social.html/.css/.js, but this page never registered

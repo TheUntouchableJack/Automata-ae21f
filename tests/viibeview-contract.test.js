@@ -141,13 +141,20 @@ describe('ViibeView markup + vocabularies', () => {
 
     // ===== Phase 2: profiles, follows, discovery =====
 
-    it('the bottom nav has exactly FOUR items', () => {
-        // The member profile is an OVERLAY on purpose. Every "add a screen"
-        // change is one line from becoming a fifth tab, and a fifth tab breaks
-        // the layout the whole stylesheet is built around — plus it would have
-        // nothing to show the signed-out visitors who are most of this app's
-        // traffic. Assert the invariant, not the intention.
-        expect(d.querySelectorAll('.bottom-nav .nav-item').length).toBe(4);
+    it('the bottom nav is exactly FIVE items, in order: Feed, Map, Search, Me, Settings', () => {
+        // Jay, 2026-10-06: "Me" is your profile; the old Profile tab became
+        // Settings. The member profile of OTHER people stays an overlay — it
+        // opens from inside the venue page and the people sheet. Assert the
+        // exact order, not just the count: a swapped pair is a different app.
+        const tabs = [...d.querySelectorAll('.bottom-nav .nav-item')].map(b => b.dataset.tab);
+        expect(tabs).toEqual(['feed', 'map', 'search', 'me', 'settings']);
+
+        // Every nav item has a panel, and the panel is what switchTab() shows.
+        for (const tab of tabs) {
+            expect(d.getElementById(`tab-${tab}`), `#tab-${tab}`).toBeTruthy();
+        }
+        // The Profile tab is gone, not merely unlinked.
+        expect(d.getElementById('tab-profile')).toBeNull();
         expect(d.getElementById('member-page').tagName).toBe('SECTION');
     });
 
@@ -178,13 +185,27 @@ describe('ViibeView markup + vocabularies', () => {
             'edit-profile-location',
             'member-page-location', 'member-page-venues',
             'member-page-venues-list', 'member-page-venues-more',
-            // profile tab entry points
-            'profile-stats', 'profile-followers-btn', 'profile-followers-count',
-            'profile-following-btn', 'profile-following-count',
-            'edit-profile-btn', 'view-my-profile-btn', 'discover-members-btn',
+            // Settings tab (was Profile) — inner ids unchanged
+            'profile-signed-out', 'profile-signed-in', 'edit-profile-btn', 'logout-btn',
+            // Me tab
+            'me-signed-out', 'me-signed-in', 'me-signup-btn', 'me-login-btn',
+            'me-avatar', 'me-name', 'me-bio', 'me-location', 'me-stats',
+            'me-edit-profile-btn', 'me-grid', 'me-loading', 'me-empty',
+            // Search scope, flyers, recorder, onboarding back
+            'search-scope', 'venue-flyer-input',
+            'upload-desktop-block', 'recording-countdown', 'record-ring-fill', 'rotate-overlay',
+            'onboarding-back',
         ];
         const missing = ids.filter(id => !d.getElementById(id));
         expect(missing).toEqual([]);
+
+        // The Profile tab's stat boxes and its two moved entry points are GONE:
+        // the counts live on the Me tab (refetched on every open) and member
+        // search lives under Search → Members.
+        for (const gone of ['profile-stats', 'profile-followers-btn', 'profile-following-btn',
+                            'view-my-profile-btn', 'discover-members-btn']) {
+            expect(d.getElementById(gone), gone).toBeNull();
+        }
     });
 
     it('setFormMessage/setSubmitting id conventions are satisfied by the edit-profile form', () => {

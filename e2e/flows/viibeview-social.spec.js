@@ -459,7 +459,7 @@ test.describe('ViibeView social app', () => {
         // The Profile tab resolves to a real state instead of the old
         // permanently-"--" card. Signed out that means the signup prompt;
         // the populated card is covered in viibeview-auth.spec.js.
-        await page.click('.nav-item[data-tab="profile"]');
+        await page.click('.nav-item[data-tab="settings"]');
         await expect(page.locator('#profile-signed-out')).toBeVisible();
         await expect(page.locator('#profile-signed-in')).toBeHidden();
 
@@ -705,7 +705,7 @@ test.describe('ViibeView social app', () => {
             'needs VIIBEVIEW_TEST_EMAIL / VIIBEVIEW_TEST_PASSWORD — this writes follow edges to Royalty PROD');
 
         await loadApp(page);
-        await page.click('.nav-item[data-tab="profile"]');
+        await page.click('.nav-item[data-tab="settings"]');
         await page.click('#profile-login-btn');
         await page.fill('#login-email', TEST_EMAIL);
         await page.fill('#login-password', TEST_PASSWORD);
@@ -991,7 +991,7 @@ test.describe('ViibeView — onboarding, distance and the full-screen feed', () 
 
     test('the owner settings entry point is hidden from a signed-out visitor', async ({ page }) => {
         await loadApp(page);
-        await page.click('.nav-item[data-tab="profile"]');
+        await page.click('.nav-item[data-tab="settings"]');
         await expect(page.locator('#app-settings-btn')).toBeHidden();
     });
 

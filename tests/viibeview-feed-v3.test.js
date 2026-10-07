@@ -9,6 +9,11 @@
  * array. These assert the things that CANNOT be observed against a two-post
  * tenant, and every one of them fails OPEN if the parse finds nothing, so each
  * block opens with a non-emptiness guard.
+ *
+ * ⚠️ 2026-10-06: the feed functions' LIVE definitions (the 7am reset, no
+ * permanent exemption, no footer on the open readers) are asserted in
+ * viibeview-2026-10-06-batch.test.js via latestDefinition(). Assertions here
+ * that read 20260907000002 prove that file, not what prod runs today.
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
@@ -358,9 +363,21 @@ describe('member preferences (#1, #2)', () => {
     it('onboarding owns its own listeners rather than waiting for setupEventListeners', () => {
         // setupEventListeners() runs at the END of init(), behind four awaits.
         // Wiring Skip and Next there leaves them dead while the intro is up.
-        const fn = js.slice(js.indexOf('function maybeShowOnboarding()'));
-        expect(fn.slice(0, 1800)).toMatch(/onboarding-skip'\)\s*\n?\s*\?\.addEventListener/);
-        expect(fn.slice(0, 1800)).toMatch(/getElementById\('onboarding-next'\)\?\.addEventListener/);
+        //
+        // 2026-10-06: the listeners moved into showOnboarding(), which a new
+        // signup calls with force:true — so they are wired ONCE, behind a flag,
+        // or a second showing would double every handler.
+        const start = js.indexOf('function showOnboarding({ force = false } = {})');
+        expect(start, 'showOnboarding not found').toBeGreaterThan(-1);
+        const fn = js.slice(start, js.indexOf('\n}', start));
+        expect(fn).toMatch(/onboarding-skip'\)\s*\n?\s*\?\.addEventListener/);
+        expect(fn).toMatch(/getElementById\('onboarding-next'\)\?\.addEventListener/);
+        expect(fn.indexOf('if (onboardingWired) return;'), 'listeners are not wired once')
+            .toBeLessThan(fn.indexOf("getElementById('onboarding-next')"));
+        expect(fn.indexOf('if (onboardingWired) return;')).toBeGreaterThan(-1);
+
+        const maybe = js.slice(js.indexOf('function maybeShowOnboarding()'));
+        expect(maybe.slice(0, 200)).toMatch(/if \(hasOnboarded\(\)\) return;\s*showOnboarding\(\);/);
     });
 });
 
@@ -446,9 +463,9 @@ describe('full-screen feed (#3, #4, #12)', () => {
 
     it('no affordance was lost in EITHER re-layout', () => {
         // ⚠️ This list is the guard against a layout change quietly dropping
-        // the sound toggle or the here-tonight badge. Phase 5 moved the chrome
-        // off the video and into two opaque strips — items may MOVE between
-        // renderFeedCard and venueStripMarkup, but nothing may leave.
+        // the sound toggle or the here-tonight badge. Items may MOVE between
+        // renderFeedCard and venueStripMarkup, but nothing on this list may
+        // leave.
         //
         // Both functions are searched together, because that is the honest
         // boundary now: the panel is what the two of them render jointly.
@@ -467,29 +484,50 @@ describe('full-screen feed (#3, #4, #12)', () => {
             .toMatch(/\$\{venueStripMarkup\(item, identity\)\}/);
 
         for (const affordance of [
-            // ⚠️ `{ showVenue: false }` now, not the bare call. The strip above
-            // the video IS the venue, so the "at {venue}" subtitle would repeat
-            // it two elements later. This is the same flag the venue page has
-            // always passed — postHeaderMarkup itself is NOT forked.
-            'postHeaderMarkup(identity, { showVenue: false })',
-            'venueStripMarkup(',            // the venue strip (new)
             'showPostOptions(',             // 3-dots
             'toggleFeedSound(',             // sound
             'toggleVideoPlay(this)',        // play/pause
-            'formatDuration(',              // duration pill
             'hereNowBadge(venue)',          // here tonight
-            'feed-caption'                  // caption
         ]) {
             expect(panel, `the full-screen panel dropped ${affordance}`).toContain(affordance);
         }
+    });
+
+    it('2026-10-06: the home feed shows NO author, caption or duration (Jay)', () => {
+        // The bottom strip is gone by decision. fnCode: renderFeedCard's own
+        // comment names what was removed.
+        const code = fnCode('function renderFeedCard(item)');
+        expect(code, 'renderFeedCard not found').toBeTruthy();
+        expect(code.length).toBeGreaterThan(300);   // non-emptiness guard
+        for (const gone of ['feed-panel-meta', 'postHeaderMarkup(', 'feed-caption', 'formatDuration(']) {
+            expect(code, `${gone} is back in the home feed`).not.toContain(gone);
+        }
+
+        // The sound toggle sits INSIDE .feed-media now, bottom-right on the
+        // video — between the media div's opening tag and its close.
+        const mediaOpen = code.indexOf('<div class="feed-media"');
+        const sound = code.indexOf('feed-panel-sound');
+        const mediaClose = code.indexOf('</div>', sound);
+        expect(mediaOpen).toBeGreaterThan(-1);
+        expect(sound, 'the sound toggle left .feed-media').toBeGreaterThan(mediaOpen);
+        expect(mediaClose).toBeGreaterThan(sound);
+
+        // CSS: the footer's rules went with it.
+        expect(css).not.toMatch(/^\.feed-panel-meta \{/m);
+        expect(css).not.toMatch(/^\.feed-panel \.feed-caption \{/m);
+        const soundRule = css.slice(css.indexOf('.feed-panel-sound {'));
+        const soundBlock = soundRule.slice(0, soundRule.indexOf('}'));
+        expect(soundBlock).toContain('position: absolute');
+        expect(soundBlock).toContain('bottom: var(--spacing-md)');
+        expect(soundBlock).toContain('right: var(--spacing-md)');
     });
 
     it('⚠️ Phase 5: nothing is overlaid on the video any more', () => {
         const card = fnBody('function renderFeedCard(item)');
         expect(card, 'renderFeedCard not found').toBeTruthy();
 
-        // The two opaque strips exist...
-        expect(card).toContain('feed-panel-meta');
+        // The opaque venue strip exists (the meta footer was removed on
+        // 2026-10-06 — see the test above)...
         expect(fnBody('function venueStripMarkup(item, identity)')).toContain('feed-panel-venue');
 
         // ...and the two overlay elements are gone. fnCode, not fnBody:
@@ -505,10 +543,12 @@ describe('full-screen feed (#3, #4, #12)', () => {
         // appended to — an appended rule loses and the video covers the strips.
         const mediaRule = css.slice(css.indexOf('.feed-panel .feed-media {'));
         const block = mediaRule.slice(0, mediaRule.indexOf('}'));
-        expect(block).toContain('position: static');
+        // relative, not static: it is the containing block for the sound
+        // toggle. Still in the flex flow — no inset, asserted below.
+        expect(block).toContain('position: relative');
         expect(block).toContain('flex: 1 1 auto');
-        // min-height:0 — without it a tall clip refuses to shrink and pushes
-        // the footer off the bottom of the panel.
+        // min-height:0 — without it a tall clip refuses to shrink and
+        // overflows the panel.
         expect(block).toContain('min-height: 0');
         expect(block, 'the absolute-positioning rule survived').not.toContain('inset: 0');
 
@@ -560,13 +600,6 @@ describe('full-screen feed (#3, #4, #12)', () => {
         expect(panelCss).not.toMatch(/\.feed-panel-info \{/);
     });
 
-    it('a long caption cannot eat the video', () => {
-        const metaRule = css.slice(css.indexOf('.feed-panel-meta {'));
-        expect(metaRule.slice(0, metaRule.indexOf('}'))).toContain('max-height: 26%');
-        const capRule = css.slice(css.indexOf('.feed-panel .feed-caption {'));
-        expect(capRule.slice(0, capRule.indexOf('}'))).toContain('max-height: 3em');
-    });
-
     it('the photo branch survives as the rollback path', () => {
         // Pointing loadFeed() back at get_venue_feed brings photos with it.
         const fn = js.slice(js.indexOf('function renderFeedCard(item)'));
@@ -581,10 +614,16 @@ describe('full-screen feed (#3, #4, #12)', () => {
         expect(js).toMatch(/<div class="feed-card" data-media-id=/);
         expect(css).toMatch(/^\.feed-card \{/m);
 
+        // The tile markup lives in reelsTileMarkup() since 2026-10-06, shared
+        // with the Me tab. Assert the CALL against the grid, and the markup
+        // against the helper.
         const grid = fnBody('function renderVenuePageGrid()');
         expect(grid, 'renderVenuePageGrid not found').toBeTruthy();
-        expect(grid).toContain('member-grid-tile');
-        expect(grid, 'the venue page is still rendering the old card stack')
+        expect(grid).toMatch(/venuePageFeed\.map\(item => reelsTileMarkup\(item, \{/);
+        const tile = fnBody("function reelsTileMarkup(item, { expanded = false, onTap = '' } = {})");
+        expect(tile, 'reelsTileMarkup not found').toBeTruthy();
+        expect(tile).toContain('member-grid-tile');
+        expect(grid + tile, 'the venue page is still rendering the old card stack')
             .not.toContain('class="feed-card"');
 
         const list = fnBody('function renderMemberList()');
@@ -598,8 +637,8 @@ describe('full-screen feed (#3, #4, #12)', () => {
     });
 
     it('the sound toggle resolves both the panel and the venue-page shapes', () => {
-        // On the panel the button is a SIBLING of .feed-media; on the venue page
-        // it is inside it. A bare .feed-media lookup returns null on the feed.
+        // The button is inside .feed-media on every surface since 2026-10-06;
+        // .feed-panel is still checked first — the panel holds one video.
         expect(js).toMatch(/btn\.closest\('\.feed-panel'\) \|\| btn\.closest\('\.feed-media'\)/);
     });
 });
@@ -667,6 +706,9 @@ describe('video performance (#9)', () => {
         const grid = fnBody('function renderVenuePageGrid()');
         expect(grid, 'renderVenuePageGrid not found').toBeTruthy();
         expect(grid.length, 'renderVenuePageGrid body is suspiciously short').toBeGreaterThan(500);
+        // The tile markup moved to reelsTileMarkup() (2026-10-06).
+        const tile = fnBody("function reelsTileMarkup(item, { expanded = false, onTap = '' } = {})");
+        expect(tile, 'reelsTileMarkup not found').toBeTruthy();
 
         // ⚠️ fnCode, not fnBody. renderVenuePageGrid's own header comment says
         // "setupVideoObserverIn() is deliberately NOT called here" — asserting
@@ -680,15 +722,22 @@ describe('video performance (#9)', () => {
         // A collapsed tile is a poster, not a video element. The <img> branch
         // has to be there or the "no autoplay" assertion above is satisfied by
         // markup that still holds 40 <video> elements.
-        expect(grid).toMatch(/<img src="\$\{escapeHtml\(item\.thumbnail_url\)\}"[^>]*loading="lazy"/);
+        expect(tile).toMatch(/<img src="\$\{escapeHtml\(item\.thumbnail_url\)\}"[^>]*loading="lazy"/);
 
         // ⚠️ ...and preload="metadata" for the legacy rows whose thumbnail_url
         // is NULL and can never be backfilled. "none" paints those solid black.
-        expect(grid).toMatch(/preload="metadata"/);
+        expect(tile).toMatch(/preload="metadata"/);
+        // ...and the helper itself never autoplays or observes either.
+        const tileCode = fnCode("function reelsTileMarkup(item, { expanded = false, onTap = '' } = {})");
+        expect(tileCode).not.toContain('setupVideoObserverIn');
+        expect(tileCode).not.toMatch(/\.play\(\)/);
 
         // Hydration happens on tap, in its own function, and nowhere else.
-        const tap = fnBody('function hydrateExpandedVenuePost()');
-        expect(tap, 'hydrateExpandedVenuePost not found').toBeTruthy();
+        // Scoped to one grid since the Me tab got its own (2026-10-06).
+        expect(fnBody('function hydrateExpandedVenuePost()'))
+            .toContain("hydrateExpandedTileIn(document.getElementById('venue-page-feed'))");
+        const tap = fnBody('function hydrateExpandedTileIn(container)');
+        expect(tap, 'hydrateExpandedTileIn not found').toBeTruthy();
         expect(tap).toMatch(/ensureVideoSrc\(video\)/);
         expect(tap).toMatch(/applySoundState\(video\)/);
     });
@@ -807,26 +856,26 @@ describe('interruption handling (#11)', () => {
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=20');
-        expect(html).toContain('/customer-app/social-auth.js?v=4');
-        expect(html).toContain('/customer-app/social.css?v=15');
+        expect(html).toContain('/customer-app/social.js?v=21');
+        expect(html).toContain('/customer-app/social-auth.js?v=5');
+        expect(html).toContain('/customer-app/social.css?v=16');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v15'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v15'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v15'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v16'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v16'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v16'");
         // ...and the generation carries its own dated rationale, in the style
         // every previous one does. A bump with no note is a bump nobody can
         // later tell was mandatory or cosmetic.
-        expect(sw).toMatch(/\/\/ v15 \(2026-09-22\):/);
+        expect(sw).toMatch(/\/\/ v16 \(2026-10-06\):/);
     });
 
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 16;');
-        expect(html).toContain('/i18n/i18n.js?v=5');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 17;');
+        expect(html).toContain('/i18n/i18n.js?v=6');
     });
 
     it('supabase-js is pinned, not floating on a major', () => {
@@ -862,6 +911,9 @@ describe('release plumbing', () => {
             // references a column 000003 creates.
             '20260922000001', '20260922000002', '20260922000003',
             '20260922000004', '20260922000005',
+            // The 2026-10-06 round. 000002 reads venue_owners and 000003 reads
+            // venue_media.is_flyer, both created by 000001.
+            '20261006000001', '20261006000002', '20261006000003',
         ]) {
             expect(files.filter(f => f.startsWith(stamp)).length,
                 `${stamp} is claimed by more than one file`).toBe(1);

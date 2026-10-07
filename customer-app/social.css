@@ -411,15 +411,18 @@ body {
    ⚠️ THIS RULE REPLACES THE `position: absolute; inset: 0` THAT USED TO BE
    HERE. It does not sit after it. An appended rule would lose: `inset: 0` and
    `position: absolute` would still apply from the earlier declaration, the
-   video would go back to covering the whole panel, and the strips would be
+   video would go back to covering the whole panel, and the strip would be
    drawn UNDER it — a layout that looks almost right and is completely wrong.
-   If you are reading this because the strips vanished, that is what happened.
+
+   position: relative (no inset) keeps it in the flex flow AND makes it the
+   containing block for the sound toggle, which sits on the video's
+   bottom-right corner now that the meta footer is gone.
 
    `min-height: 0` is not optional either: a flex item's default min-height is
    auto, which refuses to shrink below the video's intrinsic height, so a tall
-   clip pushes the footer off the bottom of the panel. */
+   clip overflows the panel. */
 .feed-panel .feed-media {
-    position: static;
+    position: relative;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -470,26 +473,10 @@ body {
     text-overflow: ellipsis;
 }
 
-/* ===== The meta footer =====
-   Also opaque. Author byline, caption, duration, sound toggle. */
-.feed-panel-meta {
-    flex: 0 0 auto;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-sm) var(--spacing-md);
-    padding-right: 60px;      /* clear of .feed-panel-sound */
-    background: var(--color-surface);
-    border-top: 1px solid var(--color-border);
-    /* ⚠️ A cap, so a long caption cannot eat the video it belongs to. The
-       panel is a fixed height and the media is the flexible item — without
-       this, every extra line of caption is a line taken off the clip. */
-    max-height: 26%;
-    overflow: hidden;
-}
-
+/* ===== No meta footer =====
+   Removed 2026-10-06 (Jay): the home feed shows no author, caption or
+   duration. The 3-dots button stays in the venue strip; the sound toggle sits
+   on the video, bottom-right. */
 .feed-panel-more {
     flex: 0 0 auto;
     color: var(--color-text-secondary);
@@ -505,25 +492,9 @@ body {
 /* ⚠️ THE COLOUR OVERRIDES ARE GONE, and their absence is the point.
    There used to be ~30 lines here forcing white text, a translucent avatar and
    ghosted genre chips onto the shared header markup, because that markup is
-   written for a light card and it was being drawn over a video. Both strips
-   are light surfaces now, so postHeaderMarkup()'s own treatment is simply
-   correct, unmodified. This is the largest net simplification in the phase —
-   re-adding any of it would mean the strips have stopped being opaque. */
-
-.feed-panel .feed-caption {
-    padding: 0;
-    /* Reduced from 4.5em together with the footer cap above: at 4.5em a
-       three-line caption plus the byline already exceeds 26% on a short
-       phone, and `overflow: hidden` would clip mid-word with no sign. */
-    max-height: 3em;
-    overflow: hidden;
-}
-
-/* Static in the footer rather than absolutely positioned in the media box —
-   there is nothing overlaid on the media any more. */
-.feed-panel .video-duration {
-    position: static;
-}
+   written for a light card and it was being drawn over a video. The strip is a
+   light surface now, so its own treatment is simply correct, unmodified —
+   re-adding any of it would mean the strip has stopped being opaque. */
 
 /* JS-generated: <div class="feed-card"> — MEMBER PROFILE ONLY.
    The main feed renders .feed-panel; the VENUE PAGE renders .member-grid.
@@ -1071,6 +1042,41 @@ body {
     padding: var(--spacing-md);
 }
 
+/* Venues | Members */
+.search-scope {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: var(--spacing-md);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.search-scope-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: calc(var(--radius-lg) - 4px);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.search-scope-btn.active {
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.search-members-list .people-row {
+    padding-left: 0;
+    padding-right: 0;
+}
+
 .search-input-wrap {
     display: flex;
     align-items: center;
@@ -1492,12 +1498,17 @@ body {
     transform: translateY(100%);
 }
 
+/* flex: 1 with min-width: 0 — five equal columns. Five items at the old
+   padding (var(--spacing-md) a side) overflowed a 320px-wide phone; an equal
+   share of the bar fits any width and keeps every target the same size. */
 .nav-item {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) 2px;
     color: var(--color-text-muted);
     font-family: 'Outfit', sans-serif;
     font-size: 0.625rem;
@@ -1846,15 +1857,19 @@ body {
     justify-content: center;
 }
 
-/* Camera viewfinder */
+/* Camera viewfinder — the clip's own shape. Every Viibe is 9:16 (Jay,
+   2026-10-06), so what you frame is exactly what posts. */
 .camera-viewfinder {
-    width: 100%;
-    height: 300px;
+    height: min(62vh, 560px);
+    width: auto;
+    max-width: 100%;
+    aspect-ratio: 9 / 16;
     object-fit: cover;
     display: block;
+    margin: 0 auto;
 }
 
-/* Recording controls overlay */
+/* Recording controls overlay. Solid, not a gradient. */
 .recording-controls {
     position: absolute;
     bottom: 0;
@@ -1865,7 +1880,76 @@ body {
     align-items: center;
     gap: 8px;
     padding: 16px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* The big 15→0 over the viewfinder. */
+.recording-countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    z-index: 2;
+    font-family: 'Outfit', sans-serif;
+    font-size: 96px;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.recording-countdown.urgent {
+    color: #ef4444;
+}
+
+/* Progress ring around the record button. The circle's circumference is
+   2π·30 ≈ 188.5; social.js writes stroke-dashoffset from elapsed/cap. */
+.record-btn {
+    position: relative;
+}
+
+.record-ring {
+    position: absolute;
+    inset: -3px;
+    width: calc(100% + 6px);
+    height: calc(100% + 6px);
+    transform: rotate(-90deg);
+    pointer-events: none;
+}
+
+.record-ring-fill {
+    fill: none;
+    stroke: #ef4444;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 188.5;
+    stroke-dashoffset: 188.5;
+    transition: stroke-dashoffset 0.2s linear;
+}
+
+.record-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Landscape: covers the camera area until the phone is upright again. */
+.rotate-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    background: #000;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
 }
 
 .recording-timer {
@@ -1941,10 +2025,13 @@ body {
 
 .upload-preview img,
 .upload-preview video {
-    width: 100%;
-    max-height: 400px;
+    height: min(62vh, 560px);
+    width: auto;
+    max-width: 100%;
+    aspect-ratio: 9 / 16;
     object-fit: contain;
     display: block;
+    margin: 0 auto;
     background: #000;
 }
 
@@ -2615,47 +2702,65 @@ body {
 /* HTML: <div class="onboarding-overlay" id="onboarding-overlay"> with a
    horizontal scroll-snap track of four .onboarding-panel sections.
 
-   ⚠️ z-index 2100 — ABOVE .auth-overlay (2000). The intro runs before any
-   account decision, so it has to win against an auth overlay that a deep link
-   may have opened underneath it. */
+   Panels 1–3 are Jay's photo design (2026-10-06): the track fills the WHOLE
+   overlay so each photo runs full-bleed under the footer, and the footer
+   (dots + Continue) floats over the bottom of it.
+
+   ⚠️ z-index 3500 — the top of the ladder. Above .auth-overlay (2950) and the
+   confirm dialog (3410): the intro shows after a signup, on top of whatever
+   the signup was opened from, and a first-run gate that can be rendered
+   behind something is a gate that can be missed. */
 .onboarding-overlay {
     position: fixed;
     inset: 0;
-    /* Above .app-sheet (2200) as well as .auth-overlay (2000). It only ever
-       shows at boot, when nothing else is open, but a first-run gate that can
-       be rendered behind a sheet is a gate that can be missed. */
-    z-index: 2400;
+    z-index: 3500;
     background: var(--app-secondary, #1e293b);
     color: #fff;
     max-width: var(--app-max-width);
     margin: 0 auto;
     display: none;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .onboarding-overlay.visible {
     display: flex;
 }
 
-.onboarding-skip {
+.onboarding-skip,
+.onboarding-back {
     position: absolute;
     top: calc(var(--spacing-md) + var(--safe-area-top));
-    right: var(--spacing-md);
-    z-index: 2;
+    z-index: 3;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.75);
+    color: #fff;
     font-family: 'Outfit', sans-serif;
-    font-size: 0.875rem;
-    font-weight: 600;
-    padding: var(--spacing-xs) var(--spacing-sm);
     cursor: pointer;
 }
 
+.onboarding-skip {
+    right: var(--spacing-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.onboarding-back {
+    left: var(--spacing-sm);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
 /* Native swipe. scroll-snap-type does the paging; social.js only reads
-   scrollLeft to light the dots and writes it when Next is tapped. */
+   scrollLeft to light the dots and writes it when Continue is tapped. */
 .onboarding-track {
-    flex: 1;
+    position: absolute;
+    inset: 0;
     display: flex;
     overflow-x: auto;
     overflow-y: hidden;
@@ -2670,49 +2775,69 @@ body {
 }
 
 .onboarding-panel {
+    position: relative;
     flex: 0 0 100%;
     width: 100%;
+    height: 100%;
     scroll-snap-align: start;
     scroll-snap-stop: always;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
     gap: var(--spacing-sm);
-    padding: calc(var(--spacing-xl) + var(--safe-area-top)) var(--spacing-lg) var(--spacing-lg);
+    /* Bottom padding clears the floating footer (dots + a full-width button). */
+    padding: calc(var(--spacing-xl) + var(--safe-area-top)) var(--spacing-lg)
+             calc(150px + var(--safe-area-bottom));
     overflow-y: auto;
 }
 
-.onboarding-panel h2 {
-    font-size: 1.625rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+/* A photo panel: full-bleed image (set by social.js once the files exist),
+   --app-secondary until then, under a SOLID dark overlay — no gradient. */
+.onboarding-panel-photo {
+    justify-content: flex-end;
+    background-color: var(--app-secondary, #1e293b);
+    background-size: cover;
+    background-position: center;
 }
 
-.onboarding-panel p {
+.onboarding-panel-photo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+}
+
+.onboarding-copy {
+    position: relative;   /* above the ::before overlay */
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: left;
+}
+
+.onboarding-panel h2 {
+    font-size: 1.875rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: #fff;
+}
+
+.onboarding-panel-photo p {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.6;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.88);
+    max-width: 36ch;
+}
+
+.onboarding-panel-picker p {
     font-size: 0.9375rem;
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.78);
     max-width: 34ch;
-}
-
-.onboarding-art {
-    width: 96px;
-    height: 96px;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--app-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: var(--spacing-md);
-}
-
-.onboarding-art svg {
-    width: 44px;
-    height: 44px;
 }
 
 /* The picker is the one panel that is a list, not a poster: top-aligned so a
@@ -2767,16 +2892,33 @@ body {
 }
 
 .onboarding-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: var(--spacing-md);
     padding: var(--spacing-md) var(--spacing-lg);
     padding-bottom: calc(var(--spacing-lg) + var(--safe-area-bottom));
 }
 
+/* Over the picker the chips scroll under the footer, so it gets the panel's
+   own solid colour there. */
+.onboarding-overlay.on-picker .onboarding-footer {
+    background: var(--app-secondary, #1e293b);
+}
+
+/* Full-width Continue. */
+.onboarding-footer .auth-btn {
+    width: 100%;
+}
+
 .onboarding-dots {
     display: flex;
+    justify-content: center;
     gap: var(--spacing-sm);
 }
 
@@ -2806,7 +2948,10 @@ body {
 .auth-overlay {
     position: fixed;
     inset: 0;
-    z-index: 2000;
+    /* 2950: above every overlay a signed-out tap can come from — the venue
+       page (2500), a member page (2700) and the people sheet (2900). At 2000
+       the signup opened BEHIND them. See the ladder at "ViibeView Phase 2". */
+    z-index: 2950;
     background: var(--color-surface);
     max-width: var(--app-max-width);
     margin: 0 auto;
@@ -3559,7 +3704,7 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0.96);
-    z-index: 2300;
+    z-index: 3410;   /* above the composer and the venue picker — see the ladder */
     width: calc(100% - 48px);
     max-width: 360px;
     background: var(--color-surface);
@@ -4175,9 +4320,9 @@ body {
    =========================================================================
 
    ⚠️ THE Z-INDEX LADDER, MEASURED, NOT GUESSED.
-   Phase 2 is the first time two full-screen overlays can coexist: a feed card
-   inside #venue-page links to its author's #member-page, and #member-page opens
-   #people-sheet. Each new layer therefore has to clear the one that opened it.
+   Two full-screen overlays can coexist: a feed card inside #venue-page links
+   to its author's #member-page, and #member-page opens #people-sheet. Each new
+   layer therefore has to clear the one that opened it.
 
        .filter-pills                     99
        .social-header                   100
@@ -4188,47 +4333,48 @@ body {
        .venue-page-backdrop / page     2499 / 2500
        .member-page-backdrop / page    2699 / 2700   <- opened FROM the venue page
        .people-backdrop / .people-sheet 2800 / 2900  <- opened FROM the member page
+       #post-options-* / #edit-profile-* 2910 / 2920 <- opened FROM any of the above
+       .auth-overlay                   2950          <- a signed-out tap on any of the above
        .create-post-* modal            3000 / 3001
        .venue-picker-*                 3200 / 3300   <- opened FROM the composer
+       #confirm-backdrop / .confirm-dialog 3400 / 3410 <- Delete, Discard: over anything
+       .onboarding-overlay             3500          <- shown after signup, over everything
 
-   #edit-profile-sheet is opened only from the Profile TAB, never from another
-   overlay, so it keeps the default .app-sheet 2100/2200 and needs no override.
+   2026-10-06: four "opens behind" bugs were the same bug — a layer added at
+   the default sheet level (2100/2200) or the old auth/confirm levels (2000 /
+   2300) underneath the overlay it was opened from:
+     - signup behind the venue page and member page (auth was 2000)
+     - post options and the delete confirm behind profiles (2200 / 2300)
+     - edit profile behind your own profile (default 2200)
+   Back navigation (BACK_SURFACES in social.js) closes in this same order.
    ========================================================================= */
 
-/* ===== Profile tab: follower / following counts ===== */
-.profile-stats {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+/* The ladder entries above that are ids, not classes: these four elements
+   share .sheet-backdrop / .app-sheet with every default sheet. */
+#post-options-backdrop,
+#edit-profile-backdrop {
+    z-index: 2910;
 }
 
-.profile-stat {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: var(--spacing-md) var(--spacing-sm);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    font-family: inherit;
+#post-options-sheet,
+#edit-profile-sheet {
+    z-index: 2920;
 }
 
-.profile-stat:active {
-    background: var(--color-bg);
+#confirm-backdrop {
+    z-index: 3400;
 }
 
-.profile-stat-value {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--color-text);
+/* ===== Me tab =====
+   Reuses the member page's identity block and the reels grid; only the
+   container needs spacing of its own. (The Profile tab's .profile-stat boxes
+   were deleted with the markup — the counts live here now.) */
+.me-signed-in {
+    padding-bottom: var(--spacing-lg);
 }
 
-.profile-stat-label {
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
+#me-edit-profile-btn {
+    margin-top: var(--spacing-sm);
 }
 
 /* The signed-in profile avatar can now hold a real image. */
@@ -4429,9 +4575,43 @@ body {
 }
 
 /* The venue page's Follow control sits in the same row as Navigate/Directions,
-   so it takes that row's shape rather than the pill above. */
+   so it takes that row's shape rather than the pill above.
+
+   ⚠️ Every property of .venue-action-btn that .follow-btn overrides is restated
+   here. Both rules are one class deep and .follow-btn comes later, so it was
+   winning: a 9999px radius on a button stretched to Navigate's height, with no
+   justify-content in the column flex — a tall pill with "Follow" pinned to the
+   top (Jay, 2026-10-06). Two classes deep, this beats both. */
 .venue-page-actions .follow-btn {
-    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 72px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* The icon, so it reads as one of the row's icon-over-label buttons. A mask,
+   not an inline SVG: paintFollowButton() writes textContent, which would wipe
+   a child element on every repaint. currentColor follows the filled/outline
+   state for free. */
+.venue-page-actions .follow-btn::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cline x1='19' y1='8' x2='19' y2='14'/%3E%3Cline x1='22' y1='11' x2='16' y2='11'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cline x1='19' y1='8' x2='19' y2='14'/%3E%3Cline x1='22' y1='11' x2='16' y2='11'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.venue-page-actions .follow-btn.following::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
 }
 
 /* ===== Reels grid ===== */
@@ -4492,6 +4672,47 @@ body {
     right: 10px;
     bottom: 10px;
     z-index: 2;
+}
+
+.member-grid-tile:focus-visible {
+    outline: 2px solid var(--app-primary, #6366f1);
+    outline-offset: -2px;
+}
+
+/* Post options on the expanded tile — the only route to Delete/Report from a
+   grid. Venue owners delete posts at their venue from here. */
+.member-grid-tile .tile-more-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    cursor: pointer;
+}
+
+/* Flyers pin to the top of the venue page; the badge says why. */
+.flyer-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 1;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--app-primary, #6366f1);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    pointer-events: none;
 }
 
 /* The venue a profile card was shot at. Takes the place of the author identity

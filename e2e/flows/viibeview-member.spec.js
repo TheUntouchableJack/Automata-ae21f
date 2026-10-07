@@ -104,7 +104,7 @@ async function closeOverlays() {
 
 async function openEditProfileSheet() {
     await closeOverlays();
-    await page.click('.nav-item[data-tab="profile"]');
+    await page.click('.nav-item[data-tab="settings"]');
     await page.click('#edit-profile-btn');
     await expect(page.locator('#edit-profile-sheet')).toHaveClass(/visible/);
     // openEditProfile() refetches the member with force:true before populating.
@@ -192,7 +192,7 @@ test.beforeAll(async ({ browser }) => {
     page = await context.newPage();
 
     await loadApp();
-    await page.click('.nav-item[data-tab="profile"]');
+    await page.click('.nav-item[data-tab="settings"]');
     await page.click('#profile-login-btn');
     await page.fill('#login-email', TEST_EMAIL);
     await page.fill('#login-password', TEST_PASSWORD);
@@ -232,7 +232,7 @@ test.describe('ViibeView signed-in member', () => {
 
             // Reload proves it was WRITTEN, not just repainted optimistically.
             await loadApp();
-            await page.click('.nav-item[data-tab="profile"]');
+            await page.click('.nav-item[data-tab="settings"]');
             await expect(page.locator('#profile-name')).toHaveText(newName);
 
             // The byline on a feed card comes from the feed RPC, so it only
@@ -488,7 +488,7 @@ test.describe('ViibeView signed-in member', () => {
 
             // It must survive a reload — a preview blob would not.
             await loadApp();
-            await page.click('.nav-item[data-tab="profile"]');
+            await page.click('.nav-item[data-tab="settings"]');
             await expect(page.locator('#profile-avatar img')).toHaveAttribute(
                 'src', new RegExp(`/venue-media/members/${myId}/`));
         } finally {
@@ -671,7 +671,7 @@ test.describe('ViibeView signed-in member', () => {
                 };
             });
 
-            await p.click('.nav-item[data-tab="profile"]');
+            await p.click('.nav-item[data-tab="settings"]');
             await p.click('#profile-login-btn');
             await p.fill('#login-email', TEST_EMAIL);
             await p.fill('#login-password', TEST_PASSWORD);

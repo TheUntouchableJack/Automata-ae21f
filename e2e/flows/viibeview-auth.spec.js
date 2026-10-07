@@ -34,7 +34,7 @@ async function loadApp(page) {
 }
 
 async function openProfileTab(page) {
-    await page.click('.nav-item[data-tab="profile"]');
+    await page.click('.nav-item[data-tab="settings"]');
     await page.waitForTimeout(300);
 }
 

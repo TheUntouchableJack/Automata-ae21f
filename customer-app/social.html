@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=15">
+    <link rel="stylesheet" href="/customer-app/social.css?v=16">
 </head>
 <body>
 
@@ -150,7 +150,7 @@
                     <polyline points="21,15 16,10 5,21"/>
                 </svg>
             </div>
-            <h3 data-i18n="social.emptyFeedTitle">No posts yet</h3>
+            <h3 data-i18n="social.emptyFeedTitle">No live posts available right now</h3>
             <p data-i18n="social.emptyFeedBody">Check back later for venue content</p>
         </div>
     </section>
@@ -207,6 +207,15 @@
     <!-- ===== Tab Content: Search ===== -->
     <section id="tab-search" class="tab-view" role="tabpanel" aria-label="Search">
         <div class="search-container">
+            <!-- Venues | Members. Member search used to hide behind Profile →
+                 Discover Members; it lives with every other search now. -->
+            <div class="search-scope" id="search-scope" role="tablist" aria-label="Search for">
+                <button class="search-scope-btn active" type="button" role="tab" aria-selected="true"
+                        data-scope="venues" data-i18n="social.searchScopeVenues">Venues</button>
+                <button class="search-scope-btn" type="button" role="tab" aria-selected="false"
+                        data-scope="members" data-i18n="social.searchScopeMembers">Members</button>
+            </div>
+
             <div class="search-input-wrap">
                 <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"/>
@@ -255,8 +264,66 @@
         </div>
     </section>
 
-    <!-- ===== Tab Content: Profile ===== -->
-    <section id="tab-profile" class="tab-view" role="tabpanel" aria-label="Profile">
+    <!-- ===== Tab Content: Me =====
+         Your own profile, as a tab (Jay, 2026-10-06: Feed, Map, Search, Me,
+         Settings). A DEDICATED panel with its own state — not the singleton
+         #member-page overlay, which can be open on top of it showing someone
+         else. It refetches every time it opens (loadMeTab), which is what keeps
+         the Followers/Following counts honest after a follow elsewhere.
+         Markup is shared with #member-page through memberStatsMarkup() and
+         reelsTileMarkup(), so the two cannot drift apart. -->
+    <section id="tab-me" class="tab-view" role="tabpanel" aria-label="Me" data-i18n-aria="social.navMe">
+
+        <!-- Signed OUT: an invitation, never a wall. -->
+        <div class="profile-container" id="me-signed-out">
+            <div class="profile-signin-prompt">
+                <div class="profile-signin-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <h3 data-i18n="social.joinTitle">Join the community</h3>
+                <p data-i18n="social.joinBody">Create an account to post Viibes, follow venues, and keep track of where you have been.</p>
+                <button class="auth-btn auth-btn-primary" id="me-signup-btn" type="button" data-i18n="social.createAccount">Create Account</button>
+                <button class="auth-btn auth-btn-ghost" id="me-login-btn" type="button" data-i18n="social.logIn">Log In</button>
+            </div>
+        </div>
+
+        <!-- Signed IN -->
+        <div class="me-signed-in" id="me-signed-in" style="display:none;">
+            <div class="member-page-identity">
+                <div class="member-page-avatar" id="me-avatar"></div>
+                <h2 class="member-page-name" id="me-name"></h2>
+                <p class="member-page-bio" id="me-bio" style="display:none;"></p>
+                <p class="member-page-location" id="me-location" style="display:none;"></p>
+                <div class="member-page-stats" id="me-stats"></div>
+                <button class="follow-btn following" id="me-edit-profile-btn" type="button" data-i18n="social.editProfile">Edit Profile</button>
+            </div>
+
+            <div class="member-grid" id="me-grid"></div>
+
+            <div class="venue-page-loading" id="me-loading" style="display:none;">
+                <div class="shimmer-card"><div class="shimmer-image"></div></div>
+            </div>
+
+            <div class="venue-page-empty" id="me-empty" style="display:none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="23,7 16,12 23,17 23,7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+                <p data-i18n="social.noPostsYet">No posts yet</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Tab Content: Settings =====
+         Was the Profile tab. Inner ids are unchanged (profile-signed-in,
+         edit-profile-btn, logout-btn, …) so every listener still binds; only
+         the panel id and the nav item changed. The follower stats, "View My
+         Profile" and "Discover Members" moved out: the first two are the Me
+         tab now, and member search is Search → Members. -->
+    <section id="tab-settings" class="tab-view" role="tabpanel" aria-label="Settings" data-i18n-aria="social.navSettings">
 
         <!-- Signed OUT: browsing stays anonymous, so this is an invitation, not a wall -->
         <div class="profile-container" id="profile-signed-out">
@@ -300,40 +367,12 @@
                 </div>
             </div>
 
-            <!-- Follower / following counts. Both are buttons: the number is
-                 the affordance, and tapping it opens the people sheet on the
-                 matching mode. Counts are painted by renderProfileIdentity()
-                 from get_member_profile — never stored, so they cannot drift
-                 from the lists behind them. -->
-            <div class="profile-stats" id="profile-stats">
-                <button class="profile-stat" id="profile-followers-btn" type="button">
-                    <span class="profile-stat-value" id="profile-followers-count">0</span>
-                    <span class="profile-stat-label" data-i18n="social.followers">Followers</span>
-                </button>
-                <button class="profile-stat" id="profile-following-btn" type="button">
-                    <span class="profile-stat-value" id="profile-following-count">0</span>
-                    <span class="profile-stat-label" data-i18n="social.following">Following</span>
-                </button>
-            </div>
-
             <div class="profile-menu">
                 <button class="profile-menu-item" id="edit-profile-btn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                     <span data-i18n="social.editProfile">Edit Profile</span>
-                </button>
-                <button class="profile-menu-item" id="view-my-profile-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    <span data-i18n="social.viewMyProfile">View My Profile</span>
-                </button>
-                <button class="profile-menu-item" id="discover-members-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                    <span data-i18n="social.discoverMembers">Discover Members</span>
                 </button>
                 <!-- Org members only. checkOwnerAccess() unhides it; a plain
                      member never sees it, and RLS would reject the insert
@@ -376,13 +415,20 @@
     </section>
 
     <!-- ===== Onboarding Overlay =====
-         Three intro panels plus a "what are you into?" picker, shown once per
-         device on first open.
+         Three intro panels plus a "what are you into?" picker. Shown once per
+         device on first open, and ALWAYS after a new signup (showOnboarding
+         force) — the per-device flag alone meant a new account on a used
+         browser never saw it.
 
-         ⚠️ It sits ABOVE the auth overlay (z-index 2100 vs 2000) and is shown to
-         EVERYONE, including signed-out browsers — anonymous browsing is a
-         supported mode here, so gating the intro behind an account would mean
-         most first-time visitors never see it.
+         Panels 1–3 are Jay's photo design (2026-10-06): a full-bleed photo
+         with a SOLID dark overlay (no gradient), white title, uppercase body,
+         dots, a full-width Continue, Skip top-right and a back chevron from
+         panel 2 on. The photos are customer-app/img/onboarding/{1,2,3}.jpg,
+         exported from Figma; until ONBOARDING_PHOTOS_READY is flipped in
+         social.js the panels show a solid --app-secondary background.
+
+         ⚠️ z-index 3500 — above the auth overlay (2950) and the confirm dialog
+         (3410); shown to EVERYONE, including signed-out browsers.
 
          The panels are a native horizontal scroll-snap track rather than a JS
          carousel: swipe, momentum and accessibility come free, and the dots are
@@ -390,40 +436,33 @@
          social.js from the SHARED vocabularies (/js/venue-categories.js,
          /js/music-genres.js) — there is no parallel taxonomy here. -->
     <div class="onboarding-overlay" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome">
+        <button class="onboarding-back" id="onboarding-back" type="button" aria-label="Back" data-i18n-aria="social.back" style="visibility:hidden;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15,18 9,12 15,6"/>
+            </svg>
+        </button>
         <button class="onboarding-skip" id="onboarding-skip" type="button" data-i18n="social.obSkip">Skip</button>
 
         <div class="onboarding-track" id="onboarding-track">
-            <section class="onboarding-panel" data-ob-panel="0">
-                <div class="onboarding-art onboarding-art-1" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M15 10l4.55-2.27A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.89L15 14"/>
-                        <rect x="3" y="6" width="12" height="12" rx="2"/>
-                    </svg>
+            <section class="onboarding-panel onboarding-panel-photo" data-ob-panel="0" data-ob-photo="img/onboarding/1.jpg">
+                <div class="onboarding-copy">
+                    <h2 data-i18n="social.ob1Title">See the vibe first</h2>
+                    <p data-i18n="social.ob1Body">Real 15-second clips from tonight's spots, so you know what it's like before you go.</p>
                 </div>
-                <h2 data-i18n="social.ob1Title">See what tonight looks like</h2>
-                <p data-i18n="social.ob1Body">Short Viibes from the venues around you — posted tonight, not last year.</p>
             </section>
 
-            <section class="onboarding-panel" data-ob-panel="1">
-                <div class="onboarding-art onboarding-art-2" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="6" y="2" width="12" height="20" rx="3"/>
-                        <path d="M10 8l5 3-5 3z" fill="currentColor" stroke="none"/>
-                    </svg>
+            <section class="onboarding-panel onboarding-panel-photo" data-ob-panel="1" data-ob-photo="img/onboarding/2.jpg">
+                <div class="onboarding-copy">
+                    <h2 data-i18n="social.ob2Title">Your city, live</h2>
+                    <p data-i18n="social.ob2Body">Bars, restaurants and parties near you, on one map. Swipe through tonight, one place at a time.</p>
                 </div>
-                <h2 data-i18n="social.ob2Title">Swipe through the night</h2>
-                <p data-i18n="social.ob2Body">One place at a time, full screen. Tap to hear the room.</p>
             </section>
 
-            <section class="onboarding-panel" data-ob-panel="2">
-                <div class="onboarding-art onboarding-art-3" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                    </svg>
+            <section class="onboarding-panel onboarding-panel-photo" data-ob-panel="2" data-ob-photo="img/onboarding/3.jpg">
+                <div class="onboarding-copy">
+                    <h2 data-i18n="social.ob3Title">Discover the undiscovered</h2>
+                    <p data-i18n="social.ob3Body">Follow the places and people you love, and post your own Viibe in 15 seconds.</p>
                 </div>
-                <h2 data-i18n="social.ob3Title">Find what's near you</h2>
-                <p data-i18n="social.ob3Body">Filter by distance, venue type and what's playing. Allow location for the best results.</p>
             </section>
 
             <section class="onboarding-panel onboarding-panel-picker" data-ob-panel="3">
@@ -444,7 +483,7 @@
 
         <div class="onboarding-footer">
             <div class="onboarding-dots" id="onboarding-dots" aria-hidden="true"></div>
-            <button class="auth-btn auth-btn-primary" id="onboarding-next" type="button" data-i18n="social.obNext">Next</button>
+            <button class="auth-btn auth-btn-primary" id="onboarding-next" type="button" data-i18n="social.obContinue">Continue</button>
         </div>
     </div>
 
@@ -732,12 +771,20 @@
             <span data-i18n="social.navSearchLabel">Search</span>
         </button>
 
-        <button class="nav-item" data-tab="profile" aria-label="Profile" data-i18n-aria="social.navProfile">
+        <button class="nav-item" data-tab="me" aria-label="Me" data-i18n-aria="social.navMe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
             </svg>
-            <span data-i18n="social.navProfileLabel">Profile</span>
+            <span data-i18n="social.navMeLabel">Me</span>
+        </button>
+
+        <button class="nav-item" data-tab="settings" aria-label="Settings" data-i18n-aria="social.navSettings">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span data-i18n="social.navSettingsLabel">Settings</span>
         </button>
     </nav>
 
@@ -771,15 +818,43 @@
                     <span>Tap to open camera</span>
                 </div>
 
+                <!-- Desktop: recording is phones only (Jay, 2026-10-06). Shown
+                     instead of the placeholder when isPhoneDevice() is false;
+                     the camera is never requested. -->
+                <div class="upload-placeholder upload-desktop-block" id="upload-desktop-block" style="display:none;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="2" width="12" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/>
+                    </svg>
+                    <span data-i18n="social.phoneOnlyPosting">Open ViibeView on your phone to post</span>
+                </div>
+
                 <!-- Live camera viewfinder -->
                 <video id="camera-viewfinder" class="camera-viewfinder" autoplay playsinline muted style="display:none;"></video>
+
+                <!-- The countdown, large, over the viewfinder. Red for the last
+                     3 seconds. -->
+                <div class="recording-countdown" id="recording-countdown" aria-hidden="true" style="display:none;"></div>
 
                 <!-- Recording controls overlay -->
                 <div class="recording-controls" id="recording-controls" style="display:none;">
                     <span class="recording-timer" id="recording-timer">0:00</span>
                     <button class="record-btn" id="record-btn" type="button" aria-label="Record">
+                        <!-- Progress ring: how much of the cap is used. -->
+                        <svg class="record-ring" viewBox="0 0 64 64" aria-hidden="true">
+                            <circle class="record-ring-fill" id="record-ring-fill" cx="32" cy="32" r="30"/>
+                        </svg>
                         <span class="record-btn-inner"></span>
                     </button>
+                </div>
+
+                <!-- Landscape: every clip is 9:16, so the phone must be upright.
+                     Record is disabled while this shows; rotating mid-take stops
+                     the recording and keeps the clip. -->
+                <div class="rotate-overlay" id="rotate-overlay" role="alert" style="display:none;">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="7" y="2" width="10" height="20" rx="2"/><path d="M3 8a9 9 0 0 1 3-4"/><polyline points="3 4 3 8 7 8"/>
+                    </svg>
+                    <span data-i18n="social.turnUpright">Turn your phone upright</span>
                 </div>
 
                 <!-- Preview of recorded clip -->
@@ -850,6 +925,10 @@
 
             <!-- Quick actions -->
             <div class="venue-page-actions" id="venue-page-actions"></div>
+
+            <!-- Opened by the "Add flyer" action (org members and this venue's
+                 owners only — see canManageVenue in social.js). -->
+            <input type="file" id="venue-flyer-input" accept="image/jpeg,image/png,image/webp" hidden>
 
             <!-- Address -->
             <div class="venue-page-address" id="venue-page-address" style="display:none;"></div>
@@ -1143,7 +1222,7 @@
         </div>
         <div class="app-settings-body">
             <div class="app-settings-field">
-                <label for="setting-post-ttl" data-i18n="social.postLifetime">How long Viibes stay in the feed</label>
+                <label for="setting-post-ttl" data-i18n="social.postLifetime">How long Viibes stay on venue pages</label>
                 <select id="setting-post-ttl">
                     <option value="" data-i18n="social.ttlNever">Never expire</option>
                     <option value="6" data-i18n="social.ttl6">6 hours</option>
@@ -1152,7 +1231,7 @@
                     <option value="48" data-i18n="social.ttl48">48 hours</option>
                     <option value="168" data-i18n="social.ttl168">7 days</option>
                 </select>
-                <p class="app-settings-hint" data-i18n="social.postLifetimeHint">Applies to the home feed, venue pages and the map. Posts from your team never expire, and everyone keeps their own posts on their profile.</p>
+                <p class="app-settings-hint" data-i18n="social.postLifetimeHint">The home feed and map clear every morning at 7am Pacific. This controls how long posts stay on venue pages; team posts and flyers stay.</p>
             </div>
 
             <div class="app-settings-field">
@@ -1423,7 +1502,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=5"></script>
+    <script src="/i18n/i18n.js?v=6"></script>
     <script src="/js/venue-categories.js?v=1"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1437,10 +1516,10 @@
     <!-- The Nominatim client behind the mobile "Add venue" flow, shared with
          app/venues.html so there is one rate-limit queue for the whole site. -->
     <script src="/js/venue-places.js?v=1"></script>
-    <script src="/customer-app/social-auth.js?v=4"></script>
+    <script src="/customer-app/social-auth.js?v=5"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=20"></script>
+    <script src="/customer-app/social.js?v=21"></script>
 
 </body>
 </html>
