@@ -649,6 +649,11 @@ test.describe('ViibeView signed-in member', () => {
 
         try {
             await p.addInitScript(() => {
+                // A fresh context is a first-ever visit: without this the
+                // onboarding overlay covers the page and every click below
+                // waits out the test timeout. Every other context in these
+                // specs seeds it; this one was missed.
+                localStorage.setItem('viibeview_onboarded_v1', '1');
                 // Qualify for the second-visit rule, and clear both dismissals.
                 localStorage.setItem('viibe_visits_viibeview', '3');
                 localStorage.removeItem('viibe_install_dismissed_viibeview');

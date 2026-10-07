@@ -565,11 +565,22 @@ test.describe('ViibeView social app', () => {
         // author-primary when the post has an author and venue-primary when it
         // does not, so a click path would silently depend on which shape this
         // tenant's data happens to produce.
-        const venueId = await page.evaluate(() => {
+        //
+        // The home feed clears at 7am Pacific (20261006000003), so it can be
+        // empty on a quiet morning while venue pages still hold their posts.
+        // Fall back to the first venue whose page has any.
+        const venueId = await page.evaluate(async () => {
             const c = document.querySelector('#feed-container .feed-panel:not([data-venue-id=""])');
-            return c?.getAttribute('data-venue-id') || null;
+            if (c) return c.getAttribute('data-venue-id');
+            for (const v of realVenues()) {
+                const { data } = await supabaseClient.rpc('get_venue_page_feed', {
+                    p_app_id: currentApp.id, p_venue_id: v.id, p_limit: 1
+                });
+                if (data && data.length) return v.id;
+            }
+            return null;
         });
-        test.skip(!venueId, 'no venue-attached posts in this app yet');
+        test.skip(!venueId, 'no venue in this app has any posts yet');
 
         await page.evaluate(id => window.openVenuePage(id), venueId);
         await expect(page.locator('#venue-page')).toHaveClass(/visible/);
@@ -1029,12 +1040,27 @@ test.describe('venue media integrity', () => {
     test('a feed post URL resolves to real video bytes in production storage', async ({ page, request }) => {
         await loadApp(page);
 
-        // The stub fulfils requests; it does not rewrite the DOM, so data-src
-        // still holds the genuine production URL.
-        const url = await page.locator('.feed-panel video[data-src]').first()
-            .getAttribute('data-src');
+        // A real post URL, read through the client's own data path. The home
+        // feed first — but it clears at 7am Pacific (20261006000003), so on a
+        // quiet morning it is legitimately EMPTY and a DOM lookup there would
+        // time out. Venue pages keep their posts (TTL + team permanence), so
+        // they are the fallback. The media stub fulfils requests and rewrites
+        // nothing, so these URLs are the genuine production ones.
+        const url = await page.evaluate(async () => {
+            const pick = rows => (rows || []).find(r => r.media_type === 'video' && r.url)?.url || null;
+            const { data: feed } = await supabaseClient.rpc('get_venue_feed_v3', { p_app_id: currentApp.id });
+            let found = pick(feed);
+            for (const v of (found ? [] : realVenues())) {
+                const { data } = await supabaseClient.rpc('get_venue_page_feed', {
+                    p_app_id: currentApp.id, p_venue_id: v.id
+                });
+                found = pick(data);
+                if (found) break;
+            }
+            return found;
+        });
 
-        expect(url, 'no feed video rendered — cannot verify media integrity')
+        expect(url, 'no video post in the feed or on any venue page — cannot verify media integrity')
             .toBeTruthy();
         expect(url).toContain('/storage/v1/object/public/venue-media/');
 
