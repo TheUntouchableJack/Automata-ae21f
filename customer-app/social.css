@@ -700,7 +700,86 @@ body {
     top: var(--spacing-md);
     left: var(--spacing-md);
     right: var(--spacing-md);
+    /* Above the Map | List toggle and the list (1001), so the results
+       dropdown is never drawn underneath either. */
+    z-index: 1002;
+}
+
+/* ===== Map | List (2026-10-14) ===== */
+.map-view-toggle {
+    position: absolute;
+    top: calc(var(--spacing-md) + 52px);
+    left: var(--spacing-md);
+    z-index: 1001;
+    display: inline-flex;
+    padding: 3px;
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.map-view-btn {
+    padding: 6px 16px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.map-view-btn.active {
+    background: var(--app-primary);
+    color: #fff;
+}
+
+/* Covers the map below the search bar and the toggle. The map stays mounted
+   underneath, so switching back costs nothing. */
+.map-list {
+    position: absolute;
+    top: calc(var(--spacing-md) + 52px + 44px);
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 1000;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+    background: var(--color-bg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+#tab-map.map-list-open .venue-swim-lane,
+#tab-map.map-list-open .center-on-me-btn {
+    display: none;
+}
+
+/* "Nothing within 10 mi right now" + Show everywhere: the map's card strip,
+   its list and the Search tab say it the same way. */
+.radius-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    text-align: center;
+}
+
+.radius-empty-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.venue-swim-lane .radius-empty {
+    width: 100%;
+    box-shadow: var(--shadow-lg);
 }
 
 .map-search-input-wrap {
@@ -3566,6 +3645,126 @@ body {
    the sheet's buttons. */
 a.post-option {
     text-decoration: none;
+}
+
+/* ===== The distance slider (2026-10-14) ===== */
+.radius-slider-wrap {
+    padding: var(--spacing-sm) 0 var(--spacing-md);
+}
+
+.radius-slider-wrap.is-disabled {
+    opacity: 0.45;
+}
+
+.radius-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+}
+
+.radius-slider {
+    width: 100%;
+    accent-color: var(--app-primary);
+    height: 28px;
+}
+
+.radius-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    padding: 0 4px;
+}
+
+.radius-done {
+    width: 100%;
+}
+
+/* ===== Search: Filters button and sheet; Your interests ===== */
+.search-filters-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1.5px solid transparent;
+    border-radius: var(--radius-full);
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.search-filters-btn.active {
+    background: var(--app-primary);
+    color: #fff;
+}
+
+.search-filters-count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    background: #fff;
+    color: var(--app-primary);
+    font-size: 0.6875rem;
+    line-height: 18px;
+    text-align: center;
+}
+
+.filter-sheet-body {
+    padding: 0 var(--spacing-md) var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    overflow-y: auto;
+}
+
+.filter-sheet-title {
+    margin-top: var(--spacing-sm);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.filter-sheet-hint {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.filter-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-sheet-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.filter-sheet-actions .auth-btn {
+    flex: 1;
+}
+
+/* The interests sheet reuses the onboarding chips, which are drawn for the
+   onboarding's DARK panel. On this light sheet they take the light treatment. */
+.interests-sheet .onboarding-chip {
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.interests-sheet .onboarding-chip[aria-pressed="true"] {
+    border-color: var(--app-primary);
+    background: var(--app-primary);
+    color: #fff;
 }
 
 /* The share button sits beside ⋯ on every panel's venue strip. */

@@ -839,7 +839,9 @@ test.describe('ViibeView — onboarding, distance and the full-screen feed', () 
             const firstChip = page.locator('#onboarding-categories .onboarding-chip').first();
             const slug = await firstChip.getAttribute('data-ob-slug');
             await firstChip.click();
-            await expect(page.locator(`.onboarding-chip[data-ob-slug="${slug}"]`))
+            // Scoped to the picker: Settings → Your interests renders the same
+            // chips (2026-10-14), so an unscoped selector matches two.
+            await expect(page.locator(`#onboarding-categories .onboarding-chip[data-ob-slug="${slug}"]`))
                 .toHaveAttribute('aria-pressed', 'true');
 
             await page.click('#onboarding-skip');
@@ -869,8 +871,15 @@ test.describe('ViibeView — onboarding, distance and the full-screen feed', () 
 
         await chip.click();
         await expect(page.locator('#radius-sheet')).toHaveClass(/visible/);
-        // Any / 1 / 5 / 25
-        await expect(page.locator('#radius-body .radius-option')).toHaveCount(4);
+        // A slider since 2026-10-14: 1, 2, 5, 10, 15, 25, 50, Any.
+        await expect(page.locator('#radius-slider')).toHaveAttribute('type', 'range');
+        await expect(page.locator('#radius-body .radius-ticks span')).toHaveCount(8);
+        // This context has no location fix, so the slider is disabled and the
+        // sheet offers the permission prompt instead of a control that lies.
+        if (await page.evaluate(() => !userLocation)) {
+            await expect(page.locator('#radius-slider')).toBeDisabled();
+            await expect(page.locator('#radius-enable-location')).toBeVisible();
+        }
     });
 
     test('⚠️ choosing a distance never CLEARS the active category', async ({ page }) => {
@@ -885,7 +894,9 @@ test.describe('ViibeView — onboarding, distance and the full-screen feed', () 
         await page.waitForTimeout(500);
 
         await page.click('#filter-pills .pill-distance');
-        await page.click('#radius-body .radius-option[data-radius=""]');   // "Any"
+        // "Any", through the same setRadius() the slider calls on release
+        // (the slider itself is disabled in a context with no location fix).
+        await page.evaluate(() => setRadius(null, { close: false }));
         await page.waitForTimeout(800);
 
         // Still selected. A distance that reset the category would read as the

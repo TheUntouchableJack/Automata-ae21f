@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=18">
+    <link rel="stylesheet" href="/customer-app/social.css?v=19">
 </head>
 <body>
 
@@ -192,6 +192,17 @@
             </div>
         </div>
 
+        <!-- Map | List (Jay's board: "Find a venue via map list view"). The
+             list is the same venues the map shows — chips, radius and the
+             Following chip all apply — nearest first. -->
+        <div class="map-view-toggle" role="tablist" aria-label="View">
+            <button class="map-view-btn active" type="button" role="tab" aria-selected="true"
+                    data-map-view="map" onclick="setMapView('map')" data-i18n="social.mapViewMap">Map</button>
+            <button class="map-view-btn" type="button" role="tab" aria-selected="false"
+                    data-map-view="list" onclick="setMapView('list')" data-i18n="social.mapViewList">List</button>
+        </div>
+        <div class="map-list" id="map-list" style="display:none;"></div>
+
         <!-- Map container -->
         <div id="map-container"></div>
 
@@ -235,6 +246,15 @@
                     autocomplete="off"
                     aria-label="Search venues"
                 >
+                <!-- Filters by category and genre (Jay's board: "Active Search:
+                     filter by category"). Venues scope only; the badge counts
+                     what is selected. -->
+                <button class="search-filters-btn" id="search-filters-btn" type="button"
+                        onclick="openSearchFilters()" aria-label="Filters" data-i18n-aria="social.filters">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+                    <span data-i18n="social.filters">Filters</span>
+                    <span class="search-filters-count" id="search-filters-count" style="display:none;"></span>
+                </button>
             </div>
 
             <!-- Recent searches — populated from localStorage by renderRecentSearches().
@@ -346,6 +366,10 @@
             </div>
 
             <div class="profile-menu">
+                <button class="profile-menu-item" id="interests-btn-out" type="button" onclick="openInterests()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span data-i18n="social.yourInterests">Your interests</span>
+                </button>
                 <button class="profile-menu-item" id="contact-us-btn-out">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -378,6 +402,10 @@
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                     <span data-i18n="social.editProfile">Edit Profile</span>
+                </button>
+                <button class="profile-menu-item" id="interests-btn" type="button" onclick="openInterests()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span data-i18n="social.yourInterests">Your interests</span>
                 </button>
                 <!-- Org members only. checkOwnerAccess() unhides it; a plain
                      member never sees it, and RLS would reject the insert
@@ -1246,6 +1274,40 @@
         <div class="post-options-body" id="share-options"></div>
     </div>
 
+    <!-- ===== Search filters (Venues scope) ===== -->
+    <div class="sheet-backdrop" id="search-filters-backdrop" onclick="closeSearchFilters()"></div>
+    <div class="app-sheet search-filters-sheet" id="search-filters-sheet" role="dialog" aria-modal="true" aria-label="Filters">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.filters">Filters</h3>
+            <button class="app-sheet-close" type="button" aria-label="Close" data-i18n-aria="social.close" onclick="closeSearchFilters()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="filter-sheet-body" id="search-filters-body"></div>
+    </div>
+
+    <!-- ===== Your interests (Settings) =====
+         The onboarding picker, reopened: Category Filtering 2.0 on Jay's
+         board — picks made at onboarding can be changed later. The same chips
+         (renderOnboardingChips draws into both), saved the same way. -->
+    <div class="sheet-backdrop" id="interests-backdrop" onclick="closeInterests()"></div>
+    <div class="app-sheet interests-sheet" id="interests-sheet" role="dialog" aria-modal="true" aria-label="Your interests">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.yourInterests">Your interests</h3>
+            <button class="app-sheet-close" type="button" aria-label="Close" data-i18n-aria="social.close" onclick="closeInterests()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="filter-sheet-body">
+            <p class="filter-sheet-hint" data-i18n="social.interestsHint">Pick what you are into. The feed opens on it and the filters list it first.</p>
+            <h4 class="filter-sheet-title" data-i18n="social.categories">Categories</h4>
+            <div class="filter-chip-grid" id="interests-categories"></div>
+            <h4 class="filter-sheet-title" data-i18n="social.genres">Music</h4>
+            <div class="filter-chip-grid" id="interests-genres"></div>
+            <button class="auth-btn auth-btn-primary" type="button" id="interests-save" onclick="saveInterests()" data-i18n="social.save">Save</button>
+        </div>
+    </div>
+
     <!-- ===== Distance sheet (#5) =====
          Opened by the distance chip that leads the filter row.
 
@@ -1297,11 +1359,16 @@
 
             <div class="app-settings-field">
                 <label for="setting-feed-radius" data-i18n="social.defaultRadius">Opening distance filter</label>
+                <!-- The same stops as the visitor's slider (RADIUS_STOPS). -->
                 <select id="setting-feed-radius">
-                    <option value="" data-i18n="social.radiusAny">Any distance</option>
                     <option value="1" data-i18n="social.radius1">1 mile</option>
+                    <option value="2">2 miles</option>
                     <option value="5" data-i18n="social.radius5">5 miles</option>
+                    <option value="10">10 miles</option>
+                    <option value="15">15 miles</option>
                     <option value="25" data-i18n="social.radius25">25 miles</option>
+                    <option value="50">50 miles</option>
+                    <option value="" data-i18n="social.radiusAny">Any distance</option>
                 </select>
                 <p class="app-settings-hint" data-i18n="social.defaultRadiusHint">Just the starting value — anyone can change it for themselves.</p>
             </div>
@@ -1563,7 +1630,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=8"></script>
+    <script src="/i18n/i18n.js?v=9"></script>
     <script src="/js/venue-categories.js?v=2"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1580,7 +1647,7 @@
     <script src="/customer-app/social-auth.js?v=5"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=23"></script>
+    <script src="/customer-app/social.js?v=24"></script>
 
 </body>
 </html>

@@ -37,6 +37,17 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v19 (2026-10-14): one radius for the feed, the map and the lists (a slider),
+// Map | List, search filters, Your interests, fresher GPS. social.html now
+// loads social.js?v=24, social.css?v=19 and i18n.js?v=9.
+//
+// Mandatory in both pairings:
+//   - cached v18 social.html has no #map-list, #search-filters-sheet or
+//     #interests-sheet; new social.js's Map | List and Filters open nothing.
+//   - new social.html against cached v18 social.js renders the radius sheet's
+//     old buttons into a body the new CSS styles as a slider, and the owner's
+//     new radius stops save values the old chip label never offered.
+//
 // v18 (2026-10-14): hide a Viibe, share, shared links. social.html now loads
 // social.js?v=23, social.css?v=18 and i18n.js?v=8.
 //
@@ -114,9 +125,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v18';
-const STATIC_CACHE = 'royalty-static-v18';
-const DYNAMIC_CACHE = 'royalty-dynamic-v18';
+const CACHE_NAME = 'royalty-rewards-v19';
+const STATIC_CACHE = 'royalty-static-v19';
+const DYNAMIC_CACHE = 'royalty-dynamic-v19';
 
 // Static assets to cache on install.
 //

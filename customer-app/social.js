@@ -588,8 +588,10 @@ async function init() {
         // AFTER checkOwnerAccess(), which is what sets currentUserId.
         await loadFollowingState();
 
-        // Request geolocation
+        // Request geolocation, and keep it fresh when the app returns to the
+        // foreground.
         requestLocation();
+        watchLocationFreshness();
 
         // Load venues for map
         await loadVenues();
@@ -835,9 +837,13 @@ function orderByPreference(list, preferred) {
 // Two reasons: it runs before loadVenues() has resolved, and a preference is
 // about the person, not about which venues this tenant happens to have tonight.
 function renderOnboardingChips() {
+    // The same chips in two places: the onboarding picker, and Settings →
+    // Your interests. One renderer, so they cannot drift.
     const groups = [
         ['category', 'onboarding-categories', window.VENUE_CATEGORIES || [], preferredCategories],
-        ['genre', 'onboarding-genres', window.MUSIC_GENRES || [], preferredGenres]
+        ['genre', 'onboarding-genres', window.MUSIC_GENRES || [], preferredGenres],
+        ['category', 'interests-categories', window.VENUE_CATEGORIES || [], preferredCategories],
+        ['genre', 'interests-genres', window.MUSIC_GENRES || [], preferredGenres]
     ];
 
     groups.forEach(([kind, containerId, vocabulary, selected]) => {
@@ -2067,12 +2073,56 @@ function canManageVenue(venueId) {
 }
 
 // ===== Geolocation =====
-function requestLocation() {
+//
+// One fix, shared by everything (userLocation), with the time it was taken.
+// It used to be read once per session and kept forever, so walking from one
+// bar to the next never changed a distance (Jay's board: GPS & navigation).
+// Now a fix older than LOCATION_MAX_AGE_MS is refreshed when the app comes
+// back to the foreground and when the Feed or Map tab opens.
+
+const LOCATION_MAX_AGE_MS = 5 * 60 * 1000;
+let userLocationAt = 0;
+// The last failure's GeolocationPositionError code, for a message that says
+// what actually went wrong: 1 denied, 2 unavailable, 3 timed out.
+let lastLocationError = null;
+
+function setUserLocation(coords) {
+    userLocation = { lat: coords.latitude, lng: coords.longitude };
+    userLocationAt = Date.now();
+    lastLocationError = null;
+}
+
+function locationIsStale() {
+    return !userLocation || Date.now() - userLocationAt > LOCATION_MAX_AGE_MS;
+}
+
+function locationErrorMessage(code = lastLocationError) {
+    if (code === 1) {
+        return translateOr('social.locationDenied', null,
+            'Location is blocked. Allow it for this site in your browser settings to see what is near you.');
+    }
+    if (code === 3) {
+        return translateOr('social.locationTimeout', null,
+            'Finding your location took too long. Try again.');
+    }
+    return translateOr('social.locationUnavailable', null,
+        'We could not find your location. Try again with Wi-Fi or GPS on.');
+}
+
+// `reason`: 'boot' (the first ask), 'refresh' (a stale fix, quietly), or
+// 'center' (the visitor tapped center-on-me and is owed an answer).
+function requestLocation({ reason = 'boot' } = {}) {
     if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
         (pos) => {
-            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            const first = !userLocation;
+            setUserLocation(pos.coords);
+
+            if (pendingCenterOnMe && map) {
+                map.setView([userLocation.lat, userLocation.lng], 14, { animate: true });
+            }
+            pendingCenterOnMe = false;
 
             // Re-render for distances ONLY when it costs nothing. This used to
             // fire unconditionally, and since renderFeed() replaces innerHTML
@@ -2081,28 +2131,47 @@ function requestLocation() {
             // after the user has started scrolling.
             if (!feedHasRendered || activeTab !== 'feed') renderFeed();
 
-            // Deliberately NOT recentring the map here. The default centre is
-            // now the most recent post (see initMap), and this would fight it
-            // whenever geolocation resolved after the map mounted.
-            // #center-on-me-btn still does it, explicitly, on request.
-            renderVenueSwimLane();
+            // The map, its list and the Search tab measure from the new fix.
+            // Not recentred: the visitor may have panned it.
+            refreshVenueSurfaces();
 
             // ⚠️ The distance filter is SUPPRESSED until there is a fix — see
             // loadFeed(). A member whose device remembers "5 mi" therefore gets
             // an unfiltered first paint, and without this the chip would sit
             // there reading "5 mi" over a feed that is not filtered at all.
-            // Only reload when a radius is actually waiting on the fix.
-            if (feedRadiusMiles !== null) {
+            // Only on the FIRST fix: reloading on a refresh would yank the feed
+            // back to its first Viibe while someone is watching.
+            if (first && feedRadiusMiles !== null) {
                 renderFilterPills();
                 loadFeed(false);
             }
         },
         (err) => {
-            console.warn('Geolocation denied:', err.message);
-            showLocationBanner();
+            lastLocationError = err && err.code;
+            console.warn('Geolocation failed:', err && err.message);
+            if (reason === 'center') {
+                pendingCenterOnMe = false;
+                showToast(locationErrorMessage(lastLocationError));
+            } else if (reason === 'boot') {
+                showLocationBanner();
+            }
         },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: reason === 'boot' ? LOCATION_MAX_AGE_MS : 60000 }
     );
+}
+
+// The foreground and tab hooks. A visitor who has blocked location is not
+// asked again on every tab change.
+function refreshLocationIfStale() {
+    if (lastLocationError === 1) return;
+    if (!locationIsStale()) return;
+    requestLocation({ reason: userLocation ? 'refresh' : 'boot' });
+}
+
+function watchLocationFreshness() {
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refreshLocationIfStale();
+    });
 }
 
 // ===== Venues =====
@@ -2204,8 +2273,18 @@ function venueMatchesFilters(venue) {
     return true;
 }
 
+// What the MAP shows (pins, card strip, list): the chips, the radius (Jay's
+// board, 2026-10-14: it used to ignore the distance chip entirely), and — on
+// the Following chip — only venues this visitor follows.
+function venueOnMap(venue) {
+    if (!venueMatchesFilters(venue)) return false;
+    if (!withinRadius(venue.latitude, venue.longitude)) return false;
+    if (feedMode === 'following' && !isFollowing('venue', venue.id)) return false;
+    return true;
+}
+
 function filteredVenues() {
-    return venues.filter(venueMatchesFilters);
+    return venues.filter(venueOnMap);
 }
 
 // ===== Feed =====
@@ -2368,12 +2447,14 @@ function renderFeedEmptyState() {
     let titleKey, titleText, bodyKey, bodyText, ctaKey, ctaText, ctaAction;
 
     if (scoped) {
-        titleKey = 'social.emptyNearbyTitle';
-        titleText = 'Nothing nearby right now';
+        // The same words the map and the lists use (radiusEmptyMarkup).
+        titleKey = 'social.nothingWithin';
+        titleText = translateOr('social.nothingWithin', { miles: feedRadiusMiles },
+            `Nothing within ${feedRadiusMiles} mi right now`);
         bodyKey = 'social.emptyNearbyBody';
         bodyText = `No Viibes within ${feedRadiusMiles} ${feedRadiusMiles === 1 ? 'mile' : 'miles'} of you.`;
-        ctaKey = 'social.showAnyDistance';
-        ctaText = 'Show any distance';
+        ctaKey = 'social.showEverywhere';
+        ctaText = 'Show everywhere';
         ctaAction = () => setRadius(null);
     } else if (following) {
         titleKey = 'social.emptyFollowingTitle';
@@ -2401,7 +2482,10 @@ function renderFeedEmptyState() {
     // key. translateOr() supplies the params and falls back to the English
     // built above rather than rendering the key name.
     if (title) {
-        title.setAttribute('data-i18n', titleKey);
+        // The scoped title carries the radius, so it is not a static key:
+        // a data-i18n pass would put "{miles}" back on screen.
+        if (scoped) title.removeAttribute('data-i18n');
+        else title.setAttribute('data-i18n', titleKey);
         title.textContent = titleText;
     }
     if (body) {
@@ -2717,17 +2801,19 @@ function initMap() {
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return;
 
-    // Centre priority: the most recent post, then the user, then a venue, then
-    // Santa Monica. Opening the map should show you what was just posted —
-    // "where I am standing" is one tap away on #center-on-me-btn, and a map
-    // centred on an empty stretch of your own street shows nothing at all.
-    const newestPost = postPins[0];
-    const center = newestPost
-        ? [newestPost.latitude, newestPost.longitude]
-        : userLocation
-            ? [userLocation.lat, userLocation.lng]
-            : venues.length > 0
-                ? [venues[0].latitude, venues[0].longitude]
+    // Centre priority (Jay's board, 2026-10-14 — GPS & navigation): the
+    // visitor's own location, then the most recent post, then a venue, then
+    // Santa Monica. The map is "what is near me" first; the radius scopes it
+    // to the same place the feed is scoped to. With no fix it opens on the
+    // newest post, then the venues (LA), never on an empty ocean.
+    const newestPost = postPins.find(p => hasCoords(p.latitude, p.longitude));
+    const firstVenue = venues.find(v => hasCoords(v.latitude, v.longitude));
+    const center = userLocation
+        ? [userLocation.lat, userLocation.lng]
+        : newestPost
+            ? [newestPost.latitude, newestPost.longitude]
+            : firstVenue
+                ? [firstVenue.latitude, firstVenue.longitude]
                 : [34.0195, -118.4912]; // Default: Santa Monica
 
     map = L.map('map-container', {
@@ -2759,7 +2845,7 @@ function renderMapPins() {
     const shown = filteredVenues();
 
     shown.forEach((venue, index) => {
-        if (!venue.latitude || !venue.longitude) return;
+        if (!hasCoords(venue.latitude, venue.longitude)) return;
 
         const icon = L.divIcon({
             className: 'map-pin-wrapper',
@@ -2782,9 +2868,9 @@ function renderMapPins() {
     });
 
     // Fit bounds if we have venues with valid coordinates.
-    // Skipped when there are post pins: initMap deliberately centred on the
-    // newest post, and fitting every venue would immediately throw that away.
-    const geoVenues = shown.filter(v => v.latitude && v.longitude);
+    // Skipped when there are post pins or a fix: initMap deliberately centred
+    // on one of those, and fitting every venue would throw that away.
+    const geoVenues = shown.filter(v => hasCoords(v.latitude, v.longitude));
     if (geoVenues.length > 0 && !userLocation && postPins.length === 0) {
         const bounds = L.latLngBounds(geoVenues.map(v => [v.latitude, v.longitude]));
         map.fitBounds(bounds, { padding: [40, 40] });
@@ -2804,7 +2890,7 @@ function renderPostPins() {
     postMarkers = [];
 
     visiblePostPins().forEach(pin => {
-        if (!pin.latitude || !pin.longitude) return;
+        if (!hasCoords(pin.latitude, pin.longitude)) return;
 
         const icon = L.divIcon({
             className: 'map-post-pin-wrapper',
@@ -2835,10 +2921,15 @@ function renderPostPins() {
 // category and genres. A post with no venue has neither, so it shows under
 // "All / All" only — the same rule get_venue_feed applies.
 function visiblePostPins() {
-    const located = postPins.filter(pin => pin.has_own_coords);
-    if (!activeCategory && !activeGenre) return located;
+    // The radius by the pin's OWN position — that is where it is drawn.
+    const located = postPins.filter(pin => pin.has_own_coords && withinRadius(pin.latitude, pin.longitude));
+    // Following: a post from someone, or somewhere, this visitor follows.
+    const followed = feedMode !== 'following' ? located : located.filter(pin =>
+        (pin.uploaded_by_user_id && isFollowing('user', pin.uploaded_by_user_id))
+        || (pin.venue_id && isFollowing('venue', pin.venue_id)));
+    if (!activeCategory && !activeGenre) return followed;
 
-    return located.filter(pin => {
+    return followed.filter(pin => {
         if (!pin.venue_id) return false;
         return venueMatchesFilters(getVenueById(pin.venue_id));
     });
@@ -2926,7 +3017,7 @@ function selectVenueOnMap(venue) {
     selectedVenueId = venue.id;
 
     // Center map on selected venue
-    if (map && venue.latitude && venue.longitude) {
+    if (map && hasCoords(venue.latitude, venue.longitude)) {
         map.setView([venue.latitude, venue.longitude], map.getZoom(), { animate: true });
     }
 
@@ -2947,14 +3038,17 @@ function renderVenueSwimLane() {
     if (!lane) return;
 
     // Only show venues with coordinates
-    const geoVenues = filteredVenues().filter(v => v.latitude && v.longitude);
+    const geoVenues = filteredVenues().filter(v => hasCoords(v.latitude, v.longitude));
 
     if (geoVenues.length === 0) {
-        lane.innerHTML = '';
+        // When the radius is what emptied it, say so and offer the way out.
+        lane.innerHTML = activeRadiusMiles() !== null && venues.some(v => venueMatchesFilters(v))
+            ? radiusEmptyMarkup()
+            : '';
         return;
     }
 
-    lane.innerHTML = geoVenues.map(venue => {
+    lane.innerHTML = byDistance(geoVenues).map(venue => {
         const distance = userLocation ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude) : null;
         const distanceText = distance !== null ? ` &middot; ${distance.toFixed(1)} mi` : '';
         const isActive = venue.id === selectedVenueId;
@@ -2982,13 +3076,56 @@ function renderVenueSwimLane() {
     }).join('');
 }
 
+// One tap. With no fix it asks for one and recentres when it ARRIVES — it used
+// to ask and stop, so the first tap did nothing visible and a second tap was
+// needed. A fix older than five minutes is refreshed the same way.
+let pendingCenterOnMe = false;
+
 function centerOnMe() {
-    if (!map || !userLocation) {
-        // Request location again
-        requestLocation();
+    if (!map) return;
+    if (userLocation && !locationIsStale()) {
+        map.setView([userLocation.lat, userLocation.lng], 14, { animate: true });
         return;
     }
-    map.setView([userLocation.lat, userLocation.lng], 14, { animate: true });
+    if (userLocation) map.setView([userLocation.lat, userLocation.lng], 14, { animate: true });
+    pendingCenterOnMe = true;
+    requestLocation({ reason: 'center' });
+}
+
+// ===== Map | List (Jay's board: "Find a venue via map list view") =====
+//
+// The same venues the map shows — chips, radius and the Following chip all
+// apply (filteredVenues) — as a list, nearest first, with distances. A tap
+// opens the venue page. The map stays mounted underneath; switching back
+// costs nothing.
+let mapView = 'map';
+
+function setMapView(view) {
+    if (view !== 'map' && view !== 'list') return;
+    mapView = view;
+    document.querySelectorAll('.map-view-btn').forEach(btn => {
+        const on = btn.dataset.mapView === view;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    const list = document.getElementById('map-list');
+    if (list) list.style.display = view === 'list' ? '' : 'none';
+    document.getElementById('tab-map')?.classList.toggle('map-list-open', view === 'list');
+    if (view === 'list') renderMapList();
+}
+
+function renderMapList() {
+    const list = document.getElementById('map-list');
+    if (!list) return;
+
+    const shown = byDistance(filteredVenues());
+    if (shown.length === 0) {
+        list.innerHTML = activeRadiusMiles() !== null && venues.some(v => venueMatchesFilters(v))
+            ? radiusEmptyMarkup()
+            : `<div class="search-empty">${escapeHtml(translateOr('social.noVenuesMatchFilters', null, 'No venues match these filters'))}</div>`;
+        return;
+    }
+    list.innerHTML = renderVenueCards(shown, { onTap: id => `openVenuePage('${id}')` });
 }
 
 // ===== Recent Searches =====
@@ -3108,7 +3245,10 @@ function genreChipsMarkup(venue, limit) {
 // cannot drift. The second line reads venue.city/state, which get_venues_for_map
 // only started returning in migration 20260828000003 — before that it was blank
 // on every card and nobody noticed, because nothing errored.
-function renderVenueCards(list) {
+// `onTap` builds the card's onclick from the (escaped) venue id. The search
+// lists route through the map (goToVenueOnMap); the Map tab's own list opens
+// the venue page straight away.
+function renderVenueCards(list, { onTap = id => `goToVenueOnMap('${id}')` } = {}) {
     return list.map(venue => {
         const distance = userLocation
             ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude)
@@ -3117,7 +3257,7 @@ function renderVenueCards(list) {
         const place = [venue.city, venue.state].filter(Boolean).join(', ');
 
         return `
-            <div class="search-result-card" onclick="goToVenueOnMap('${escapeHtml(venue.id)}')">
+            <div class="search-result-card" onclick="${onTap(escapeHtml(venue.id))}">
                 <div class="search-result-thumb">
                     ${venue.profile_image_url
                         ? `<img src="${escapeHtml(venue.profile_image_url)}" alt="">`
@@ -3163,6 +3303,7 @@ function setSearchScope(scope) {
         input.setAttribute('aria-label', scope === 'members' ? 'Search members' : 'Search venues');
     }
 
+    updateSearchFiltersButton();
     handleSearch((input?.value || '').trim());
 }
 
@@ -3194,9 +3335,17 @@ function handleSearch(query) {
         }
 
         if (emptyHint) emptyHint.style.display = 'none';
+        // Browsing: the radius and the Filters apply, nearest first.
+        const browse = byDistance(venues.filter(v =>
+            searchFiltersMatch(v) && withinRadius(v.latitude, v.longitude)));
+        const emptyBody = browse.length
+            ? renderVenueCards(browse)
+            : (activeRadiusMiles() !== null && venues.some(searchFiltersMatch)
+                ? radiusEmptyMarkup()
+                : `<div class="search-empty">${escapeHtml(translateOr('social.noVenuesMatchFilters', null, 'No venues match these filters'))}</div>`);
         resultsContainer.innerHTML = `
             <h4 class="search-section-title" data-i18n="social.allVenues">All venues</h4>
-            ${renderVenueCards(venues)}
+            ${emptyBody}
         `;
         if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
             window.I18n.applyTranslations();
@@ -3209,15 +3358,151 @@ function handleSearch(query) {
     if (emptyHint) emptyHint.style.display = 'none';
     if (recentsWrap) recentsWrap.style.display = 'none';
 
+    // A typed search looks EVERYWHERE — naming a place should find it however
+    // far away it is — but the Filters apply, and the nearest comes first.
     const q = query.toLowerCase();
-    const results = venues.filter(v => matchesQuery(v, q));
+    const results = byDistance(venues.filter(v => matchesQuery(v, q) && searchFiltersMatch(v)));
 
     if (results.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-empty">No venues found</div>';
+        resultsContainer.innerHTML = `<div class="search-empty">${escapeHtml(translateOr('social.noVenuesFound', null, 'No venues found'))}</div>`;
         return;
     }
 
     resultsContainer.innerHTML = renderVenueCards(results);
+}
+
+// ===== Search filters (Jay's board: "Active Search: filter by category") =====
+//
+// Multi-select, unlike the feed's single-active chip row: "bars OR clubs,
+// playing house OR techno". Within a kind any match counts; across kinds both
+// must. The vocabularies are the ones this tenant's venues actually use
+// (availableFilters), so no chip can only ever empty the list.
+const searchFilterCategories = new Set();
+const searchFilterGenres = new Set();
+
+function searchFiltersMatch(venue) {
+    if (!venue) return false;
+    if (searchFilterCategories.size && !searchFilterCategories.has(venue.category)) return false;
+    if (searchFilterGenres.size && !venueGenres(venue).some(g => searchFilterGenres.has(g))) return false;
+    return true;
+}
+
+function updateSearchFiltersButton() {
+    const btn = document.getElementById('search-filters-btn');
+    const count = document.getElementById('search-filters-count');
+    const n = searchFilterCategories.size + searchFilterGenres.size;
+    if (btn) {
+        btn.style.display = searchScope === 'venues' ? '' : 'none';
+        btn.classList.toggle('active', n > 0);
+    }
+    if (count) {
+        count.textContent = n ? String(n) : '';
+        count.style.display = n ? '' : 'none';
+    }
+}
+
+function openSearchFilters() {
+    renderSearchFilters();
+    document.getElementById('search-filters-sheet')?.classList.add('visible');
+    document.getElementById('search-filters-backdrop')?.classList.add('visible');
+    lockBodyScroll('search-filters');
+}
+
+function closeSearchFilters() {
+    document.getElementById('search-filters-sheet')?.classList.remove('visible');
+    document.getElementById('search-filters-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('search-filters');
+}
+
+function renderSearchFilters() {
+    const body = document.getElementById('search-filters-body');
+    if (!body) return;
+    const { categories, genres } = availableFilters();
+    const chip = (kind, item, on) => `
+        <button type="button" class="genre-chip genre-chip-btn${on ? ' on' : ''}" aria-pressed="${on}"
+                onclick="toggleSearchFilter('${kind}', '${escapeHtml(item.slug)}')">${escapeHtml(kind === 'category' ? categoryLabel(item.slug) : genreLabel(item.slug))}</button>`;
+
+    body.innerHTML = `
+        ${categories.length ? `
+            <h4 class="filter-sheet-title" data-i18n="social.categories">Categories</h4>
+            <div class="filter-chip-grid">${categories.map(c => chip('category', c, searchFilterCategories.has(c.slug))).join('')}</div>` : ''}
+        ${genres.length ? `
+            <h4 class="filter-sheet-title" data-i18n="social.genres">Music</h4>
+            <div class="filter-chip-grid">${genres.map(g => chip('genre', g, searchFilterGenres.has(g.slug))).join('')}</div>` : ''}
+        <div class="filter-sheet-actions">
+            <button type="button" class="auth-btn auth-btn-ghost" onclick="clearSearchFilters()" data-i18n="social.clearFilters">Clear</button>
+            <button type="button" class="auth-btn auth-btn-primary" onclick="closeSearchFilters()" data-i18n="social.done">Done</button>
+        </div>
+    `;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+function applySearchFilters() {
+    updateSearchFiltersButton();
+    renderSearchFilters();
+    const input = document.getElementById('search-input');
+    handleSearch((input?.value || '').trim());
+}
+
+function toggleSearchFilter(kind, slug) {
+    const set = kind === 'category' ? searchFilterCategories : searchFilterGenres;
+    if (set.has(slug)) set.delete(slug); else set.add(slug);
+    applySearchFilters();
+}
+
+function clearSearchFilters() {
+    searchFilterCategories.clear();
+    searchFilterGenres.clear();
+    applySearchFilters();
+}
+
+// ===== Your interests (Settings) =====
+//
+// The onboarding preference chips, reopened (Category Filtering 2.0 on Jay's
+// board: picks can be changed after onboarding). renderOnboardingChips() draws
+// into this sheet as well; Save writes them the way finishing onboarding does
+// — this device, and the account through set_member_preferences — and Close
+// without saving puts the old picks back.
+let interestsBefore = null;
+
+function openInterests() {
+    interestsBefore = { categories: [...preferredCategories], genres: [...preferredGenres] };
+    renderOnboardingChips();
+    document.getElementById('interests-sheet')?.classList.add('visible');
+    document.getElementById('interests-backdrop')?.classList.add('visible');
+    lockBodyScroll('interests');
+}
+
+function closeInterests({ saved = false } = {}) {
+    if (!saved && interestsBefore) {
+        preferredCategories.splice(0, preferredCategories.length, ...interestsBefore.categories);
+        preferredGenres.splice(0, preferredGenres.length, ...interestsBefore.genres);
+        renderOnboardingChips();
+    }
+    interestsBefore = null;
+    document.getElementById('interests-sheet')?.classList.remove('visible');
+    document.getElementById('interests-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('interests');
+}
+
+// At parse time, like setupViibeViewer(): the Settings rows open this sheet
+// with an inline handler, which can be before init() has finished.
+function setupInterestsSheet() {
+    ['interests-categories', 'interests-genres'].forEach(id =>
+        document.getElementById(id)?.addEventListener('click', onOnboardingChipClick));
+}
+setupInterestsSheet();
+
+async function saveInterests() {
+    writeStoredPreferences();
+    closeInterests({ saved: true });
+    // The chip row orders itself by the picks.
+    renderFilterPills();
+    await persistPreferences();
+    showToast(translateOr('social.interestsSaved', null, 'Saved'));
 }
 
 /**
@@ -3284,7 +3569,7 @@ function goToVenueOnMap(venueId) {
     recordRecentSearch(venue);
     switchTab('map');
     setTimeout(() => {
-        if (map && venue.latitude && venue.longitude) {
+        if (map && hasCoords(venue.latitude, venue.longitude)) {
             map.setView([venue.latitude, venue.longitude], 15, { animate: true });
             selectVenueOnMap(venue);
         }
@@ -3351,7 +3636,7 @@ async function openVenuePage(venueId) {
     }
 
     // Render identity
-    const distance = userLocation && venue.latitude
+    const distance = userLocation && hasCoords(venue.latitude, venue.longitude)
         ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude)
         : null;
     const distanceText = distance !== null ? `${distance.toFixed(1)} mi away` : '';
@@ -3979,8 +4264,7 @@ async function enableLocationForVenuePage() {
     const coords = await getCurrentCoords();
 
     if (!coords) {
-        showToast(translateOr('social.locationBlocked', null,
-            'Location is off. Turn it on in your browser settings to filter by distance.'));
+        showToast(locationErrorMessage());
         return;
     }
 
@@ -5446,6 +5730,10 @@ function switchTab(tabId) {
         view.classList.toggle('active', view.id === `tab-${tabId}`);
     });
 
+    // A fix older than five minutes is refreshed when the two location-aware
+    // tabs open (GPS & navigation, Jay's board).
+    if (tabId === 'feed' || tabId === 'map') refreshLocationIfStale();
+
     // Initialize or refresh map when switching to map tab
     if (tabId === 'map') {
         requestAnimationFrame(() => {
@@ -5775,20 +6063,26 @@ function setFilter(kind, value) {
 // chip at the left of the row, and that chip opens a sheet.
 
 const RADIUS_PREF_KEY = 'viibe_feed_radius';
-// null = "Any". Also the sheet's row order.
-const RADIUS_OPTIONS = [null, 1, 5, 25];
+// The slider's stops, nearest first; null = "Any" (Jay's board, 2026-10-14:
+// "drag to expand or narrow the radius, like Yelp"). It was four buttons.
+const RADIUS_STOPS = [1, 2, 5, 10, 15, 25, 50, null];
+// When neither this device nor the tenant has chosen: the board's "venues
+// within 2–10 miles".
+const DEFAULT_RADIUS_MILES = 10;
 
-let feedRadiusMiles = null;
+let feedRadiusMiles = DEFAULT_RADIUS_MILES;
 
 // Precedence: this device's last choice, then the tenant's configured default,
-// then Any. The device wins because the owner sheet describes its value as
-// "just the starting value — anyone can change it for themselves", and a
+// then 10 miles. The device wins because the owner sheet describes its value
+// as "just the starting value — anyone can change it for themselves", and a
 // default that overrode a deliberate choice on every reload would make that
 // false.
 //
 // ⚠️ '' is the STORED form of "Any" and is not the same as an absent key. A
-// truthiness check here would silently re-apply the tenant default to everyone
-// who had explicitly chosen Any.
+// truthiness check here would silently re-apply a default to everyone who had
+// explicitly chosen Any. The same holds for the tenant: a feed_radius_default
+// that is PRESENT and null is the owner choosing Any; an absent one is no
+// choice at all, and falls to the 10-mile default.
 function loadRadiusPreference() {
     let stored = null;
     try {
@@ -5803,8 +6097,59 @@ function loadRadiusPreference() {
         return;
     }
 
-    const configured = parseFloat(appSettings.feed_radius_default);
-    feedRadiusMiles = Number.isFinite(configured) && configured > 0 ? configured : null;
+    if (appSettings && Object.prototype.hasOwnProperty.call(appSettings, 'feed_radius_default')) {
+        const configured = parseFloat(appSettings.feed_radius_default);
+        feedRadiusMiles = Number.isFinite(configured) && configured > 0 ? configured : null;
+        return;
+    }
+
+    feedRadiusMiles = DEFAULT_RADIUS_MILES;
+}
+
+// The radius as a FILTER right now: null when there is none to apply — "Any",
+// or no location fix to measure from (a denied permission must never empty a
+// list).
+function activeRadiusMiles() {
+    return feedRadiusMiles !== null && userLocation ? feedRadiusMiles : null;
+}
+
+// One rule for every surface that filters by distance on the client: the map's
+// venue pins, card strip, list and post pins, and the Search tab's venues. The
+// feed applies the same radius in SQL. A place with no coordinates has no
+// distance, so it is outside any radius.
+function withinRadius(lat, lng) {
+    const radius = activeRadiusMiles();
+    if (radius === null) return true;
+    const miles = calcDistance(userLocation.lat, userLocation.lng, lat, lng);
+    return miles !== null && miles <= radius;
+}
+
+// Nearest first; places with no distance last, then by name.
+function byDistance(list) {
+    const at = v => (userLocation
+        ? calcDistance(userLocation.lat, userLocation.lng, v.latitude, v.longitude)
+        : null);
+    return list
+        .map(v => ({ v, d: at(v) }))
+        .sort((a, b) => {
+            if (a.d === null && b.d === null) return String(a.v.name || '').localeCompare(String(b.v.name || ''));
+            if (a.d === null) return 1;
+            if (b.d === null) return -1;
+            return a.d - b.d;
+        })
+        .map(x => x.v);
+}
+
+// "Nothing within 10 mi right now" + Show everywhere — the feed, the map and
+// the lists all say it the same way when the radius is what emptied them.
+function radiusEmptyMarkup() {
+    const miles = activeRadiusMiles();
+    return `
+        <div class="radius-empty">
+            <p class="radius-empty-title">${escapeHtml(translateOr('social.nothingWithin', { miles }, `Nothing within ${miles} mi right now`))}</p>
+            <button type="button" class="auth-btn auth-btn-ghost radius-empty-btn" onclick="setRadius(null)">${escapeHtml(translateOr('social.showEverywhere', null, 'Show everywhere'))}</button>
+        </div>
+    `;
 }
 
 function writeRadiusPreference() {
@@ -5852,37 +6197,55 @@ function closeRadiusSheet() {
     unlockBodyScroll('radius');
 }
 
-// ⚠️ With no location fix, every option except "Any" is a filter the server
-// will refuse to apply — see migration 20260907000002 §1. Offering them anyway
-// and quietly returning an unfiltered feed from a chip that reads "1 mi" is the
-// silent-lie failure mode this codebase keeps producing, so the sheet says so
-// and offers the permission prompt instead.
+// A slider over RADIUS_STOPS with a live "Within 10 mi" label. Dragging updates
+// the label; letting go applies it everywhere (setRadius), and the sheet stays
+// open so the visitor can keep adjusting. A stored value between stops (an
+// owner's 3-mile default, say) sits on the nearest stop until it is moved.
+//
+// ⚠️ With no location fix the slider is disabled: every value but "Any" is a
+// filter there is nothing to measure against. The sheet says so and offers the
+// permission prompt instead of a control that silently does nothing.
+function radiusStopIndex(miles) {
+    if (miles === null) return RADIUS_STOPS.length - 1;
+    let best = 0;
+    RADIUS_STOPS.forEach((stop, i) => {
+        if (stop !== null && Math.abs(stop - miles) < Math.abs(RADIUS_STOPS[best] - miles)) best = i;
+    });
+    return best;
+}
+
+function radiusValueLabel(miles) {
+    if (miles === null) return translateOr('social.radiusAny', null, 'Any distance');
+    return translateOr('social.withinMiles', { miles }, `Within ${miles} mi`);
+}
+
 function renderRadiusOptions() {
     const body = document.getElementById('radius-body');
     if (!body) return;
 
     const noFix = !userLocation;
-    const check = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const index = radiusStopIndex(feedRadiusMiles);
+    const ticks = RADIUS_STOPS.map(stop => `<span>${stop === null
+        ? escapeHtml(translateOr('social.radiusAnyShort', null, 'Any'))
+        : stop}</span>`).join('');
 
-    const options = RADIUS_OPTIONS.map(value => {
-        const active = feedRadiusMiles === value;
-        const disabled = noFix && value !== null;
-        return `
-            <button type="button" class="radius-option${active ? ' active' : ''}"
-                    ${disabled ? 'disabled' : ''}
-                    data-radius="${value === null ? '' : value}">
-                <span>${escapeHtml(radiusOptionLabel(value))}</span>
-                ${active ? check : ''}
-            </button>
-        `;
-    }).join('');
-
-    body.innerHTML = noFix
-        ? `<p class="radius-note" data-i18n="social.radiusNeedsLocation">Turn on location to filter by distance.</p>
-           <button type="button" class="auth-btn auth-btn-ghost" id="radius-enable-location"
-                   data-i18n="social.enableLocation">Use my location</button>
-           ${options}`
-        : options;
+    body.innerHTML = `
+        ${noFix ? `
+            <p class="radius-note" data-i18n="social.radiusNeedsLocation">Turn on location to filter by distance.</p>
+            <button type="button" class="auth-btn auth-btn-ghost" id="radius-enable-location"
+                    data-i18n="social.enableLocation">Use my location</button>
+        ` : ''}
+        <div class="radius-slider-wrap${noFix ? ' is-disabled' : ''}">
+            <div class="radius-value" id="radius-value" aria-live="polite">${escapeHtml(radiusValueLabel(feedRadiusMiles))}</div>
+            <input type="range" class="radius-slider" id="radius-slider"
+                   min="0" max="${RADIUS_STOPS.length - 1}" step="1" value="${index}"
+                   aria-label="${escapeHtml(translateOr('social.distanceTitle', null, 'How far?'))}"
+                   ${noFix ? 'disabled' : ''}>
+            <div class="radius-ticks" aria-hidden="true">${ticks}</div>
+        </div>
+        <button type="button" class="auth-btn auth-btn-primary radius-done" id="radius-done"
+                data-i18n="social.done">Done</button>
+    `;
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
@@ -5900,18 +6263,24 @@ async function enableLocationForRadius() {
     renderRadiusOptions();
     renderFilterPills();
 
-    if (!coords) {
-        showToast(translateOr('social.locationBlocked', null,
-            'Location is off. Turn it on in your browser settings to filter by distance.'));
+    if (coords) {
+        loadFeed(false);
+        refreshVenueSurfaces();
+    } else {
+        showToast(locationErrorMessage());
     }
 }
 
-function setRadius(value) {
+// Applies a radius everywhere: the feed (in SQL), and the map, its list and
+// the Search tab's venues (withinRadius). `close: false` while the slider is
+// in use — the sheet stays up for another adjustment.
+function setRadius(value, { close = true } = {}) {
     feedRadiusMiles = value;
     writeRadiusPreference();
-    closeRadiusSheet();
+    if (close) closeRadiusSheet();
     renderFilterPills();
     loadFeed(false);
+    refreshVenueSurfaces();
 }
 
 // ===== App settings (org members only) =====
@@ -5936,7 +6305,17 @@ function openAppSettings() {
     // Prefill from the LIVE app row — this is what the RPC merges into.
     selectWithFallback(document.getElementById('setting-post-ttl'), appSettings.post_ttl_hours,
         hours => translateOr('social.ttlHours', { hours }, `${hours} hours`));
-    selectWithFallback(document.getElementById('setting-feed-radius'), appSettings.feed_radius_default,
+    // Every stop labelled in the reader's language; an UNSET default shows
+    // as what visitors actually get, the 10-mile default — not "Any".
+    const radiusSelect = document.getElementById('setting-feed-radius');
+    radiusSelect?.querySelectorAll('option').forEach(option => {
+        option.removeAttribute('data-i18n');
+        option.textContent = radiusOptionLabel(option.value === '' ? null : Number(option.value));
+    });
+    const radiusDefault = Object.prototype.hasOwnProperty.call(appSettings, 'feed_radius_default')
+        ? appSettings.feed_radius_default
+        : DEFAULT_RADIUS_MILES;
+    selectWithFallback(radiusSelect, radiusDefault,
         miles => translateOr('social.radiusMiles', { miles }, `${miles} miles`));
 
     sheet.classList.add('visible');
@@ -6022,10 +6401,17 @@ async function saveAppSettings() {
 // The three client-side-filtered surfaces. Both pill rows go through here so
 // they cannot fall out of step with each other.
 function refreshVenueSurfaces() {
-    if (!map) return;
-    renderMapPins();
-    renderPostPins();
-    renderVenueSwimLane();
+    if (map) {
+        renderMapPins();
+        renderPostPins();
+        renderVenueSwimLane();
+    }
+    if (mapView === 'list') renderMapList();
+    // The Search tab's venue list follows the same filters and radius.
+    if (activeTab === 'search' && searchScope === 'venues') {
+        const input = document.getElementById('search-input');
+        handleSearch((input?.value || '').trim());
+    }
 }
 
 // ===== Sound =====
@@ -6325,12 +6711,18 @@ function setupEventListeners() {
             enableLocationForRadius();
             return;
         }
-        const option = e.target.closest('.radius-option');
-        if (!option || option.disabled) return;
-        // '' is the DOM spelling of "Any" — an empty data-radius must become
-        // null, not NaN, or the chip label and the RPC argument both break.
-        const raw = option.dataset.radius;
-        setRadius(raw === '' ? null : parseFloat(raw));
+        if (e.target.closest('#radius-done')) closeRadiusSheet();
+    });
+    // The slider: the label follows the thumb; letting go applies it.
+    document.getElementById('radius-body')?.addEventListener('input', (e) => {
+        if (e.target.id !== 'radius-slider') return;
+        const value = RADIUS_STOPS[Number(e.target.value)] ?? null;
+        const label = document.getElementById('radius-value');
+        if (label) label.textContent = radiusValueLabel(value);
+    });
+    document.getElementById('radius-body')?.addEventListener('change', (e) => {
+        if (e.target.id !== 'radius-slider') return;
+        setRadius(RADIUS_STOPS[Number(e.target.value)] ?? null, { close: false });
     });
 
     // App settings (org members only; the button is hidden for everyone else
@@ -7461,20 +7853,39 @@ function showEmptyState(msg) {
 // null both when permission was refused AND when the prompt is still open.
 // Re-ask here rather than treating those as the same thing.
 function getCurrentCoords() {
-    if (userLocation) return Promise.resolve(userLocation);
-    if (!navigator.geolocation) return Promise.resolve(null);
+    if (userLocation && !locationIsStale()) return Promise.resolve(userLocation);
+    if (!navigator.geolocation) return Promise.resolve(userLocation);
 
     return new Promise((resolve) => {
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                setUserLocation(pos.coords);
                 resolve(userLocation);
             },
             (err) => {
-                console.warn('Geolocation unavailable for post:', err.message);
-                resolve(null);
+                lastLocationError = err && err.code;
+                console.warn('Geolocation unavailable:', err && err.message);
+                // A stale fix beats none; null only when there never was one.
+                resolve(userLocation);
             },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+    });
+}
+
+// The fix a POST is stamped with: fresh and high-accuracy, because it is
+// where the Viibe is pinned on the map. Falls back to the cached fix when the
+// device cannot get a fresh one in time (Jay's board: GPS & navigation).
+function getPostCoords() {
+    if (!navigator.geolocation) return Promise.resolve(userLocation);
+    return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setUserLocation(pos.coords);
+                resolve(userLocation);
+            },
+            () => resolve(userLocation),
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
         );
     });
 }
@@ -7495,7 +7906,7 @@ function defaultComposerVenueId(explicitVenueId) {
     if (explicitVenueId) return explicitVenueId;
     if (!userLocation) return null;
 
-    const candidates = realVenues().filter(v => v.latitude && v.longitude);
+    const candidates = realVenues().filter(v => hasCoords(v.latitude, v.longitude));
     if (candidates.length === 0) return null;
 
     let best = null;
@@ -7667,7 +8078,7 @@ function pickableVenues() {
     return list
         .map(v => ({
             venue: v,
-            distance: v.latitude && v.longitude
+            distance: hasCoords(v.latitude, v.longitude)
                 ? calcDistance(userLocation.lat, userLocation.lng, v.latitude, v.longitude)
                 : null
         }))
@@ -7701,7 +8112,7 @@ function renderVenuePickerList() {
     `;
 
     const rows = options.map(venue => {
-        const distance = userLocation && venue.latitude && venue.longitude
+        const distance = userLocation && hasCoords(venue.latitude, venue.longitude)
             ? calcDistance(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude)
             : null;
         const meta = [
@@ -9075,9 +9486,10 @@ async function submitPost() {
     // owner who wants no venue gets no venue, same as a member.
     const venueId = composerVenueId;
 
-    // Where the clip was actually recorded. Null when location was refused;
-    // the post is still perfectly valid, it just gets no pin of its own.
-    const coords = await getCurrentCoords();
+    // Where the clip was actually recorded: a FRESH high-accuracy fix, falling
+    // back to the cached one. Null when location was refused; the post is
+    // still perfectly valid, it just gets no pin of its own.
+    const coords = await getPostCoords();
 
     const timestamp = Date.now();
     const safeFilename = selectedPostFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -9214,10 +9626,12 @@ function showLocationBanner() {
     const banner = document.createElement('div');
     banner.id = 'location-banner';
     banner.className = 'location-banner';
-    banner.innerHTML = `
-        <span>Enable location access for distance info</span>
-        <button class="location-banner-close" type="button" aria-label="Dismiss">&times;</button>
-    `;
+    // What actually went wrong (denied, unavailable, timed out), in the
+    // reader's language — not one generic line for all three.
+    const text = document.createElement('span');
+    text.textContent = locationErrorMessage();
+    banner.innerHTML = `<button class="location-banner-close" type="button" aria-label="Dismiss">&times;</button>`;
+    banner.prepend(text);
     banner.querySelector('.location-banner-close')
         .addEventListener('click', () => banner.remove());
 
@@ -9540,6 +9954,8 @@ const BACK_SURFACES = [
     { id: 'post-preview-modal',  back: () => closePostPreview() },
     { id: 'add-venue-sheet',     back: () => closeAddVenue() },
     { id: 'app-settings-sheet',  back: () => closeAppSettings() },
+    { id: 'interests-sheet',     back: () => closeInterests() },
+    { id: 'search-filters-sheet', back: () => closeSearchFilters() },
     { id: 'radius-sheet',        back: () => closeRadiusSheet() },
     { id: 'contact-sheet',       back: () => closeContactSheet() },
     { id: 'ios-install-sheet',   back: () => closeIosInstall() },
