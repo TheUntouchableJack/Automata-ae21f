@@ -10,6 +10,9 @@
 :root {
     --app-primary: #6366f1;
     --app-secondary: #1e293b;
+    /* The primary at 12%: the tint behind unselected category pills and
+       chips. applyBranding() rewrites it from the tenant's own primary. */
+    --app-primary-soft: rgba(99, 102, 241, 0.12);
     --color-bg: #f8fafc;
     --color-surface: #ffffff;
     --color-border: #e2e8f0;
@@ -269,6 +272,10 @@ body {
     flex-shrink: 0;
 }
 
+/* Category bubbles in the app's own blue (Jay's board, 2026-10-14): an
+   unselected pill is the primary's tint with primary text; the selected one
+   stays solid primary. They used to be grey outlines, so only the ONE
+   selected pill on screen carried the brand colour. */
 .pill {
     flex-shrink: 0;
     padding: var(--spacing-xs) var(--spacing-md);
@@ -276,9 +283,9 @@ body {
     font-family: 'Outfit', sans-serif;
     font-size: 0.8125rem;
     font-weight: 500;
-    border: 1.5px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text-secondary);
+    border: 1.5px solid transparent;
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
@@ -431,13 +438,17 @@ body {
     background: #000;
 }
 
-/* object-fit: cover is what makes a portrait phone video fill the space it is
-   given; a letterboxed 15-second clip is the thing this replaces. */
+/* object-fit: CONTAIN — the whole video, always (Jay, 2026-10-14).
+   This was `cover`, which filled the panel by cutting the clip: about 9% of a
+   9:16 video's height in the installed app, and up to about a third in Safari
+   with its toolbars showing. The panel is black, so whatever the clip does
+   not fill reads as black bars, not as a gap. Flyers (images) are contained
+   the same way. The Viibe player's panels are .feed-panel too. */
 .feed-panel .feed-media video,
 .feed-panel .feed-media img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 /* ===== The venue strip =====
@@ -479,7 +490,6 @@ body {
    on the video, bottom-right. */
 .feed-panel-more {
     flex: 0 0 auto;
-    color: var(--color-text-secondary);
 }
 
 .feed-panel-sound {
@@ -496,26 +506,10 @@ body {
    light surface now, so its own treatment is simply correct, unmodified —
    re-adding any of it would mean the strip has stopped being opaque. */
 
-/* JS-generated: <div class="feed-card"> — MEMBER PROFILE ONLY.
-   The main feed renders .feed-panel; the VENUE PAGE renders .member-grid.
-
-   ⚠️ This used to say "VENUE PAGE ONLY". The two surfaces swapped in Phase 4:
-   the venue page became an Instagram-style reels grid and the member profile
-   took this scrolling card list. Nothing about these rules changed — only who
-   reads them — and the separation from .feed-panel is intact and exists for
-   the same reason: a change to the full-screen browse must not silently
-   reshape one person's list of posts. */
-.feed-card {
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-}
-
-.feed-card-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
-}
+/* ⚠️ `.feed-card` and its header, caption and venue-link rules are GONE
+   (2026-10-14). The member profile was their last surface; it renders the
+   reels grid now, like the Me tab and the venue page, and a tile opens the
+   Viibe player (.viibe-viewer), whose panels are .feed-panel. */
 
 /* JS: <div class="feed-venue-info"> (clickable wrapper) */
 .feed-venue-info {
@@ -599,12 +593,16 @@ body {
 }
 
 /* JS: <button class="feed-more-btn"> */
+/* Black, on the white strip (Jay's board, 2026-10-14: "from blue to black").
+   It was --color-text-secondary, a slate blue-grey. Set HERE, not on
+   .feed-panel-more: the two rules have equal weight and this one comes later,
+   so a colour on .feed-panel-more loses to it. */
 .feed-more-btn {
     width: 32px;
     height: 32px;
     border: none;
     background: transparent;
-    color: var(--color-text-secondary);
+    color: #000000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -682,25 +680,6 @@ body {
 
 .video-sound-btn.on {
     background: var(--app-primary, #6366f1);
-}
-
-/* JS: venue-page cards whose author was never recorded (pre-UGC posts) carry
-   only the 3-dots button. Every other card on that page names its author. */
-.feed-card-header-compact {
-    justify-content: flex-end;
-    padding-bottom: 0;
-}
-
-/* JS: <div class="feed-caption"> */
-.feed-caption {
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: 0.875rem;
-    line-height: 1.5;
-    color: var(--color-text);
-}
-
-.feed-caption strong {
-    font-weight: 600;
 }
 
 /* ===== Map View ===== */
@@ -801,10 +780,25 @@ body {
     color: var(--color-text);
 }
 
+.map-search-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+/* Category text in the app's blue, like the pills (2026-10-14). */
 .map-search-category {
     font-size: 0.75rem;
-    color: var(--color-text-muted);
+    font-weight: 500;
+    color: var(--app-primary);
     text-transform: capitalize;
+}
+
+.map-search-distance {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
 }
 
 .map-search-empty {
@@ -1179,7 +1173,8 @@ body {
 .recent-search-category {
     flex-shrink: 0;
     font-size: 0.75rem;
-    color: var(--color-text-secondary);
+    font-weight: 500;
+    color: var(--app-primary);
 }
 
 /* HTML/JS: <div class="search-results"> */
@@ -1281,7 +1276,8 @@ body {
 }
 
 .search-result-category {
-    color: var(--color-text-secondary);
+    color: var(--app-primary);
+    font-weight: 500;
     text-transform: capitalize;
 }
 
@@ -2284,8 +2280,8 @@ body {
 
 .venue-page-category {
     display: inline-block;
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
     padding: 2px 10px;
     border-radius: 12px;
     font-size: 12px;
@@ -2673,7 +2669,7 @@ body {
     color: var(--app-primary, #6366f1);
 }
 
-/* Feed — reuses .feed-card styles from main feed */
+/* The venue's posts: a .member-grid of tiles (see the reels grid below). */
 .venue-page-feed {
     padding: 0 0 16px;
 }
@@ -3786,7 +3782,8 @@ body {
     display: inline-block;
     padding: 2px 8px;
     border-radius: var(--radius-full);
-    background: rgba(99, 102, 241, 0.08);
+    /* The tenant's own primary, not a hardcoded indigo (2026-10-14). */
+    background: var(--app-primary-soft);
     color: var(--app-primary);
     font-size: 0.6875rem;
     font-weight: 600;
@@ -4332,6 +4329,7 @@ body {
        .post-preview-modal             2200
        .venue-page-backdrop / page     2499 / 2500
        .member-page-backdrop / page    2699 / 2700   <- opened FROM the venue page
+       .viibe-viewer                   2750          <- a tile on the Me tab, a member page or a venue page
        .people-backdrop / .people-sheet 2800 / 2900  <- opened FROM the member page
        #post-options-* / #edit-profile-* 2910 / 2920 <- opened FROM any of the above
        .auth-overlay                   2950          <- a signed-out tap on any of the above
@@ -4339,6 +4337,7 @@ body {
        .venue-picker-*                 3200 / 3300   <- opened FROM the composer
        #confirm-backdrop / .confirm-dialog 3400 / 3410 <- Delete, Discard: over anything
        .onboarding-overlay             3500          <- shown after signup, over everything
+       .app-rotate-overlay             3600          <- a phone on its side: nothing works until upright
 
    2026-10-06: four "opens behind" bugs were the same bug — a layer added at
    the default sheet level (2100/2200) or the old auth/confirm levels (2000 /
@@ -4419,6 +4418,80 @@ body {
 
 .member-page.visible {
     transform: translateY(0);
+}
+
+/* ===== Viibe player (2026-10-14) =====
+   Full screen, black, the bottom nav covered: 2750 clears #member-page (2700)
+   and #venue-page (2500), which open it, and stays under post options (2910),
+   auth (2950) and confirm (3400), which open FROM it.
+
+   A flex column: a slim Back bar, then the scroller. The scroller is to the
+   player what #feed-container is to the feed — each .feed-panel inside is
+   exactly one scroller-height (height: 100% in .feed-panel), which is what
+   keeps scroll-snap meaning "one Viibe per swipe". */
+.viibe-viewer {
+    position: fixed;
+    inset: 0;
+    max-width: var(--app-max-width);
+    margin-inline: auto;
+    z-index: 2750;
+    background: #000;
+    display: none;
+    flex-direction: column;
+}
+
+.viibe-viewer.visible {
+    display: flex;
+}
+
+.viibe-viewer-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    padding: calc(var(--safe-area-top) + 6px) var(--spacing-sm) 6px;
+    background: #000;
+}
+
+.viibe-viewer-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 0 var(--spacing-sm);
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.viibe-viewer-scroller {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    background: #000;
+    /* ⚠️ No padding: a panel's height:100% resolves against the content box,
+       so padding would make every panel shorter than the scroll step and the
+       tapped Viibe would open a few pixels off its snap point. */
+}
+
+.viibe-viewer-scroller::-webkit-scrollbar {
+    display: none;
+}
+
+/* Portrait only, app-wide. Reuses .rotate-overlay's look; fixed over
+   EVERYTHING rather than over the composer's camera area. */
+.app-rotate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3600;
 }
 
 .member-page-header {
@@ -4617,15 +4690,13 @@ body {
 /* ===== Reels grid ===== */
 /* A grid of poster frames, not a stack of autoplaying videos: a popular venue
    holds dozens of clips and rendering forty <video> elements that all call
-   play() is how a phone runs out of memory. Tapping a tile expands it in place
-   and hydrates exactly that one.
+   play() is how a phone runs out of memory. Tapping a tile opens the Viibe
+   player (.viibe-viewer), which plays exactly that one.
 
-   ⚠️ This used to belong to the MEMBER PROFILE. It is the VENUE PAGE's now —
-   #venue-page-feed wears .member-grid, and the profile renders .feed-card. The
-   class name is kept rather than renamed because the geometry is the same
-   geometry and every rule below is unchanged; renaming it would have been a
-   diff across two files that proved nothing. Both surfaces are named here so
-   the next reader is not misled the way this comment used to mislead. */
+   THREE surfaces wear it (2026-10-14): the venue page (#venue-page-feed), the
+   Me tab (#me-grid) and another member's page (#member-page-grid). The class
+   name is historical — it started on the member profile — and is kept because
+   the geometry is the same everywhere. */
 .member-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4655,47 +4726,19 @@ body {
     position: absolute;
     right: 4px;
     bottom: 4px;
+    /* ⚠️ left: auto, or the base .video-duration's `left` still applies and
+       the badge stretches from one edge of the tile to the other. */
+    left: auto;
 }
 
-/* The tapped tile, expanded in place across the full grid width. `1 / -1` is
-   the whole row regardless of how many columns the grid has, so this survives
-   a future change to grid-template-columns. The aspect ratio relaxes because a
-   9:16 clip at full width would be taller than the viewport. */
-.member-grid-tile.is-expanded {
-    grid-column: 1 / -1;
-    aspect-ratio: 4 / 5;
-    cursor: default;
-}
-
-.member-grid-tile.is-expanded .video-sound-btn {
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
-    z-index: 2;
-}
+/* ⚠️ The in-place expansion (.member-grid-tile.is-expanded, a 4:5 box with
+   object-fit: cover, and its .tile-more-btn) is GONE (2026-10-14). It cut
+   about a third off every 9:16 clip. A tap opens the Viibe player now, and
+   Delete/Report live on the player's options button. */
 
 .member-grid-tile:focus-visible {
     outline: 2px solid var(--app-primary, #6366f1);
     outline-offset: -2px;
-}
-
-/* Post options on the expanded tile — the only route to Delete/Report from a
-   grid. Venue owners delete posts at their venue from here. */
-.member-grid-tile .tile-more-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 2;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    cursor: pointer;
 }
 
 /* Flyers pin to the top of the venue page; the badge says why. */
@@ -4715,32 +4758,10 @@ body {
     pointer-events: none;
 }
 
-/* The venue a profile card was shot at. Takes the place of the author identity
-   block the venue page's cards carried — on a profile, the author is the page
-   and the venue is the useful link. */
-.feed-card-venue-link {
-    flex: 1;
-    padding: 0;
-    background: none;
-    border: none;
-    font-family: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-text);
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-}
-
 /* ⚠️ `.member-grid-venue` and `.member-grid-venue.has-duration` were DELETED
-   in Phase 4. The chip named the venue a tile was shot at, which mattered on
-   the member profile — a grid of one person's posts across many venues. The
-   grid belongs to the VENUE PAGE now, where every tile is the same venue and
-   the label would repeat the page header on every cell. The profile names its
-   venue in `.feed-card-venue-link` above, as a real control rather than an
-   inert overlay.
+   in Phase 4. The chip named the venue a tile was shot at. On a profile the
+   venue is named by the Viibe player's venue strip now (2026-10-14), which is
+   a real control that opens the venue page.
 
    Recorded rather than silently removed because the rules carried a
    non-obvious constraint worth not re-learning: ellipsis + nowrap were

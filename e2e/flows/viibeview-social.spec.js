@@ -382,7 +382,12 @@ test.describe('ViibeView social app', () => {
         await expect(page.locator('#search-empty')).toBeHidden();
     });
 
-    test('the feed hides the nav on scroll and offers a way back up', async ({ page }) => {
+    test('the feed keeps the nav pinned and offers a way back up', async ({ page }) => {
+        // ⚠️ REWRITTEN 2026-10-14. This asserted that the nav hides past 100px
+        // of WINDOW scroll. Both halves went stale in the full-screen feed:
+        // the feed scrolls on #feed-container, not the window, and the nav is
+        // deliberately PINNED there (updateScrollChrome: in a one-panel-per-
+        // swipe feed, hide-on-scroll read as flicker on every Viibe).
         await loadApp(page);
         await page.waitForTimeout(2000);
 
@@ -392,34 +397,25 @@ test.describe('ViibeView social app', () => {
 
         await expect(page.locator('.bottom-nav')).not.toHaveClass(/hidden/);
 
-        // Nav hides past 100px. Back-to-top appears past one full card, so the
-        // two are asserted at their own thresholds rather than at one arbitrary
-        // offset that may be past neither on a short feed.
-        await page.evaluate(() => window.scrollTo(0, 300));
-        await page.waitForTimeout(400);
-        await expect(page.locator('.bottom-nav')).toHaveClass(/hidden/);
-
         const reach = await page.evaluate(() => {
-            const card = document.querySelector('#feed-container .feed-panel');
-            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-            const threshold = card ? card.offsetHeight : 400;
+            const c = document.getElementById('feed-container');
+            const panel = c.querySelector('.feed-panel');
+            const maxScroll = c.scrollHeight - c.clientHeight;
+            const threshold = panel ? panel.offsetHeight : 400;
             if (maxScroll <= threshold) return { ok: false, maxScroll, threshold };
-            window.scrollTo(0, threshold + 50);
+            c.scrollTo(0, threshold + 50);
             return { ok: true, maxScroll, threshold };
         });
 
-        // Not vacuous: on a feed too short to scroll past one card there is
-        // nothing to assert, and pretending otherwise is how a test starts
-        // passing against a state it never reached.
-        if (reach.ok) {
-            await page.waitForTimeout(400);
-            await expect(page.locator('#back-to-top')).toHaveClass(/visible/);
-        }
-
-        // Scrolling back up returns the nav immediately, at any depth.
-        await page.evaluate(() => window.scrollBy(0, -200));
+        // Pinned while scrolling, at any depth.
         await page.waitForTimeout(400);
         await expect(page.locator('.bottom-nav')).not.toHaveClass(/hidden/);
+
+        // Not vacuous: on a feed too short to scroll past one panel there is
+        // nothing to assert about back-to-top.
+        if (reach.ok) {
+            await expect(page.locator('#back-to-top')).toHaveClass(/visible/);
+        }
     });
 
     test('every feed card is attributable and has a working options menu', async ({ page }) => {
@@ -546,7 +542,7 @@ test.describe('ViibeView social app', () => {
         await expect(page.locator('#venue-page')).not.toHaveClass(/visible/);
     });
 
-    test('the venue page renders a reels grid, and exactly one tile expands', async ({ page }) => {
+    test('the venue page renders a reels grid, and a tile opens the Viibe player', async ({ page }) => {
         // ⚠️ REWRITTEN IN PHASE 4. This used to assert author headers on
         // `#venue-page-feed .feed-card`. The venue page no longer renders
         // cards — it renders an Instagram-style grid of poster frames, and a
@@ -554,10 +550,10 @@ test.describe('ViibeView social app', () => {
         // did not disappear; it moved to the MEMBER PROFILE, which is where
         // `.feed-card` lives now.
         //
-        // What is asserted here instead is the grid's own invariant, and it is
-        // the one a two-post tenant can still prove: tiles render media, and
-        // tapping expands EXACTLY ONE. "One at a time" is what keeps a single
-        // clip playing and is impossible to verify by eye on a short feed.
+        // What is asserted here instead is the grid's own invariant: tiles
+        // render media. Since 2026-10-14 a tap opens the full-screen Viibe
+        // player (it used to expand the tile in place, as a 4:5 crop of a
+        // 9:16 clip), over the bottom nav, with the whole video showing.
         await loadApp(page);
         await page.waitForTimeout(2000);
 
@@ -603,26 +599,34 @@ test.describe('ViibeView social app', () => {
             expect(await media.count(), `tile ${i} rendered no media`).toBeGreaterThan(0);
         }
 
-        // Nothing is expanded until something is tapped.
-        await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(0);
-
+        // A tap opens the player on that Viibe, over everything including the
+        // bottom nav, and the video is contained, not cropped.
+        const firstId = await tiles.first().getAttribute('data-media-id');
         await tiles.first().click();
-        await page.waitForTimeout(600);
-        await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(1);
+        await expect(page.locator('#viibe-viewer')).toHaveClass(/visible/);
+        await expect(page.locator(`#viibe-viewer .feed-panel[data-media-id="${firstId}"]`)).toHaveCount(1);
+        await expect(page.locator('#viibe-viewer .feed-panel')).toHaveCount(count);
 
-        // A second tile, when there is one, REPLACES the first rather than
-        // joining it. This is the assertion that two clips cannot play at once.
-        if (count > 1) {
-            await tiles.nth(1).click();
-            await page.waitForTimeout(600);
-            await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(1);
-        }
+        const geo = await page.evaluate(() => {
+            const viewer = document.getElementById('viibe-viewer').getBoundingClientRect();
+            const nav = document.querySelector('.bottom-nav').getBoundingClientRect();
+            const top = document.elementFromPoint(nav.left + nav.width / 2, nav.top + nav.height / 2);
+            const media = document.querySelector('#viibe-viewer .feed-media video, #viibe-viewer .feed-media img');
+            return {
+                coversNav: viewer.top <= nav.top && viewer.bottom >= nav.bottom,
+                navOnTop: !!top?.closest('.bottom-nav'),
+                fit: media ? getComputedStyle(media).objectFit : null,
+            };
+        });
+        expect(geo.coversNav, 'the player does not reach the nav').toBe(true);
+        expect(geo.navOnTop, 'the bottom nav is still on top of the player').toBe(false);
+        expect(geo.fit).toBe('contain');
 
-        // Tapping the open tile closes it — otherwise the only way out is to
-        // open a different one.
-        await page.locator('#venue-page-feed .member-grid-tile.is-expanded').click();
-        await page.waitForTimeout(600);
-        await expect(page.locator('#venue-page-feed .member-grid-tile.is-expanded')).toHaveCount(0);
+        // Back returns to the grid, with nothing expanded left behind.
+        await page.click('#viibe-viewer-back');
+        await expect(page.locator('#viibe-viewer')).not.toHaveClass(/visible/);
+        await expect(page.locator('#venue-page')).toHaveClass(/visible/);
+        await expect(page.locator('#viibe-viewer .feed-panel')).toHaveCount(0);
     });
 
     test('a private profile explains itself instead of opening blank', async ({ page }) => {

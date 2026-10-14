@@ -138,7 +138,9 @@ let feedSoundOn = false;
 // be created per render and never disconnected, so after five pages five
 // observers fought over the same <video> elements.
 let feedVideoObserver = null;
-let venueVideoObserver = null;
+// The Viibe player's own, from the same setupVideoObserver(). A separate handle
+// so rebuilding one scroller's observer never disconnects the other's.
+let viibeViewerObserver = null;
 // Rebuilt on every renderFeed() alongside feedVideoObserver — the sentinel it
 // watches now lives inside the scroller and is destroyed by each render.
 let feedScrollObserver = null;
@@ -625,6 +627,16 @@ async function init() {
 }
 
 // ===== Branding =====
+
+// '#6366f1' or '#66f' → 'rgba(99, 102, 241, 0.12)'. null for anything else.
+function hexToRgba(hex, alpha) {
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
+    if (!m) return null;
+    const h = m[1].length === 3 ? m[1].split('').map(c => c + c).join('') : m[1];
+    const n = parseInt(h, 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
 function applyBranding(app) {
     const branding = app.branding || {};
     const primary = branding.primary_color || '#6366f1';
@@ -632,6 +644,11 @@ function applyBranding(app) {
 
     document.documentElement.style.setProperty('--app-primary', primary);
     document.documentElement.style.setProperty('--app-secondary', secondary);
+    // The tint behind unselected category pills and chips (Jay's board:
+    // "category bubbles in the app's blue"). Derived from the tenant's own
+    // primary; an unparseable colour keeps social.css's default.
+    const soft = hexToRgba(primary, 0.12);
+    if (soft) document.documentElement.style.setProperty('--app-primary-soft', soft);
 
     // Match the browser/OS chrome to the tenant's brand. The static manifest
     // can't do this per-tenant, but the meta tag can.
@@ -3261,7 +3278,6 @@ async function openVenuePage(venueId) {
     // the next venue the visitor opens — and so does the previous venue's mix.
     resetVenueSections();
     venueCrowdMix = null;
-    expandedVenuePostId = null;
 
     // Show page immediately (content loads inside)
     page.classList.add('visible');
@@ -3373,16 +3389,15 @@ async function openVenuePage(venueId) {
             </button>`;
         }
 
-        // Navigate button (demo placeholder)
-        actions += `<button class="venue-action-btn" onclick="showToast('Navigation coming soon')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-            Navigate
-        </button>`;
-        if (venue.address_line1) {
-            const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent([venue.address_line1, venue.city, venue.state].filter(Boolean).join(', '))}`;
-            actions += `<a class="venue-action-btn" href="${mapsUrl}" target="_blank" rel="noopener noreferrer">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                Directions
+        // Navigate: turn-by-turn directions in the phone's own maps app. This
+        // was a "Navigation coming soon" toast next to a separate "Directions"
+        // search link; it is now the one control, and it routes rather than
+        // searches. No coordinates and no address: no button.
+        const directions = directionsUrl(venue);
+        if (directions) {
+            actions += `<a class="venue-action-btn venue-navigate-btn" href="${escapeHtml(directions)}" target="_blank" rel="noopener noreferrer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                <span data-i18n="social.navigate">Navigate</span>
             </a>`;
         }
         if (venue.phone) {
@@ -3602,7 +3617,6 @@ async function handleFlyerPick(event) {
 
         showToast('Flyer added');
         if (venuePageVenueId === venueId) {
-            expandedVenuePostId = null;
             await loadVenuePageFeed();
         }
     } catch (err) {
@@ -3755,9 +3769,9 @@ function renderVenueDistanceSection(venue) {
                 <span class="venue-distance-alt">${km.toFixed(1)} km</span>
             </p>
         `;
-        if (venue.address_line1) {
-            const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent([venue.address_line1, venue.city, venue.state].filter(Boolean).join(', '))}`;
-            body += `<a class="venue-section-action" href="${mapsUrl}" target="_blank" rel="noopener noreferrer"
+        const directions = directionsUrl(venue);
+        if (directions) {
+            body += `<a class="venue-section-action" href="${escapeHtml(directions)}" target="_blank" rel="noopener noreferrer"
                         data-i18n="social.openInMaps">Open in Maps</a>`;
         }
     }
@@ -4086,92 +4100,52 @@ function renderVenuePageGrid() {
     }
 
     container.innerHTML = venuePageFeed.map(item => reelsTileMarkup(item, {
-        expanded: expandedVenuePostId === item.id,
         onTap: `openVenuePost('${escapeHtml(item.id)}')`
     })).join('');
 
-    // ⚠️ setupVideoObserverIn() is deliberately NOT called here. See the
-    // header comment. The observer now lives on the member profile, which is
-    // the surface that renders full-width cards and therefore needs it.
-    if (expandedVenuePostId) hydrateExpandedVenuePost();
-    refreshSoundButtons();
-
+    // ⚠️ No observer and no play() here. See the header comment: a tap opens
+    // the Viibe player, which owns the one video that plays.
     // The flyer badge carries data-i18n.
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
     }
 }
 
-// Which grid tile is expanded to full width, or null. One at a time — the
-// previous one collapses, which is what stops two clips playing at once
-// without any new "pause everything else" bookkeeping.
-let expandedVenuePostId = null;
-
+// A tile opens the full-screen Viibe player on this venue's posts (Jay,
+// 2026-10-14). It used to expand in place to a 4:5 box with object-fit: cover,
+// which cut about a third off every 9:16 clip.
 function openVenuePost(id) {
-    // Tapping the open tile closes it. Without this the only way out of an
-    // expanded tile is to open a different one.
-    expandedVenuePostId = (expandedVenuePostId === id) ? null : id;
-    renderVenuePageGrid();
-}
-
-// Hydrate and play the one expanded tile. Reuses ensureVideoSrc and
-// applySoundState unchanged — applySoundState stays the single writer of
-// video.muted, so the grid inherits the sound toggle's state rather than
-// inventing a second source of truth for it.
-function hydrateExpandedVenuePost() {
-    hydrateExpandedTileIn(document.getElementById('venue-page-feed'));
-}
-
-// Scoped to one grid: the venue page and the Me tab can each hold an expanded
-// tile at once, and a document-wide lookup would hydrate the wrong one.
-function hydrateExpandedTileIn(container) {
-    const tile = container?.querySelector('.member-grid-tile.is-expanded');
-    const video = tile?.querySelector('video[data-src]');
-    if (!video) return;
-
-    ensureVideoSrc(video);
-    applySoundState(video);
-    video.play().catch(() => {});
+    openViibeViewer('venue', id);
 }
 
 /**
- * One reels-grid tile. Shared by the venue page and the Me tab so the two
- * grids cannot drift into looking different.
+ * One reels-grid tile. Shared by the venue page, the Me tab and another
+ * member's page, so the three grids cannot drift into looking different.
  *
- * ⚠️ A <div role="button">, not a <button>. The expanded tile carries its own
- * sound and options buttons, and a <button> inside a <button> is not nestable
- * HTML: the parser closes the outer tile at the inner start tag and the inner
- * controls land OUTSIDE it, unpositioned.
+ * A <div role="button">, kept from when an expanded tile carried its own
+ * buttons (a <button> inside a <button> is not nestable HTML).
  *
- * Collapsed tiles are posters only — no <video> unless there is no thumbnail.
- * See renderVenuePageGrid() for why.
+ * Tiles are posters only — no <video> unless there is no thumbnail. See
+ * renderVenuePageGrid() for why. Playback is the Viibe player's job.
  */
-function reelsTileMarkup(item, { expanded = false, onTap = '' } = {}) {
+function reelsTileMarkup(item, { onTap = '' } = {}) {
     const isVideo = item.media_type === 'video';
     const label = item.caption || item.author_display_name || '';
     const id = escapeHtml(item.id);
 
-    // The tile's media. Expanded tiles carry a real <video> with data-src so
-    // the hydrate step can play it; collapsed ones carry a poster only.
-    // Deliberately NOT the same element in both states: leaving a <video> in
-    // every collapsed tile is the memory cost this grid exists to avoid,
-    // thumbnail or no thumbnail.
     const media = !isVideo
         ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(label)}" loading="lazy">`
-        : expanded
-            ? `<video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
-                      playsinline muted preload="${videoPreloadMode(item)}" loop></video>`
-            : item.thumbnail_url
-                ? `<img src="${escapeHtml(item.thumbnail_url)}" alt="${escapeHtml(label)}" loading="lazy">`
-                // ⚠️ preload="metadata", NOT "none". Every post predating
-                // thumbnail generation has thumbnail_url NULL with no possible
-                // backfill, and "none" paints those tiles solid black.
-                // metadata paints the first frame, which is the whole point of
-                // the fallback.
-                : `<video src="${escapeHtml(item.url)}" muted playsinline preload="metadata"></video>`;
+        : item.thumbnail_url
+            ? `<img src="${escapeHtml(item.thumbnail_url)}" alt="${escapeHtml(label)}" loading="lazy">`
+            // ⚠️ preload="metadata", NOT "none". Every post predating
+            // thumbnail generation has thumbnail_url NULL with no possible
+            // backfill, and "none" paints those tiles solid black.
+            // metadata paints the first frame, which is the whole point of
+            // the fallback.
+            : `<video src="${escapeHtml(item.url)}" muted playsinline preload="metadata"></video>`;
 
     return `
-        <div class="member-grid-tile${expanded ? ' is-expanded' : ''}${item.is_flyer ? ' is-flyer' : ''}"
+        <div class="member-grid-tile${item.is_flyer ? ' is-flyer' : ''}"
              role="button" tabindex="0"
              data-media-id="${id}"
              aria-label="${escapeHtml(label)}"
@@ -4179,61 +4153,9 @@ function reelsTileMarkup(item, { expanded = false, onTap = '' } = {}) {
              onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); ${onTap}; }">
             ${media}
             ${item.is_flyer ? `<span class="flyer-badge" data-i18n="social.flyerBadge">Flyer</span>` : ''}
-            ${expanded ? `
-                <button class="feed-more-btn tile-more-btn" type="button" aria-label="Post options"
-                        onclick="event.stopPropagation(); showPostOptions('${id}')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                </button>` : ''}
-            ${expanded && isVideo
-                ? `<button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>`
-                : ''}
             ${item.duration_seconds ? `<span class="video-duration">${formatDuration(item.duration_seconds)}</span>` : ''}
         </div>
     `;
-}
-
-// Same leak, same fix, for the venue page's own feed.
-function setupVideoObserverIn(container) {
-    if (venueVideoObserver) venueVideoObserver.disconnect();
-
-    venueVideoObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const video = entry.target.querySelector('video');
-            if (!video) return;
-            if (entry.isIntersecting) {
-                // ⚠️ Before play(). These cards carry data-src and no src, so
-                // play() on a bare element rejects and the card stays a poster
-                // forever. This observer used to call play() without ever
-                // hydrating anything, which worked only because the src was
-                // eager — the thing this change removed.
-                ensureVideoSrc(video);
-                applySoundState(video);
-                // Autoplay blocked leaves the poster frame showing and the card
-                // tappable, which is the whole affordance now.
-                video.play().catch(() => {});
-            } else {
-                video.pause();
-                video.muted = true;
-            }
-        });
-    }, { threshold: 0.6 });
-
-    container.querySelectorAll('.feed-media').forEach(el => {
-        if (el.querySelector('video')) venueVideoObserver.observe(el);
-    });
-
-    // ⚠️ Seed the first card synchronously. Identical reasoning to
-    // hydrateVideosAround(0) on the main feed: an IntersectionObserver that
-    // never fires — a hidden tab at first paint, a stubbed environment, a
-    // container that is display:none when this runs — would otherwise leave
-    // EVERY card without a src, and the venue page would render as a column of
-    // black rectangles with nothing in the console.
-    //
-    // Only the first: hydrating the rest is exactly the cost this change exists
-    // to remove. Cards keep their src once hydrated (unlike the main feed's ±1
-    // window) because this list is a venue's own posts, not an endless scroll.
-    const firstVideo = container.querySelector('.feed-media video[data-src]');
-    if (firstVideo) ensureVideoSrc(firstVideo);
 }
 
 function closeVenuePage() {
@@ -4265,7 +4187,10 @@ function closeVenuePage() {
     venuePageVenue = null;
     venuePageFeed = [];
     venueCrowdMix = null;
-    expandedVenuePostId = null;
+
+    // The player paused the feed when it opened from this page; the feed is
+    // only uncovered now.
+    resumeFeedPausedByViewer();
 }
 
 // ===== Member Profile Page =====
@@ -4363,19 +4288,9 @@ function closeMemberProfile() {
     document.getElementById('member-page-backdrop')?.classList.remove('visible');
     unlockBodyScroll('member-page');
 
-    // Clearing the list stops any <video> that was decoding a poster frame; a
-    // paused video left in the DOM keeps its buffer and keeps downloading.
-    //
-    // ⚠️ The observer has to go too, now that this surface owns it. An
-    // IntersectionObserver still holding torn-down .feed-media elements is a
-    // leak across every profile the visitor opens in a session — and on the
-    // next open, setupVideoObserverIn() would disconnect only the most recent
-    // one, because there is a single module-level handle.
-    if (venueVideoObserver) {
-        venueVideoObserver.disconnect();
-        venueVideoObserver = null;
-    }
-
+    // Clearing the grid stops any fallback <video> that was decoding a poster
+    // frame; a paused video left in the DOM keeps its buffer and keeps
+    // downloading.
     const grid = document.getElementById('member-page-grid');
     if (grid) grid.innerHTML = '';
 
@@ -4383,6 +4298,8 @@ function closeMemberProfile() {
     memberPageProfile = null;
     memberPagePosts = [];
     memberPageVenues = [];
+
+    resumeFeedPausedByViewer();
 }
 
 function setText(id, value) {
@@ -4525,18 +4442,20 @@ async function loadMemberPosts() {
     renderMemberList();
 }
 
-// A scrollable list of full-width cards — the inverse of what this function
-// used to render, and of what the venue page now renders.
+// Another member's posts: the SAME reels grid as the Me tab and the venue page
+// (Jay, 2026-10-14). A tap opens the Viibe player.
 //
-// Renamed from renderMemberGrid(). It takes over the `.feed-card` markup the
-// venue page vacated, so social.css:503+ stays exactly where it is and simply
-// serves a different surface.
+// It used to render full-width `.feed-card`s — but #member-page-grid wears
+// `.member-grid`, so the cards were laid out three across at about 127px wide,
+// each a 4:5 crop of a 9:16 clip, with every visible one autoplaying. That is
+// the "cropped video on someone's profile" Jay reported.
 //
-// ⚠️ LAZY VIDEO IS REINSTATED HERE, and it is not optional. A profile with 24
-// full-width autoplaying clips is precisely the failure the old grid comment
-// was written to prevent — the risk did not go away when the layout changed,
-// it MOVED. Cards carry data-src, preload comes from videoPreloadMode(), and
-// the relocated setupVideoObserverIn() hydrates what scrolls into view.
+// ⚠️ No observer and no autoplay — renderVenuePageGrid()'s reasoning applies
+// unchanged: a profile can hold dozens of posts.
+//
+// The venue each post was shot at is no longer a link on the profile; it is
+// the player's venue strip, which opens the venue page (closing the player and
+// this profile first — see onViibeViewerTap).
 function renderMemberList() {
     const list = document.getElementById('member-page-grid');
     const emptyEl = document.getElementById('member-page-empty');
@@ -4549,53 +4468,17 @@ function renderMemberList() {
     }
     if (emptyEl) emptyEl.style.display = 'none';
 
-    list.innerHTML = memberPagePosts.map(post => {
-        // 'image', not 'photo' — venue_media has never stored 'photo', so the
-        // old check made every image a broken <video>.
-        const isVideo = post.media_type !== 'image';
-        // The VENUE, not the author — the whole page is already this member, so
-        // the useful identity on each card is where it was shot. That is the
-        // mirror of the venue page's old showVenue:false, and it is why the
-        // cards route to openVenuePage rather than to a profile.
-        const venueLink = post.venue_id
-            ? `<button class="feed-card-venue-link" type="button"
-                       onclick="closeMemberProfile(); openVenuePage('${escapeHtml(post.venue_id)}')">
-                   ${escapeHtml(post.venue_name || 'View venue')}
-               </button>`
-            : '';
+    list.innerHTML = memberPagePosts.map(post => reelsTileMarkup(post, {
+        onTap: `openMemberPost('${escapeHtml(post.id)}')`
+    })).join('');
 
-        return `
-            <div class="feed-card" data-media-id="${escapeHtml(post.id)}">
-                <div class="feed-card-header${venueLink ? '' : ' feed-card-header-compact'}">
-                    ${venueLink}
-                    <button class="feed-more-btn" aria-label="Post options" onclick="showPostOptions('${escapeHtml(post.id)}')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                    </button>
-                </div>
-                <div class="feed-media" onclick="toggleVideoPlay(this)">
-                    ${isVideo ? `
-                        <!-- data-src, not src. See the function header: this is
-                             the surface that can hold dozens of clips now, and a
-                             plain src opens a connection per card on first
-                             paint. preload stays per-post via videoPreloadMode()
-                             because a NULL thumbnail_url has no poster to
-                             paint and would render black at preload="none". -->
-                        <video data-src="${escapeHtml(post.url)}" poster="${escapeHtml(post.thumbnail_url || '')}" playsinline muted preload="${videoPreloadMode(post)}" loop></video>
-                        ${post.duration_seconds ? `<span class="video-duration">${formatDuration(post.duration_seconds)}</span>` : ''}
-                        <button class="video-sound-btn" type="button" onclick="toggleFeedSound(event, this)"></button>
-                    ` : `
-                        <img src="${escapeHtml(post.url)}" alt="${escapeHtml(post.caption || '')}" loading="lazy">
-                    `}
-                </div>
-                ${post.caption ? `<div class="feed-caption">${escapeHtml(post.caption)}</div>` : ''}
-            </div>
-        `;
-    }).join('');
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
 
-    // The observer moved here from the venue page, where it is now actively
-    // harmful (40 autoplaying tiles) and here is necessary.
-    setupVideoObserverIn(list);
-    refreshSoundButtons();
+function openMemberPost(id) {
+    openViibeViewer('member', id);
 }
 
 // ===== Me tab =====
@@ -4612,7 +4495,6 @@ function renderMemberList() {
 let meProfile = null;
 let mePosts = [];
 let meLoadSeq = 0;
-let expandedMePostId = null;
 
 async function loadMeTab() {
     const signedOut = document.getElementById('me-signed-out');
@@ -4625,7 +4507,6 @@ async function loadMeTab() {
         meLoadSeq++;   // a late response for a signed-out session must not paint
         meProfile = null;
         mePosts = [];
-        expandedMePostId = null;
         if (signedOut) signedOut.style.display = '';
         if (signedIn) signedIn.style.display = 'none';
         const grid = document.getElementById('me-grid');
@@ -4640,7 +4521,6 @@ async function loadMeTab() {
     if (meProfile && meProfile.user_id !== userId) {
         meProfile = null;
         mePosts = [];
-        expandedMePostId = null;
     }
 
     const seq = ++meLoadSeq;
@@ -4751,12 +4631,8 @@ function renderMeGrid() {
     if (emptyEl) emptyEl.style.display = 'none';
 
     grid.innerHTML = mePosts.map(item => reelsTileMarkup(item, {
-        expanded: expandedMePostId === item.id,
         onTap: `openMePost('${escapeHtml(item.id)}')`
     })).join('');
-
-    if (expandedMePostId) hydrateExpandedTileIn(grid);
-    refreshSoundButtons();
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
         window.I18n.applyTranslations();
@@ -4764,9 +4640,221 @@ function renderMeGrid() {
 }
 
 function openMePost(id) {
-    expandedMePostId = (expandedMePostId === id) ? null : id;
-    renderMeGrid();
+    openViibeViewer('me', id);
 }
+
+// ===== Viibe player (Jay, 2026-10-14) =====
+//
+// One full-screen player for every profile grid: the Me tab, another member's
+// page and a venue page. The whole 9:16 video, the bottom nav covered, swipe to
+// the next Viibe, Back to return to the grid.
+//
+// It is built from the feed's own parts rather than a copy of them: panels from
+// renderFeedCard(), the ±1 hydration window from hydrateVideosAround() and the
+// observer from setupVideoObserver(), each given this scroller instead of
+// #feed-container. Delete, Report and the sound toggle therefore behave here
+// exactly as they do in the feed.
+
+// The rows on screen, in the feed's shape (see asFeedRow).
+let viibeViewerItems = [];
+// Whether opening the player paused a playing feed video — and so whether
+// closing the last thing on top of the feed should start it again. A video the
+// visitor paused themselves stays paused.
+let viewerPausedFeed = false;
+
+function viibeViewerOpen() {
+    return !!document.getElementById('viibe-viewer')?.classList.contains('visible');
+}
+
+/**
+ * A profile row in the shape renderFeedCard() reads.
+ *
+ * The three surfaces load three shapes: get_member_posts has the venue's name
+ * and no author, get_venue_page_feed has the author and no venue, and the
+ * strip wants both. The venue comes from the loaded venue list (or the open
+ * venue page), the author from the profile being viewed.
+ */
+function asFeedRow(item, { author = null, pageVenue = null } = {}) {
+    const venue = item.venue_id
+        ? (getVenueById(item.venue_id)
+            || (pageVenue && pageVenue.id === item.venue_id ? pageVenue : null))
+        : null;
+    return {
+        ...item,
+        venue_name: item.venue_name || venue?.name || null,
+        venue_handle: item.venue_handle || venue?.handle || null,
+        venue_city: item.venue_city || venue?.city || null,
+        venue_state: item.venue_state || venue?.state || null,
+        venue_profile_image_url: item.venue_profile_image_url || venue?.profile_image_url || null,
+        author_display_name: item.author_display_name || author?.display_name || null,
+        author_avatar_url: item.author_avatar_url || author?.avatar_url || null
+    };
+}
+
+function viibeViewerRows(source) {
+    if (source === 'me') return mePosts.map(p => asFeedRow(p, { author: meProfile }));
+    if (source === 'member') return memberPagePosts.map(p => asFeedRow(p, { author: memberPageProfile }));
+    if (source === 'venue') return venuePageFeed.map(p => asFeedRow(p, { pageVenue: venuePageVenue }));
+    return [];
+}
+
+function openViibeViewer(source, startId) {
+    const viewer = document.getElementById('viibe-viewer');
+    const scroller = document.getElementById('viibe-viewer-scroller');
+    if (!viewer || !scroller) return;
+
+    const rows = viibeViewerRows(source);
+    const start = rows.findIndex(r => r.id === startId);
+    if (start < 0) return;
+
+    viibeViewerItems = rows;
+
+    // The feed keeps "playing" underneath otherwise — it is still in view of
+    // its own scroller, and with sound on it would be heard through the player.
+    const feedPlaying = Array.from(document.querySelectorAll('#feed-container video'))
+        .filter(v => !v.paused);
+    feedPlaying.forEach(v => v.pause());
+    if (feedPlaying.length) viewerPausedFeed = true;
+
+    viewer.classList.add('visible');
+    lockBodyScroll('viibe-viewer');
+    renderViibeViewer(start);
+
+    // Started HERE, inside the tap that opened the player: iOS allows an
+    // unmuted play() only within a user gesture, and the observer's callback
+    // is not one.
+    playViibePanel(scroller, start);
+}
+
+function renderViibeViewer(startIndex) {
+    const scroller = document.getElementById('viibe-viewer-scroller');
+    if (!scroller) return;
+
+    scroller.innerHTML = viibeViewerItems.map(renderFeedCard).join('');
+    // The panel is exactly one scroller-height (see .feed-panel), so this is
+    // the tapped Viibe's snap position. The player is already visible, so the
+    // height is real.
+    scroller.scrollTop = startIndex * scroller.clientHeight;
+
+    setupVideoObserver(scroller, startIndex);
+    refreshSoundButtons();
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// Plays the panel at `index` in a scroller. Used for the tap that opens the
+// player, and to pick up where the feed or the player was after the phone is
+// turned upright again.
+function playViibePanel(container, index) {
+    const panel = container?.querySelectorAll('.feed-panel')[index];
+    const video = panel?.querySelector('video');
+    if (!video || uprightBlocked()) return;
+    ensureVideoSrc(video);
+    applySoundState(video);
+    video.play().catch(() => {});
+}
+
+// Which panel a snap scroller is showing.
+function currentPanelIndex(container) {
+    const h = container?.clientHeight || 0;
+    return h > 0 ? Math.round(container.scrollTop / h) : 0;
+}
+
+function closeViibeViewer() {
+    const viewer = document.getElementById('viibe-viewer');
+    const scroller = document.getElementById('viibe-viewer-scroller');
+    viewer?.classList.remove('visible');
+    unlockBodyScroll('viibe-viewer');
+
+    if (viibeViewerObserver) {
+        viibeViewerObserver.disconnect();
+        viibeViewerObserver = null;
+    }
+
+    // Pause AND unload: a paused <video> left in the DOM keeps its buffer and
+    // keeps downloading. load() after removing src is what releases it.
+    if (scroller) {
+        scroller.querySelectorAll('video').forEach(v => {
+            v.pause();
+            v.removeAttribute('src');
+            v.load();
+        });
+        scroller.innerHTML = '';
+    }
+    viibeViewerItems = [];
+
+    resumeFeedPausedByViewer();
+}
+
+// Starts the feed again if the player paused it and nothing covers it now.
+// Also called when the venue page or a member's page closes, because the
+// player is often opened from one of those, on top of the feed.
+function resumeFeedPausedByViewer() {
+    if (!viewerPausedFeed) return;
+    if (viibeViewerOpen() || topOpenSurface() || activeTab !== 'feed') return;
+    viewerPausedFeed = false;
+    const feed = document.getElementById('feed-container');
+    playViibePanel(feed, currentPanelIndex(feed));
+}
+
+// After a delete (or a hide) from inside the player.
+function removeFromViibeViewer(mediaId) {
+    if (!viibeViewerOpen()) return;
+    const index = viibeViewerItems.findIndex(i => i.id === mediaId);
+    if (index < 0) return;
+
+    viibeViewerItems.splice(index, 1);
+    if (viibeViewerItems.length === 0) {
+        closeViibeViewer();
+        return;
+    }
+    // The removed Viibe was almost always the one on screen; show the one that
+    // took its place.
+    renderViibeViewer(Math.min(index, viibeViewerItems.length - 1));
+}
+
+/**
+ * The venue strip inside the player. Its own onclick would open the venue page
+ * (2500) or a profile (2700) UNDERNEATH the player (2750), so a tap appears to
+ * do nothing. Taken over in the capture phase: close the player — and the
+ * member's page, when the venue is somewhere else — then open the target.
+ * Nothing is reopened that is already the page underneath.
+ */
+function onViibeViewerTap(event) {
+    const strip = event.target.closest?.('.feed-panel-venue-id');
+    if (!strip) return;
+    event.stopPropagation();
+    if (strip.classList.contains('feed-venue-info-inert')) return;
+
+    const panel = strip.closest('.feed-panel');
+    const item = viibeViewerItems.find(i => i.id === panel?.dataset.mediaId);
+    if (!item) return;
+
+    // venueStripMarkup()'s own test for "this strip is the venue's".
+    const opensVenue = !!(item.venue_id && (item.venue_name || item.venue_handle));
+    const venueShowing = !!document.getElementById('venue-page')?.classList.contains('visible');
+    const memberShowing = !!document.getElementById('member-page')?.classList.contains('visible');
+
+    closeViibeViewer();
+
+    if (opensVenue) {
+        if (memberShowing) closeMemberProfile();
+        if (!(venueShowing && venuePageVenueId === item.venue_id)) openVenuePage(item.venue_id);
+    } else if (item.uploaded_by_user_id
+               && !(memberShowing && memberPageUserId === item.uploaded_by_user_id)) {
+        openMemberProfile(item.uploaded_by_user_id);
+    }
+}
+
+function setupViibeViewer() {
+    document.getElementById('viibe-viewer-scroller')
+        ?.addEventListener('click', onViibeViewerTap, true);
+}
+
+// At PARSE time, like setupBackNavigation(): the element is already in the DOM.
+setupViibeViewer();
 
 // ===== "Been to" — venues derived from posts =====
 //
@@ -5329,13 +5417,9 @@ function switchTab(tabId) {
     }
 
     // Me refetches on every open — the counts and posts are never older than
-    // the last time you looked. Leaving it collapses the expanded tile, which
-    // drops its <video> rather than leaving it playing behind another tab.
+    // the last time you looked.
     if (tabId === 'me') {
         loadMeTab();
-    } else if (expandedMePostId) {
-        expandedMePostId = null;
-        renderMeGrid();
     }
 
     // Chrome hiding is scoped to the feed: #map-container's height subtracts
@@ -6049,8 +6133,13 @@ function ensureVideoSrc(video) {
 // environment where it is stubbed — would otherwise leave EVERY video without a
 // src, and the feed would render as black panels with nothing in the console.
 // The synchronous seed around index 0 is the floor under that.
-function hydrateVideosAround(index) {
-    document.querySelectorAll('#feed-container .feed-panel').forEach((panel, i) => {
+//
+// Two scrollers use this: the feed (the default) and the Viibe player. Scoped
+// to the one it is given — a document-wide lookup would let the player's index
+// unload the feed's videos, and the other way round.
+function hydrateVideosAround(index, container = document.getElementById('feed-container')) {
+    if (!container) return;
+    container.querySelectorAll('.feed-panel').forEach((panel, i) => {
         const video = panel.querySelector('video[data-src]');
         if (!video) return;
 
@@ -6079,13 +6168,17 @@ function hydrateVideosAround(index) {
 // ⚠️ root: container. The feed scrolls on #feed-container now, not on window.
 // It observes .feed-panel (not .feed-media) because the panel is the snap unit
 // and its index is what the hydration window is measured in.
-function setupVideoObserver() {
-    if (feedVideoObserver) feedVideoObserver.disconnect();
-
-    const container = document.getElementById('feed-container');
+//
+// The Viibe player is the second caller: same panels, same window, its own
+// scroller and its own handle (viibeViewerObserver). `startIndex` is where the
+// synchronous seed goes — the player opens on the tapped Viibe, not the first.
+function setupVideoObserver(container = document.getElementById('feed-container'), startIndex = 0) {
+    const isViewer = !!container && container.id === 'viibe-viewer-scroller';
+    const previous = isViewer ? viibeViewerObserver : feedVideoObserver;
+    if (previous) previous.disconnect();
     if (!container) return;
 
-    feedVideoObserver = new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const panel = entry.target;
             const video = panel.querySelector('video');
@@ -6098,9 +6191,16 @@ function setupVideoObserver() {
             // Recentre the window BEFORE trying to play: on a fast swipe this
             // panel can come into view before it has ever held a src.
             const panels = Array.from(container.querySelectorAll('.feed-panel'));
-            hydrateVideosAround(panels.indexOf(panel));
+            hydrateVideosAround(panels.indexOf(panel), container);
 
             if (!video) return;
+            // ⚠️ The feed's panels stay "in view" of their own scroller while
+            // the player covers them, and a renderFeed() underneath (a delete
+            // from inside the player re-renders it) rebuilds this observer,
+            // which fires for the visible panel at once. Without this the feed
+            // would start playing behind the player, sound and all.
+            if (!isViewer && viibeViewerOpen()) return;
+            if (uprightBlocked()) return;
             // applySoundState is the SINGLE writer for muted/volume. Do not add
             // a second path here — see its own comment.
             applySoundState(video);
@@ -6110,10 +6210,12 @@ function setupVideoObserver() {
         });
     }, { root: container, threshold: 0.6 });
 
-    container.querySelectorAll('.feed-panel').forEach(el => feedVideoObserver.observe(el));
+    container.querySelectorAll('.feed-panel').forEach(el => observer.observe(el));
+    if (isViewer) viibeViewerObserver = observer;
+    else feedVideoObserver = observer;
 
     // The floor described above.
-    hydrateVideosAround(0);
+    hydrateVideosAround(startIndex, container);
 }
 
 // ===== Infinite Scroll =====
@@ -6434,8 +6536,10 @@ function setupEventListeners() {
     setupInstallPrompt();
     setupSignupPrompt();
 
-    // Upright-only recording.
+    // Upright-only recording, and watching. The same handler drives both
+    // overlays; this first call covers an app opened on its side.
     watchComposerOrientation();
+    applyAppOrientation();
 
     // Re-measure the sticky offsets when the header or the pill rows can change
     // height. Both rows wrap, so a rotation changes the genre row's offset.
@@ -6461,12 +6565,21 @@ function handleMapSearch(query) {
         return;
     }
 
-    dropdown.innerHTML = results.map(v => `
-        <div class="map-search-result" onclick="goToVenueOnMap('${v.id}'); document.getElementById('map-search-results').classList.remove('visible');">
-            <span class="map-search-name">${escapeHtml(v.name)}</span>
-            <span class="map-search-category">${escapeHtml(categoryLabel(v.category))}</span>
-        </div>
-    `).join('');
+    // Each result says how far it is, when there is a fix to measure from.
+    dropdown.innerHTML = results.map(v => {
+        const miles = userLocation
+            ? calcDistance(userLocation.lat, userLocation.lng, v.latitude, v.longitude)
+            : null;
+        return `
+            <div class="map-search-result" onclick="goToVenueOnMap('${escapeHtml(v.id)}'); document.getElementById('map-search-results').classList.remove('visible');">
+                <span class="map-search-name">${escapeHtml(v.name)}</span>
+                <span class="map-search-meta">
+                    <span class="map-search-category">${escapeHtml(categoryLabel(v.category))}</span>
+                    ${miles !== null ? `<span class="map-search-distance">${miles.toFixed(1)} mi</span>` : ''}
+                </span>
+            </div>
+        `;
+    }).join('');
 
     dropdown.classList.add('visible');
 }
@@ -6650,9 +6763,13 @@ async function requestPostDelete(mediaId) {
 
 // Drop it from every list that could still be showing it, rather than
 // refetching — the feed is paginated and a reload would jump the scroll
-// position back to the top. Five lists, and a post count on each profile that
-// held it.
+// position back to the top. Five lists, the open Viibe player, and a post
+// count on each profile that held it.
 function removePostEverywhere(mediaId) {
+    // First, so the player is closed (or moved on) before the feed underneath
+    // re-renders — see the viibeViewerOpen() check in setupVideoObserver().
+    removeFromViibeViewer(mediaId);
+
     const inMember = memberPagePosts.some(i => i.id === mediaId);
     const inMe = mePosts.some(i => i.id === mediaId);
 
@@ -6669,8 +6786,6 @@ function removePostEverywhere(mediaId) {
     if (inMe && meProfile) {
         meProfile.post_count = Math.max(0, (Number(meProfile.post_count) || 0) - 1);
     }
-    if (expandedVenuePostId === mediaId) expandedVenuePostId = null;
-    if (expandedMePostId === mediaId) expandedMePostId = null;
 
     renderFeed();
     if (venuePageVenueId) renderVenuePageGrid();
@@ -6768,6 +6883,37 @@ function calcDistance(lat1, lon1, lat2, lon2) {
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+}
+
+// Whether a latitude/longitude pair is a real place. calcDistance()'s rule:
+// null, undefined and '' are MISSING (Number() would make them 0, the equator),
+// strings are fine (PostgREST returns DECIMAL as a string on some paths), and
+// 0 is a real coordinate.
+function hasCoords(lat, lng) {
+    if (lat === null || lat === undefined || lat === '') return false;
+    if (lng === null || lng === undefined || lng === '') return false;
+    const a = Number(lat), o = Number(lng);
+    return Number.isFinite(a) && Number.isFinite(o) && Math.abs(a) <= 90 && Math.abs(o) <= 180;
+}
+
+// Turn-by-turn directions to a venue in the phone's own maps app: Apple Maps on
+// iOS (iPadOS reports itself as a Mac with touch), Google Maps everywhere else.
+// Coordinates when the venue has them; its address when it does not; null when
+// there is nothing to route to.
+function directionsUrl(venue) {
+    if (!venue) return null;
+    const destination = hasCoords(venue.latitude, venue.longitude)
+        ? `${Number(venue.latitude)},${Number(venue.longitude)}`
+        : [venue.address_line1, venue.city, venue.state].filter(Boolean).join(', ');
+    if (!destination) return null;
+
+    const nav = window.navigator || {};
+    const ios = /iPhone|iPad|iPod/.test(nav.userAgent || '')
+        || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
+    const encoded = encodeURIComponent(destination).replace(/%2C/g, ',');
+    return ios
+        ? `https://maps.apple.com/?daddr=${encoded}`
+        : `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
 }
 
 function formatTime(time24) {
@@ -7615,6 +7761,44 @@ function applyComposerOrientation() {
 
     if (overlay) overlay.style.display = (landscape && !selectedPostFile) ? 'flex' : 'none';
     if (recordBtn) recordBtn.disabled = landscape;
+
+    // The composer opening or closing decides which of the two overlays shows.
+    applyAppOrientation();
+}
+
+// Portrait only for WATCHING too (Jay's board, 2026-10-14). Every clip is
+// 9:16, and a phone on its side squashes the feed into a strip. While the
+// composer is open its own overlay is the one that shows (and it disables
+// Record), so this one stands down.
+function uprightBlocked() {
+    return isPhoneDevice() && isLandscape()
+        && !document.getElementById('create-post-modal')?.classList.contains('visible');
+}
+
+function applyAppOrientation() {
+    const overlay = document.getElementById('app-rotate-overlay');
+    if (!overlay) return;
+    const blocked = uprightBlocked();
+    const wasBlocked = overlay.style.display === 'flex';
+    overlay.style.display = blocked ? 'flex' : 'none';
+
+    if (blocked) {
+        // Every video, wherever it is. The camera viewfinder is not one of
+        // them, and the composer is closed whenever this overlay shows anyway.
+        document.querySelectorAll('video:not(#camera-viewfinder)').forEach(v => v.pause());
+        return;
+    }
+
+    // Upright again: pick up the Viibe that was on screen.
+    if (wasBlocked) {
+        if (viibeViewerOpen()) {
+            const scroller = document.getElementById('viibe-viewer-scroller');
+            playViibePanel(scroller, currentPanelIndex(scroller));
+        } else if (activeTab === 'feed' && !topOpenSurface()) {
+            const feed = document.getElementById('feed-container');
+            playViibePanel(feed, currentPanelIndex(feed));
+        }
+    }
 }
 
 function watchComposerOrientation() {
@@ -8856,6 +9040,7 @@ const BACK_SURFACES = [
     { id: 'edit-profile-sheet',  back: () => closeEditProfile() },
     { id: 'post-options-sheet',  back: () => closePostOptions() },
     { id: 'people-sheet',        back: () => closePeopleSheet() },
+    { id: 'viibe-viewer',        back: () => closeViibeViewer() },
     { id: 'member-page',         back: () => closeMemberProfile() },
     { id: 'venue-page',          back: () => closeVenuePage() },
     { id: 'post-preview-modal',  back: () => closePostPreview() },

@@ -444,8 +444,13 @@ describe('full-screen feed (#3, #4, #12)', () => {
     });
 
     it('🔴 the video observer is rooted on the container too', () => {
-        const fn = js.slice(js.indexOf('function setupVideoObserver()'));
-        expect(fn.slice(0, 2400)).toMatch(/root: container, threshold: 0\.6/);
+        // Bounded by fnBody (to its own closing brace). The signature gained
+        // the container and the seed index on 2026-10-14, when the Viibe
+        // player became its second caller; the feed is still the default.
+        const fn = fnBody("function setupVideoObserver(container = document.getElementById('feed-container'), startIndex = 0)");
+        expect(fn, 'setupVideoObserver not found').toBeTruthy();
+        expect(fn.length, 'setupVideoObserver is unterminated').toBeGreaterThan(800);
+        expect(fn).toMatch(/root: container, threshold: 0\.6/);
     });
 
     it('the load-more sentinel is rendered INSIDE the scroller', () => {
@@ -593,7 +598,9 @@ describe('full-screen feed (#3, #4, #12)', () => {
         // only because that markup was drawn over a video. Both strips are
         // light surfaces now. Leaving the overrides in place would paint white
         // text on a white strip — invisible, with nothing in the console.
-        const panelCss = css.slice(css.indexOf('\n.feed-panel {'), css.indexOf('.feed-card {'));
+        // Ends at the .feed-venue-info rule: .feed-card, the old end anchor,
+        // was deleted on 2026-10-14.
+        const panelCss = css.slice(css.indexOf('\n.feed-panel {'), css.indexOf('\n.feed-venue-info {'));
         expect(panelCss.length, 'the .feed-panel CSS block was not found').toBeGreaterThan(500);
         expect(panelCss).not.toMatch(/\.feed-panel \.venue-handle \{[^}]*color: #fff/);
         expect(panelCss).not.toMatch(/\.feed-panel-scrim \{/);
@@ -606,34 +613,43 @@ describe('full-screen feed (#3, #4, #12)', () => {
         expect(fn.slice(0, 3000)).toMatch(/<img src="\$\{escapeHtml\(item\.url\)\}"/);
     });
 
-    it('⚠️ the two surfaces INVERTED in Phase 4, and did not merge', () => {
-        // The venue page renders the reels grid; the MEMBER PROFILE renders
-        // .feed-card. Both classes still exist and neither surface renders
-        // both — the separation from .feed-panel is what stops a browse change
-        // reshaping someone's own list of posts, and it survived the swap.
-        expect(js).toMatch(/<div class="feed-card" data-media-id=/);
-        expect(css).toMatch(/^\.feed-card \{/m);
+    it('⚠️ all THREE profile surfaces render the reels grid; .feed-card is gone', () => {
+        // 2026-10-14. The member page's .feed-card list sat inside a
+        // .member-grid, so its cards were laid out three across as 4:5 crops —
+        // Jay's "cropped video on someone's profile". Every profile surface is
+        // now the same poster grid, and a tap opens the Viibe player.
+        // The separation from .feed-panel still holds: the grids render tiles,
+        // and only the feed and the player render panels.
+        //
+        // Assert each CALL against its own caller — a concatenation would let
+        // reelsTileMarkup's own signature satisfy a call assertion.
+        const venueGrid = fnBody('function renderVenuePageGrid()');
+        const meGrid = fnBody('function renderMeGrid()');
+        const memberGrid = fnBody('function renderMemberList()');
+        for (const [name, body] of [['venue', venueGrid], ['me', meGrid], ['member', memberGrid]]) {
+            expect(body, `${name} grid renderer not found`).toBeTruthy();
+            expect(body.length, `${name} grid renderer is suspiciously short`).toBeGreaterThan(200);
+        }
+        expect(venueGrid).toMatch(/venuePageFeed\.map\(item => reelsTileMarkup\(item, \{/);
+        expect(meGrid).toMatch(/mePosts\.map\(item => reelsTileMarkup\(item, \{/);
+        expect(memberGrid).toMatch(/memberPagePosts\.map\(post => reelsTileMarkup\(post, \{/);
 
-        // The tile markup lives in reelsTileMarkup() since 2026-10-06, shared
-        // with the Me tab. Assert the CALL against the grid, and the markup
-        // against the helper.
-        const grid = fnBody('function renderVenuePageGrid()');
-        expect(grid, 'renderVenuePageGrid not found').toBeTruthy();
-        expect(grid).toMatch(/venuePageFeed\.map\(item => reelsTileMarkup\(item, \{/);
-        const tile = fnBody("function reelsTileMarkup(item, { expanded = false, onTap = '' } = {})");
+        const tile = fnBody("function reelsTileMarkup(item, { onTap = '' } = {})");
         expect(tile, 'reelsTileMarkup not found').toBeTruthy();
         expect(tile).toContain('member-grid-tile');
-        expect(grid + tile, 'the venue page is still rendering the old card stack')
-            .not.toContain('class="feed-card"');
 
-        const list = fnBody('function renderMemberList()');
-        expect(list, 'renderMemberList not found').toBeTruthy();
-        expect(list).toContain('class="feed-card"');
-        expect(list, 'the member profile is still rendering the old tile grid')
-            .not.toContain('member-grid-tile');
+        // Gone from the code and the stylesheet, not merely unused.
+        const code = js.replace(/<!--[\s\S]*?-->/g, '').split('\n')
+            .filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+        expect(code.length).toBeGreaterThan(100000);
+        expect(code).not.toContain('class="feed-card"');
+        expect(css).not.toMatch(/^\.feed-card \{/m);
+        expect(css).not.toMatch(/^\.feed-card-venue-link \{/m);
 
-        // ...and #venue-page-feed wears the grid geometry in the markup.
+        // ...and all three containers wear the grid geometry in the markup.
         expect(html).toMatch(/class="venue-page-feed member-grid" id="venue-page-feed"/);
+        expect(html).toMatch(/class="member-grid" id="me-grid"/);
+        expect(html).toMatch(/class="member-grid" id="member-page-grid"/);
     });
 
     it('the sound toggle resolves both the panel and the venue-page shapes', () => {
@@ -655,91 +671,65 @@ describe('video performance (#9)', () => {
     it('only the visible panel and its neighbours hold a src', () => {
         expect(js).toMatch(/const VIDEO_HYDRATION_WINDOW = 1;/);
         expect(js).toMatch(/<video data-src=/);
-        const fn = js.slice(js.indexOf('function hydrateVideosAround(index)'));
-        expect(fn.slice(0, 900)).toMatch(/video\.removeAttribute\('src'\)/);
-        expect(fn.slice(0, 900)).toMatch(/video\.load\(\)/);
+        const fn = fnBody("function hydrateVideosAround(index, container = document.getElementById('feed-container'))");
+        expect(fn, 'hydrateVideosAround not found').toBeTruthy();
+        expect(fn).toMatch(/video\.removeAttribute\('src'\)/);
+        expect(fn).toMatch(/video\.load\(\)/);
+        // Scoped to the scroller it is given, so the player's window cannot
+        // unload the feed's videos (or the other way round).
+        expect(fn).toMatch(/container\.querySelectorAll\('\.feed-panel'\)/);
+        expect(fn).not.toContain("document.querySelectorAll('#feed-container .feed-panel')");
     });
 
     it('⚠️ hydration is seeded synchronously so an inert observer cannot blank the feed', () => {
-        const fn = js.slice(js.indexOf('function setupVideoObserver()'));
-        expect(fn.slice(0, 2600)).toMatch(/hydrateVideosAround\(0\);/);
+        const fn = fnBody("function setupVideoObserver(container = document.getElementById('feed-container'), startIndex = 0)");
+        expect(fn, 'setupVideoObserver not found').toBeTruthy();
+        // The seed is at startIndex — 0 for the feed (the default), the
+        // tapped Viibe for the player.
+        expect(fn).toMatch(/\n    hydrateVideosAround\(startIndex, container\);\s*$/);
     });
 
-    it('the MEMBER PROFILE list is lazy, and its observer hydrates', () => {
-        // ⚠️ Prod holds ONE post on the one venue, so a browser walkthrough
-        // cannot tell "seeds the first card" from "hydrates every card" — both
-        // look like one loaded video. Pinned here instead.
+    it('⚠️ NO profile grid has an observer or autoplays — the player owns playback', () => {
+        // 40 autoplaying tiles OOM a phone. This is the assertion a browser
+        // pass on a two-post tenant can never make: every tile there is
+        // visible at once, so "the grid autoplays everything" and "the grid
+        // autoplays the one post" look identical.
         //
-        // Phase 4 moved this list from the venue page to the profile. The risk
-        // MOVED WITH IT and did not shrink: a profile renders every post a
-        // member has with no limit, and a plain src at preload="metadata" is a
-        // connection per card on first paint.
-        const list = fnBody('function renderMemberList()');
-        expect(list, 'renderMemberList not found').toBeTruthy();
-        expect(list.length, 'renderMemberList body is suspiciously short').toBeGreaterThan(500);
-        expect(list).toMatch(/<video data-src="\$\{escapeHtml\(post\.url\)\}"/);
-        expect(list).toMatch(/preload="\$\{videoPreloadMode\(post\)\}"/);
-        expect(list, 'the profile list lost its observer').toMatch(/setupVideoObserverIn\(list\)/);
-
-        const body = fnBody('function setupVideoObserverIn(container)');
-        expect(body, 'setupVideoObserverIn not found').toBeTruthy();
-        expect(body.length, 'setupVideoObserverIn is unterminated').toBeGreaterThan(500);
-
-        // play() on a data-src-only element rejects — the card would stay a
-        // poster forever, silently.
-        expect(body).toMatch(/ensureVideoSrc\(video\);/);
-
-        // ⚠️ And the synchronous seed, for the same reason hydrateVideosAround(0)
-        // exists on the main feed: an observer that never fires would leave the
-        // whole list black with nothing in the console.
-        expect(body).toMatch(/querySelector\('\.feed-media video\[data-src\]'\)/);
-        // querySelector, NOT querySelectorAll — seeding all of them is exactly
-        // the cost this change removes.
-        expect(body).not.toMatch(/querySelectorAll\('\.feed-media video\[data-src\]'\)/);
-    });
-
-    it('⚠️ the VENUE PAGE grid has NO observer and NO autoplay', () => {
-        // 40 autoplaying tiles OOM a phone. This is the assertion the plan
-        // called for and the one a browser pass on a two-post tenant can never
-        // make: every tile there is visible at once, so "the grid autoplays
-        // everything" and "the grid autoplays the one post" look identical.
-        const grid = fnBody('function renderVenuePageGrid()');
-        expect(grid, 'renderVenuePageGrid not found').toBeTruthy();
-        expect(grid.length, 'renderVenuePageGrid body is suspiciously short').toBeGreaterThan(500);
-        // The tile markup moved to reelsTileMarkup() (2026-10-06).
-        const tile = fnBody("function reelsTileMarkup(item, { expanded = false, onTap = '' } = {})");
+        // 2026-10-14: the member page joined the venue page and the Me tab as
+        // a poster grid, and the in-place expansion (the one tile that used to
+        // play) is gone. A tap opens the Viibe player.
+        const tile = fnBody("function reelsTileMarkup(item, { onTap = '' } = {})");
         expect(tile, 'reelsTileMarkup not found').toBeTruthy();
 
-        // ⚠️ fnCode, not fnBody. renderVenuePageGrid's own header comment says
-        // "setupVideoObserverIn() is deliberately NOT called here" — asserting
-        // absence over the raw body fails against CORRECT code, and the only
-        // way to go green would be to delete the warning.
-        const code = fnCode('function renderVenuePageGrid()');
-        expect(code, 'the venue grid attached the lazy-autoplay observer')
-            .not.toContain('setupVideoObserverIn');
-        expect(code, 'the venue grid autoplays').not.toMatch(/\.play\(\)/);
+        for (const sig of ['function renderVenuePageGrid()', 'function renderMeGrid()', 'function renderMemberList()']) {
+            // ⚠️ fnCode, not fnBody: renderVenuePageGrid's own comment says
+            // there is no observer here, and asserting absence over the raw
+            // body would fail against CORRECT code.
+            const code = fnCode(sig);
+            expect(code, `${sig} not found`).toBeTruthy();
+            expect(code.length, `${sig} is suspiciously short`).toBeGreaterThan(200);
+            expect(code, `${sig} attached an observer`).not.toMatch(/setupVideoObserver|IntersectionObserver/);
+            expect(code, `${sig} autoplays`).not.toMatch(/\.play\(\)/);
+        }
+        // The per-grid observer itself is gone, with its handle.
+        expect(js).not.toMatch(/function setupVideoObserverIn\(/);
+        expect(js).not.toMatch(/let venueVideoObserver\b/);
 
-        // A collapsed tile is a poster, not a video element. The <img> branch
-        // has to be there or the "no autoplay" assertion above is satisfied by
-        // markup that still holds 40 <video> elements.
+        // A tile is a poster, not a video element. The <img> branch has to be
+        // there or the "no autoplay" assertion above is satisfied by markup
+        // that still holds 40 <video> elements.
         expect(tile).toMatch(/<img src="\$\{escapeHtml\(item\.thumbnail_url\)\}"[^>]*loading="lazy"/);
-
         // ⚠️ ...and preload="metadata" for the legacy rows whose thumbnail_url
         // is NULL and can never be backfilled. "none" paints those solid black.
         expect(tile).toMatch(/preload="metadata"/);
-        // ...and the helper itself never autoplays or observes either.
-        const tileCode = fnCode("function reelsTileMarkup(item, { expanded = false, onTap = '' } = {})");
-        expect(tileCode).not.toContain('setupVideoObserverIn');
+        const tileCode = fnCode("function reelsTileMarkup(item, { onTap = '' } = {})");
         expect(tileCode).not.toMatch(/\.play\(\)/);
+        expect(tileCode, 'a tile still carries the expanded state').not.toMatch(/is-expanded|tile-more-btn|data-src/);
 
-        // Hydration happens on tap, in its own function, and nowhere else.
-        // Scoped to one grid since the Me tab got its own (2026-10-06).
-        expect(fnBody('function hydrateExpandedVenuePost()'))
-            .toContain("hydrateExpandedTileIn(document.getElementById('venue-page-feed'))");
-        const tap = fnBody('function hydrateExpandedTileIn(container)');
-        expect(tap, 'hydrateExpandedTileIn not found').toBeTruthy();
-        expect(tap).toMatch(/ensureVideoSrc\(video\)/);
-        expect(tap).toMatch(/applySoundState\(video\)/);
+        // A tap opens the player, from all three.
+        expect(fnBody('function openVenuePost(id)')).toContain("openViibeViewer('venue', id)");
+        expect(fnBody('function openMePost(id)')).toContain("openViibeViewer('me', id)");
+        expect(fnBody('function openMemberPost(id)')).toContain("openViibeViewer('member', id)");
     });
 
     it('tapping a panel hydrates it even outside the window', () => {
@@ -856,26 +846,27 @@ describe('interruption handling (#11)', () => {
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=21');
+        expect(html).toContain('/customer-app/social.js?v=22');
         expect(html).toContain('/customer-app/social-auth.js?v=5');
-        expect(html).toContain('/customer-app/social.css?v=16');
+        expect(html).toContain('/customer-app/social.css?v=17');
+        expect(html).toContain('/js/venue-categories.js?v=2');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v16'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v16'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v16'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v17'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v17'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v17'");
         // ...and the generation carries its own dated rationale, in the style
         // every previous one does. A bump with no note is a bump nobody can
         // later tell was mandatory or cosmetic.
-        expect(sw).toMatch(/\/\/ v16 \(2026-10-06\):/);
+        expect(sw).toMatch(/\/\/ v17 \(2026-10-14\):/);
     });
 
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 17;');
-        expect(html).toContain('/i18n/i18n.js?v=6');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 18;');
+        expect(html).toContain('/i18n/i18n.js?v=7');
     });
 
     it('supabase-js is pinned, not floating on a major', () => {

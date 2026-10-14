@@ -42,9 +42,18 @@
         return value;
     }
 
+    // In the reader's language when i18n is loaded (Jay's board, 2026-10-14:
+    // the names were English in all 8 languages on every card, result and
+    // venue page). I18n.t() returns the KEY on a miss, so a missing
+    // translation — or a page without i18n, like an early paint — falls back
+    // to the English name rather than printing "social.catBars".
     function categoryLabel(slug) {
         for (var i = 0; i < VENUE_CATEGORIES.length; i++) {
-            if (VENUE_CATEGORIES[i].slug === slug) return VENUE_CATEGORIES[i].label;
+            var c = VENUE_CATEGORIES[i];
+            if (c.slug !== slug) continue;
+            var i18n = global.I18n;
+            var t = i18n && typeof i18n.t === 'function' ? i18n.t(c.labelKey) : null;
+            return (typeof t === 'string' && t && t !== c.labelKey) ? t : c.label;
         }
         return slug || '';
     }

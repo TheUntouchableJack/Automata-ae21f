@@ -581,7 +581,9 @@ describe('Phase 4 — venue page', () => {
         expect(open, 'openVenuePage not found').toBeTruthy();
         expect(open).toContain('resetVenueSections()');
         expect(open).toContain('venueCrowdMix = null');
-        expect(open).toContain('expandedVenuePostId = null');
+        // expandedVenuePostId used to be reset here too. The in-place tile
+        // expansion is gone (2026-10-14) — a tap opens the Viibe player — so
+        // there is no expanded tile left to carry over.
     });
 
     it('⚠️ the crowd mix is ALL-TIME and suppressed BELOW THRESHOLD', () => {
@@ -675,14 +677,16 @@ describe('Phase 4 — venue page', () => {
         expect(close).toMatch(/pageEl\.innerHTML = ''/);
     });
 
-    it('closeMemberProfile disconnects the observer it now owns', () => {
-        // There is ONE module-level handle, so without this the next open
-        // disconnects only the most recent observer and every earlier one
-        // keeps holding torn-down .feed-media elements.
-        const close = fnBody('function closeMemberProfile()');
-        expect(close, 'closeMemberProfile not found').toBeTruthy();
-        expect(close).toMatch(/venueVideoObserver\.disconnect\(\)/);
-        expect(close).toMatch(/venueVideoObserver = null/);
+    it('closeViibeViewer disconnects the observer it owns', () => {
+        // The member page owned an observer until 2026-10-14; it renders a
+        // poster grid now and owns none. The Viibe player is the surface with
+        // a per-open observer, and the same leak applies: an observer still
+        // holding torn-down panels across every open in a session.
+        const close = fnBody('function closeViibeViewer()');
+        expect(close, 'closeViibeViewer not found').toBeTruthy();
+        expect(close).toMatch(/viibeViewerObserver\.disconnect\(\);\n\s+viibeViewerObserver = null;/);
+        // ...and it clears its panels, not merely pauses them.
+        expect(close).toMatch(/scroller\.innerHTML = '';/);
     });
 });
 

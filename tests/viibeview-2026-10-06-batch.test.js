@@ -416,10 +416,18 @@ describe('client wiring (static)', () => {
             .toContain("`closePeopleSheet(); closeMemberProfile(); openVenuePage('${escapeHtml(row.target_id)}')`");
     });
 
-    it("renderMemberList checks 'image', not 'photo'", () => {
+    it("the member page renders images as images ('image', never 'photo')", () => {
+        // venue_media has never stored 'photo'; an old check against it made
+        // every image a broken <video>. Since 2026-10-14 the member page draws
+        // its tiles with reelsTileMarkup(), whose test is media_type ===
+        // 'video' — an image falls to the <img> branch. (Behaviour is pinned
+        // in viibeview-member-venues.test.js.)
         const code = fnCode(js, 'function renderMemberList() {');
-        expect(code).toContain("const isVideo = post.media_type !== 'image';");
+        expect(code).toContain('reelsTileMarkup(post, {');
         expect(code).not.toContain("'photo'");
+        const tile = fnCode(js, "function reelsTileMarkup(item, { onTap = '' } = {}) {");
+        expect(tile).toContain("const isVideo = item.media_type === 'video';");
+        expect(tile).not.toContain("'photo'");
     });
 
     it('owners: loaded from venue_owners, and they can delete at their venue', () => {
@@ -438,7 +446,7 @@ describe('client wiring (static)', () => {
         expect(fn).toContain("supabaseClient.rpc('add_venue_flyer', {");
         expect(fn.indexOf('.upload(path, blob')).toBeLessThan(fn.indexOf("rpc('add_venue_flyer'"));
         expect(fn).toContain('await loadVenuePageFeed();');
-        expect(fnBody(js, "function reelsTileMarkup(item, { expanded = false, onTap = '' } = {}) {"))
+        expect(fnBody(js, "function reelsTileMarkup(item, { onTap = '' } = {}) {"))
             .toContain('<span class="flyer-badge" data-i18n="social.flyerBadge">Flyer</span>');
     });
 

@@ -87,11 +87,9 @@ beforeEach(() => {
     // when this hook finished.
     w.showEmptyState = () => {};
 
-    // ⚠️ jsdom ships no IntersectionObserver, and as of Phase 4 the MEMBER
-    // PROFILE is the surface that needs one: renderMemberList() renders
-    // full-width cards with data-src and hands the list to
-    // setupVideoObserverIn(). Before Phase 4 that call lived on the venue page,
-    // which this file never rendered — hence no stub was needed here.
+    // ⚠️ jsdom ships no IntersectionObserver, and the Viibe player needs one:
+    // a tap on a tile opens it, and it observes its panels exactly as the feed
+    // does (setupVideoObserver on its own scroller).
     //
     // A recording stub rather than a no-op: `observed` is what lets a test
     // assert the lazy path is actually wired, instead of merely not crashing.
@@ -139,63 +137,106 @@ function venue(over = {}) {
 // nothing makes every not.toContain() below pass. Assert the list is non-empty
 // before asserting anything about what is in it.
 //
-// ⚠️ Phase 4 INVERTED this surface. The member profile used to render
-// .member-grid-tile and now renders .feed-card — the venue page took the grid.
-// The unit under test is renderMemberList(), and the non-emptiness guard
-// counts the class this surface actually ships now. A guard still counting
-// .member-grid-tile would match zero elements and quietly pass every
-// assertion below it, which is the exact failure this helper exists to stop.
+// ⚠️ 2026-10-14 INVERTED THIS SURFACE AGAIN. The member page renders the reels
+// grid now (.member-grid-tile), like the Me tab and the venue page; the
+// full-width .feed-card list is gone. It was being laid out three across inside
+// .member-grid, at ~127px wide, as a 4:5 crop of every 9:16 clip — the crop
+// Jay reported. The guard counts the class this surface ships NOW; one still
+// counting .feed-card would match zero elements and pass everything below.
 function renderList(posts) {
     w.eval(`memberPagePosts = ${JSON.stringify(posts)}; renderMemberList();`);
     const list = d.getElementById('member-page-grid');
-    if (posts.length) expect(list.querySelectorAll('.feed-card').length).toBe(posts.length);
+    if (posts.length) expect(list.querySelectorAll('.member-grid-tile').length).toBe(posts.length);
     return list;
 }
 
-describe('renderMemberList — the venue link', () => {
-    // The venue name has always been on the row and, before the card that used
-    // to carry it existed, went into an aria-label no sighted visitor saw. The
-    // affordance survived the grid→list inversion; only its markup changed,
-    // from an inert .member-grid-venue chip to a real .feed-card-venue-link
-    // button. These tests follow it rather than being deleted with the chip.
+/** Opens the Viibe player from this member's grid, as a tap on tile `id` does. */
+function openFromProfile(posts, id, profile = { user_id: 'user-1', display_name: 'Pahkie' }) {
+    w.eval(`memberPageUserId = ${JSON.stringify(profile.user_id)};
+            memberPageProfile = ${JSON.stringify(profile)};`);
+    d.getElementById('member-page').classList.add('visible');
+    const list = renderList(posts);
+    list.querySelector(`.member-grid-tile[data-media-id="${id}"]`).click();
+    const viewer = d.getElementById('viibe-viewer');
+    expect(viewer.classList.contains('visible'), 'the tile did not open the player').toBe(true);
+    return d.getElementById('viibe-viewer-scroller');
+}
 
-    it('renders the venue name, as a real control this time', () => {
-        const list = renderList([post({ venue_id: 'venue-1', venue_name: 'Blue Room' })]);
-        const link = list.querySelector('.feed-card-venue-link');
-        expect(link).toBeTruthy();
-        expect(link.textContent.trim()).toBe('Blue Room');
+describe('the member page — a reels grid, and the player names the venue', () => {
+    // The venue name used to be a .feed-card-venue-link button on each card.
+    // The affordance survived the card→tile change: it is the player's venue
+    // strip now, which is a real control that opens the venue page.
+
+    it('one poster tile per post, with no <video> to autoplay', () => {
+        const list = renderList([
+            post({ id: 'a', media_type: 'video', url: 'u.mp4', thumbnail_url: 't.jpg' }),
+            post({ id: 'b', media_type: 'image' }),
+        ]);
+        expect(list.querySelectorAll('video').length, 'a tile with a thumbnail must be a poster').toBe(0);
+        expect(list.querySelectorAll('img').length).toBe(2);
+        expect(list.querySelector('.feed-card')).toBeNull();
     });
 
-    it('the link opens the venue page, closing the profile first', () => {
+    it("an image post is an <img>, never a broken <video> (the old 'photo' bug)", () => {
+        const list = renderList([post({ id: 'img', media_type: 'image', url: 'https://example.test/flyer.jpg' })]);
+        expect(list.querySelector('video')).toBeNull();
+        expect(list.querySelector('img').getAttribute('src')).toBe('https://example.test/flyer.jpg');
+    });
+
+    it('a tap opens the player on THAT post, with every post of this member in it', () => {
+        const scroller = openFromProfile([post({ id: 'a' }), post({ id: 'b' }), post({ id: 'c' })], 'b');
+        const ids = [...scroller.querySelectorAll('.feed-panel')].map(p => p.dataset.mediaId);
+        expect(ids).toEqual(['a', 'b', 'c']);
+    });
+
+    it("the player's strip names the venue and opens it, closing the profile first", () => {
         // Both overlays cannot be mounted at once — the venue page would open
         // underneath a profile that is still covering it.
-        const list = renderList([post({ venue_id: 'venue-1', venue_name: 'Blue Room' })]);
-        const onclick = list.querySelector('.feed-card-venue-link').getAttribute('onclick');
-        expect(onclick).toContain('closeMemberProfile()');
-        expect(onclick).toContain("openVenuePage('venue-1')");
+        const calls = [];
+        w.openVenuePage = id => calls.push(['venue', id]);
+        const realClose = w.closeMemberProfile;
+        w.closeMemberProfile = () => { calls.push(['closeMember']); realClose(); };
+
+        const scroller = openFromProfile([post({ id: 'a', venue_id: 'venue-1', venue_name: 'Blue Room' })], 'a');
+        const strip = scroller.querySelector('.feed-panel-venue-id');
+        expect(strip.querySelector('.venue-handle').textContent.trim()).toBe('Blue Room');
+
+        strip.click();
+        expect(calls).toEqual([['closeMember'], ['venue', 'venue-1']]);
+        expect(d.getElementById('viibe-viewer').classList.contains('visible')).toBe(false);
+        expect(d.getElementById('member-page').classList.contains('visible')).toBe(false);
     });
 
-    it('an unattached Viibe gets no link and no dead control', () => {
-        // A venue-less post has no venue page to open. Same rule the grid had.
-        const list = renderList([post()]);
-        expect(list.querySelector('.feed-card-venue-link')).toBeNull();
-        // ...and the header collapses rather than leaving an empty row where a
-        // name would have been.
-        expect(list.querySelector('.feed-card-header').className)
-            .toContain('feed-card-header-compact');
+    it('an unattached Viibe: the strip names the author and reopens nothing', () => {
+        // A venue-less post has no venue page. Its strip falls back to the
+        // author — who is the profile already underneath the player.
+        const calls = [];
+        w.openVenuePage = id => calls.push(['venue', id]);
+        w.openMemberProfile = id => calls.push(['member', id]);
+
+        const scroller = openFromProfile([post({ id: 'a' })], 'a');
+        const strip = scroller.querySelector('.feed-panel-venue-id');
+        expect(strip.querySelector('.venue-handle').textContent.trim()).toBe('Pahkie');
+
+        strip.click();
+        expect(calls, 'reopened the profile it was already on').toEqual([]);
+        expect(d.getElementById('viibe-viewer').classList.contains('visible')).toBe(false);
+        expect(d.getElementById('member-page').classList.contains('visible')).toBe(true);
     });
 
-    it('the options button survives on every card, linked or not', () => {
+    it('the options button is on every Viibe in the player, linked or not', () => {
         // Delete-vs-Report is decided from uploaded_by_user_id and is the one
         // affordance that must exist on a post with no venue too.
-        const list = renderList([post(), post({ id: 'post-2', venue_id: 'v1', venue_name: 'Blue Room' })]);
-        expect(list.querySelectorAll('.feed-more-btn').length).toBe(2);
+        const scroller = openFromProfile(
+            [post({ id: 'a' }), post({ id: 'b', venue_id: 'v1', venue_name: 'Blue Room' })], 'a');
+        expect(scroller.querySelectorAll('.feed-more-btn').length).toBe(2);
     });
 
-    it('escapes the venue name into the link', () => {
-        const list = renderList([post({ venue_id: 'v1', venue_name: '<img src=x onerror=alert(1)>' })]);
-        expect(list.querySelector('.feed-card-venue-link img')).toBeNull();
-        expect(list.innerHTML).toContain('&lt;img');
+    it('escapes the venue name into the strip', () => {
+        const scroller = openFromProfile(
+            [post({ id: 'a', venue_id: 'v1', venue_name: '<img src=x onerror=alert(1)>' })], 'a');
+        expect(scroller.querySelector('.feed-panel-venue img[src="x"]')).toBeNull();
+        expect(scroller.innerHTML).toContain('&lt;img');
     });
 });
 
