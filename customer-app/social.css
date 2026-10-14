@@ -3562,6 +3562,39 @@ body {
     background: var(--color-border);
 }
 
+/* The share sheet's Messages and Email are links (sms:, mailto:), styled as
+   the sheet's buttons. */
+a.post-option {
+    text-decoration: none;
+}
+
+/* The share button sits beside ⋯ on every panel's venue strip. */
+.feed-share-btn {
+    flex: 0 0 auto;
+}
+
+/* The Undo in a "Viibe hidden" toast. */
+.social-toast-btn {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* The map preview's byline and its ⋯ menu share a row. */
+.post-preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
 .post-option-danger {
     color: var(--color-error);
 }
@@ -4332,6 +4365,7 @@ body {
        .viibe-viewer                   2750          <- a tile on the Me tab, a member page or a venue page
        .people-backdrop / .people-sheet 2800 / 2900  <- opened FROM the member page
        #post-options-* / #edit-profile-* 2910 / 2920 <- opened FROM any of the above
+       #share-*                        2910 / 2920   <- the share sheet, same level
        .auth-overlay                   2950          <- a signed-out tap on any of the above
        .create-post-* modal            3000 / 3001
        .venue-picker-*                 3200 / 3300   <- opened FROM the composer
@@ -4351,12 +4385,14 @@ body {
 /* The ladder entries above that are ids, not classes: these four elements
    share .sheet-backdrop / .app-sheet with every default sheet. */
 #post-options-backdrop,
-#edit-profile-backdrop {
+#edit-profile-backdrop,
+#share-backdrop {
     z-index: 2910;
 }
 
 #post-options-sheet,
-#edit-profile-sheet {
+#edit-profile-sheet,
+#share-sheet {
     z-index: 2920;
 }
 

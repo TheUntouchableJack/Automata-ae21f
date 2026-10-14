@@ -119,8 +119,10 @@ describe('the 7am reset — home feed and map', () => {
         it(`${fn}: cutoff predicate, NO permanent exemption, NO ttl`, () => {
             const def = latestDefinition(fn);
             expect(def, `${fn} not found`).toBeTruthy();
-            expect(def.file, `${fn}'s live definition is not the reset migration`)
-                .toBe('20261006000003_feed_morning_reset.sql');
+            // 20261014000001 (hide a Viibe) re-created all three, verbatim plus
+            // one hidden-post line; the reset's predicate must have survived it.
+            expect(def.file, `${fn}'s live definition moved without this test knowing`)
+                .toBe('20261014000001_hidden_posts.sql');
 
             const where = whereClause(def.body);
             expect(where.length, `${fn}: WHERE clause not found`).toBeGreaterThan(100);
@@ -147,7 +149,8 @@ describe('the 7am reset — home feed and map', () => {
 
     it('venue pages KEEP the TTL and team-posts-permanent rule, and pin flyers first', () => {
         const def = latestDefinition('get_venue_page_feed');
-        expect(def.file).toBe('20261006000003_feed_morning_reset.sql');
+        // Re-created by 20261014000001 (hide a Viibe), verbatim plus one line.
+        expect(def.file).toBe('20261014000001_hidden_posts.sql');
         const where = whereClause(def.body);
         expect(where).toContain('OR vm.is_permanent');
         expect(where).toContain('v_ttl_hours IS NULL');

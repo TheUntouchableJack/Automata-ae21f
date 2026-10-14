@@ -615,6 +615,13 @@ async function init() {
         // Setup event listeners
         setupEventListeners();
 
+        // A shared link (?post= / ?venue=) opens over the painted feed. Not
+        // awaited: it is a page on top, not part of the feed.
+        openDeepLink();
+
+        // Hides made signed out on this device follow the account.
+        mergeLocalHidden().catch(() => {});
+
         // A recording that outlived its upload gets a second chance (#11).
         // Last, and not awaited by anything above it: it reads IndexedDB and
         // must never be on the critical path to a painted feed.
@@ -1002,6 +1009,9 @@ function finishOnboarding() {
 
     writeStoredPreferences();
     persistPreferences();
+
+    // A shared link that arrived with the intro opens now.
+    if (pendingDeepLink) openDeepLink(pendingDeepLink);
 
     // init() may already have loaded venues and painted the feed behind the
     // overlay, in which case the seed never got a chance to run. Do it now.
@@ -1813,6 +1823,11 @@ async function onSignedIn() {
     await checkOwnerAccess();
     await loadFollowingState({ force: true });
 
+    // This device's signed-out hides move onto the account (needs
+    // currentUserId, which checkOwnerAccess() just set). Not awaited: the
+    // local list keeps filtering until the merge is done.
+    mergeLocalHidden().catch(() => {});
+
     // ⚠️ The venue / member page is still mounted UNDERNEATH the auth overlay,
     // painted from a followingKeys that was empty for the whole signed-out
     // session. Reloading the state without repainting leaves a correct Set
@@ -2279,10 +2294,12 @@ async function loadFeed(append = false) {
         feedHasMore = false;
     }
 
+    // Hidden on this device (a signed-out visitor's hides). Paging above and
+    // the offset below still count the RAW page.
     if (append) {
-        feedItems = [...feedItems, ...data];
+        feedItems = [...feedItems, ...withoutHidden(data)];
     } else {
-        feedItems = data || [];
+        feedItems = withoutHidden(data || []);
     }
 
     feedOffset += (data || []).length;
@@ -2656,6 +2673,11 @@ function venueStripMarkup(item, identity) {
                 </div>
             </div>
             ${venue ? hereNowBadge(venue) : ''}
+            <!-- Share sits beside the options button on every panel, in the
+                 feed and in the Viibe player (Jay's board, 2026-10-14). -->
+            <button class="feed-more-btn feed-share-btn" type="button" aria-label="Share" data-i18n-aria="social.share" onclick="sharePost('${escapeHtml(item.id)}')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </button>
             <button class="feed-more-btn feed-panel-more" aria-label="Post options" onclick="showPostOptions('${escapeHtml(item.id)}')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
             </button>
@@ -2686,7 +2708,7 @@ async function loadPostPins() {
         return;
     }
 
-    postPins = data || [];
+    postPins = withoutHidden(data || []);
 }
 
 function initMap() {
@@ -2861,8 +2883,16 @@ function openPostPreview(postId) {
                 onclick="closePostPreview(); openMemberProfile('${escapeHtml(pin.uploaded_by_user_id)}')">${escapeHtml(byline)}</div>`
         : `<div class="post-preview-byline">${escapeHtml(byline)}</div>`;
 
+    // The ⋯ menu (Jay's board): Share, Hide, Report or Delete — the same sheet
+    // as everywhere else. It opens above this modal (2910 over 2200).
     infoEl.innerHTML = `
-        ${bylineMarkup}
+        <div class="post-preview-head">
+            ${bylineMarkup}
+            <button class="feed-more-btn post-preview-more" type="button" aria-label="Post options"
+                    data-i18n-aria="social.postOptions" onclick="showPostOptions('${escapeHtml(pin.id)}')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            </button>
+        </div>
         ${pin.caption ? `<div class="post-preview-caption">${escapeHtml(pin.caption)}</div>` : ''}
         ${pin.venue_id
             ? `<button class="auth-btn auth-btn-primary post-preview-venue-btn" type="button"
@@ -3386,6 +3416,15 @@ async function openVenuePage(venueId) {
                 ${canManageVenue(venue.id) ? '' : 'style="display:none;"'} onclick="openFlyerPicker()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <span data-i18n="social.addFlyer">Add flyer</span>
+            </button>`;
+        }
+
+        // Share the venue (Jay's board). Not for the demo venues: their ids
+        // are not UUIDs, so a link to one would open nothing.
+        if (!isDemoVenueId(venue.id)) {
+            actions += `<button class="venue-action-btn venue-share-btn" type="button" onclick="openShareSheet({ venueId: '${escapeHtml(venue.id)}' })">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span data-i18n="social.share">Share</span>
             </button>`;
         }
 
@@ -4055,9 +4094,9 @@ async function loadVenuePageFeed(append = false) {
     }
 
     if (append) {
-        venuePageFeed = [...venuePageFeed, ...data];
+        venuePageFeed = [...venuePageFeed, ...withoutHidden(data)];
     } else {
-        venuePageFeed = data || [];
+        venuePageFeed = withoutHidden(data || []);
     }
 
     venuePageOffset += (data || []).length;
@@ -4436,7 +4475,7 @@ async function loadMemberPosts() {
         console.error('Failed to load member posts:', error);
         memberPagePosts = [];
     } else {
-        memberPagePosts = data || [];
+        memberPagePosts = withoutHidden(data || []);
     }
 
     renderMemberList();
@@ -4699,11 +4738,16 @@ function viibeViewerRows(source) {
 }
 
 function openViibeViewer(source, startId) {
+    openViibeViewerRows(viibeViewerRows(source), startId);
+}
+
+// `rows` already in the feed's shape — a profile's list via viibeViewerRows(),
+// or the single post a shared link names (get_social_post returns that shape).
+function openViibeViewerRows(rows, startId) {
     const viewer = document.getElementById('viibe-viewer');
     const scroller = document.getElementById('viibe-viewer-scroller');
     if (!viewer || !scroller) return;
 
-    const rows = viibeViewerRows(source);
     const start = rows.findIndex(r => r.id === startId);
     if (start < 0) return;
 
@@ -6598,6 +6642,8 @@ function findPostById(mediaId) {
         || postPins.find(i => i.id === mediaId)
         || memberPagePosts.find(i => i.id === mediaId)
         || mePosts.find(i => i.id === mediaId)
+        // A shared link's post lives only in the player.
+        || viibeViewerItems.find(i => i.id === mediaId)
         || null;
 }
 
@@ -6638,8 +6684,25 @@ function renderPostOptionsMain() {
     const canDelete = isOwner ||
         (!!currentUserId && !!item && item.uploaded_by_user_id === currentUserId) ||
         (!!item && !!item.venue_id && ownedVenueIds.has(item.venue_id));
+    // Hide is for everyone but the author (Jay's board, 2026-10-14) — signed
+    // out too: a signed-out hide lives on this device (see hidePost).
+    const isAuthor = !!currentUserId && !!item && item.uploaded_by_user_id === currentUserId;
 
     body.innerHTML = `
+        <button class="post-option" type="button" onclick="sharePostFromOptions()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span data-i18n="social.share">Share</span>
+        </button>
+        ${isAuthor ? '' : `
+            <button class="post-option" type="button" onclick="hidePost(optionsMediaId)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                <span data-i18n="social.hidePost">Hide this Viibe</span>
+            </button>
+        `}
         ${canDelete ? `
             <button class="post-option post-option-danger" type="button" onclick="confirmDeletePost()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6763,12 +6826,16 @@ async function requestPostDelete(mediaId) {
 
 // Drop it from every list that could still be showing it, rather than
 // refetching — the feed is paginated and a reload would jump the scroll
-// position back to the top. Five lists, the open Viibe player, and a post
-// count on each profile that held it.
-function removePostEverywhere(mediaId) {
+// position back to the top. Five lists, the open Viibe player, the map's post
+// preview, and a post count on each profile that held it.
+//
+// `counts: false` for a HIDE: the post still exists and still counts on its
+// author's profile — it is only gone from this viewer's screens.
+function removePostEverywhere(mediaId, { counts = true } = {}) {
     // First, so the player is closed (or moved on) before the feed underneath
     // re-renders — see the viibeViewerOpen() check in setupVideoObserver().
     removeFromViibeViewer(mediaId);
+    if (previewPostId === mediaId) closePostPreview();
 
     const inMember = memberPagePosts.some(i => i.id === mediaId);
     const inMe = mePosts.some(i => i.id === mediaId);
@@ -6779,11 +6846,11 @@ function removePostEverywhere(mediaId) {
     memberPagePosts = memberPagePosts.filter(i => i.id !== mediaId);
     mePosts = mePosts.filter(i => i.id !== mediaId);
 
-    if (inMember && memberPageProfile) {
+    if (counts && inMember && memberPageProfile) {
         memberPageProfile.post_count = Math.max(0, (Number(memberPageProfile.post_count) || 0) - 1);
         renderMemberStats();
     }
-    if (inMe && meProfile) {
+    if (counts && inMe && meProfile) {
         meProfile.post_count = Math.max(0, (Number(meProfile.post_count) || 0) - 1);
     }
 
@@ -6826,11 +6893,440 @@ async function submitReport(reason) {
             const body = await res.json().catch(() => ({}));
             throw new Error(body.error || 'Could not send your report');
         }
-
-        showToast('Thanks, we will review this.');
     } catch (err) {
-        showToast(err.message || 'Could not send your report. Try again.');
+        showToast(err.message || translateOr('social.reportFailed', null, 'Could not send your report. Try again.'));
+        return;
     }
+
+    // Reporting a post also hides it for the reporter (Jay's board): nobody
+    // who flagged something should have to keep scrolling past it. Quietly —
+    // the report is the thing that happened, so its toast is the one shown.
+    await hidePostQuietly(mediaId);
+    removePostEverywhere(mediaId, { counts: false });
+    showToast(translateOr('social.reportThanks', null, 'Thanks, we will review this.'));
+}
+
+// ===== Hide a Viibe (Jay's board, 2026-10-14) =====
+//
+// Hidden for THIS viewer only, everywhere it would show: the feed, the
+// Following feed, venue pages, map pins, profiles. Nobody else is affected and
+// nothing is reported or deleted.
+//
+//   Signed in   a row in social_hidden_posts (hide_social_post); every reader
+//               filters it server-side (20261014000001).
+//   Signed out  a list on this device, filtered here by withoutHidden() at
+//               every load. At sign-in it moves onto the account
+//               (mergeLocalHidden), so it follows the member to every device.
+
+const HIDDEN_KEY = 'viibeview_hidden_v1';
+// A device list, not an archive: the oldest fall off past this.
+const HIDDEN_MAX = 200;
+// The same hides for this page view, for a browser that refuses localStorage
+// (private mode) — the hide still holds until the page is closed.
+const sessionHiddenIds = new Set();
+
+function localHiddenIds() {
+    let stored = [];
+    try {
+        const raw = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]');
+        stored = Array.isArray(raw) ? raw.filter(id => typeof id === 'string') : [];
+    } catch { /* unreadable or blocked: the session set still applies */ }
+    return [...new Set([...stored, ...sessionHiddenIds])];
+}
+
+function writeLocalHidden(ids) {
+    try {
+        if (ids.length) localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids.slice(-HIDDEN_MAX)));
+        else localStorage.removeItem(HIDDEN_KEY);
+    } catch { /* private mode: sessionHiddenIds carries it */ }
+}
+
+// Every list load passes its rows through this.
+function withoutHidden(rows) {
+    if (!Array.isArray(rows)) return [];
+    const hidden = localHiddenIds();
+    if (!hidden.length) return rows;
+    const set = new Set(hidden);
+    return rows.filter(r => !set.has(r.id));
+}
+
+// Records the hide wherever this viewer's hides live.
+async function recordHide(mediaId) {
+    if (currentUserId) {
+        const { data, error } = await supabaseClient.rpc('hide_social_post', { p_media_id: mediaId });
+        const row = Array.isArray(data) ? data[0] : data;
+        // A SECURITY DEFINER function's success:false does not set `error`.
+        if (error || !row || row.success === false) {
+            return { ok: false, message: row?.error_message || null };
+        }
+        return { ok: true };
+    }
+    sessionHiddenIds.add(mediaId);
+    writeLocalHidden([...localHiddenIds().filter(id => id !== mediaId), mediaId]);
+    return { ok: true };
+}
+
+async function hidePostQuietly(mediaId) {
+    try { await recordHide(mediaId); } catch { /* the report is what mattered */ }
+}
+
+async function hidePost(mediaId) {
+    closePostOptions();
+    if (!mediaId) return;
+
+    const snapshot = snapshotPost(mediaId);
+    const result = await recordHide(mediaId);
+    if (!result.ok) {
+        showToast(result.message || translateOr('social.hideFailed', null, 'Could not hide that Viibe'));
+        return;
+    }
+
+    removePostEverywhere(mediaId, { counts: false });
+    showActionToast(
+        translateOr('social.postHidden', null, 'Viibe hidden'),
+        translateOr('social.undo', null, 'Undo'),
+        () => undoHide(mediaId, snapshot)
+    );
+}
+
+async function undoHide(mediaId, snapshot) {
+    if (currentUserId) {
+        const { data, error } = await supabaseClient.rpc('unhide_social_post', { p_media_id: mediaId });
+        const row = Array.isArray(data) ? data[0] : data;
+        if (error || !row || row.success === false) {
+            showToast(translateOr('social.undoFailed', null, 'Could not undo that'));
+            return;
+        }
+    }
+    sessionHiddenIds.delete(mediaId);
+    writeLocalHidden(localHiddenIds().filter(id => id !== mediaId));
+    restorePost(snapshot);
+}
+
+// Where a post sat in each list, so Undo can put it back exactly there. A
+// refetch would jump the feed back to its first Viibe.
+function snapshotPost(mediaId) {
+    const at = list => {
+        const index = list.findIndex(i => i.id === mediaId);
+        return index < 0 ? null : { index, item: list[index] };
+    };
+    return {
+        feed: at(feedItems),
+        venue: at(venuePageFeed),
+        pins: at(postPins),
+        member: at(memberPagePosts),
+        viewer: viibeViewerOpen() ? at(viibeViewerItems) : null
+    };
+}
+
+function reinsertAt(list, entry) {
+    if (!entry || list.some(i => i.id === entry.item.id)) return list;
+    const next = list.slice();
+    next.splice(Math.min(entry.index, next.length), 0, entry.item);
+    return next;
+}
+
+function restorePost(snapshot) {
+    if (!snapshot) return;
+
+    // The player first, so the feed re-render below finds it open and does not
+    // start a video behind it (see setupVideoObserver).
+    if (snapshot.viewer) {
+        if (viibeViewerOpen()) {
+            viibeViewerItems = reinsertAt(viibeViewerItems, snapshot.viewer);
+            renderViibeViewer(viibeViewerItems.findIndex(i => i.id === snapshot.viewer.item.id));
+        } else {
+            // Hiding the only Viibe in it closed the player; Undo reopens it.
+            openViibeViewerRows([snapshot.viewer.item], snapshot.viewer.item.id);
+        }
+    }
+
+    feedItems = reinsertAt(feedItems, snapshot.feed);
+    venuePageFeed = reinsertAt(venuePageFeed, snapshot.venue);
+    postPins = reinsertAt(postPins, snapshot.pins);
+    memberPagePosts = reinsertAt(memberPagePosts, snapshot.member);
+
+    if (snapshot.feed) renderFeed();
+    if (snapshot.venue && venuePageVenueId) renderVenuePageGrid();
+    if (snapshot.pins && map) renderPostPins();
+    if (snapshot.member && memberPageUserId) renderMemberList();
+}
+
+// At sign-in (and on any boot with a session), this device's hides move onto
+// the account. A network failure keeps an id for next time; a refusal (it is
+// the member's own post) drops it.
+async function mergeLocalHidden() {
+    if (!currentUserId) return;
+    const ids = localHiddenIds();
+    if (!ids.length) return;
+
+    const keep = [];
+    for (const id of ids) {
+        const { data, error } = await supabaseClient.rpc('hide_social_post', { p_media_id: id });
+        const row = Array.isArray(data) ? data[0] : data;
+        if (error || !row) keep.push(id);
+    }
+    sessionHiddenIds.clear();
+    keep.forEach(id => sessionHiddenIds.add(id));
+    writeLocalHidden(keep);
+}
+
+// A toast with one action button — the Undo after a hide. Same place and look
+// as showToast(), and it replaces whatever toast is showing.
+function showActionToast(message, actionLabel, onAction) {
+    document.querySelector('.social-toast')?.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'social-toast social-toast-action';
+    toast.setAttribute('role', 'status');
+    toast.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:8px 8px 8px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;max-width:min(90%,360px);display:flex;align-items:center;gap:12px;';
+
+    const text = document.createElement('span');
+    text.textContent = message;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'social-toast-btn';
+    button.textContent = actionLabel;
+
+    let acted = false;
+    const dismiss = () => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    };
+    button.addEventListener('click', () => {
+        if (acted) return;
+        acted = true;
+        dismiss();
+        onAction();
+    });
+
+    toast.append(text, button);
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.opacity = '1'; });
+    // Longer than a plain toast: there has to be time to reach Undo.
+    setTimeout(dismiss, 5000);
+}
+
+// ===== Share (Jay's board, 2026-10-14) =====
+//
+// A Viibe or a venue, by link: {origin}/a/{slug}/social?post={id}[&venue={id}]
+// or ?venue={id}. That path is a 200 rewrite to social.html, so the query
+// string reaches the page and resolveAppSlug() reads the slug from the path.
+// A post link carries its venue too, so a post that has since expired or been
+// removed can still land the visitor on the venue's page (openDeepLink).
+
+let shareTarget = null;   // { postId, venueId } while the sheet is open
+
+function shareUrl({ postId = null, venueId = null } = {}) {
+    const url = new URL(`/a/${encodeURIComponent(appSlug || '')}/social`, window.location.origin);
+    if (postId) url.searchParams.set('post', postId);
+    if (venueId) url.searchParams.set('venue', venueId);
+    return url.toString();
+}
+
+function shareText({ postId = null, venueId = null } = {}) {
+    const app = currentApp?.name || 'ViibeView';
+    const venue = venueId
+        ? (getVenueById(venueId)?.name
+            || (venuePageVenue && venuePageVenue.id === venueId ? venuePageVenue.name : '')
+            || '')
+        : '';
+    if (postId) {
+        return venue
+            ? translateOr('social.shareViibeAt', { venue, app }, `A Viibe from ${venue} on ${app}`)
+            : translateOr('social.shareViibe', { app }, `A Viibe on ${app}`);
+    }
+    return translateOr('social.shareVenue', { venue, app }, `${venue} on ${app}`);
+}
+
+// iPhone, iPod, or an iPad (which reports itself as a Mac with touch).
+function isAppleMobile() {
+    const nav = window.navigator || {};
+    return /iPhone|iPad|iPod/.test(nav.userAgent || '')
+        || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
+}
+
+// The two hand-off links. iOS Messages reads `sms:&body=`; everything else
+// reads `sms:?body=` — each ignores the other's form.
+function shareLinks(target) {
+    const url = shareUrl(target);
+    const text = shareText(target);
+    const message = `${text} ${url}`;
+    return {
+        url,
+        text,
+        sms: `sms:${isAppleMobile() ? '&' : '?'}body=${encodeURIComponent(message)}`,
+        email: `mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(message)}`
+    };
+}
+
+function sharePost(mediaId) {
+    const item = findPostById(mediaId);
+    openShareSheet({ postId: mediaId, venueId: item?.venue_id || null });
+}
+
+function sharePostFromOptions() {
+    const mediaId = optionsMediaId;
+    closePostOptions();
+    if (mediaId) sharePost(mediaId);
+}
+
+function openShareSheet(target) {
+    if (!target || (!target.postId && !target.venueId)) return;
+    const sheet = document.getElementById('share-sheet');
+    const backdrop = document.getElementById('share-backdrop');
+    if (!sheet || !backdrop) return;
+
+    shareTarget = target;
+    renderShareOptions();
+    sheet.classList.add('visible');
+    backdrop.classList.add('visible');
+    lockBodyScroll('share');
+}
+
+function closeShareSheet() {
+    document.getElementById('share-sheet')?.classList.remove('visible');
+    document.getElementById('share-backdrop')?.classList.remove('visible');
+    unlockBodyScroll('share');
+    shareTarget = null;
+}
+
+function renderShareOptions() {
+    const body = document.getElementById('share-options');
+    if (!body || !shareTarget) return;
+    const links = shareLinks(shareTarget);
+    const canNativeShare = typeof window.navigator?.share === 'function';
+
+    body.innerHTML = `
+        <a class="post-option" href="${escapeHtml(links.sms)}" onclick="closeShareSheet()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span data-i18n="social.shareMessages">Messages</span>
+        </a>
+        <a class="post-option" href="${escapeHtml(links.email)}" onclick="closeShareSheet()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span data-i18n="social.shareEmail">Email</span>
+        </a>
+        <button class="post-option" type="button" onclick="copyShareLink()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span data-i18n="social.shareCopyLink">Copy link</span>
+        </button>
+        ${canNativeShare ? `
+            <button class="post-option" type="button" onclick="nativeShare()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                <span data-i18n="social.shareMore">More…</span>
+            </button>
+        ` : ''}
+        <button class="post-option post-option-cancel" type="button" onclick="closeShareSheet()">
+            <span data-i18n="social.cancel">Cancel</span>
+        </button>
+    `;
+
+    if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
+        window.I18n.applyTranslations();
+    }
+}
+
+// Clipboard first, inside the tap (iOS refuses a write from anywhere else); a
+// hidden textarea where there is no Clipboard API; and if both fail, the link
+// itself in the toast so it can still be copied by hand.
+async function copyShareLink() {
+    const url = shareUrl(shareTarget || {});
+    closeShareSheet();
+
+    let copied = false;
+    try {
+        if (window.navigator?.clipboard?.writeText) {
+            await window.navigator.clipboard.writeText(url);
+            copied = true;
+        }
+    } catch { /* fall through */ }
+    if (!copied) copied = copyViaTextarea(url);
+
+    showToast(copied ? translateOr('social.linkCopied', null, 'Link copied') : url);
+}
+
+function copyViaTextarea(text) {
+    try {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+        document.body.appendChild(area);
+        area.select();
+        area.setSelectionRange(0, text.length);
+        const ok = typeof document.execCommand === 'function' && document.execCommand('copy');
+        area.remove();
+        return !!ok;
+    } catch {
+        return false;
+    }
+}
+
+async function nativeShare() {
+    const target = shareTarget;
+    closeShareSheet();
+    if (!target) return;
+    try {
+        await window.navigator.share({ title: shareText(target), text: shareText(target), url: shareUrl(target) });
+    } catch { /* dismissed, or refused: nothing to do */ }
+}
+
+// ===== Shared links: ?post= and ?venue= =====
+//
+// Opened once, after the first loadFeed() — the session is restored by then,
+// so get_social_post knows who is asking (a post the viewer hid stays hidden).
+// A first-time visitor sees the intro first; the link opens when it closes.
+// The parameters are then stripped with replaceState, passing history.state
+// through, and the back guard still waits for the first gesture.
+
+const SHARED_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+let pendingDeepLink = null;
+
+function readDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const post = params.get('post') || '';
+    const venue = params.get('venue') || '';
+    const link = {
+        post: SHARED_ID_RE.test(post) ? post : null,
+        venue: SHARED_ID_RE.test(venue) ? venue : null
+    };
+    return (link.post || link.venue) ? link : null;
+}
+
+function stripDeepLink() {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('post') && !url.searchParams.has('venue')) return;
+    url.searchParams.delete('post');
+    url.searchParams.delete('venue');
+    try {
+        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    } catch { /* an embedded webview refusing replaceState keeps the URL */ }
+}
+
+async function openDeepLink(link = readDeepLink()) {
+    if (!link || !currentApp) return;
+
+    if (document.getElementById('onboarding-overlay')?.classList.contains('visible')) {
+        pendingDeepLink = link;
+        return;
+    }
+    pendingDeepLink = null;
+    stripDeepLink();
+
+    if (link.post) {
+        const { data } = await supabaseClient.rpc('get_social_post', {
+            p_app_id: currentApp.id,
+            p_post_id: link.post
+        });
+        const row = Array.isArray(data) ? data[0] : null;
+        if (row && withoutHidden([row]).length) {
+            openViibeViewerRows([row], row.id);
+            return;
+        }
+        showToast(translateOr('social.postUnavailable', null, 'This Viibe is no longer available'));
+    }
+
+    if (link.venue) openVenuePage(link.venue);
 }
 
 // ===== Utility Functions =====
@@ -6907,11 +7403,8 @@ function directionsUrl(venue) {
         : [venue.address_line1, venue.city, venue.state].filter(Boolean).join(', ');
     if (!destination) return null;
 
-    const nav = window.navigator || {};
-    const ios = /iPhone|iPad|iPod/.test(nav.userAgent || '')
-        || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
     const encoded = encodeURIComponent(destination).replace(/%2C/g, ',');
-    return ios
+    return isAppleMobile()
         ? `https://maps.apple.com/?daddr=${encoded}`
         : `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
 }
@@ -9039,6 +9532,7 @@ const BACK_SURFACES = [
     { id: 'auth-overlay',        back: () => backFromAuth() },
     { id: 'edit-profile-sheet',  back: () => closeEditProfile() },
     { id: 'post-options-sheet',  back: () => closePostOptions() },
+    { id: 'share-sheet',         back: () => closeShareSheet() },
     { id: 'people-sheet',        back: () => closePeopleSheet() },
     { id: 'viibe-viewer',        back: () => closeViibeViewer() },
     { id: 'member-page',         back: () => closeMemberProfile() },

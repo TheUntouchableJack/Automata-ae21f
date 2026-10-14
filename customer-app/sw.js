@@ -37,6 +37,15 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v18 (2026-10-14): hide a Viibe, share, shared links. social.html now loads
+// social.js?v=23, social.css?v=18 and i18n.js?v=8.
+//
+// Mandatory in both pairings:
+//   - cached v17 social.html has no #share-sheet; new social.js's share
+//     buttons would open nothing.
+//   - new social.html against cached v17 social.js has a share sheet nobody
+//     can open, and posts hidden while signed out reappear on every load.
+//
 // v17 (2026-10-14): the Viibe player. social.html now loads social.js?v=22,
 // social.css?v=17, i18n.js?v=7 and venue-categories.js?v=2.
 //
@@ -105,9 +114,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v17';
-const STATIC_CACHE = 'royalty-static-v17';
-const DYNAMIC_CACHE = 'royalty-dynamic-v17';
+const CACHE_NAME = 'royalty-rewards-v18';
+const STATIC_CACHE = 'royalty-static-v18';
+const DYNAMIC_CACHE = 'royalty-dynamic-v18';
 
 // Static assets to cache on install.
 //

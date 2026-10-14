@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=17">
+    <link rel="stylesheet" href="/customer-app/social.css?v=18">
 </head>
 <body>
 
@@ -1229,6 +1229,23 @@
         <div class="post-options-body" id="post-options-body"></div>
     </div>
 
+    <!-- ===== Share sheet (Jay's board, 2026-10-14) =====
+         Messages, Email, Copy link, and More… (the system share sheet, where
+         the browser has one). Opened from the share button on every panel, the
+         venue page, and Share in post options — so it sits on the post options
+         level (2910 / 2920), above the Viibe player (2750) and the venue page.
+         Inline handlers: it can open before setupEventListeners() has run. -->
+    <div class="sheet-backdrop" id="share-backdrop" onclick="closeShareSheet()"></div>
+    <div class="app-sheet share-sheet" id="share-sheet" role="dialog" aria-modal="true" aria-label="Share">
+        <div class="app-sheet-header">
+            <h3 data-i18n="social.share">Share</h3>
+            <button class="app-sheet-close" id="share-close" type="button" aria-label="Close" data-i18n-aria="social.close" onclick="closeShareSheet()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="post-options-body" id="share-options"></div>
+    </div>
+
     <!-- ===== Distance sheet (#5) =====
          Opened by the distance chip that leads the filter row.
 
@@ -1546,7 +1563,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=7"></script>
+    <script src="/i18n/i18n.js?v=8"></script>
     <script src="/js/venue-categories.js?v=2"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1563,7 +1580,7 @@
     <script src="/customer-app/social-auth.js?v=5"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=22"></script>
+    <script src="/customer-app/social.js?v=23"></script>
 
 </body>
 </html>

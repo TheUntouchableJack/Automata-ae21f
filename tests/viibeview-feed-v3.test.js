@@ -846,27 +846,27 @@ describe('interruption handling (#11)', () => {
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=22');
+        expect(html).toContain('/customer-app/social.js?v=23');
         expect(html).toContain('/customer-app/social-auth.js?v=5');
-        expect(html).toContain('/customer-app/social.css?v=17');
+        expect(html).toContain('/customer-app/social.css?v=18');
         expect(html).toContain('/js/venue-categories.js?v=2');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v17'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v17'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v17'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v18'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v18'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v18'");
         // ...and the generation carries its own dated rationale, in the style
         // every previous one does. A bump with no note is a bump nobody can
         // later tell was mandatory or cosmetic.
-        expect(sw).toMatch(/\/\/ v17 \(2026-10-14\):/);
+        expect(sw).toMatch(/\/\/ v18 \(2026-10-14\): hide a Viibe/);
     });
 
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 18;');
-        expect(html).toContain('/i18n/i18n.js?v=7');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 19;');
+        expect(html).toContain('/i18n/i18n.js?v=8');
     });
 
     it('supabase-js is pinned, not floating on a major', () => {

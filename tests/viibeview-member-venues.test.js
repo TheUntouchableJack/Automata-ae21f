@@ -229,7 +229,8 @@ describe('the member page — a reels grid, and the player names the venue', () 
         // affordance that must exist on a post with no venue too.
         const scroller = openFromProfile(
             [post({ id: 'a' }), post({ id: 'b', venue_id: 'v1', venue_name: 'Blue Room' })], 'a');
-        expect(scroller.querySelectorAll('.feed-more-btn').length).toBe(2);
+        // .feed-panel-more: the share button beside it wears .feed-more-btn too.
+        expect(scroller.querySelectorAll('.feed-panel-more').length).toBe(2);
     });
 
     it('escapes the venue name into the strip', () => {

@@ -435,7 +435,9 @@ test.describe('ViibeView social app', () => {
 
         // The 3-dots used to be a two-line alias for openVenuePage() with no
         // menu behind it, which is why it read as "does nothing".
-        await page.locator('#feed-container .feed-more-btn').first().click();
+        // .feed-panel-more, not .feed-more-btn: the share button wears that
+        // class too, for its look, since 2026-10-14.
+        await page.locator('#feed-container .feed-panel-more').first().click();
         await expect(page.locator('#post-options-sheet')).toHaveClass(/visible/);
         await expect(page.locator('#post-options-body .post-option')).not.toHaveCount(0);
         await expect(page.locator('#venue-page')).not.toHaveClass(/visible/);

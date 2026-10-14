@@ -224,7 +224,7 @@ describe('the Viibe player — opening it from each profile grid', () => {
         setState(`meProfile = { user_id: 'me-1', display_name: 'Pahkie' };
                   mePosts = ${JSON.stringify([vid('a')])}; openMePost('a');`);
         const panel = scroller().querySelector('.feed-panel');
-        expect(panel.querySelector('.feed-more-btn').getAttribute('onclick')).toBe("showPostOptions('a')");
+        expect(panel.querySelector('.feed-panel-more').getAttribute('onclick')).toBe("showPostOptions('a')");
         expect(panel.querySelector('.video-sound-btn')).toBeTruthy();
         expect(panel.querySelector('.feed-media video')).toBeTruthy();
     });
@@ -402,7 +402,7 @@ describe("the Viibe player — the venue strip goes to the venue, not under the 
         const opened = [];
         w.showPostOptions = id => opened.push(id);
         setState(`mePosts = ${JSON.stringify([vid('a', { venue_id: 'v1', venue_name: 'Blue Room' })])}; openMePost('a');`);
-        scroller().querySelector('.feed-more-btn').click();
+        scroller().querySelector('.feed-panel-more').click();
         expect(opened).toEqual(['a']);
         expect(visible('viibe-viewer')).toBe(true);
     });

@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
           <tr><td style="padding: 8px 0; color: #6b7280;">Reported by</td><td style="padding: 8px 0;">${reporterUserId || 'anonymous'}</td></tr>
         </table>
         ${note ? `<div style="margin-top: 16px; padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;"><p style="margin: 0; white-space: pre-wrap;">${note}</p></div>` : ''}
-        <p style="margin: 24px 0 0;"><a href="https://royaltyapp.ai/app/venues.html" style="color: #7c3aed;">Open venue admin →</a></p>
+        <p style="margin: 24px 0 0;"><a href="https://royaltyapp.ai/app/venues.html#reports" style="color: #7c3aed;">Review it in Reports →</a></p>
       `, { footerText: 'Internal notification — content reported in ViibeView' })
 
       const resendRes = await fetch('https://api.resend.com/emails', {
