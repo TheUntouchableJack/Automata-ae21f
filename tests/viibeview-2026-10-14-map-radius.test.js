@@ -9,10 +9,9 @@
  *   Interests    Settings → Your interests reopens the onboarding picks.
  *   GPS          a fix older than five minutes is refreshed; errors say why;
  *                center-on-me works in one tap; posts take a fresh fix.
- *
- * (The General venue's coordinates were meant to go in a data migration; prod's
- * venues_active_requires_coordinates constraint refused it. That is Jay's call
- * — see the round's memory note — and is not part of this file.)
+ *   Data         20261014000004 retires the General venue (is_active = false).
+ *                Clearing its coordinates was refused by prod's
+ *                venues_active_requires_coordinates; Jay chose this instead.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'fs';
@@ -25,6 +24,7 @@ const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const js = read('customer-app/social.js');
 const html = read('customer-app/social.html');
 const css = read('customer-app/social.css');
+const generalSql = read('supabase/migrations/20261014000004_general_venue_inactive.sql');
 
 function fnBody(signature) {
     const start = js.indexOf(signature);
@@ -473,6 +473,27 @@ describe('GPS: fresh fixes, real reasons, one-tap centre', () => {
 // ===========================================================================
 // Data, markup, release
 // ===========================================================================
+
+describe('20261014000004 — the General venue is retired', () => {
+    const code = generalSql.split('\n').map(l => (l.indexOf('--') < 0 ? l : l.slice(0, l.indexOf('--')))).join('\n');
+
+    it('one row, matched by id AND name, only is_active changes', () => {
+        expect(code).toMatch(/UPDATE venues\s+SET is_active = false\s+WHERE id = '81bdf625-0dbc-458c-bcee-be831a28adec'\s+AND name = 'General'\s+AND is_active = true;/);
+        expect(code).toMatch(/IF v_updated > 1 THEN\s+RAISE EXCEPTION/);
+        // ⚠️ Not the coordinates: venues_active_requires_coordinates refused that.
+        expect(code).not.toMatch(/latitude|longitude/);
+        expect(code).not.toMatch(/DELETE/);
+    });
+
+    it('the rollback is recorded', () => {
+        expect(generalSql).toContain("UPDATE venues SET is_active = true");
+    });
+
+    it('one file for the stamp', () => {
+        const files = fs.readdirSync(path.join(ROOT, 'supabase/migrations')).filter(f => f.startsWith('20261014000004'));
+        expect(files).toEqual(['20261014000004_general_venue_inactive.sql']);
+    });
+});
 
 describe('markup and release (Phase 3)', () => {
     it('the map has Map | List over its own list; the search bar stays on top', () => {
