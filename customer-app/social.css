@@ -3080,6 +3080,49 @@ body {
     max-width: 36ch;
 }
 
+/* The location screen (2026-10-27): the photo panels' background, but its body
+   is a sentence about privacy, so it reads in sentence case, not the posters'
+   uppercase. After .onboarding-panel-photo p, which it overrides. */
+.onboarding-panel-location p {
+    font-size: 0.9375rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: normal;
+    text-transform: none;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 34ch;
+}
+
+.onboarding-location-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Two class names: .auth-btn (width 100%) comes later in this file and would
+   otherwise win. Sized to its label, so it does not read as a second Continue. */
+.onboarding-panel-location .onboarding-location-btn {
+    width: auto;
+    align-self: flex-start;
+    margin-top: var(--spacing-sm);
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+/* "Location is on" / why it is not. Empty until there is something to say. */
+.onboarding-panel-location .onboarding-location-status {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    min-height: 1.4em;
+}
+
 .onboarding-panel-picker p {
     font-size: 0.9375rem;
     line-height: 1.5;

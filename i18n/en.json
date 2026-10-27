@@ -2351,7 +2351,12 @@
     "findingLocation": "Finding your location…",
     "noCitiesFound": "Keep typing the full city name, or use your current location.",
     "cityNotFound": "We could not tell which city you are in. Type it instead.",
-    "accountSuspended": "Your account is suspended in this app, so you cannot post right now."
+    "accountSuspended": "Your account is suspended in this app, so you cannot post right now.",
+    "replayIntro": "Replay the intro",
+    "obLocTitle": "Turn on location",
+    "obLocBody": "See what's near you and how far it is. Your location is only used while the app is open, and to pin the Viibes you post.",
+    "obLocAllow": "Allow location",
+    "obLocOn": "Location is on"
   },
   "venues": {
     "unavailableTitle": "Venues aren't available yet",

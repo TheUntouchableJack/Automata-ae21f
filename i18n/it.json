@@ -2351,7 +2351,12 @@
     "findingLocation": "Ricerca della tua posizione…",
     "noCitiesFound": "Continua a scrivere il nome completo della città, oppure usa la tua posizione attuale.",
     "cityNotFound": "Non siamo riusciti a capire in che città sei. Scrivila tu.",
-    "accountSuspended": "Il tuo account è sospeso in questa app, quindi per ora non puoi pubblicare."
+    "accountSuspended": "Il tuo account è sospeso in questa app, quindi per ora non puoi pubblicare.",
+    "replayIntro": "Rivedi l’introduzione",
+    "obLocTitle": "Attiva la posizione",
+    "obLocBody": "Scopri cosa c’è vicino a te e quanto dista. La tua posizione viene usata solo mentre l’app è aperta e per segnare sulla mappa i Viibe che pubblichi.",
+    "obLocAllow": "Consenti posizione",
+    "obLocOn": "La posizione è attiva"
   },
   "venues": {
     "unavailableTitle": "I locali non sono ancora disponibili",

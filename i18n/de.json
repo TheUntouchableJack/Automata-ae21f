@@ -2351,7 +2351,12 @@
     "findingLocation": "Standort wird ermittelt…",
     "noCitiesFound": "Gib den vollständigen Stadtnamen ein oder verwende deinen aktuellen Standort.",
     "cityNotFound": "Wir konnten deine Stadt nicht bestimmen. Gib sie stattdessen ein.",
-    "accountSuspended": "Dein Konto ist in dieser App gesperrt, daher kannst du gerade nichts posten."
+    "accountSuspended": "Dein Konto ist in dieser App gesperrt, daher kannst du gerade nichts posten.",
+    "replayIntro": "Einführung erneut ansehen",
+    "obLocTitle": "Standort aktivieren",
+    "obLocBody": "Sieh, was in deiner Nähe ist und wie weit es entfernt ist. Dein Standort wird nur genutzt, während die App geöffnet ist, und um deine Viibes auf der Karte zu markieren.",
+    "obLocAllow": "Standort erlauben",
+    "obLocOn": "Standort ist aktiviert"
   },
   "venues": {
     "unavailableTitle": "Locations sind noch nicht verfügbar",

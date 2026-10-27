@@ -2351,7 +2351,12 @@
     "findingLocation": "Procurando sua localização…",
     "noCitiesFound": "Continue digitando o nome completo da cidade ou use sua localização atual.",
     "cityNotFound": "Não conseguimos saber em que cidade você está. Digite-a.",
-    "accountSuspended": "Sua conta está suspensa neste app, então você não pode publicar agora."
+    "accountSuspended": "Sua conta está suspensa neste app, então você não pode publicar agora.",
+    "replayIntro": "Ver a introdução de novo",
+    "obLocTitle": "Ative a localização",
+    "obLocBody": "Veja o que está perto de você e a que distância. Sua localização só é usada enquanto o app está aberto e para marcar no mapa os Viibes que você publica.",
+    "obLocAllow": "Permitir localização",
+    "obLocOn": "A localização está ativada"
   },
   "venues": {
     "unavailableTitle": "Os locais ainda não estão disponíveis",

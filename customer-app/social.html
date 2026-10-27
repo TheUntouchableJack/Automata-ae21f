@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=21">
+    <link rel="stylesheet" href="/customer-app/social.css?v=22">
 </head>
 <body>
 
@@ -391,6 +391,12 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     <span data-i18n="social.yourInterests">Your interests</span>
                 </button>
+                <!-- The intro again, from its first screen (the board's tutorial
+                     "can be re-accessed later from settings"). In both menus. -->
+                <button class="profile-menu-item" id="replay-intro-btn-out" type="button" onclick="replayIntro()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                    <span data-i18n="social.replayIntro">Replay the intro</span>
+                </button>
                 <button class="profile-menu-item" id="contact-us-btn-out">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -427,6 +433,10 @@
                 <button class="profile-menu-item" id="interests-btn" type="button" onclick="openInterests()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     <span data-i18n="social.yourInterests">Your interests</span>
+                </button>
+                <button class="profile-menu-item" id="replay-intro-btn" type="button" onclick="replayIntro()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                    <span data-i18n="social.replayIntro">Replay the intro</span>
                 </button>
                 <!-- Org members only. checkOwnerAccess() unhides it; a plain
                      member never sees it, and RLS would reject the insert
@@ -469,7 +479,8 @@
     </section>
 
     <!-- ===== Onboarding Overlay =====
-         Three intro panels plus a "what are you into?" picker. Shown once per
+         Three intro panels, a location screen, then a "what are you into?"
+         picker. Shown once per
          device on first open, and ALWAYS after a new signup (showOnboarding
          force) — the per-device flag alone meant a new account on a used
          browser never saw it.
@@ -519,7 +530,26 @@
                 </div>
             </section>
 
-            <section class="onboarding-panel onboarding-panel-picker" data-ob-panel="3">
+            <!-- Location (2026-10-27, the board's "permissions" step): its own
+                 screen, so the browser's prompt never lands over the intro.
+                 Allow is the only thing here that asks; Skip or Show me without
+                 it asks once, after the intro closes. The photo panels' plain
+                 background, never a photo (no data-ob-photo). -->
+            <section class="onboarding-panel onboarding-panel-photo onboarding-panel-location" data-ob-panel="3">
+                <div class="onboarding-copy">
+                    <div class="onboarding-location-icon" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                    <h2 data-i18n="social.obLocTitle">Turn on location</h2>
+                    <p data-i18n="social.obLocBody">See what's near you and how far it is. Your location is only used while the app is open, and to pin the Viibes you post.</p>
+                    <button class="auth-btn auth-btn-light onboarding-location-btn" id="onboarding-location-btn" type="button" data-i18n="social.obLocAllow">Allow location</button>
+                    <!-- Written by renderOnboardingLocation(); no data-i18n, or a
+                         later translation pass would blank it. -->
+                    <p class="onboarding-location-status" id="onboarding-location-status" role="status"></p>
+                </div>
+            </section>
+
+            <section class="onboarding-panel onboarding-panel-picker" data-ob-panel="4">
                 <h2 data-i18n="social.obPickTitle">What are you into?</h2>
                 <p data-i18n="social.obPickBody">Pick a few. We put them first — you still see everything.</p>
 
@@ -1696,7 +1726,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=12"></script>
+    <script src="/i18n/i18n.js?v=13"></script>
     <script src="/js/venue-categories.js?v=2"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1713,7 +1743,7 @@
     <script src="/customer-app/social-auth.js?v=5"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=27"></script>
+    <script src="/customer-app/social.js?v=28"></script>
 
 </body>
 </html>

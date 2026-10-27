@@ -351,9 +351,10 @@ describe('member preferences (#1, #2)', () => {
 
     it('the onboarding overlay ships and is shown before the feed loads', () => {
         expect(html).toMatch(/id="onboarding-overlay"/);
-        // Four panels: three intro, one picker.
-        expect((html.match(/data-ob-panel="/g) || []).length).toBe(4);
-        expect(js).toMatch(/const ONBOARDING_PANELS = 4;/);
+        // Five panels: three intro, the location screen, the picker
+        // (2026-10-27, plan stateless-fluttering-cupcake).
+        expect((html.match(/data-ob-panel="/g) || []).length).toBe(5);
+        expect(js).toMatch(/const ONBOARDING_PANELS = 5;/);
         // maybeShowOnboarding() must precede the awaits in init().
         const init = js.slice(js.indexOf('async function init()'), js.indexOf('// ===== Branding ====='));
         expect(init.indexOf('maybeShowOnboarding()')).toBeGreaterThan(-1);
@@ -852,27 +853,27 @@ describe('interruption handling (#11)', () => {
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=27');
+        expect(html).toContain('/customer-app/social.js?v=28');
         expect(html).toContain('/customer-app/social-auth.js?v=5');
-        expect(html).toContain('/customer-app/social.css?v=21');
+        expect(html).toContain('/customer-app/social.css?v=22');
         expect(html).toContain('/js/venue-categories.js?v=2');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v22'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v22'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v22'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v23'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v23'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v23'");
         // ...and the generation carries its own dated rationale, in the style
         // every previous one does. A bump with no note is a bump nobody can
         // later tell was mandatory or cosmetic.
-        expect(sw).toMatch(/\/\/ v22 \(2026-10-27, admin tools\): create_social_post refuses/);
+        expect(sw).toMatch(/\/\/ v23 \(2026-10-27, intro\): a location screen in the intro/);
     });
 
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 23;');
-        expect(html).toContain('/i18n/i18n.js?v=12');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 24;');
+        expect(html).toContain('/i18n/i18n.js?v=13');
     });
 
     it('supabase-js is pinned, not floating on a major', () => {

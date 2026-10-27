@@ -825,8 +825,8 @@ test.describe('ViibeView — onboarding, distance and the full-screen feed', () 
 
             const overlay = page.locator('#onboarding-overlay');
             await expect(overlay).toHaveClass(/visible/);
-            // Four panels: three intro, one picker.
-            await expect(page.locator('#onboarding-track [data-ob-panel]')).toHaveCount(4);
+            // Five panels: three intro, the location screen, the picker.
+            await expect(page.locator('#onboarding-track [data-ob-panel]')).toHaveCount(5);
             // Shown to signed-OUT visitors too — anonymous browsing is a
             // supported mode, so gating the intro behind an account would mean
             // most first-time visitors never saw it.
@@ -870,6 +870,88 @@ test.describe('ViibeView — onboarding, distance and the full-screen feed', () 
 
             const stored = await page.evaluate(() => localStorage.getItem('viibeview_prefs_v1'));
             expect(JSON.parse(stored).categories).toContain(slug);
+        });
+
+        // ── The location screen (plan stateless-fluttering-cupcake, 10-27) ──
+        // Counts every getCurrentPosition call the page makes. Installed before
+        // any page script, so boot's own call (if any) is counted too.
+        async function countGeolocation(page) {
+            await page.addInitScript(() => {
+                window.__geoCalls = 0;
+                const geo = navigator.geolocation;
+                if (!geo) return;
+                const original = geo.getCurrentPosition.bind(geo);
+                geo.getCurrentPosition = (...args) => { window.__geoCalls++; return original(...args); };
+            });
+        }
+
+        // One slide at a time. A tap in the first half of a slide is lost (the
+        // track's scroll handler still reads the old screen), so three quick
+        // clicks end on screen 2. Wait for each slide to land.
+        async function toLocationScreen(page) {
+            for (let i = 1; i <= 3; i++) {
+                await page.click('#onboarding-next');
+                await expect.poll(() => page.evaluate(() => {
+                    const t = document.getElementById('onboarding-track');
+                    return Math.round(t.scrollLeft / t.clientWidth);
+                })).toBe(i);
+            }
+            await expect(page.locator('#onboarding-location-btn')).toBeInViewport();
+        }
+
+        test('no location prompt over the intro: nothing is asked before Allow', async ({ page }) => {
+            await countGeolocation(page);
+            await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+            await expect(page.locator('#onboarding-overlay')).toHaveClass(/visible/);
+            await page.waitForTimeout(1000);
+            expect(await page.evaluate(() => window.__geoCalls)).toBe(0);
+
+            await toLocationScreen(page);
+            await expect(page.locator('#onboarding-location-btn')).toBeVisible();
+            await expect(page.locator('#onboarding-location-status')).toHaveText('');
+            expect(await page.evaluate(() => window.__geoCalls)).toBe(0);
+
+            // Closing the intro asks once, after it.
+            await page.click('#onboarding-skip');
+            await expect.poll(() => page.evaluate(() => window.__geoCalls)).toBe(1);
+        });
+
+        test('Allow, with the browser saying yes: "Location is on"', async ({ page, context }) => {
+            await countGeolocation(page);
+            await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+            await toLocationScreen(page);
+            // Granted AFTER boot, so boot saw "prompt" and did not ask.
+            await context.grantPermissions(['geolocation']);
+            await context.setGeolocation({ latitude: 34.0901, longitude: -118.3617 });
+            await page.click('#onboarding-location-btn');
+            await expect(page.locator('#onboarding-location-status')).toHaveText('Location is on');
+            await expect(page.locator('#onboarding-location-btn')).toBeHidden();
+            expect(await page.evaluate(() => window.__geoCalls)).toBe(1);
+
+            // Finishing does not ask a second time.
+            await page.click('#onboarding-skip');
+            await page.waitForTimeout(500);
+            expect(await page.evaluate(() => window.__geoCalls)).toBe(1);
+        });
+
+        test('Allow, with the browser saying no: the blocked message, no button', async ({ page }) => {
+            await page.goto(PRETTY_URL, { waitUntil: 'networkidle' });
+            await toLocationScreen(page);
+            await page.click('#onboarding-location-btn');
+            await expect(page.locator('#onboarding-location-status')).toContainText('blocked');
+            await expect(page.locator('#onboarding-location-btn')).toBeHidden();
+        });
+
+        test('Settings → Replay the intro opens it from the first screen', async ({ page }) => {
+            await loadApp(page);
+            await expect(page.locator('#onboarding-overlay')).not.toHaveClass(/visible/);
+            await page.click('.nav-item[data-tab="settings"]');
+            await page.click('#replay-intro-btn-out');
+            await expect(page.locator('#onboarding-overlay')).toHaveClass(/visible/);
+            await expect(page.locator('.onboarding-dot').first()).toHaveClass(/active/);
+            await expect(page.locator('.onboarding-dot')).toHaveCount(5);
+            await page.click('#onboarding-skip');
+            await expect(page.locator('#onboarding-overlay')).not.toHaveClass(/visible/);
         });
 
         test('the intro never blocks the app permanently — the feed is behind it', async ({ page }) => {

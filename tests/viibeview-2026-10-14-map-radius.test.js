@@ -399,6 +399,9 @@ describe('GPS: fresh fixes, real reasons, one-tap centre', () => {
     beforeEach(async () => { await boot(); });
 
     it('a fix older than five minutes is refreshed when Feed or Map opens, and on return', () => {
+        // After the first ask (2026-10-27: nothing refreshes before it, so the
+        // prompt never lands over the intro; see the intro-location tests).
+        w.eval('locationAsked = true');
         w.eval(`userLocation = ${JSON.stringify(HERE)}; userLocationAt = Date.now() - 6 * 60 * 1000;`);
         w.eval("switchTab('map')");
         expect(w.__geo.length).toBe(1);

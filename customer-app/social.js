@@ -605,9 +605,9 @@ async function init() {
         // AFTER checkOwnerAccess(), which is what sets currentUserId.
         await loadFollowingState();
 
-        // Request geolocation, and keep it fresh when the app returns to the
-        // foreground.
-        requestLocation();
+        // Ask for location (never over the intro: see bootLocation), and keep
+        // it fresh when the app returns to the foreground.
+        bootLocation();
         watchLocationFreshness();
 
         // Load venues for map
@@ -783,7 +783,9 @@ function maxVideoDuration() {
 
 const ONBOARDED_KEY = 'viibeview_onboarded_v1';
 const PREFS_KEY = 'viibeview_prefs_v1';
-const ONBOARDING_PANELS = 4;
+// Three intro screens, the location screen, then the picker. The picker is
+// always LAST: on-picker and "Show me" key off ONBOARDING_PANELS - 1.
+const ONBOARDING_PANELS = 5;
 
 let preferredCategories = [];
 let preferredGenres = [];
@@ -933,6 +935,13 @@ function setOnboardingIndex(index, { scroll = true } = {}) {
     }
 }
 
+// Settings → Replay the intro (the board's tutorial "can be re-accessed later
+// from settings"). The same intro from its first screen; it is wired once and
+// safe to show again, and Back / Escape already close it (BACK_SURFACES).
+function replayIntro() {
+    showOnboarding({ force: true });
+}
+
 // First open on this device: show the intro once.
 function maybeShowOnboarding() {
     if (hasOnboarded()) return;
@@ -978,9 +987,17 @@ function showOnboarding({ force = false } = {}) {
     lockBodyScroll('onboarding');
     track.scrollLeft = 0;
     setOnboardingIndex(0, { scroll: false });
+    // A replay shows where location stands now ("Location is on").
+    renderOnboardingLocation();
 
     if (onboardingWired) return;
     onboardingWired = true;
+
+    // The one place in the intro that asks for location, and only on a tap.
+    document.getElementById('onboarding-location-btn')?.addEventListener('click', () => {
+        requestLocation();
+        renderOnboardingLocation();
+    });
 
     document.getElementById('onboarding-skip')
         ?.addEventListener('click', () => finishOnboarding());
@@ -1047,6 +1064,10 @@ function finishOnboarding() {
     } else {
         renderFilterPills();
     }
+
+    // Skipping the location screen still asks once, as the app always did,
+    // but now after the intro instead of over it. A replay never asks again.
+    askLocationOnce();
 }
 
 // Writes the current answers to the member row. Best-effort by design: the
@@ -2321,13 +2342,109 @@ function locationErrorMessage(code = lastLocationError) {
         'We could not find your location. Try again with Wi-Fi or GPS on.');
 }
 
+// True once the app has asked for location: at boot, from the intro's
+// location screen, or when the intro closes. Until then nothing else asks
+// (refreshLocationIfStale), so the browser's prompt never lands on the intro.
+let locationAsked = false;
+// A request is out and has no answer yet: the location screen says
+// "Finding your location…" instead of offering Allow again.
+let locationPending = false;
+
+// The first ask, at most once. A second call is a no-op, so finishing a
+// replayed intro never asks again.
+function askLocationOnce() {
+    if (locationAsked) return;
+    requestLocation();
+}
+
+// The browser's answer so far: 'granted', 'denied', 'prompt', or null where
+// the Permissions API is missing or refuses the query (older Safari).
+async function locationPermissionState() {
+    try {
+        if (!navigator.permissions || typeof navigator.permissions.query !== 'function') return null;
+        const status = await navigator.permissions.query({ name: 'geolocation' });
+        return (status && status.state) || null;
+    } catch (err) {
+        return null;
+    }
+}
+
+// Boot. With the intro on screen, ask only when the browser already said yes:
+// no prompt appears then, and a returning device keeps its distance-filtered
+// first feed. Otherwise the intro's own screen (or closing it) asks.
+// Returns the promise so a test can wait for it; init() does not.
+function bootLocation() {
+    if (!document.getElementById('onboarding-overlay')?.classList.contains('visible')) {
+        askLocationOnce();
+        return Promise.resolve();
+    }
+    return locationPermissionState().then((state) => {
+        if (state === 'granted') askLocationOnce();
+    });
+}
+
+// The intro's location screen, painted from what is known: a fix, the last
+// error, the browser's permission. Does nothing while the intro is closed.
+let onboardingLocationPaint = 0;
+
+async function renderOnboardingLocation() {
+    const overlay = document.getElementById('onboarding-overlay');
+    const btn = document.getElementById('onboarding-location-btn');
+    const status = document.getElementById('onboarding-location-status');
+    if (!overlay || !btn || !status || !overlay.classList.contains('visible')) return;
+
+    // The permission query is async; a newer paint (a fix that just arrived)
+    // must not be overwritten by an older one finishing late.
+    const paint = ++onboardingLocationPaint;
+    const needsState = !!navigator.geolocation && !userLocation && lastLocationError == null;
+    const state = needsState ? await locationPermissionState() : null;
+    if (paint !== onboardingLocationPaint) return;
+
+    let text = '';
+    let canAsk = true;
+    let busy = false;
+    if (!navigator.geolocation) {
+        text = locationErrorMessage(2);
+        canAsk = false;
+    } else if (userLocation) {
+        text = translateOr('social.obLocOn', null, 'Location is on');
+        canAsk = false;
+    } else if (locationPending) {
+        // Before the last error: a second tap after a timeout is waiting on a
+        // new answer, not showing the old one.
+        text = translateOr('social.findingLocation', null, 'Finding your location…');
+        busy = true;
+    } else if (lastLocationError === 1) {
+        // A browser never shows its prompt again after a "no", so the button
+        // would do nothing. The message says where to change it.
+        text = locationErrorMessage(1);
+        canAsk = false;
+    } else if (lastLocationError != null) {
+        // Unavailable or timed out: worth another tap.
+        text = locationErrorMessage(lastLocationError);
+    } else if (state === 'granted') {
+        text = translateOr('social.obLocOn', null, 'Location is on');
+        canAsk = false;
+    } else if (state === 'denied') {
+        text = locationErrorMessage(1);
+        canAsk = false;
+    }
+
+    status.textContent = text;
+    btn.style.display = canAsk ? '' : 'none';
+    btn.disabled = busy;
+}
+
 // `reason`: 'boot' (the first ask), 'refresh' (a stale fix, quietly), or
 // 'center' (the visitor tapped center-on-me and is owed an answer).
 function requestLocation({ reason = 'boot' } = {}) {
+    locationAsked = true;
     if (!navigator.geolocation) return;
 
+    locationPending = true;
     navigator.geolocation.getCurrentPosition(
         (pos) => {
+            locationPending = false;
             const first = !userLocation;
             setUserLocation(pos.coords);
 
@@ -2357,8 +2474,11 @@ function requestLocation({ reason = 'boot' } = {}) {
                 renderFilterPills();
                 loadFeed(false);
             }
+
+            renderOnboardingLocation();
         },
         (err) => {
+            locationPending = false;
             lastLocationError = err && err.code;
             console.warn('Geolocation failed:', err && err.message);
             if (reason === 'center') {
@@ -2367,6 +2487,8 @@ function requestLocation({ reason = 'boot' } = {}) {
             } else if (reason === 'boot') {
                 showLocationBanner();
             }
+
+            renderOnboardingLocation();
         },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: reason === 'boot' ? LOCATION_MAX_AGE_MS : 60000 }
     );
@@ -2375,6 +2497,9 @@ function requestLocation({ reason = 'boot' } = {}) {
 // The foreground and tab hooks. A visitor who has blocked location is not
 // asked again on every tab change.
 function refreshLocationIfStale() {
+    // Nothing before the first ask: a trip to another app and back during the
+    // first intro must not throw the prompt over it.
+    if (!locationAsked) return;
     if (lastLocationError === 1) return;
     if (!locationIsStale()) return;
     requestLocation({ reason: userLocation ? 'refresh' : 'boot' });

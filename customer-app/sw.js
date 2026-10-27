@@ -37,6 +37,14 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v23 (2026-10-27, intro): a location screen in the intro (the browser's prompt
+// no longer lands over it) and Settings → Replay the intro.
+// social.html now loads social.js?v=28, social.css?v=22 and i18n.js?v=13.
+//
+// Mandatory: a cached v22 social.html has no location screen and no Replay
+// item; a cached v22 i18n.js asks for translations ?v=23, which have none of
+// the five new keys.
+//
 // v22 (2026-10-27, admin tools): create_social_post refuses a suspended member
 // (20261027000001), and the app says so in the member's language.
 // social.html now loads social.js?v=27 and i18n.js?v=12.
@@ -158,9 +166,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v22';
-const STATIC_CACHE = 'royalty-static-v22';
-const DYNAMIC_CACHE = 'royalty-dynamic-v22';
+const CACHE_NAME = 'royalty-rewards-v23';
+const STATIC_CACHE = 'royalty-static-v23';
+const DYNAMIC_CACHE = 'royalty-dynamic-v23';
 
 // Static assets to cache on install.
 //
