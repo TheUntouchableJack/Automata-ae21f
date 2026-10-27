@@ -37,6 +37,14 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v24 (2026-10-27, splash video): the splash video loads only while the
+// splash is open, and this worker no longer touches video or range requests.
+// social.html now loads social.js?v=29.
+//
+// Mandatory: a cached v23 social.js sets the splash video's src at boot, so
+// once ViibeView's branding has a splash_video_url every returning visitor
+// would download the whole clip on every open.
+//
 // v23 (2026-10-27, intro): a location screen in the intro (the browser's prompt
 // no longer lands over it) and Settings → Replay the intro.
 // social.html now loads social.js?v=28, social.css?v=22 and i18n.js?v=13.
@@ -166,9 +174,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v23';
-const STATIC_CACHE = 'royalty-static-v23';
-const DYNAMIC_CACHE = 'royalty-dynamic-v23';
+const CACHE_NAME = 'royalty-rewards-v24';
+const STATIC_CACHE = 'royalty-static-v24';
+const DYNAMIC_CACHE = 'royalty-dynamic-v24';
 
 // Static assets to cache on install.
 //
@@ -267,6 +275,15 @@ self.addEventListener('fetch', (event) => {
     // Returning without calling respondWith() hands the request back to the
     // browser untouched, which is what should have happened all along.
     if (url.origin !== self.location.origin) {
+        return;
+    }
+
+    // Video and audio go straight to the network (2026-10-27, the splash video
+    // is the first same-origin clip). Players ask for byte ranges, and
+    // Cache.put() refuses the 206 that answers them, so the default branch
+    // below would log a rejected put on every request, and its offline
+    // fallback could only ever answer a video with the offline page.
+    if (/\.(mp4|webm|mov|m4v|mp3|m4a)$/i.test(url.pathname) || request.headers.has('range')) {
         return;
     }
 

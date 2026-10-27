@@ -860,6 +860,10 @@ function getAppData() {
             primary_color: document.getElementById('primary-color').value,
             secondary_color: document.getElementById('secondary-color').value,
             logo_url: currentApp?.branding?.logo_url || null,
+            // No field for it here: carried through, or saving the app in the
+            // builder would erase the splash video (set by migration
+            // 20261027000002 for ViibeView; read by customer-app/social.js).
+            splash_video_url: currentApp?.branding?.splash_video_url || null,
             logo_fit: document.querySelector('input[name="logo-fit"]:checked')?.value || 'contain',
             favicon_url: null,
             custom_css: null,

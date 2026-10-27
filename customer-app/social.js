@@ -712,15 +712,37 @@ function applyBranding(app) {
     }
 
     // Optional looping splash video from branding; the scrim keeps text legible
-    // whether or not one is configured.
+    // whether or not one is configured. Only the URL is kept here: the clip
+    // loads when the splash opens (syncSplashVideo).
     const splashVideo = document.getElementById('auth-splash-video');
     if (splashVideo) {
         if (branding.splash_video_url) {
-            splashVideo.src = branding.splash_video_url;
+            splashVideo.dataset.src = branding.splash_video_url;
         } else {
             splashVideo.style.display = 'none';
         }
     }
+}
+
+// The splash video loads only while the splash is on screen, and pauses when
+// it is left. Its src used to be set at boot, so every visitor downloaded the
+// whole clip (1.4 MB, measured in Chromium and WebKit on 2026-10-27) for a
+// screen most never open: the splash only shows on Back from Log In or Create
+// Account. "Reduce motion" gets no video at all, just the splash's backdrop.
+function syncSplashVideo(on) {
+    const video = document.getElementById('auth-splash-video');
+    if (!video) return;
+    const url = video.dataset.src;
+    const reduceMotion = typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!on || !url || reduceMotion) {
+        if (!video.paused) video.pause();
+        return;
+    }
+    if (video.getAttribute('src') !== url) video.src = url;
+    const playing = video.play();
+    // Low Power Mode and some browsers refuse; the backdrop shows instead.
+    if (playing && typeof playing.catch === 'function') playing.catch(() => {});
 }
 
 // ===== Feature Flags =====
@@ -1443,6 +1465,7 @@ function hideAuth() {
     if (!overlay) return;
     overlay.classList.remove('visible');
     unlockBodyScroll('auth');
+    syncSplashVideo(false);
 }
 
 // Maps the result of SocialAuth.handleRecoveryLink() onto the overlay. This is
@@ -1492,6 +1515,10 @@ function setAuthView(view) {
     // recovery landing left behind — telling someone with a perfectly good
     // session that their link has expired.
     if (view === 'reset') setResetMode('form');
+
+    // Every caller shows the overlay with this view (showAuth) or is already
+    // on it (backFromAuth), so the splash is on screen exactly when view is.
+    syncSplashVideo(view === 'splash');
 
     clearAuthErrors();
 

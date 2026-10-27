@@ -579,7 +579,10 @@
 
         <!-- Splash: brand + the two ways in -->
         <div class="auth-view" id="auth-view-splash">
-            <video class="auth-splash-video" id="auth-splash-video" autoplay muted loop playsinline></video>
+            <!-- No src and no autoplay here: social.js loads and plays the
+                 branding's clip only while the splash is on screen
+                 (syncSplashVideo). -->
+            <video class="auth-splash-video" id="auth-splash-video" muted loop playsinline aria-hidden="true"></video>
             <div class="auth-splash-scrim"></div>
             <div class="auth-splash-content">
                 <div class="auth-splash-logo" id="auth-splash-logo">V</div>
@@ -1743,7 +1746,7 @@
     <script src="/customer-app/social-auth.js?v=5"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=28"></script>
+    <script src="/customer-app/social.js?v=29"></script>
 
 </body>
 </html>
