@@ -2323,7 +2323,20 @@
     "save": "保存",
     "locationDenied": "位置权限已被阻止。请在浏览器设置中为此网站允许位置，以查看你附近的内容。",
     "locationTimeout": "获取位置超时，请重试。",
-    "locationUnavailable": "无法获取你的位置。请打开 Wi-Fi 或 GPS 后重试。"
+    "locationUnavailable": "无法获取你的位置。请打开 Wi-Fi 或 GPS 后重试。",
+    "fitWhole": "显示完整视频",
+    "fitFill": "填满屏幕",
+    "deletePostTitle": "删除这条帖子？",
+    "deletePostBody": "这会永久删除该视频，且无法撤销。",
+    "delete": "删除",
+    "deleting": "正在删除…",
+    "deleteFailed": "无法删除该帖子，请重试。",
+    "postDeleted": "帖子已删除",
+    "postPublished": "已发布！",
+    "somethingWentWrong": "出了点问题，请重试。",
+    "photo": "照片",
+    "previousPhoto": "上一张照片",
+    "nextPhoto": "下一张照片"
   },
   "venues": {
     "unavailableTitle": "场所功能尚不可用",

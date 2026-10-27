@@ -78,6 +78,10 @@ let feedItems = [];
 let feedOffset = 0;
 let feedLoading = false;
 let feedHasMore = true;
+// A FRESH load asked for while one is running. It used to be dropped, which
+// left the feed showing the previous chip's results, or the feed from before
+// a post landed. Now the running load's answer is discarded and this one runs.
+let feedReloadQueued = false;
 let activeCategory = null;
 // Second, independent filter axis. Applied SERVER-SIDE for the feed (a
 // get_venue_feed argument) and CLIENT-SIDE for the map pins, swim lane and
@@ -134,6 +138,16 @@ let hasPendingComposer = false;
 // speaker button cannot disagree.
 let feedSoundOn = false;
 
+// How a PORTRAIT Viibe is drawn: 'fill' (edge to edge, the default) or 'whole'
+// (the clip uncut). Also a preference, remembered on the device, and applied to
+// every Viibe in the feed and in the player. Wide clips and flyers ignore it:
+// they are always whole. See mediaFitFor().
+let feedFitPref = 'fill';
+// One ResizeObserver per scroller, rebuilt with each render, like the video
+// observers: the box a Viibe sits in decides whether its switch is worth showing.
+let feedFitObserver = null;
+let viewerFitObserver = null;
+
 // Hoisted so each renderFeed() disconnects the previous observer. They used to
 // be created per render and never disconnected, so after five pages five
 // observers fought over the same <video> elements.
@@ -158,8 +172,10 @@ let previewPostId = null;
 let scrollChromeTicking = false;
 let lastScrollY = 0;
 
-// Which post the options sheet is acting on.
+// Which post the options sheet is acting on, and the ⋮ that opened it (focus
+// goes back there when the delete dialog closes).
 let optionsMediaId = null;
+let optionsOpener = null;
 
 // ===== Phase 2: profiles, follows, discovery =====
 
@@ -562,6 +578,7 @@ async function init() {
         renderCountrySelect();
 
         loadSoundPreference();
+        loadFitPreference();
 
         setupAuthListeners();
 
@@ -1975,35 +1992,230 @@ function confirmDeleteAccount() {
     });
 }
 
-function showConfirm({ title, body, acceptLabel, onAccept }) {
+// The open dialog's close(), for the backdrop (bound ONCE, below); and whether
+// it is waiting on its action, during which nothing closes it.
+let confirmClose = null;
+let confirmBusy = false;
+let confirmBound = false;
+
+// Bound once for the page's life. It used to add a { once: true } backdrop
+// listener per open, and one closed through Cancel never fired, so they piled
+// up, each holding an old dialog's close().
+function bindConfirmOnce(dialog, backdrop) {
+    if (confirmBound) return;
+    confirmBound = true;
+    backdrop.addEventListener('click', () => { if (confirmClose) confirmClose(); });
+    // Focus stays inside while it is open: Tab and Shift+Tab cycle its buttons.
+    dialog.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const items = Array.from(dialog.querySelectorAll('button:not([disabled])'));
+        if (items.length === 0) { e.preventDefault(); return; }
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement) || document.activeElement === dialog)) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || document.activeElement === dialog)) {
+            e.preventDefault();
+            first.focus();
+        }
+    });
+}
+
+/**
+ * The confirm dialog.
+ *
+ * With `busyLabel`, it stays open while onAccept runs: the accept button reads
+ * busyLabel, both buttons are disabled, and nothing (Cancel, Back, Escape, the
+ * backdrop) closes it until the answer is back. onAccept returns
+ * { error: '…' } to keep it open with that message inside it; anything else
+ * closes it. Without busyLabel it closes first and then runs onAccept.
+ *
+ * Focus moves to Cancel on open, and returns to `returnFocus` (or whatever had
+ * it) on close, when that element is still on the page.
+ */
+function showConfirm({ title, body, acceptLabel, busyLabel = null, onAccept, returnFocus = null }) {
     const dialog = document.getElementById('confirm-dialog');
     const backdrop = document.getElementById('confirm-backdrop');
     if (!dialog || !backdrop) return;
+    bindConfirmOnce(dialog, backdrop);
 
     document.getElementById('confirm-title').textContent = title;
     document.getElementById('confirm-body').textContent = body;
+    const errorEl = document.getElementById('confirm-error');
+    if (errorEl) { errorEl.textContent = ''; errorEl.hidden = true; }
 
     const accept = document.getElementById('confirm-accept');
     const cancel = document.getElementById('confirm-cancel');
     accept.textContent = acceptLabel;
+    accept.disabled = false;
+    cancel.disabled = false;
+    confirmBusy = false;
+    const opener = returnFocus
+        || (document.activeElement && document.activeElement !== document.body ? document.activeElement : null);
 
     const close = () => {
+        if (confirmBusy) return;
         dialog.classList.remove('visible');
         backdrop.classList.remove('visible');
         unlockBodyScroll('confirm');
         // Replacing the nodes drops every listener — no accumulation across opens
         accept.replaceWith(accept.cloneNode(true));
         cancel.replaceWith(cancel.cloneNode(true));
+        confirmClose = null;
+        if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
     };
+    confirmClose = close;
 
-    accept.addEventListener('click', async () => { close(); await onAccept(); });
+    accept.addEventListener('click', async () => {
+        if (!busyLabel) { close(); await onAccept(); return; }
+
+        confirmBusy = true;
+        accept.disabled = true;
+        cancel.disabled = true;
+        accept.textContent = busyLabel;
+        dialog.setAttribute('aria-busy', 'true');
+        dialog.focus();
+
+        let result;
+        try {
+            result = await onAccept();
+        } catch (err) {
+            result = { error: err && err.message };
+        }
+
+        confirmBusy = false;
+        dialog.removeAttribute('aria-busy');
+        if (result && Object.prototype.hasOwnProperty.call(result, 'error')) {
+            accept.disabled = false;
+            cancel.disabled = false;
+            accept.textContent = acceptLabel;
+            if (errorEl) {
+                errorEl.textContent = result.error
+                    || translateOr('social.somethingWentWrong', null, 'Something went wrong. Try again.');
+                errorEl.hidden = false;
+            }
+            accept.focus();
+            return;
+        }
+        close();
+    });
     cancel.addEventListener('click', close);
-    backdrop.addEventListener('click', close, { once: true });
 
     dialog.classList.add('visible');
     backdrop.classList.add('visible');
     lockBodyScroll('confirm');
+    cancel.focus();
 }
+
+// ===== Image viewer (Jay's board: "Expanding Venue Images") =====
+//
+// A venue page's cover and logo, whole, on black. Tapping either opens it on
+// that photo; with both, a swipe, the arrows or ←/→ move between them.
+
+let imageViewerImages = [];   // [{ key, url, alt }]
+let imageViewerIndex = 0;
+let imageViewerTouchX = null;
+// The photo that opened it, to give focus back to on close.
+let imageViewerOpener = null;
+
+function venuePageImages(venue) {
+    if (!venue) return [];
+    return [
+        venue.cover_image_url ? { key: 'cover', url: venue.cover_image_url, alt: venue.name || '' } : null,
+        venue.profile_image_url ? { key: 'logo', url: venue.profile_image_url, alt: venue.name || '' } : null
+    ].filter(Boolean);
+}
+
+function openVenueImage(key) {
+    const images = venuePageImages(venuePageVenue);
+    const index = images.findIndex(i => i.key === key);
+    if (index < 0) return;
+    openImageViewer(images, index);
+}
+
+function openImageViewer(images, index = 0) {
+    const viewer = document.getElementById('image-viewer');
+    if (!viewer || !images || images.length === 0) return;
+    imageViewerOpener = document.activeElement && document.activeElement !== document.body
+        ? document.activeElement : null;
+    imageViewerImages = images;
+    showImageViewerAt(index);
+    viewer.classList.add('visible');
+    lockBodyScroll('image-viewer');
+    document.getElementById('image-viewer-close')?.focus();
+}
+
+function showImageViewerAt(index) {
+    const count = imageViewerImages.length;
+    if (count === 0) return;
+    imageViewerIndex = ((index % count) + count) % count;
+    const item = imageViewerImages[imageViewerIndex];
+    const img = document.getElementById('image-viewer-img');
+    if (img) {
+        img.src = item.url;
+        img.alt = item.alt || '';
+    }
+    const several = count > 1;
+    ['image-viewer-prev', 'image-viewer-next'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.hidden = !several;
+    });
+    const counter = document.getElementById('image-viewer-count');
+    if (counter) {
+        counter.hidden = !several;
+        counter.textContent = several ? `${imageViewerIndex + 1} / ${count}` : '';
+    }
+}
+
+function stepImageViewer(delta) {
+    if (imageViewerImages.length < 2) return;
+    showImageViewerAt(imageViewerIndex + delta);
+}
+
+function imageViewerOpen() {
+    return !!document.getElementById('image-viewer')?.classList.contains('visible');
+}
+
+function closeImageViewer() {
+    const viewer = document.getElementById('image-viewer');
+    if (!viewer || !viewer.classList.contains('visible')) return;
+    viewer.classList.remove('visible');
+    unlockBodyScroll('image-viewer');
+    imageViewerImages = [];
+    document.getElementById('image-viewer-img')?.removeAttribute('src');
+    if (imageViewerOpener && imageViewerOpener.isConnected) imageViewerOpener.focus();
+    imageViewerOpener = null;
+}
+
+// Bound at parse time: the markup is already in the page (the script tag sits
+// at the end of <body>).
+function setupImageViewer() {
+    const viewer = document.getElementById('image-viewer');
+    if (!viewer) return;
+    // The black around the photo closes it; the photo and the buttons do not.
+    viewer.addEventListener('click', (e) => {
+        if (e.target === viewer) closeImageViewer();
+    });
+    document.getElementById('image-viewer-close')?.addEventListener('click', closeImageViewer);
+    document.getElementById('image-viewer-prev')?.addEventListener('click', () => stepImageViewer(-1));
+    document.getElementById('image-viewer-next')?.addEventListener('click', () => stepImageViewer(1));
+    viewer.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); stepImageViewer(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stepImageViewer(1); }
+    });
+    viewer.addEventListener('touchstart', (e) => {
+        imageViewerTouchX = e.touches && e.touches.length === 1 ? e.touches[0].clientX : null;
+    }, { passive: true });
+    viewer.addEventListener('touchend', (e) => {
+        if (imageViewerTouchX === null) return;
+        const dx = (e.changedTouches?.[0]?.clientX ?? imageViewerTouchX) - imageViewerTouchX;
+        imageViewerTouchX = null;
+        if (Math.abs(dx) >= 40) stepImageViewer(dx < 0 ? 1 : -1);
+    }, { passive: true });
+}
+
+setupImageViewer();
 
 // ===== Owner Access Check =====
 //
@@ -2289,16 +2501,23 @@ function filteredVenues() {
 
 // ===== Feed =====
 async function loadFeed(append = false) {
-    if (feedLoading) return;
+    if (feedLoading) {
+        if (!append) feedReloadQueued = true;
+        return;
+    }
     // feedHasMore only gates pagination. It used to gate fresh loads too, so
     // once a feed ran out (or came back empty on first load) every subsequent
     // category change was silently dropped — the filter looked dead.
     if (append && !feedHasMore) return;
     feedLoading = true;
 
+    // ⚠️ feedItems is NOT emptied here any more (2026-10-27). Both answers
+    // below replace it, and until one arrives the panels on screen are still
+    // these: emptying it at the start made a just-posted Viibe (drawn at the
+    // top by afterViibePublished) unreachable by its own ⋮ for the length of
+    // the reload, and gone for good if the reload failed.
     if (!append) {
         feedOffset = 0;
-        feedItems = [];
         feedHasMore = true;
     }
 
@@ -2356,6 +2575,14 @@ async function loadFeed(append = false) {
 
     feedLoading = false;
     showFeedLoading(false);
+
+    // A fresh load was asked for meanwhile: this answer is for an older
+    // filter (or from before a post landed), so it is not drawn at all.
+    if (feedReloadQueued) {
+        feedReloadQueued = false;
+        loadFeed(false);
+        return;
+    }
 
     if (error) {
         console.error('Failed to load feed:', error);
@@ -2416,6 +2643,7 @@ function renderFeed() {
     // the same reason: their targets were destroyed by the line above.
     setupVideoObserver();
     setupInfiniteScroll();
+    setupMediaFit(container);
     refreshSoundButtons();
     feedHasRendered = true;
 }
@@ -2682,6 +2910,12 @@ function postHeaderMarkup(identity, { showVenue = true } = {}) {
 function renderFeedCard(item) {
     const isVideo = item.media_type === 'video';
     const identity = postIdentity(item);
+    // Drawn with the viewer's fit straight away, so nothing jumps when the
+    // clip's shape arrives (see mediaFitFor). A flyer is always whole.
+    const shape = isVideo ? 'portrait' : 'image';
+    const fit = mediaFitFor(shape, null, null, feedFitPref).fit;
+    // The blurred copy behind a WHOLE Viibe: the poster, or the flyer itself.
+    const backdropUrl = isVideo ? item.thumbnail_url : item.url;
 
     return `
         <article class="feed-panel" data-media-id="${escapeHtml(item.id)}" data-venue-id="${escapeHtml(item.venue_id || '')}">
@@ -2691,7 +2925,7 @@ function renderFeedCard(item) {
                  video is the sound toggle, bottom-right, inside .feed-media. -->
             ${venueStripMarkup(item, identity)}
 
-            <div class="feed-media" onclick="toggleVideoPlay(this)">
+            <div class="feed-media" data-shape="${shape}" data-fit="${fit}" onclick="toggleVideoPlay(this)">
                 ${isVideo ? `
                     <!-- preload is decided per post by videoPreloadMode(): "none"
                          when there is a poster to paint, "metadata" when there is
@@ -2702,9 +2936,16 @@ function renderFeedCard(item) {
                     <video data-src="${escapeHtml(item.url)}" poster="${escapeHtml(item.thumbnail_url || '')}"
                            playsinline muted preload="${videoPreloadMode(item)}" loop></video>
                     <button class="video-sound-btn feed-panel-sound" type="button" onclick="toggleFeedSound(event, this)"></button>
+                    <!-- NOT .video-sound-btn: refreshSoundButtons() repaints every
+                         one of those with the speaker icon. Styled with it in CSS. -->
+                    <button class="feed-panel-fit" type="button" data-fit="${fit}" aria-label="${escapeHtml(fitButtonLabel(fit))}" onclick="toggleMediaFit(event, this)">${fitIconMarkup(fit)}</button>
                 ` : `
                     <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.caption || '')}" loading="lazy">
                 `}
+                <!-- AFTER the media on purpose: querySelector('video, img')
+                     finds the Viibe, not this. z-index puts it underneath.
+                     display:none (and so never fetched) unless WHOLE. -->
+                ${backdropUrl ? `<img class="feed-media-backdrop" src="${escapeHtml(backdropUrl)}" alt="" aria-hidden="true" loading="lazy" decoding="async">` : ''}
             </div>
         </article>
     `;
@@ -2892,19 +3133,31 @@ function renderPostPins() {
     visiblePostPins().forEach(pin => {
         if (!hasCoords(pin.latitude, pin.longitude)) return;
 
+        // data-post-venue says which way a tap goes (openPostPin); the e2e
+        // spec reads it to know whether to expect the venue page or the preview.
         const icon = L.divIcon({
             className: 'map-post-pin-wrapper',
-            html: `<div class="map-post-pin"></div>`,
+            html: `<div class="map-post-pin" data-post-venue="${escapeHtml(pin.venue_id || '')}"></div>`,
             iconSize: [18, 18],
             iconAnchor: [9, 9]
         });
 
         const marker = L.marker([pin.latitude, pin.longitude], { icon })
             .addTo(map)
-            .on('click', () => openPostPreview(pin.id));
+            .on('click', () => openPostPin(pin));
 
         postMarkers.push(marker);
     });
+}
+
+// A post pin at a venue opens that VENUE's page (Jay's board, "Remove Viibe
+// DTV – Go Straight to Venue DTV"): the Viibe is on it, and the venue is what
+// a pin on a map is for. A post with no venue has no page to open, so it keeps
+// the preview. Tiles and ?post= links still open the Viibe player.
+function openPostPin(pin) {
+    if (!pin) return;
+    if (pin.venue_id) openVenuePage(pin.venue_id);
+    else openPostPreview(pin.id);
 }
 
 // Which posts get a pin of their own.
@@ -3630,8 +3883,9 @@ async function openVenuePage(venueId) {
     // Render hero
     const heroEl = document.getElementById('venue-page-hero');
     if (heroEl) {
+        // A tap shows the photo whole, full screen (openVenueImage).
         heroEl.innerHTML = venue.cover_image_url
-            ? `<img src="${venue.cover_image_url}" alt="${escapeHtml(venue.name)}">`
+            ? `<img src="${escapeHtml(venue.cover_image_url)}" alt="${escapeHtml(venue.name)}" class="venue-page-image-tap" role="button" tabindex="0" onclick="openVenueImage('cover')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openVenueImage('cover'); }">`
             : `<div class="venue-page-hero-fallback">${(venue.name || '?')[0]}</div>`;
     }
 
@@ -3648,7 +3902,7 @@ async function openVenuePage(venueId) {
             <div class="venue-page-identity-row">
                 <div class="venue-page-avatar">
                     ${venue.profile_image_url
-                        ? `<img src="${venue.profile_image_url}" alt="">`
+                        ? `<img src="${escapeHtml(venue.profile_image_url)}" alt="${escapeHtml(venue.name)}" class="venue-page-image-tap" role="button" tabindex="0" onclick="openVenueImage('logo')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openVenueImage('logo'); }">`
                         : `<div class="venue-page-avatar-placeholder">${(venue.name || '?')[0]}</div>`}
                 </div>
                 <div class="venue-page-name-block">
@@ -5065,6 +5319,7 @@ function renderViibeViewer(startIndex) {
     scroller.scrollTop = startIndex * scroller.clientHeight;
 
     setupVideoObserver(scroller, startIndex);
+    setupMediaFit(scroller);
     refreshSoundButtons();
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
@@ -5099,6 +5354,10 @@ function closeViibeViewer() {
     if (viibeViewerObserver) {
         viibeViewerObserver.disconnect();
         viibeViewerObserver = null;
+    }
+    if (viewerFitObserver) {
+        viewerFitObserver.disconnect();
+        viewerFitObserver = null;
     }
 
     // Pause AND unload: a paused <video> left in the DOM keeps its buffer and
@@ -6482,6 +6741,166 @@ function toggleFeedSound(event, btn) {
     refreshSoundButtons();
 }
 
+// ===== Video fit (Jay, 2026-10-27) =====
+//
+// Each Viibe adapts to its own shape. A portrait clip FILLS its box edge to
+// edge (object-fit: cover), and a small switch at the video's bottom-right
+// shows the whole clip uncut, and switches back. Wide or square clips and
+// flyers are always shown whole, with no switch: filling a 16:9 clip in a
+// portrait box would cut about two thirds of it, and a flyer's text with it.
+//
+// "Whole" draws the clip contained over a blurred copy of its own poster
+// (.feed-media-backdrop), so what it does not fill is not black bars.
+//
+// The decision is one pure function, mediaFitFor(). The rest only gathers its
+// inputs: the clip's shape (its poster's size first, which is loading anyway,
+// then the video's own size on loadedmetadata) and the box's size (a
+// ResizeObserver, because the box changes with the phone's toolbars).
+
+const FIT_PREF_KEY = 'viibeview_fit_v1';
+// Width ÷ height below which a clip counts as portrait. 4:5 (0.8) is portrait;
+// square (1.0) is not.
+const PORTRAIT_MAX_RATIO = 0.9;
+// When filling would cut less than this share of the clip, fill and whole look
+// the same, and a switch that changes nothing is noise.
+const FIT_SWITCH_MIN_CUT = 0.04;
+
+function loadFitPreference() {
+    try {
+        feedFitPref = localStorage.getItem(FIT_PREF_KEY) === 'whole' ? 'whole' : 'fill';
+    } catch {
+        feedFitPref = 'fill';   // private mode: the default
+    }
+}
+
+function mediaShapeFor(ratio) {
+    return ratio > 0 && ratio < PORTRAIT_MAX_RATIO ? 'portrait' : 'wide';
+}
+
+/**
+ * How one Viibe is drawn.
+ *   shape      'portrait' | 'wide' | 'image'
+ *   boxRatio   the media box's width ÷ height; null while it has no size
+ *   clipRatio  the clip's width ÷ height; null until it is known
+ *   pref       the viewer's choice for portrait clips: 'fill' | 'whole'
+ * Returns { fit: 'fill' | 'whole', switchable }.
+ *
+ * Until the box or the clip is known, a portrait clip follows the preference
+ * and keeps its switch: the composer records 9:16, so that is the likely case.
+ */
+function mediaFitFor(shape, boxRatio, clipRatio, pref) {
+    if (shape !== 'portrait') return { fit: 'whole', switchable: false };
+    const fit = pref === 'whole' ? 'whole' : 'fill';
+    if (!(boxRatio > 0) || !(clipRatio > 0)) return { fit, switchable: true };
+    // Share of the clip that `cover` cuts off: top and bottom when the clip is
+    // narrower than the box, the sides when it is wider.
+    const cut = 1 - Math.min(boxRatio, clipRatio) / Math.max(boxRatio, clipRatio);
+    if (cut < FIT_SWITCH_MIN_CUT) return { fit: 'fill', switchable: false };
+    return { fit, switchable: true };
+}
+
+function fitIconMarkup(fit) {
+    // Filling now: arrows pointing in ("show it whole"). Whole now: arrows out.
+    return fit === 'fill'
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`
+        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+}
+
+function fitButtonLabel(fit) {
+    return fit === 'fill'
+        ? translateOr('social.fitWhole', null, 'Show the whole video')
+        : translateOr('social.fitFill', null, 'Fill the screen');
+}
+
+// Reads the box and the clip off one .feed-media and applies mediaFitFor().
+function applyMediaFit(media) {
+    if (!media) return;
+    const shape = media.dataset.shape || 'portrait';
+    const clip = parseFloat(media.dataset.clip) || null;
+    const w = media.clientWidth;
+    const h = media.clientHeight;
+    const { fit, switchable } = mediaFitFor(shape, w > 0 && h > 0 ? w / h : null, clip, feedFitPref);
+
+    media.dataset.fit = fit;
+    const btn = media.querySelector('.feed-panel-fit');
+    if (!btn) return;
+    btn.hidden = !switchable;
+    if (btn.dataset.fit !== fit) {
+        btn.dataset.fit = fit;
+        btn.innerHTML = fitIconMarkup(fit);
+    }
+    btn.setAttribute('aria-label', fitButtonLabel(fit));
+}
+
+// The clip's size, from its poster or from the video itself. The video's own
+// size wins: a poster can be cropped or missing.
+function setMediaClip(media, width, height, fromVideo) {
+    if (!media || !(width > 0) || !(height > 0)) return;
+    if (!fromVideo && media.dataset.clipFrom === 'video') return;
+    media.dataset.clip = (width / height).toFixed(4);
+    media.dataset.clipFrom = fromVideo ? 'video' : 'poster';
+    if (media.dataset.shape !== 'image') media.dataset.shape = mediaShapeFor(width / height);
+    applyMediaFit(media);
+}
+
+function probeMediaShape(media) {
+    const video = media.querySelector('video');
+    if (!video) return;
+    if (video.readyState >= 1 && video.videoWidth) {
+        setMediaClip(media, video.videoWidth, video.videoHeight, true);
+        return;
+    }
+    const poster = video.getAttribute('poster');
+    if (!poster || typeof Image !== 'function') return;
+    // Same URL as the poster the <video> is already painting, so this is
+    // served from the cache rather than fetched twice.
+    const probe = new Image();
+    probe.onload = () => setMediaClip(media, probe.naturalWidth, probe.naturalHeight, false);
+    probe.src = poster;
+}
+
+// After every render of a scroller's panels (the feed and the player).
+function setupMediaFit(container) {
+    if (!container) return;
+    const isViewer = container.id === 'viibe-viewer-scroller';
+    const previous = isViewer ? viewerFitObserver : feedFitObserver;
+    if (previous) previous.disconnect();
+
+    const observer = typeof ResizeObserver === 'function'
+        ? new ResizeObserver(entries => entries.forEach(entry => applyMediaFit(entry.target)))
+        : null;
+    container.querySelectorAll('.feed-panel .feed-media').forEach(media => {
+        probeMediaShape(media);
+        applyMediaFit(media);
+        if (observer) observer.observe(media);
+    });
+
+    if (isViewer) viewerFitObserver = observer;
+    else feedFitObserver = observer;
+}
+
+// The switch. Bound inline, and it stops the click: the frame's own onclick
+// is play/pause, and switching the fit must not pause the video.
+function toggleMediaFit(event, btn) {
+    if (event) event.stopPropagation();
+    const media = btn ? btn.closest('.feed-media') : null;
+    const current = media && media.dataset.fit === 'whole' ? 'whole' : 'fill';
+    feedFitPref = current === 'whole' ? 'fill' : 'whole';
+    try {
+        localStorage.setItem(FIT_PREF_KEY, feedFitPref);
+    } catch { /* preference is non-essential */ }
+    document.querySelectorAll('.feed-panel .feed-media').forEach(applyMediaFit);
+}
+
+// loadedmetadata does not bubble, so one CAPTURE listener at parse time sees
+// every <video> in every scroller, including ones rendered later.
+document.addEventListener('loadedmetadata', (event) => {
+    const video = event.target;
+    if (!video || video.tagName !== 'VIDEO') return;
+    const media = video.closest('.feed-panel .feed-media');
+    if (media) setMediaClip(media, video.videoWidth, video.videoHeight, true);
+}, true);
+
 // ===== Video Handling =====
 // Tapping the frame plays/pauses. It does NOT change sound — that used to be
 // an unconditional `video.muted = false`, which meant every tap-to-play blared
@@ -7046,11 +7465,24 @@ function showPostOptions(mediaId) {
     if (!sheet || !backdrop || !body) return;
 
     optionsMediaId = mediaId;
+    optionsOpener = postOptionsOpener(mediaId);
     renderPostOptionsMain();
 
     sheet.classList.add('visible');
     backdrop.classList.add('visible');
     lockBodyScroll('post-options');
+}
+
+// The ⋮ button for this post. Safari does not focus a button on a tap, so
+// activeElement alone is not enough: fall back to the panel's own ⋮, in the
+// player when it is open.
+function postOptionsOpener(mediaId) {
+    const active = document.activeElement;
+    if (active && active.tagName === 'BUTTON' && active.closest('[data-media-id]')) return active;
+    const scope = viibeViewerOpen() ? document.getElementById('viibe-viewer') : document;
+    const panel = Array.from(scope?.querySelectorAll('[data-media-id]') || [])
+        .find(el => el.dataset.mediaId === mediaId);
+    return panel?.querySelector('.feed-panel-more') || null;
 }
 
 function closePostOptions() {
@@ -7143,27 +7575,32 @@ function renderPostOptionsReasons() {
 
 function confirmDeletePost() {
     const mediaId = optionsMediaId;
+    const opener = optionsOpener;
     closePostOptions();
 
     showConfirm({
-        title: 'Delete this post?',
-        body: 'This removes the video permanently. It cannot be undone.',
-        acceptLabel: 'Delete',
+        title: translateOr('social.deletePostTitle', null, 'Delete this post?'),
+        body: translateOr('social.deletePostBody', null, 'This removes the video permanently. It cannot be undone.'),
+        acceptLabel: translateOr('social.delete', null, 'Delete'),
+        busyLabel: translateOr('social.deleting', null, 'Deleting…'),
+        returnFocus: opener,
         onAccept: () => deletePost(mediaId)
     });
 }
 
+// Returns { error } when the post is still there, so the dialog stays open
+// and says why (see showConfirm).
 async function deletePost(mediaId) {
-    if (!mediaId) return;
+    if (!mediaId) return { error: translateOr('social.deleteFailed', null, 'Could not delete that post. Try again.') };
 
     const result = await requestPostDelete(mediaId);
     if (!result.ok) {
-        showToast(result.message || 'Could not delete that post');
-        return;
+        return { error: result.message || translateOr('social.deleteFailed', null, 'Could not delete that post. Try again.') };
     }
 
     removePostEverywhere(mediaId);
-    showToast('Post deleted');
+    showToast(translateOr('social.postDeleted', null, 'Post deleted'));
+    return null;
 }
 
 /**
@@ -7876,6 +8313,11 @@ function getCurrentCoords() {
 // The fix a POST is stamped with: fresh and high-accuracy, because it is
 // where the Viibe is pinned on the map. Falls back to the cached fix when the
 // device cannot get a fresh one in time (Jay's board: GPS & navigation).
+//
+// ⚠️ Started when the composer OPENS (startComposerFix), not on Post. A cold
+// high-accuracy fix can take the whole 8 s timeout, and it used to be awaited
+// on Post before any byte went out: that was most of Pahkie's "12 s to load
+// after the upload" (10-20), on the first post and not the second.
 function getPostCoords() {
     if (!navigator.geolocation) return Promise.resolve(userLocation);
     return new Promise((resolve) => {
@@ -7888,6 +8330,33 @@ function getPostCoords() {
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
         );
     });
+}
+
+// The composer's fix: { promise, startedAt }, or null.
+let composerFix = null;
+// A fix started longer ago than this is not where the clip was recorded.
+const COMPOSER_FIX_MAX_AGE_MS = 2 * 60 * 1000;
+// How long Post waits for a fix still on its way, before the cached one.
+const POST_FIX_GRACE_MS = 1500;
+const FIX_LATE = Symbol('fix-late');
+
+function startComposerFix() {
+    composerFix = { promise: getPostCoords(), startedAt: Date.now() };
+}
+
+// The coordinates a post is stamped with: the composer's fix, waited on for
+// at most POST_FIX_GRACE_MS more, else the cached fix (null when there was
+// never one; the post is still valid, it just has no pin of its own).
+async function coordsForPost(graceMs = POST_FIX_GRACE_MS) {
+    const current = composerFix && Date.now() - composerFix.startedAt <= COMPOSER_FIX_MAX_AGE_MS
+        ? composerFix.promise
+        : getPostCoords();
+    composerFix = null;
+    let timer = null;
+    const late = new Promise(resolve => { timer = setTimeout(() => resolve(FIX_LATE), graceMs); });
+    const coords = await Promise.race([current, late]);
+    clearTimeout(timer);
+    return coords === FIX_LATE ? userLocation : coords;
 }
 
 // The composer's opening venue selection, recomputed on EVERY openCreatePost()
@@ -7998,6 +8467,10 @@ async function openCreatePost(venueId) {
     lockBodyScroll('create-post');
 
     applyComposerOrientation();
+
+    // The post's GPS fix runs while they record, not after Post. Phones only:
+    // a desktop gets the "open it on your phone" panel and cannot post.
+    if (isPhone) startComposerFix();
 }
 
 // The composer's venue row. ALWAYS visible now, and always a button.
@@ -9352,9 +9825,32 @@ async function uploadWithRetry(path, file, onStatus) {
 // implementation that drifts.
 //
 // `payload` is exactly what a draft holds, so a draft can be replayed verbatim.
-async function publishViibe(payload, { onProgress, onStatus }) {
+// The poster frame, made and uploaded WHILE the clip uploads (it used to start
+// only after the clip's last byte). Resolves the poster's public URL, or null:
+// everything about it is best-effort, so it never throws. Its path is fixed by
+// the clip's, so a retry or a resumed draft collides with (and so recognises)
+// a poster that already landed.
+async function uploadPosterFor(file, path) {
+    try {
+        const thumbBlob = await generateThumbnail(file);
+        if (!thumbBlob) return null;
+        const thumbPath = `${path.replace(/\.[^.]+$/, '')}-thumb.jpg`;
+        const { error: thumbError } = await supabaseClient.storage
+            .from('venue-media')
+            .upload(thumbPath, thumbBlob, { cacheControl: MEDIA_CACHE_CONTROL, upsert: false, contentType: 'image/jpeg' });
+        if (thumbError && !isAlreadyUploaded(thumbError)) return null;
+        return supabaseClient.storage.from('venue-media').getPublicUrl(thumbPath).data.publicUrl;
+    } catch (thumbErr) {
+        console.warn('Thumbnail generation failed, posting without one:', thumbErr);
+        return null;
+    }
+}
+
+// `timings`, when given, gets each stage's milliseconds (upload, poster, save).
+async function publishViibe(payload, { onProgress, onStatus, timings }) {
     const progress = onProgress || (() => {});
     const status = onStatus || (() => {});
+    const times = timings || {};
 
     const session = await SocialAuth.getSession();
     const userId = session?.user?.id;
@@ -9371,7 +9867,16 @@ async function publishViibe(payload, { onProgress, onStatus }) {
 
     progress(40);
 
+    // Poster frame, in parallel with the clip. Everything about it is
+    // best-effort — but see generateThumbnail's header: a miss is permanent
+    // and costs a metadata fetch on every future render, so it is still
+    // awaited before the post is saved.
+    const started = Date.now();
+    const posterTask = uploadPosterFor(payload.file, path)
+        .then(url => { times.poster = Date.now() - started; return url; });
+
     const uploaded = await uploadWithRetry(path, payload.file, status);
+    times.upload = Date.now() - started;
     if (!uploaded.ok) throw uploaded.error || new Error('Upload failed');
 
     const { data: urlData } = supabaseClient.storage
@@ -9380,31 +9885,12 @@ async function publishViibe(payload, { onProgress, onStatus }) {
 
     progress(60);
 
-    // Poster frame. Everything about it is best-effort — but see
-    // generateThumbnail's header: a miss is permanent and costs a metadata
-    // fetch on every future render, so it is worth the seconds it takes.
-    let thumbnailUrl = null;
-    try {
-        const thumbBlob = await generateThumbnail(payload.file);
-        if (thumbBlob) {
-            const thumbPath = `${path.replace(/\.[^.]+$/, '')}-thumb.jpg`;
-            const { error: thumbError } = await supabaseClient.storage
-                .from('venue-media')
-                .upload(thumbPath, thumbBlob, { cacheControl: MEDIA_CACHE_CONTROL, upsert: false, contentType: 'image/jpeg' });
-
-            if (!thumbError || isAlreadyUploaded(thumbError)) {
-                thumbnailUrl = supabaseClient.storage
-                    .from('venue-media')
-                    .getPublicUrl(thumbPath).data.publicUrl;
-            }
-        }
-    } catch (thumbErr) {
-        console.warn('Thumbnail generation failed, posting without one:', thumbErr);
-    }
+    const thumbnailUrl = await posterTask;
 
     progress(80);
     status(translateOr('social.savingPost', null, 'Saving…'));
 
+    const savingAt = Date.now();
     const { data: postData, error: postError } = await supabaseClient.rpc('create_social_post', {
         p_app_id: payload.appId,
         p_storage_path: path,
@@ -9423,6 +9909,7 @@ async function publishViibe(payload, { onProgress, onStatus }) {
     // rejection — rate limit, wrong app's venue, not a member — and show
     // "Posted!" over a post that does not exist.
     const row = Array.isArray(postData) ? postData[0] : postData;
+    times.save = Date.now() - savingAt;
     if (postError) throw postError;
     if (!row || row.success === false) {
         throw new Error(row?.error_message || 'Could not publish your Viibe');
@@ -9433,13 +9920,68 @@ async function publishViibe(payload, { onProgress, onStatus }) {
     // here, which lost an increment on concurrent uploads.
 
     progress(100);
-    return row;
+    // The two URLs ride along so the feed can show the new Viibe at once.
+    return { ...row, url: urlData.publicUrl, thumbnail_url: thumbnailUrl };
+}
+
+/**
+ * The new Viibe in the feed's row shape (get_venue_feed_v3's RETURNS TABLE),
+ * built from what was just posted, so it is on screen the moment
+ * create_social_post answers. The reload right after replaces it with the
+ * server's own row.
+ */
+function newViibeRow(payload, published, userId) {
+    const venue = payload.venueId ? getVenueById(payload.venueId) : null;
+    return {
+        id: published.media_id,
+        venue_id: payload.venueId || null,
+        venue_name: venue?.name || null,
+        venue_handle: venue?.handle || null,
+        venue_category: venue?.category || null,
+        venue_music_genres: venue?.music_genres || null,
+        venue_city: venue?.city || null,
+        venue_state: venue?.state || null,
+        venue_latitude: venue?.latitude ?? null,
+        venue_longitude: venue?.longitude ?? null,
+        venue_profile_image_url: venue?.profile_image_url || null,
+        media_type: 'video',
+        url: published.url,
+        thumbnail_url: published.thumbnail_url || null,
+        storage_path: payload.path,
+        caption: payload.caption,
+        duration_seconds: payload.durationSeconds,
+        view_count: 0,
+        like_count: 0,
+        created_at: new Date().toISOString(),
+        uploaded_by_user_id: userId || null,
+        author_display_name: meProfile?.display_name || null,
+        author_avatar_url: meProfile?.avatar_url || null,
+        post_latitude: payload.latitude,
+        post_longitude: payload.longitude
+    };
+}
+
+// Whether the feed as filtered right now would list this new Viibe. Following
+// lists other people's posts; a post with no venue shows under All / All only
+// (the rule get_venue_feed_v3 applies).
+function newViibeBelongsInFeed(row) {
+    if (feedMode === 'following') return false;
+    if (!row.venue_id) return !activeCategory && !activeGenre;
+    const venue = getVenueById(row.venue_id);
+    return !venue || venueMatchesFilters(venue);
 }
 
 // Everything that has to happen after a Viibe lands, wherever it came from.
-async function afterViibePublished() {
-    // Small delay to ensure DB propagation, then reload + scroll to top
-    await new Promise(r => setTimeout(r, 300));
+//
+// `newRow` (from the composer) goes to the top of the feed straight away. The
+// 300 ms "propagation" sleep that used to come first is gone: the RPC has
+// committed by the time it answers, and there is no read replica to wait for.
+async function afterViibePublished(newRow = null) {
+    if (newRow && newViibeBelongsInFeed(newRow)) {
+        feedItems = [newRow, ...feedItems.filter(i => i.id !== newRow.id)];
+        renderFeed();
+        document.getElementById('feed-container')?.scrollTo({ top: 0 });
+    }
     await loadFeed(false);
     await loadPostPins();
     if (map) renderPostPins();
@@ -9486,10 +10028,13 @@ async function submitPost() {
     // owner who wants no venue gets no venue, same as a member.
     const venueId = composerVenueId;
 
-    // Where the clip was actually recorded: a FRESH high-accuracy fix, falling
-    // back to the cached one. Null when location was refused; the post is
-    // still perfectly valid, it just gets no pin of its own.
-    const coords = await getPostCoords();
+    // Where the clip was actually recorded: the fix the composer started when
+    // it opened, waited on for at most 1.5 s more, else the cached one. Null
+    // when location was refused; the post is still perfectly valid, it just
+    // gets no pin of its own.
+    const postStartedAt = Date.now();
+    const coords = await coordsForPost();
+    const timings = { gps: Date.now() - postStartedAt };
 
     const timestamp = Date.now();
     const safeFilename = selectedPostFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -9519,7 +10064,7 @@ async function submitPost() {
     await saveDraft(payload);
 
     try {
-        await publishViibe(payload, { onProgress: setProgress, onStatus: setStatus });
+        const published = await publishViibe(payload, { onProgress: setProgress, onStatus: setStatus, timings });
 
         // Only now. A draft cleared on upload success rather than on POST
         // success would lose the recording whenever create_social_post refused
@@ -9528,11 +10073,18 @@ async function submitPost() {
 
         setStatus(translateOr('social.posted', null, 'Posted!'));
 
-        setTimeout(async () => {
-            closeCreatePost();
-            showToast('Post published!');
-            await afterViibePublished();
-        }, 500);
+        // No 500 ms pause any more: the toast says "posted", and the Viibe is
+        // on the feed underneath as the composer closes.
+        closeCreatePost();
+        showToast(translateOr('social.postPublished', null, 'Post published!'));
+        const shown = afterViibePublished(newViibeRow(payload, published, userId));
+        timings.total = Date.now() - postStartedAt;
+        // One line per post, so the next "it was slow" can be measured.
+        console.info(`[viibe post] gps ${timings.gps}ms · upload ${timings.upload}ms · poster ${timings.poster ?? '-'}ms · save ${timings.save}ms · on screen ${timings.total}ms`);
+        // ⚠️ The post has landed by now. A failed refresh after it must not
+        // reach the catch below, which would say "Upload failed" and offer the
+        // recording again as a draft.
+        shown.catch(err => console.warn('Refreshing after the post failed:', err));
 
     } catch (err) {
         console.error('Post upload failed:', err);
@@ -9944,6 +10496,7 @@ const BACK_SURFACES = [
     { id: 'venue-picker-sheet',  back: () => closeVenuePicker() },
     { id: 'create-post-modal',   back: () => backFromComposer() },
     { id: 'auth-overlay',        back: () => backFromAuth() },
+    { id: 'image-viewer',        back: () => closeImageViewer() },
     { id: 'edit-profile-sheet',  back: () => closeEditProfile() },
     { id: 'post-options-sheet',  back: () => closePostOptions() },
     { id: 'share-sheet',         back: () => closeShareSheet() },
@@ -10065,8 +10618,20 @@ function backFromAuth() {
     else hideAuth();
 }
 
+// Escape closes the top-most sheet or modal, through the same table as Back,
+// so the two can never disagree about what is on top. A handler that already
+// used the key (a search box clearing itself) has called preventDefault.
+function onEscapeKey(event) {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    const surface = topOpenSurface();
+    if (!surface) return;
+    event.preventDefault();
+    surface.back();
+}
+
 function setupBackNavigation() {
     window.addEventListener('popstate', onBackPopState);
+    document.addEventListener('keydown', onEscapeKey);
     // Capture phase: the first tap anywhere counts, even one a handler stops.
     ['pointerdown', 'keydown'].forEach(type =>
         document.addEventListener(type, onBackGesture, { capture: true, passive: true }));

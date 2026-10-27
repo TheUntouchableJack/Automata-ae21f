@@ -2323,7 +2323,20 @@
     "save": "Salva",
     "locationDenied": "La posizione è bloccata. Consentila per questo sito nelle impostazioni del browser per vedere cosa c’è vicino a te.",
     "locationTimeout": "Trovare la tua posizione ha richiesto troppo tempo. Riprova.",
-    "locationUnavailable": "Non siamo riusciti a trovare la tua posizione. Riprova con Wi-Fi o GPS attivo."
+    "locationUnavailable": "Non siamo riusciti a trovare la tua posizione. Riprova con Wi-Fi o GPS attivo.",
+    "fitWhole": "Mostra il video intero",
+    "fitFill": "Riempi lo schermo",
+    "deletePostTitle": "Eliminare questo post?",
+    "deletePostBody": "Il video verrà rimosso per sempre. Non si può annullare.",
+    "delete": "Elimina",
+    "deleting": "Eliminazione…",
+    "deleteFailed": "Impossibile eliminare il post. Riprova.",
+    "postDeleted": "Post eliminato",
+    "postPublished": "Post pubblicato!",
+    "somethingWentWrong": "Qualcosa è andato storto. Riprova.",
+    "photo": "Foto",
+    "previousPhoto": "Foto precedente",
+    "nextPhoto": "Foto successiva"
   },
   "venues": {
     "unavailableTitle": "I locali non sono ancora disponibili",

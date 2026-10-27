@@ -37,6 +37,18 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v20 (2026-10-27): each Viibe adapts to its shape (portrait fills, a switch
+// shows it whole), faster posting, the delete dialog, the venue image viewer,
+// post pins open the venue. social.html now loads social.js?v=25,
+// social.css?v=20 and i18n.js?v=10.
+//
+// Mandatory in both pairings:
+//   - cached v19 social.html has no #image-viewer or #confirm-error; new
+//     social.js's cover/logo taps and a failed delete's message go nowhere.
+//   - new social.html against cached v19 social.js: no fit switch, and the
+//     new CSS fills nothing (no data-fit is ever written), so every clip
+//     shows with side bars again, which is the bug this release fixes.
+//
 // v19 (2026-10-14): one radius for the feed, the map and the lists (a slider),
 // Map | List, search filters, Your interests, fresher GPS. social.html now
 // loads social.js?v=24, social.css?v=19 and i18n.js?v=9.
@@ -125,9 +137,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v19';
-const STATIC_CACHE = 'royalty-static-v19';
-const DYNAMIC_CACHE = 'royalty-dynamic-v19';
+const CACHE_NAME = 'royalty-rewards-v20';
+const STATIC_CACHE = 'royalty-static-v20';
+const DYNAMIC_CACHE = 'royalty-dynamic-v20';
 
 // Static assets to cache on install.
 //

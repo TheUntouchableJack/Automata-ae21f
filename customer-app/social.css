@@ -436,19 +436,49 @@ body {
     height: auto;
     aspect-ratio: auto;
     background: #000;
+    /* Keeps the WHOLE backdrop's blur and scale inside the box (2026-10-27). */
+    overflow: hidden;
 }
 
-/* object-fit: CONTAIN — the whole video, always (Jay, 2026-10-14).
-   This was `cover`, which filled the panel by cutting the clip: about 9% of a
-   9:16 video's height in the installed app, and up to about a third in Safari
-   with its toolbars showing. The panel is black, so whatever the clip does
-   not fill reads as black bars, not as a gap. Flyers (images) are contained
-   the same way. The Viibe player's panels are .feed-panel too. */
+/* Each Viibe adapts to its own shape (Jay, 2026-10-27; it was `contain` for
+   everything from 10-14, which left side bars on every 9:16 clip because the
+   box is wider than 9:16 under the header, pills and venue strip).
+
+   The JS decides (mediaFitFor) and writes data-fit on .feed-media:
+     fill   a portrait clip, edge to edge (cover). The default.
+     whole  the clip uncut (contain), over a blurred copy of its own poster.
+            Wide/square clips and flyers are always whole.
+   The switch (.feed-panel-fit) flips portrait clips between the two, for every
+   Viibe at once. The Viibe player's panels are .feed-panel too. */
 .feed-panel .feed-media video,
 .feed-panel .feed-media img {
+    position: relative;
+    z-index: 1;
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+.feed-panel .feed-media[data-fit="fill"] video {
+    object-fit: cover;
+}
+
+/* Under the Viibe (z-index 0 vs 1), and only for WHOLE: display none means a
+   lazy image is never fetched in FILL. A static poster, never animated, and at
+   most one or two are on screen, so the blur is cheap. */
+.feed-panel .feed-media .feed-media-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: none;
+    object-fit: cover;
+    transform: scale(1.15);
+    filter: blur(24px) brightness(0.6);
+    pointer-events: none;
+}
+
+.feed-panel .feed-media[data-fit="whole"] .feed-media-backdrop {
+    display: block;
 }
 
 /* ===== The venue strip =====
@@ -497,6 +527,26 @@ body {
     bottom: var(--spacing-md);
     right: var(--spacing-md);
     z-index: 2;
+}
+
+/* The fit switch: the same 34px round button as the sound toggle (it shares
+   .video-sound-btn's rule further down), stacked above it. Hidden (the
+   [hidden] attribute) for wide clips, flyers, and whenever filling would cut
+   less than 4%.
+
+   ⚠️ Two classes on purpose. The shared rule comes LATER in this file with
+   bottom/right: var(--spacing-sm), and at equal specificity it would win —
+   which is also why the sound toggle really sits 8px from the corner, not the
+   16px .feed-panel-sound asks for. This rule stacks on where it really is. */
+.feed-panel .feed-panel-fit {
+    position: absolute;
+    bottom: calc(var(--spacing-sm) + 34px + var(--spacing-sm));
+    right: var(--spacing-sm);
+    z-index: 2;
+}
+
+.feed-panel .feed-panel-fit[hidden] {
+    display: none;
 }
 
 /* ⚠️ THE COLOUR OVERRIDES ARE GONE, and their absence is the point.
@@ -653,7 +703,10 @@ body {
    Its own click handler flips the sound preference; iOS Safari will only
    unmute inside a real user gesture, so this must never be driven from a
    timeout or a promise chain. */
-.video-sound-btn {
+/* .feed-panel-fit shares the look (its own class: refreshSoundButtons repaints
+   every .video-sound-btn with the speaker icon). */
+.video-sound-btn,
+.feed-panel-fit {
     position: absolute;
     bottom: var(--spacing-sm);
     right: var(--spacing-sm);
@@ -670,11 +723,13 @@ body {
     transition: background 0.2s, transform 0.15s;
 }
 
-.video-sound-btn:hover {
+.video-sound-btn:hover,
+.feed-panel-fit:hover {
     background: rgba(0, 0, 0, 0.72);
 }
 
-.video-sound-btn:active {
+.video-sound-btn:active,
+.feed-panel-fit:active {
     transform: scale(0.94);
 }
 
@@ -2252,6 +2307,11 @@ body {
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+/* The cover and the logo open the image viewer. */
+.venue-page-image-tap {
+    cursor: zoom-in;
 }
 
 .venue-page-hero-fallback {
@@ -3941,13 +4001,33 @@ a.post-option {
     box-shadow: var(--shadow-lg);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.18s, transform 0.18s;
+    /* visibility as well as opacity: a closed dialog's buttons were still in
+       the Tab order, invisible. It hides only after the fade out. */
+    visibility: hidden;
+    transition: opacity 0.18s, transform 0.18s, visibility 0s linear 0.18s;
 }
 
 .confirm-dialog.visible {
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
     transform: translate(-50%, -50%) scale(1);
+    transition: opacity 0.18s, transform 0.18s, visibility 0s;
+}
+
+.confirm-dialog:focus {
+    outline: none;   /* it holds focus only while busy, with nothing to act on */
+}
+
+/* Inside the dialog, so a failed delete says why where the eyes already are. */
+.confirm-dialog .confirm-error {
+    color: var(--color-error);
+    font-weight: 600;
+    margin-top: calc(-1 * var(--spacing-sm));
+}
+
+.confirm-dialog .confirm-error[hidden] {
+    display: none;
 }
 
 .confirm-dialog h3 {
@@ -4565,6 +4645,7 @@ a.post-option {
        .people-backdrop / .people-sheet 2800 / 2900  <- opened FROM the member page
        #post-options-* / #edit-profile-* 2910 / 2920 <- opened FROM any of the above
        #share-*                        2910 / 2920   <- the share sheet, same level
+       .image-viewer                   2930          <- a venue page's cover or logo, whole
        .auth-overlay                   2950          <- a signed-out tap on any of the above
        .create-post-* modal            3000 / 3001
        .venue-picker-*                 3200 / 3300   <- opened FROM the composer
@@ -5187,4 +5268,87 @@ a.post-option {
     margin-top: 2px;
     font-size: 0.75rem;
     color: var(--color-text-secondary);
+}
+
+/* ===== Image viewer (Jay's board: "Expanding Venue Images", 2026-10-27) =====
+   A venue's cover or logo, whole (contain), on black. The photo keeps its
+   natural size up to the screen, so the black around it is the backdrop that
+   closes it. z-index: see the ladder. */
+.image-viewer {
+    position: fixed;
+    inset: 0;
+    max-width: var(--app-max-width);
+    margin-inline: auto;
+    z-index: 2930;
+    background: #000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    touch-action: pan-y;
+}
+
+.image-viewer.visible {
+    display: flex;
+}
+
+.image-viewer-img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.image-viewer-btn {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: var(--radius-full);
+    /* Dark, like the buttons on a Viibe: they sit over bright photos too. */
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.image-viewer-btn[hidden] {
+    display: none;
+}
+
+.image-viewer-close {
+    top: calc(env(safe-area-inset-top, 0px) + var(--spacing-md));
+    right: var(--spacing-md);
+}
+
+.image-viewer-prev,
+.image-viewer-next {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.image-viewer-prev {
+    left: var(--spacing-sm);
+}
+
+.image-viewer-next {
+    right: var(--spacing-sm);
+}
+
+.image-viewer-count {
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--spacing-lg));
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.image-viewer-count[hidden] {
+    display: none;
 }

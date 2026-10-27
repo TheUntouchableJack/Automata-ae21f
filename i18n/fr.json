@@ -2323,7 +2323,20 @@
     "save": "Enregistrer",
     "locationDenied": "La localisation est bloquée. Autorisez-la pour ce site dans les réglages du navigateur pour voir ce qui est près de vous.",
     "locationTimeout": "La recherche de votre position a pris trop de temps. Réessayez.",
-    "locationUnavailable": "Impossible de trouver votre position. Réessayez avec le Wi-Fi ou le GPS activé."
+    "locationUnavailable": "Impossible de trouver votre position. Réessayez avec le Wi-Fi ou le GPS activé.",
+    "fitWhole": "Voir la vidéo entière",
+    "fitFill": "Remplir l’écran",
+    "deletePostTitle": "Supprimer cette publication ?",
+    "deletePostBody": "La vidéo sera supprimée définitivement. Cette action est irréversible.",
+    "delete": "Supprimer",
+    "deleting": "Suppression…",
+    "deleteFailed": "Impossible de supprimer cette publication. Réessayez.",
+    "postDeleted": "Publication supprimée",
+    "postPublished": "Publication en ligne !",
+    "somethingWentWrong": "Un problème est survenu. Réessayez.",
+    "photo": "Photo",
+    "previousPhoto": "Photo précédente",
+    "nextPhoto": "Photo suivante"
   },
   "venues": {
     "unavailableTitle": "Les lieux ne sont pas encore disponibles",

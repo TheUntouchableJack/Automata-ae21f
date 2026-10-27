@@ -2323,7 +2323,20 @@
     "save": "حفظ",
     "locationDenied": "الموقع محظور. اسمح به لهذا الموقع في إعدادات المتصفح لترى ما بالقرب منك.",
     "locationTimeout": "استغرق تحديد موقعك وقتًا طويلًا. حاول مرة أخرى.",
-    "locationUnavailable": "تعذّر العثور على موقعك. حاول مرة أخرى مع تشغيل Wi-Fi أو GPS."
+    "locationUnavailable": "تعذّر العثور على موقعك. حاول مرة أخرى مع تشغيل Wi-Fi أو GPS.",
+    "fitWhole": "عرض الفيديو كاملًا",
+    "fitFill": "ملء الشاشة",
+    "deletePostTitle": "حذف هذا المنشور؟",
+    "deletePostBody": "سيؤدي هذا إلى حذف الفيديو نهائيًا. لا يمكن التراجع عن ذلك.",
+    "delete": "حذف",
+    "deleting": "جارٍ الحذف…",
+    "deleteFailed": "تعذّر حذف المنشور. حاول مرة أخرى.",
+    "postDeleted": "تم حذف المنشور",
+    "postPublished": "تم النشر!",
+    "somethingWentWrong": "حدث خطأ ما. حاول مرة أخرى.",
+    "photo": "صورة",
+    "previousPhoto": "الصورة السابقة",
+    "nextPhoto": "الصورة التالية"
   },
   "venues": {
     "unavailableTitle": "الأماكن غير متاحة بعد",

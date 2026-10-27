@@ -914,8 +914,11 @@ describe('deletePost (jsdom)', () => {
         const toasts = [];
         w.showToast = m => toasts.push(m);
         w.fetch = async () => ({ ok: false, status: 403, json: async () => ({ success: false, error: 'You can only delete your own posts' }) });
-        await w.eval("deletePost('gone')");
-        expect(toasts).toEqual(['You can only delete your own posts']);
+        const result = await w.eval("deletePost('gone')");
+        // Said INSIDE the delete dialog since 2026-10-27: deletePost returns
+        // { error } and showConfirm keeps the dialog open with it. No toast.
+        expect(result).toEqual({ error: 'You can only delete your own posts' });
+        expect(toasts).toEqual([]);
         for (const [name, list] of Object.entries(lists())) {
             expect(list.map(i => i.id), name).toEqual(['gone', 'kept']);
         }

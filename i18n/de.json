@@ -2323,7 +2323,20 @@
     "save": "Speichern",
     "locationDenied": "Der Standort ist blockiert. Erlaube ihn für diese Seite in den Browsereinstellungen, um zu sehen, was in deiner Nähe ist.",
     "locationTimeout": "Die Standortsuche hat zu lange gedauert. Versuche es erneut.",
-    "locationUnavailable": "Wir konnten deinen Standort nicht finden. Versuche es mit WLAN oder GPS erneut."
+    "locationUnavailable": "Wir konnten deinen Standort nicht finden. Versuche es mit WLAN oder GPS erneut.",
+    "fitWhole": "Ganzes Video zeigen",
+    "fitFill": "Bildschirm füllen",
+    "deletePostTitle": "Diesen Beitrag löschen?",
+    "deletePostBody": "Das Video wird endgültig entfernt. Das lässt sich nicht rückgängig machen.",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht…",
+    "deleteFailed": "Der Beitrag konnte nicht gelöscht werden. Versuche es erneut.",
+    "postDeleted": "Beitrag gelöscht",
+    "postPublished": "Beitrag veröffentlicht!",
+    "somethingWentWrong": "Etwas ist schiefgelaufen. Versuche es erneut.",
+    "photo": "Foto",
+    "previousPhoto": "Vorheriges Foto",
+    "nextPhoto": "Nächstes Foto"
   },
   "venues": {
     "unavailableTitle": "Locations sind noch nicht verfügbar",

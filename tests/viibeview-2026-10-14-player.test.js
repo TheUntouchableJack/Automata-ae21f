@@ -439,10 +439,17 @@ describe('the player and the profiles cover the bottom nav', () => {
 // ===========================================================================
 
 describe('video fit and the small visual fixes', () => {
-    it('the feed (and the player) show the WHOLE video: object-fit contain', () => {
+    it('the feed (and the player): a portrait Viibe FILLS, and only a video can (2026-10-27)', () => {
+        // Rewritten 2026-10-27 (Jay: "videos are not edge to edge, they should
+        // be"). WHOLE (contain) stays the base rule: flyers, wide clips and the
+        // switch's other state. FILL is a portrait video that mediaFitFor()
+        // marked data-fit="fill". Behaviour: viibeview-2026-10-27-fit-post-speed.
         expect(declared('.feed-panel .feed-media video', 'object-fit')).toEqual(['contain']);
         expect(declared('.feed-panel .feed-media img', 'object-fit')).toEqual(['contain']);
-        // ...and the panel behind the bars is black, not a gap.
+        expect(declared('.feed-panel .feed-media[data-fit="fill"] video', 'object-fit')).toEqual(['cover']);
+        // A flyer is never cut.
+        expect(rulesFor('.feed-panel .feed-media[data-fit="fill"] img')).toEqual([]);
+        // ...and the panel behind a whole clip is black, never a gap.
         expect(declared('.feed-panel .feed-media', 'background')).toContain('#000');
     });
 

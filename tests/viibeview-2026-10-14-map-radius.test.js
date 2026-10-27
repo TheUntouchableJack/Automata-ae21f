@@ -452,8 +452,12 @@ describe('GPS: fresh fixes, real reasons, one-tap centre', () => {
         expect(w.__geo.at(-1).opts.enableHighAccuracy).toBe(true);
         w.__geo.at(-1).fail({ code: 3 });
         expect(await pending).toEqual(HERE);
+        // Since 2026-10-27 the fix starts when the composer OPENS and Post
+        // waits on it for at most 1.5 s (coordsForPost, which wraps
+        // getPostCoords). Behaviour: viibeview-2026-10-27-fit-post-speed.test.js.
         expect(fnBody('async function submitPost()') || js.slice(js.indexOf('async function submitPost'), js.indexOf('async function submitPost') + 9000))
-            .toContain('const coords = await getPostCoords();');
+            .toContain('const coords = await coordsForPost();');
+        expect(fnBody('async function coordsForPost(')).toContain(': getPostCoords();');
     });
 
     it('no truthiness coordinate checks remain — hasCoords everywhere', () => {

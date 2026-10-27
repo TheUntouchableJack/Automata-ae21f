@@ -306,7 +306,10 @@ test.describe('ViibeView social app', () => {
         await expect(page.locator('#venue-page-title')).not.toBeEmpty();
     });
 
-    test('tapping a post pin opens the preview without leaving the map', async ({ page }) => {
+    // 2026-10-27 (Jay's board: "Remove Viibe DTV – Go Straight to Venue DTV"):
+    // a post pin AT A VENUE opens the venue page; one with no venue keeps the
+    // preview. The pin carries data-post-venue so this knows which to expect.
+    test('a post pin opens its venue page, or the preview when it has no venue', async ({ page }) => {
         await loadApp(page);
         await page.click('.nav-item[data-tab="map"]');
         await page.waitForTimeout(2000);
@@ -319,8 +322,16 @@ test.describe('ViibeView social app', () => {
         // rather than reporting a green test that checked nothing.
         test.skip(count === 0, 'no posts with coordinates in this app yet');
 
+        const venueId = await postPins.first().locator('.map-post-pin').getAttribute('data-post-venue');
+        expect(venueId, 'the pin does not say where it goes').not.toBeNull();
         await postPins.first().click({ force: true });
-        await page.waitForTimeout(600);
+        await page.waitForTimeout(800);
+
+        if (venueId) {
+            await expect(page.locator('#venue-page')).toHaveClass(/visible/);
+            await expect(page.locator('#post-preview-modal')).not.toHaveClass(/visible/);
+            return;
+        }
 
         await expect(page.locator('#post-preview-modal')).toHaveClass(/visible/);
         // The map must still be mounted underneath — no switchTab, no
@@ -613,16 +624,27 @@ test.describe('ViibeView social app', () => {
             const viewer = document.getElementById('viibe-viewer').getBoundingClientRect();
             const nav = document.querySelector('.bottom-nav').getBoundingClientRect();
             const top = document.elementFromPoint(nav.left + nav.width / 2, nav.top + nav.height / 2);
-            const media = document.querySelector('#viibe-viewer .feed-media video, #viibe-viewer .feed-media img');
+            const box = document.querySelector('#viibe-viewer .feed-panel .feed-media');
+            const media = box?.querySelector('video, img');
             return {
                 coversNav: viewer.top <= nav.top && viewer.bottom >= nav.bottom,
                 navOnTop: !!top?.closest('.bottom-nav'),
+                kind: media?.tagName || null,
+                shape: box?.dataset.shape || null,
+                dataFit: box?.dataset.fit || null,
                 fit: media ? getComputedStyle(media).objectFit : null,
             };
         });
         expect(geo.coversNav, 'the player does not reach the nav').toBe(true);
         expect(geo.navOnTop, 'the bottom nav is still on top of the player').toBe(false);
-        expect(geo.fit).toBe('contain');
+        // 2026-10-27: a portrait video FILLS by default (a fresh context has no
+        // saved choice); a flyer or a wide clip is shown whole.
+        if (geo.kind === 'VIDEO' && geo.shape === 'portrait') {
+            expect(geo.dataFit).toBe('fill');
+            expect(geo.fit).toBe('cover');
+        } else {
+            expect(geo.fit).toBe('contain');
+        }
 
         // Back returns to the grid, with nothing expanded left behind.
         await page.click('#viibe-viewer-back');

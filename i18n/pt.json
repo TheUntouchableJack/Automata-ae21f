@@ -2323,7 +2323,20 @@
     "save": "Salvar",
     "locationDenied": "A localização está bloqueada. Permita-a para este site nas configurações do navegador para ver o que está perto de você.",
     "locationTimeout": "Encontrar sua localização demorou demais. Tente novamente.",
-    "locationUnavailable": "Não conseguimos encontrar sua localização. Tente novamente com o Wi-Fi ou o GPS ligado."
+    "locationUnavailable": "Não conseguimos encontrar sua localização. Tente novamente com o Wi-Fi ou o GPS ligado.",
+    "fitWhole": "Ver o vídeo inteiro",
+    "fitFill": "Preencher a tela",
+    "deletePostTitle": "Excluir esta publicação?",
+    "deletePostBody": "O vídeo será removido para sempre. Não é possível desfazer.",
+    "delete": "Excluir",
+    "deleting": "Excluindo…",
+    "deleteFailed": "Não foi possível excluir a publicação. Tente novamente.",
+    "postDeleted": "Publicação excluída",
+    "postPublished": "Publicado!",
+    "somethingWentWrong": "Algo deu errado. Tente novamente.",
+    "photo": "Foto",
+    "previousPhoto": "Foto anterior",
+    "nextPhoto": "Próxima foto"
   },
   "venues": {
     "unavailableTitle": "Os locais ainda não estão disponíveis",

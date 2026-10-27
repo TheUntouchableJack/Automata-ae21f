@@ -2323,7 +2323,20 @@
     "save": "Save",
     "locationDenied": "Location is blocked. Allow it for this site in your browser settings to see what is near you.",
     "locationTimeout": "Finding your location took too long. Try again.",
-    "locationUnavailable": "We could not find your location. Try again with Wi-Fi or GPS on."
+    "locationUnavailable": "We could not find your location. Try again with Wi-Fi or GPS on.",
+    "fitWhole": "Show the whole video",
+    "fitFill": "Fill the screen",
+    "deletePostTitle": "Delete this post?",
+    "deletePostBody": "This removes the video permanently. It cannot be undone.",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "deleteFailed": "Could not delete that post. Try again.",
+    "postDeleted": "Post deleted",
+    "postPublished": "Post published!",
+    "somethingWentWrong": "Something went wrong. Try again.",
+    "photo": "Photo",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo"
   },
   "venues": {
     "unavailableTitle": "Venues aren't available yet",
