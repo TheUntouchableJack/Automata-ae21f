@@ -5071,6 +5071,8 @@ function openMemberPost(id) {
 
 let meProfile = null;
 let mePosts = [];
+// "Been to" on your own profile: get_member_venues for yourself.
+let meVenues = [];
 let meLoadSeq = 0;
 
 async function loadMeTab() {
@@ -5084,6 +5086,7 @@ async function loadMeTab() {
         meLoadSeq++;   // a late response for a signed-out session must not paint
         meProfile = null;
         mePosts = [];
+        meVenues = [];
         if (signedOut) signedOut.style.display = '';
         if (signedIn) signedIn.style.display = 'none';
         const grid = document.getElementById('me-grid');
@@ -5098,6 +5101,7 @@ async function loadMeTab() {
     if (meProfile && meProfile.user_id !== userId) {
         meProfile = null;
         mePosts = [];
+        meVenues = [];
     }
 
     const seq = ++meLoadSeq;
@@ -5106,12 +5110,18 @@ async function loadMeTab() {
     const loadingEl = document.getElementById('me-loading');
     if (loadingEl && mePosts.length === 0) loadingEl.style.display = 'block';
 
-    const [profileRes, postsRes] = await Promise.all([
+    const [profileRes, postsRes, venuesRes] = await Promise.all([
         supabaseClient.rpc('get_member_profile', { p_app_id: currentApp.id, p_user_id: userId }),
         supabaseClient.rpc('get_member_posts', {
             p_app_id: currentApp.id,
             p_user_id: userId,
             p_limit: 48,
+            p_offset: 0
+        }),
+        supabaseClient.rpc('get_member_venues', {
+            p_app_id: currentApp.id,
+            p_user_id: userId,
+            p_limit: 24,
             p_offset: 0
         })
     ]);
@@ -5130,7 +5140,20 @@ async function loadMeTab() {
         mePosts = postsRes.data || [];
     }
 
+    // Non-fatal, like the member page's: no history is no section.
+    if (venuesRes?.error) {
+        console.error('Failed to load where you have been:', venuesRes.error);
+    } else {
+        meVenues = withVenueSubtitles(venuesRes?.data || []);
+    }
+
     renderMeTab();
+}
+
+// Share profile, beside Edit Profile.
+function shareMyProfile() {
+    if (!currentUserId) return;
+    openShareSheet({ memberId: currentUserId });
 }
 
 // Just the counts — after a follow, or a delete, from wherever it happened.
@@ -5176,7 +5199,18 @@ function renderMeTab() {
     }
 
     renderMeStats();
+    renderMeVenues();
     renderMeGrid();
+}
+
+function renderMeVenues() {
+    renderVenueHistory({
+        sectionId: 'me-venues', listId: 'me-venues-list', moreId: 'me-venues-more',
+        rows: meVenues,
+        // The Me tab is a tab, not an overlay: the venue page opens over it.
+        onTap: id => `openVenuePage('${escapeHtml(id)}')`,
+        onMore: () => openPeopleSheet('venues', currentUserId)
+    });
 }
 
 function renderMeStats() {
@@ -5514,14 +5548,27 @@ async function loadMemberVenues() {
 }
 
 function renderMemberVenues() {
-    const section = document.getElementById('member-page-venues');
-    const list = document.getElementById('member-page-venues-list');
-    const more = document.getElementById('member-page-venues-more');
+    renderVenueHistory({
+        sectionId: 'member-page-venues', listId: 'member-page-venues-list', moreId: 'member-page-venues-more',
+        rows: memberPageVenues,
+        // NOT closePeopleSheet() — these rows live on the profile itself,
+        // not in the sheet. The profile has to close for the same reason
+        // the grid tiles close it: #member-page sits ABOVE #venue-page.
+        onTap: id => `closeMemberProfile(); openVenuePage('${escapeHtml(id)}')`,
+        onMore: () => openPeopleSheet('venues', memberPageUserId)
+    });
+}
+
+// "Been to": a member's page and your own profile, one renderer.
+function renderVenueHistory({ sectionId, listId, moreId, rows, onTap, onMore }) {
+    const section = document.getElementById(sectionId);
+    const list = document.getElementById(listId);
+    const more = document.getElementById(moreId);
     if (!section || !list) return;
 
     // No heading over nothing. A member who only posts unattached Viibes has no
     // venue history, and "Been to (empty)" states that as if it were a failure.
-    if (memberPageVenues.length === 0) {
+    if (!rows || rows.length === 0) {
         section.style.display = 'none';
         list.innerHTML = '';
         if (more) more.style.display = 'none';
@@ -5529,21 +5576,15 @@ function renderMemberVenues() {
     }
 
     section.style.display = '';
-    list.innerHTML = memberPageVenues
+    list.innerHTML = rows
         .slice(0, MEMBER_VENUES_PREVIEW)
-        .map(row => peopleRowMarkup(
-            row,
-            // NOT closePeopleSheet() — these rows live on the profile itself,
-            // not in the sheet. The profile has to close for the same reason
-            // the grid tiles close it: #member-page sits ABOVE #venue-page.
-            `closeMemberProfile(); openVenuePage('${escapeHtml(row.target_id)}')`
-        ))
+        .map(row => peopleRowMarkup(row, onTap(row.target_id)))
         .join('');
 
     if (more) {
-        const hasMore = memberPageVenues.length > MEMBER_VENUES_PREVIEW;
+        const hasMore = rows.length > MEMBER_VENUES_PREVIEW;
         more.style.display = hasMore ? '' : 'none';
-        more.onclick = hasMore ? () => openPeopleSheet('venues', memberPageUserId) : null;
+        more.onclick = hasMore ? onMore : null;
     }
 }
 
@@ -5752,6 +5793,7 @@ async function openEditProfile() {
     // `location` reaches us because 20260904000003 added it to
     // get_social_member — it is NOT on the row otherwise.
     if (locationInput) locationInput.value = member?.location || '';
+    resetLocationSwitcher();   // no suggestions or message left from last time
     if (publicInput) publicInput.checked = member?.profile_public !== false;
 
     editProfileAvatarUrl = member?.avatar_url || null;
@@ -5767,6 +5809,182 @@ async function openEditProfile() {
     backdrop.classList.add('visible');
     lockBodyScroll('edit-profile');
 }
+
+// ===== Location switcher (Edit Profile, 2026-10-27) =====
+//
+// The field is still free text, saved exactly as typed. Typing suggests
+// cities; "Use my current location" fills in the city the phone is in. Both
+// write "City, Country", the shape the field always asked for.
+
+let locationSearchTimer = null;
+let locationSearchSeq = 0;
+const LOCATION_SEARCH_DEBOUNCE_MS = 600;
+
+// ⚠️ Nominatim matches WHOLE words, not prefixes: "Perpig" finds nothing and
+// "Los Ang" finds "Ang, Ecuador" and "Los, Spain" (measured 2026-10-27). So a
+// suggestion must CONTAIN what was typed, or be what was typed before a comma
+// ("Paris, France" typed in full). Accents and case are ignored.
+function foldText(text) {
+    return String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function cityMatchesQuery(place, query) {
+    const city = foldText(place && place.city);
+    const q = foldText(query);
+    if (!city || !q) return false;
+    return city.includes(q) || q.startsWith(`${city},`);
+}
+
+// "City, Country", within the field's 80 characters.
+function cityLabel(place) {
+    if (!place || !place.city) return '';
+    return [place.city, place.country].filter(Boolean).join(', ').slice(0, 80);
+}
+
+function setLocationStatus(text) {
+    const el = document.getElementById('edit-profile-location-status');
+    if (!el) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+}
+
+function renderLocationResults(labels) {
+    const list = document.getElementById('edit-profile-location-results');
+    const input = document.getElementById('edit-profile-location');
+    if (!list) return;
+    list.innerHTML = (labels || []).map((label, i) => `
+        <li class="location-result" role="option" id="location-result-${i}" tabindex="-1" data-value="${escapeHtml(label)}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>${escapeHtml(label)}</span>
+        </li>
+    `).join('');
+    const open = !!(labels && labels.length);
+    list.hidden = !open;
+    if (input) input.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+async function runLocationSearch(query) {
+    const seq = ++locationSearchSeq;
+    if (!window.VenuePlaces || typeof window.VenuePlaces.searchCities !== 'function') return;
+    const near = userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : null;
+    const places = await window.VenuePlaces.searchCities(query, { near, limit: 6 });
+    // A newer keystroke (or a pick) has moved on.
+    if (seq !== locationSearchSeq) return;
+    const labels = [...new Set((places || [])
+        .filter(place => cityMatchesQuery(place, query))
+        .map(cityLabel)
+        .filter(Boolean))];
+    renderLocationResults(labels);
+    setLocationStatus(labels.length ? '' : translateOr('social.noCitiesFound', null,
+        'Keep typing the full city name, or use your current location.'));
+}
+
+// Closes the suggestions and forgets any search still in flight.
+function resetLocationSwitcher() {
+    locationSearchSeq++;   // a search still in flight must not reopen the list
+    clearTimeout(locationSearchTimer);
+    renderLocationResults([]);
+    setLocationStatus('');
+}
+
+function pickLocation(label) {
+    const input = document.getElementById('edit-profile-location');
+    if (input) input.value = label;
+    resetLocationSwitcher();
+}
+
+async function useCurrentLocation() {
+    const btn = document.getElementById('edit-profile-use-location');
+    if (btn) btn.disabled = true;
+    renderLocationResults([]);
+    setLocationStatus(translateOr('social.findingLocation', null, 'Finding your location…'));
+    try {
+        const coords = await getCurrentCoords();
+        if (!coords) {
+            setLocationStatus(locationErrorMessage(lastLocationError));
+            return;
+        }
+        const place = window.VenuePlaces && typeof window.VenuePlaces.reverseCity === 'function'
+            ? await window.VenuePlaces.reverseCity(coords.lat, coords.lng)
+            : null;
+        const label = cityLabel(place);
+        if (!label) {
+            setLocationStatus(translateOr('social.cityNotFound', null, 'We could not tell which city you are in. Type it instead.'));
+            return;
+        }
+        pickLocation(label);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// Bound once, at parse time: the sheet's markup is already in the page.
+function setupLocationSwitcher() {
+    const input = document.getElementById('edit-profile-location');
+    const list = document.getElementById('edit-profile-location-results');
+    const btn = document.getElementById('edit-profile-use-location');
+    if (!input || !list) return;
+
+    input.addEventListener('input', () => {
+        clearTimeout(locationSearchTimer);
+        setLocationStatus('');
+        const query = input.value.trim();
+        if (query.length < 2) {
+            locationSearchSeq++;
+            renderLocationResults([]);
+            return;
+        }
+        locationSearchTimer = setTimeout(() => runLocationSearch(query), LOCATION_SEARCH_DEBOUNCE_MS);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (list.hidden) return;
+        if (e.key === 'Escape') {
+            // Closes the list, not the sheet (onEscapeKey skips a used key).
+            e.preventDefault();
+            renderLocationResults([]);
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            list.querySelector('.location-result')?.focus();
+        }
+    });
+
+    list.addEventListener('keydown', (e) => {
+        const item = e.target.closest('.location-result');
+        if (!item) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            pickLocation(item.dataset.value);
+            input.focus();
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            (item.nextElementSibling || item).focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            (item.previousElementSibling || input).focus();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            renderLocationResults([]);
+            input.focus();
+        }
+    });
+
+    // mousedown only keeps the focus (and the keyboard) in the field. The pick
+    // is on click: picking on mousedown closes the list under the finger, and
+    // the click then lands on whatever was beneath it, "Use my current
+    // location" included.
+    list.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.location-result')) e.preventDefault();
+    });
+    list.addEventListener('click', (e) => {
+        const item = e.target.closest('.location-result');
+        if (item) pickLocation(item.dataset.value);
+    });
+
+    if (btn) btn.addEventListener('click', () => useCurrentLocation());
+}
+
+setupLocationSwitcher();
 
 function closeEditProfile() {
     document.getElementById('edit-profile-sheet')?.classList.remove('visible');
@@ -7944,17 +8162,31 @@ function showActionToast(message, actionLabel, onAction) {
 // A post link carries its venue too, so a post that has since expired or been
 // removed can still land the visitor on the venue's page (openDeepLink).
 
-let shareTarget = null;   // { postId, venueId } while the sheet is open
+let shareTarget = null;   // { postId, venueId } or { memberId } while the sheet is open
 
-function shareUrl({ postId = null, venueId = null } = {}) {
+function shareUrl({ postId = null, venueId = null, memberId = null } = {}) {
     const url = new URL(`/a/${encodeURIComponent(appSlug || '')}/social`, window.location.origin);
     if (postId) url.searchParams.set('post', postId);
     if (venueId) url.searchParams.set('venue', venueId);
+    if (memberId && !postId && !venueId) url.searchParams.set('member', memberId);
     return url.toString();
 }
 
-function shareText({ postId = null, venueId = null } = {}) {
+// The profile a { memberId } share is about: your own, or the one on screen.
+function shareMemberProfile(memberId) {
+    if (memberId && memberId === currentUserId && meProfile) return meProfile;
+    if (memberId && memberId === memberPageUserId && memberPageProfile) return memberPageProfile;
+    return null;
+}
+
+function shareText({ postId = null, venueId = null, memberId = null } = {}) {
     const app = currentApp?.name || 'ViibeView';
+    if (memberId && !postId && !venueId) {
+        const name = shareMemberProfile(memberId)?.display_name || '';
+        return name
+            ? translateOr('social.shareProfileOf', { name, app }, `${name} on ${app}`)
+            : translateOr('social.shareProfile', { app }, `A profile on ${app}`);
+    }
     const venue = venueId
         ? (getVenueById(venueId)?.name
             || (venuePageVenue && venuePageVenue.id === venueId ? venuePageVenue.name : '')
@@ -8001,7 +8233,7 @@ function sharePostFromOptions() {
 }
 
 function openShareSheet(target) {
-    if (!target || (!target.postId && !target.venueId)) return;
+    if (!target || (!target.postId && !target.venueId && !target.memberId)) return;
     const sheet = document.getElementById('share-sheet');
     const backdrop = document.getElementById('share-backdrop');
     if (!sheet || !backdrop) return;
@@ -8020,6 +8252,88 @@ function closeShareSheet() {
     shareTarget = null;
 }
 
+/**
+ * What the share sheet's header card shows: the Viibe's poster, or the venue's
+ * or the member's picture, with a title and a place. Read from whatever is
+ * already loaded; a field nobody loaded is left out, never fetched.
+ */
+function shareCardFor(target) {
+    if (!target) return null;
+    if (target.postId) {
+        const item = findPostById(target.postId);
+        const venue = item?.venue_id ? getVenueById(item.venue_id) : null;
+        const venueName = item?.venue_name || venue?.name || '';
+        const where = [item?.venue_city || venue?.city, item?.venue_state || venue?.state].filter(Boolean).join(', ');
+        return {
+            kind: 'post',
+            image: item?.thumbnail_url || (item?.media_type === 'image' ? item.url : null),
+            title: venueName || translateOr('social.aViibe', null, 'A Viibe'),
+            subtitle: where,
+            letter: (venueName || 'V').charAt(0).toUpperCase()
+        };
+    }
+    if (target.venueId) {
+        const venue = getVenueById(target.venueId)
+            || (venuePageVenue && venuePageVenue.id === target.venueId ? venuePageVenue : null);
+        const name = venue?.name || '';
+        return {
+            kind: 'venue',
+            image: venue?.cover_image_url || venue?.profile_image_url || null,
+            title: name,
+            subtitle: [venue?.city, venue?.state].filter(Boolean).join(', '),
+            letter: (name || '?').charAt(0).toUpperCase()
+        };
+    }
+    const profile = shareMemberProfile(target.memberId);
+    const name = profile?.display_name || '';
+    return {
+        kind: 'member',
+        image: profile?.avatar_url || null,
+        title: name,
+        subtitle: profile?.location || '',
+        letter: (name || '?').charAt(0).toUpperCase()
+    };
+}
+
+function shareCardMarkup(card) {
+    if (!card || (!card.title && !card.image)) return '';
+    return `
+        <div class="share-card share-card-${card.kind}">
+            <div class="share-card-media">
+                ${card.image
+                    ? `<img src="${escapeHtml(card.image)}" alt="">`
+                    : `<span class="share-card-letter">${escapeHtml(card.letter)}</span>`}
+            </div>
+            <div class="share-card-text">
+                ${card.title ? `<div class="share-card-title">${escapeHtml(card.title)}</div>` : ''}
+                ${card.subtitle ? `<div class="share-card-sub">${escapeHtml(card.subtitle)}</div>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// One round button: an icon in a circle, its label under it.
+function shareActionMarkup({ tag = 'button', attrs, icon, key, label }) {
+    const typeAttr = tag === 'button' ? ' type="button"' : '';
+    return `
+        <${tag} class="share-action"${typeAttr} ${attrs}>
+            <span class="share-action-icon" aria-hidden="true">${icon}</span>
+            <span class="share-action-label" data-i18n="${key}">${label}</span>
+        </${tag}>
+    `;
+}
+
+const SHARE_ICONS = {
+    sms: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    email: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+    link: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+    check: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    more: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>'
+};
+
+// The share sheet (redesigned 2026-10-27): a card saying WHAT is being shared,
+// then one row of round buttons. Copy link answers inside the sheet, which
+// stays open, so a second way of sharing is one more tap.
 function renderShareOptions() {
     const body = document.getElementById('share-options');
     if (!body || !shareTarget) return;
@@ -8027,27 +8341,16 @@ function renderShareOptions() {
     const canNativeShare = typeof window.navigator?.share === 'function';
 
     body.innerHTML = `
-        <a class="post-option" href="${escapeHtml(links.sms)}" onclick="closeShareSheet()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            <span data-i18n="social.shareMessages">Messages</span>
-        </a>
-        <a class="post-option" href="${escapeHtml(links.email)}" onclick="closeShareSheet()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            <span data-i18n="social.shareEmail">Email</span>
-        </a>
-        <button class="post-option" type="button" onclick="copyShareLink()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            <span data-i18n="social.shareCopyLink">Copy link</span>
-        </button>
-        ${canNativeShare ? `
-            <button class="post-option" type="button" onclick="nativeShare()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-                <span data-i18n="social.shareMore">More…</span>
-            </button>
-        ` : ''}
-        <button class="post-option post-option-cancel" type="button" onclick="closeShareSheet()">
-            <span data-i18n="social.cancel">Cancel</span>
-        </button>
+        ${shareCardMarkup(shareCardFor(shareTarget))}
+        <div class="share-actions">
+            ${shareActionMarkup({ tag: 'a', attrs: `href="${escapeHtml(links.sms)}" onclick="closeShareSheet()"`, icon: SHARE_ICONS.sms, key: 'social.shareMessages', label: 'Messages' })}
+            ${shareActionMarkup({ tag: 'a', attrs: `href="${escapeHtml(links.email)}" onclick="closeShareSheet()"`, icon: SHARE_ICONS.email, key: 'social.shareEmail', label: 'Email' })}
+            ${shareActionMarkup({ attrs: 'id="share-copy" onclick="copyShareLink()"', icon: SHARE_ICONS.link, key: 'social.shareCopyLink', label: 'Copy link' })}
+            ${canNativeShare
+                ? shareActionMarkup({ attrs: 'onclick="nativeShare()"', icon: SHARE_ICONS.more, key: 'social.shareMore', label: 'More…' })
+                : ''}
+        </div>
+        <div class="share-copied" id="share-copied" role="status" aria-live="polite" hidden></div>
     `;
 
     if (window.I18n && typeof window.I18n.applyTranslations === 'function') {
@@ -8057,10 +8360,10 @@ function renderShareOptions() {
 
 // Clipboard first, inside the tap (iOS refuses a write from anywhere else); a
 // hidden textarea where there is no Clipboard API; and if both fail, the link
-// itself in the toast so it can still be copied by hand.
+// itself, selected in the sheet, so it can still be copied by hand.
+// The answer is shown INSIDE the sheet, which stays open.
 async function copyShareLink() {
     const url = shareUrl(shareTarget || {});
-    closeShareSheet();
 
     let copied = false;
     try {
@@ -8071,7 +8374,28 @@ async function copyShareLink() {
     } catch { /* fall through */ }
     if (!copied) copied = copyViaTextarea(url);
 
-    showToast(copied ? translateOr('social.linkCopied', null, 'Link copied') : url);
+    const status = document.getElementById('share-copied');
+    if (status) {
+        if (copied) {
+            status.textContent = translateOr('social.linkCopied', null, 'Link copied');
+        } else {
+            status.innerHTML = `<input class="share-copied-link" type="text" readonly value="${escapeHtml(url)}" aria-label="Link">`;
+            const field = status.querySelector('input');
+            try { field.focus(); field.select(); } catch { /* best effort */ }
+        }
+        status.hidden = false;
+    }
+    const btn = document.getElementById('share-copy');
+    if (btn && copied) {
+        btn.classList.add('is-done');
+        const icon = btn.querySelector('.share-action-icon');
+        if (icon) icon.innerHTML = SHARE_ICONS.check;
+        const label = btn.querySelector('.share-action-label');
+        if (label) {
+            label.removeAttribute('data-i18n');
+            label.textContent = translateOr('social.copied', null, 'Copied');
+        }
+    }
 }
 
 function copyViaTextarea(text) {
@@ -8115,18 +8439,21 @@ function readDeepLink() {
     const params = new URLSearchParams(window.location.search);
     const post = params.get('post') || '';
     const venue = params.get('venue') || '';
+    const member = params.get('member') || '';
     const link = {
         post: SHARED_ID_RE.test(post) ? post : null,
-        venue: SHARED_ID_RE.test(venue) ? venue : null
+        venue: SHARED_ID_RE.test(venue) ? venue : null,
+        member: SHARED_ID_RE.test(member) ? member : null
     };
-    return (link.post || link.venue) ? link : null;
+    return (link.post || link.venue || link.member) ? link : null;
 }
 
 function stripDeepLink() {
     const url = new URL(window.location.href);
-    if (!url.searchParams.has('post') && !url.searchParams.has('venue')) return;
+    if (!url.searchParams.has('post') && !url.searchParams.has('venue') && !url.searchParams.has('member')) return;
     url.searchParams.delete('post');
     url.searchParams.delete('venue');
+    url.searchParams.delete('member');
     try {
         history.replaceState(history.state, '', url.pathname + url.search + url.hash);
     } catch { /* an embedded webview refusing replaceState keeps the URL */ }
@@ -8155,7 +8482,13 @@ async function openDeepLink(link = readDeepLink()) {
         showToast(translateOr('social.postUnavailable', null, 'This Viibe is no longer available'));
     }
 
-    if (link.venue) openVenuePage(link.venue);
+    if (link.venue) {
+        openVenuePage(link.venue);
+        return;
+    }
+    // A shared profile (the Me tab's Share profile). A private one opens on
+    // its own "this profile is private" state, like any other tap on it.
+    if (link.member) openMemberProfile(link.member);
 }
 
 // ===== Utility Functions =====
@@ -8455,6 +8788,7 @@ async function openCreatePost(venueId) {
     if (submitBtn) submitBtn.disabled = true;
     const progress = document.getElementById('create-post-progress');
     if (progress) progress.style.display = 'none';
+    resetPostProgress();
     const timer = document.getElementById('recording-timer');
     if (timer) { timer.textContent = '0:00'; timer.classList.remove('active'); }
     const recordBtn = document.getElementById('record-btn');
@@ -8482,17 +8816,27 @@ function renderComposerVenueRow() {
     const row = document.getElementById('create-post-venue');
     if (!row) return;
 
-    const label = composerVenueId
-        ? `<span data-i18n="social.postingTo">Posting to</span> <strong>${escapeHtml(composerVenueName())}</strong>`
-        : `<span data-i18n="social.noVenueSelected">No venue &mdash; posting as yourself</span>`;
+    // A card (2026-10-27, Jay's board: "Post Creation View Design"): the
+    // venue's picture, "Posting to" over its name, and Change. With no venue,
+    // the same card says so, so it is never mistaken for a missing control.
+    const venue = composerVenueId ? getVenueById(composerVenueId) : null;
+    const image = venue?.profile_image_url || null;
+    const name = composerVenueId ? composerVenueName() : '';
+    const pin = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>`;
 
+    row.classList.toggle('is-empty', !composerVenueId);
     row.innerHTML = `
         <span class="create-post-venue-icon" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
+            ${image ? `<img src="${escapeHtml(image)}" alt="">` : pin}
         </span>
-        <span class="create-post-venue-label">${label}</span>
+        <span class="create-post-venue-label">
+            ${composerVenueId
+                ? `<span class="create-post-venue-kicker" data-i18n="social.postingTo">Posting to</span>
+                   <strong class="create-post-venue-name">${escapeHtml(name)}</strong>`
+                : `<strong class="create-post-venue-name" data-i18n="social.noVenueSelected">No venue &mdash; posting as yourself</strong>`}
+        </span>
         <span class="create-post-venue-change" data-i18n="social.change">Change</span>
     `;
     row.style.display = '';
@@ -9080,6 +9424,7 @@ function closeCreatePost() {
     recordedChunks = [];
     recordedDurationSeconds = null;
     composerVenueId = null;
+    releasePostProgressThumb();
     stopCamera();
     stopCountdownUi();
     applyComposerOrientation();
@@ -9792,8 +10137,58 @@ function isAlreadyUploaded(error) {
     return /duplicate|already exists|resource already/i.test(error.message || '');
 }
 
-async function uploadWithRetry(path, file, onStatus) {
+/**
+ * The clip's upload, by XHR, for one reason: upload.onprogress. supabase-js v2's
+ * storage.upload() is a fetch, which reports no progress. Same endpoint, same
+ * multipart body (cacheControl + the file) and the same headers supabase-js
+ * sends, and it answers in the same shape ({ error } with statusCode / status /
+ * message), so isAlreadyUploaded() and isRetriableUploadError() read it the
+ * same way. A network failure has no status, which is what marks it retriable.
+ *
+ * onProgress(fraction) is called with 0..1 as bytes leave the phone.
+ */
+function uploadWithProgress(path, file, token, onProgress) {
+    return new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        const url = `${SUPABASE_URL}/storage/v1/object/venue-media/${path.split('/').map(encodeURIComponent).join('/')}`;
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('x-upsert', 'false');
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && e.total > 0) onProgress(Math.min(1, e.loaded / e.total));
+        };
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                onProgress(1);
+                resolve({ error: null });
+                return;
+            }
+            let body = {};
+            try { body = JSON.parse(xhr.responseText || '{}'); } catch { /* not JSON */ }
+            resolve({ error: {
+                status: xhr.status,
+                statusCode: body.statusCode ?? xhr.status,
+                message: body.message || body.error || `Upload failed (${xhr.status})`
+            } });
+        };
+        xhr.onerror = () => resolve({ error: { message: 'Network error' } });
+        xhr.onabort = () => resolve({ error: { message: 'Upload aborted' } });
+
+        const form = new FormData();
+        form.append('cacheControl', MEDIA_CACHE_CONTROL);
+        form.append('', file);
+        xhr.send(form);
+    });
+}
+
+// `onProgress` (the composer's) makes the clip go through uploadWithProgress;
+// without it, or without a session token, it is supabase-js as before.
+async function uploadWithRetry(path, file, onStatus, onProgress = null) {
     let lastError = null;
+    const token = onProgress && typeof XMLHttpRequest === 'function'
+        ? (await SocialAuth.getSession())?.access_token || null
+        : null;
 
     for (let attempt = 0; attempt < UPLOAD_RETRY_DELAYS_MS.length; attempt++) {
         const wait = UPLOAD_RETRY_DELAYS_MS[attempt];
@@ -9804,9 +10199,11 @@ async function uploadWithRetry(path, file, onStatus) {
             await new Promise(r => setTimeout(r, wait));
         }
 
-        const { error } = await supabaseClient.storage
-            .from('venue-media')
-            .upload(path, file, { cacheControl: MEDIA_CACHE_CONTROL, upsert: false });
+        const { error } = token
+            ? await uploadWithProgress(path, file, token, onProgress)
+            : await supabaseClient.storage
+                .from('venue-media')
+                .upload(path, file, { cacheControl: MEDIA_CACHE_CONTROL, upsert: false });
 
         if (!error || isAlreadyUploaded(error)) return { ok: true };
 
@@ -9830,10 +10227,14 @@ async function uploadWithRetry(path, file, onStatus) {
 // everything about it is best-effort, so it never throws. Its path is fixed by
 // the clip's, so a retry or a resumed draft collides with (and so recognises)
 // a poster that already landed.
-async function uploadPosterFor(file, path) {
+async function uploadPosterFor(file, path, onPoster = null) {
     try {
         const thumbBlob = await generateThumbnail(file);
         if (!thumbBlob) return null;
+        // The composer's progress card shows it as soon as it exists.
+        if (onPoster) {
+            try { onPoster(thumbBlob); } catch { /* display only */ }
+        }
         const thumbPath = `${path.replace(/\.[^.]+$/, '')}-thumb.jpg`;
         const { error: thumbError } = await supabaseClient.storage
             .from('venue-media')
@@ -9847,7 +10248,9 @@ async function uploadPosterFor(file, path) {
 }
 
 // `timings`, when given, gets each stage's milliseconds (upload, poster, save).
-async function publishViibe(payload, { onProgress, onStatus, timings }) {
+// `onUploadProgress(fraction)` gets the clip's real byte progress, 0..1;
+// `onPoster(blob)` the poster frame as soon as it is made.
+async function publishViibe(payload, { onProgress, onStatus, timings, onUploadProgress, onPoster }) {
     const progress = onProgress || (() => {});
     const status = onStatus || (() => {});
     const times = timings || {};
@@ -9872,10 +10275,10 @@ async function publishViibe(payload, { onProgress, onStatus, timings }) {
     // and costs a metadata fetch on every future render, so it is still
     // awaited before the post is saved.
     const started = Date.now();
-    const posterTask = uploadPosterFor(payload.file, path)
+    const posterTask = uploadPosterFor(payload.file, path, onPoster)
         .then(url => { times.poster = Date.now() - started; return url; });
 
-    const uploaded = await uploadWithRetry(path, payload.file, status);
+    const uploaded = await uploadWithRetry(path, payload.file, status, onUploadProgress || null);
     times.upload = Date.now() - started;
     if (!uploaded.ok) throw uploaded.error || new Error('Upload failed');
 
@@ -9992,6 +10395,36 @@ async function afterViibePublished(newRow = null) {
     document.getElementById('feed-container')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// How long the composer shows its check mark after "Posted!". The feed is
+// updated before it starts (see submitPost); this only delays the close.
+const POSTED_BEAT_MS = 450;
+let postProgressThumbUrl = null;
+
+function releasePostProgressThumb() {
+    if (postProgressThumbUrl) {
+        try { URL.revokeObjectURL(postProgressThumbUrl); } catch { /* not supported */ }
+        postProgressThumbUrl = null;
+    }
+    const thumb = document.getElementById('post-progress-thumb');
+    if (thumb) thumb.innerHTML = '';
+}
+
+function resetPostProgress() {
+    const pct = document.getElementById('post-progress-pct');
+    if (pct) pct.textContent = '';
+    const done = document.getElementById('post-progress-done');
+    if (done) done.hidden = true;
+    releasePostProgressThumb();
+}
+
+function showPostProgressThumb(blob) {
+    const thumb = document.getElementById('post-progress-thumb');
+    if (!thumb || !blob || typeof URL.createObjectURL !== 'function') return;
+    releasePostProgressThumb();
+    postProgressThumbUrl = URL.createObjectURL(blob);
+    thumb.innerHTML = `<img src="${postProgressThumbUrl}" alt="">`;
+}
+
 async function submitPost() {
     if (!selectedPostFile) return;
 
@@ -9999,23 +10432,32 @@ async function submitPost() {
     const progress = document.getElementById('create-post-progress');
     const progressFill = document.getElementById('post-progress-fill');
     const progressText = document.getElementById('post-progress-text');
+    const progressPct = document.getElementById('post-progress-pct');
 
     if (submitBtn) submitBtn.disabled = true;
+    resetPostProgress();
     if (progress) progress.style.display = 'block';
-    if (progressFill) progressFill.style.width = '10%';
+    if (progressFill) progressFill.style.width = '5%';
     if (progressText) progressText.textContent = translateOr('social.preparing', null, 'Preparing…');
 
-    // ⚠️ These percentages are STAGE markers, not byte progress, and the label
-    // says so ("Uploading…", not "43%"). supabase-js v2's storage.upload() is a
-    // fetch with no progress event, so real byte progress would mean a second
-    // XHR-based upload path. Retry status is the honest thing this UI can add,
-    // and it is what a stalled upload actually needs to say.
+    // The bar: the clip's REAL byte progress (uploadWithProgress, XHR) from 5%
+    // to 85%, then the poster and the save. The percentage shown is the clip's
+    // own, and only while it uploads; the stages after it are named, not
+    // numbered ("Saving…").
     const setProgress = (percent) => {
         if (progressFill) progressFill.style.width = `${percent}%`;
     };
     const setStatus = (text) => {
         if (progressText) progressText.textContent = text;
+        if (progressPct) progressPct.textContent = '';
     };
+    const onUploadProgress = (fraction) => {
+        const pct = Math.round(fraction * 100);
+        setProgress(5 + Math.round(fraction * 80));
+        if (progressText) progressText.textContent = translateOr('social.uploading', null, 'Uploading…');
+        if (progressPct) progressPct.textContent = `${pct}%`;
+    };
+    const onPoster = (blob) => showPostProgressThumb(blob);
 
     const session = await SocialAuth.getSession();
     const userId = session?.user?.id;
@@ -10064,7 +10506,11 @@ async function submitPost() {
     await saveDraft(payload);
 
     try {
-        const published = await publishViibe(payload, { onProgress: setProgress, onStatus: setStatus, timings });
+        const published = await publishViibe(payload, {
+            // publishViibe's own stages after the clip: 60 → 85%, 80 → 93%, 100.
+            onProgress: (percent) => { if (percent >= 60) setProgress(85 + Math.round((percent - 60) * 15 / 40)); },
+            onStatus: setStatus, timings, onUploadProgress, onPoster
+        });
 
         // Only now. A draft cleared on upload success rather than on POST
         // success would lose the recording whenever create_social_post refused
@@ -10072,12 +10518,18 @@ async function submitPost() {
         await clearDraft();
 
         setStatus(translateOr('social.posted', null, 'Posted!'));
+        setProgress(100);
+        const done = document.getElementById('post-progress-done');
+        if (done) done.hidden = false;
 
-        // No 500 ms pause any more: the toast says "posted", and the Viibe is
-        // on the feed underneath as the composer closes.
-        closeCreatePost();
-        showToast(translateOr('social.postPublished', null, 'Post published!'));
+        // The new Viibe goes on the feed NOW, underneath the composer. The
+        // composer then shows its check mark for a moment and closes: that
+        // beat waits on nothing, and the feed is already updated behind it.
         const shown = afterViibePublished(newViibeRow(payload, published, userId));
+        setTimeout(() => {
+            closeCreatePost();
+            showToast(translateOr('social.postPublished', null, 'Post published!'));
+        }, POSTED_BEAT_MS);
         timings.total = Date.now() - postStartedAt;
         // One line per post, so the next "it was slow" can be measured.
         console.info(`[viibe post] gps ${timings.gps}ms · upload ${timings.upload}ms · poster ${timings.poster ?? '-'}ms · save ${timings.save}ms · on screen ${timings.total}ms`);

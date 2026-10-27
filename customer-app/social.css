@@ -1885,15 +1885,18 @@ body {
    credited to the poster. */
 /* Now a full-width button, not a label. It is always present — the venue is a
    decision every post makes, including the decision not to attach one. */
+/* The venue a Viibe is posted to, as a card above the camera (2026-10-27):
+   the venue's picture, "Posting to" over its name, and a Change pill. */
 .create-post-venue {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
     width: 100%;
     padding: 10px 12px;
-    border-radius: var(--radius-md);
-    background: var(--color-bg);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
     font-family: 'Outfit', sans-serif;
     font-size: 0.8125rem;
     color: var(--color-text-secondary);
@@ -1913,20 +1916,56 @@ body {
 
 .create-post-venue-icon {
     display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: var(--app-primary-soft);
     color: var(--app-primary);
+}
+
+.create-post-venue-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .create-post-venue-label {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.create-post-venue-kicker {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+.create-post-venue-name {
+    font-size: 0.9375rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+.create-post-venue.is-empty .create-post-venue-name {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
 .create-post-venue-change {
     flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    background: var(--app-primary-soft);
     font-weight: 600;
     color: var(--app-primary);
 }
@@ -2186,6 +2225,79 @@ body {
 
 .create-post-progress {
     padding: 8px 0;
+}
+
+/* The progress card (2026-10-27): the poster, the stage, the clip's real
+   upload percentage, the bar, and a check mark at "Posted!". */
+.post-progress-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.post-progress-thumb {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 64px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-bg);
+}
+
+.post-progress-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.post-progress-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.post-progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.post-progress-row .progress-text {
+    margin-top: 0;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.post-progress-pct {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-secondary);
+}
+
+.post-progress-done {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    background: var(--app-primary);
+    color: #ffffff;
+}
+
+.post-progress-done[hidden] {
+    display: none;
 }
 
 .progress-bar {
@@ -3247,6 +3359,74 @@ body {
     gap: var(--spacing-sm);
 }
 
+/* ===== The location switcher (Edit Profile, 2026-10-27) =====
+   City suggestions under the field as you type, and "Use my current
+   location" under them. The list is in the flow (not floating), so it can
+   never be drawn over the Public profile switch and swallow its tap. */
+.location-results {
+    list-style: none;
+    margin: 0;
+    padding: var(--spacing-xs) 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.location-results[hidden] {
+    display: none;
+}
+
+.location-result {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 10px var(--spacing-md);
+    font-size: 0.9375rem;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.location-result svg {
+    flex-shrink: 0;
+    color: var(--app-primary);
+}
+
+.location-result:hover,
+.location-result:focus {
+    background: var(--app-primary-soft);
+    outline: none;
+}
+
+.location-use-current {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 6px 0;
+    border: none;
+    background: none;
+    color: var(--app-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.location-use-current:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.location-status {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.location-status[hidden] {
+    display: none;
+}
+
 .auth-field label {
     font-size: 0.8125rem;
     font-weight: 500;
@@ -3705,6 +3885,160 @@ body {
    the sheet's buttons. */
 a.post-option {
     text-decoration: none;
+}
+
+/* ===== The share sheet (redesigned 2026-10-27) =====
+   A card naming what is shared, then one row of round buttons with their
+   labels under them, then "Link copied" in the sheet itself. */
+#share-options {
+    padding: 0 var(--spacing-md) var(--spacing-lg);
+}
+
+.share-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+}
+
+/* A Viibe's poster is 9:16; a venue or a member is a square. */
+.share-card-media {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-card-post .share-card-media {
+    width: 40px;
+    height: 71px;
+}
+
+.share-card-member .share-card-media {
+    border-radius: var(--radius-full);
+}
+
+.share-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.share-card-letter {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.share-card-text {
+    min-width: 0;
+}
+
+.share-card-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.share-card-sub {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Three or four buttons (More… only where the browser can share), spread
+   evenly across the sheet either way. */
+.share-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.share-actions > .share-action {
+    flex: 1 1 0;
+}
+
+.share-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: var(--spacing-xs) 0;
+    border: none;
+    background: none;
+    color: var(--color-text);
+    font-family: 'Outfit', sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.share-action-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-full);
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, background 0.2s;
+}
+
+.share-action:active .share-action-icon {
+    transform: scale(0.94);
+}
+
+.share-action.is-done .share-action-icon {
+    background: var(--app-primary);
+    color: #ffffff;
+}
+
+.share-action-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.share-copied {
+    margin-top: var(--spacing-md);
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--app-primary);
+}
+
+.share-copied[hidden] {
+    display: none;
+}
+
+.share-copied-link {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    background: var(--color-surface);
 }
 
 /* ===== The distance slider (2026-10-14) ===== */
@@ -4688,9 +5022,9 @@ a.post-option {
     padding-bottom: var(--spacing-lg);
 }
 
-#me-edit-profile-btn {
-    margin-top: var(--spacing-sm);
-}
+/* (#me-edit-profile-btn's margin-top went with the 2026-10-27 redesign: it
+   sits beside Share profile in .me-actions now, and the margin pushed it
+   below its neighbour.) */
 
 /* The signed-in profile avatar can now hold a real image. */
 .profile-avatar img {
@@ -4933,6 +5267,81 @@ a.post-option {
     padding: var(--spacing-xl) var(--spacing-md);
     color: var(--color-text-muted);
     text-align: center;
+}
+
+/* ===== Your profile, the Me tab (redesigned 2026-10-27) =====
+   Avatar on the left; name, location and bio on the right; the three counts
+   in one divided row; Edit Profile and Share profile side by side. The member
+   page (someone else's) keeps its centred layout. */
+.me-identity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-md) var(--spacing-md);
+}
+
+.me-identity-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-width: 0;
+}
+
+.me-avatar {
+    flex: 0 0 auto;
+    width: 76px;
+    height: 76px;
+    /* The letter needs a circle behind it on a white page. */
+    background: var(--app-primary-soft);
+}
+
+.me-identity-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    text-align: left;
+}
+
+.me-identity-text .member-page-name {
+    overflow-wrap: anywhere;
+}
+
+.me-identity-text .member-page-bio {
+    max-width: none;
+}
+
+.me-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin: 0;
+    padding: var(--spacing-sm) 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.me-stats .member-stat {
+    padding: 2px 0;
+}
+
+.me-stats .member-stat + .member-stat {
+    border-left: 1px solid var(--color-border);
+}
+
+.me-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.me-actions .follow-btn {
+    min-width: 0;
+    width: 100%;
+}
+
+.me-venues {
+    margin-top: 0;
 }
 
 /* ===== Follow button ===== */

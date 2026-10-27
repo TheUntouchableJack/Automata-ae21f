@@ -840,36 +840,39 @@ describe('interruption handling (#11)', () => {
         expect(js).toMatch(/draft\.appId !== currentApp\.id/);
     });
 
-    it('the progress UI reports stages honestly, not fake byte percentages', () => {
-        // supabase-js v2's storage.upload() is a fetch with no progress event.
-        expect(js).toMatch(/STAGE markers, not byte progress/);
+    it('the progress UI reports REAL byte progress, never a made-up percentage', () => {
+        // Since 2026-10-27 the clip uploads by XHR (uploadWithProgress) for its
+        // upload.onprogress; supabase-js's fetch has none. The percentage shown
+        // comes from those events only, and the stages after it are named.
+        expect(js).toMatch(/xhr\.upload\.onprogress = \(e\) => \{\n\s+if \(e\.lengthComputable && e\.total > 0\) onProgress\(Math\.min\(1, e\.loaded \/ e\.total\)\);/);
+        expect(js).toMatch(/if \(progressPct\) progressPct\.textContent = `\$\{pct\}%`;/);
         expect(js).toMatch(/social\.uploadRetrying/);
     });
 });
 
 describe('release plumbing', () => {
     it('the cache-bust versions moved together', () => {
-        expect(html).toContain('/customer-app/social.js?v=25');
+        expect(html).toContain('/customer-app/social.js?v=26');
         expect(html).toContain('/customer-app/social-auth.js?v=5');
-        expect(html).toContain('/customer-app/social.css?v=20');
+        expect(html).toContain('/customer-app/social.css?v=21');
         expect(html).toContain('/js/venue-categories.js?v=2');
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v20'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v20'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v20'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v21'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v21'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v21'");
         // ...and the generation carries its own dated rationale, in the style
         // every previous one does. A bump with no note is a bump nobody can
         // later tell was mandatory or cosmetic.
-        expect(sw).toMatch(/\/\/ v20 \(2026-10-27\): each Viibe adapts/);
+        expect(sw).toMatch(/\/\/ v21 \(2026-10-27, later\): the share sheet/);
     });
 
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 21;');
-        expect(html).toContain('/i18n/i18n.js?v=10');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 22;');
+        expect(html).toContain('/i18n/i18n.js?v=11');
     });
 
     it('supabase-js is pinned, not floating on a major', () => {

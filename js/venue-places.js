@@ -23,6 +23,7 @@
     'use strict';
 
     var ENDPOINT = 'https://nominatim.openstreetmap.org/search';
+    var REVERSE_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse';
     var MIN_INTERVAL_MS = 1100;
     var TIMEOUT_MS = 10000;
 
@@ -158,6 +159,70 @@
         });
     }
 
+    /**
+     * Cities, towns and villages only (featuretype=settlement), for a member's
+     * "City, Country" (Edit Profile's location switcher, 2026-10-27). Same
+     * queue, so it shares the one-per-second budget with venue search.
+     *
+     * @param {string} query
+     * @param {{near?: {lat:number, lng:number}, limit?: number}} [opts]
+     * @returns {Promise<Array<{city:string, state:string|null, country:string|null,
+     *          country_code:string|null, lat:number, lng:number}>>} never rejects.
+     */
+    function searchCities(query, opts) {
+        var options = opts || {};
+        if (!query || String(query).trim().length < 2) return Promise.resolve([]);
+
+        var url = ENDPOINT + '?q=' + encodeURIComponent(query)
+            + '&format=json&addressdetails=1&featuretype=settlement&limit=' + (options.limit || 6);
+        var near = options.near;
+        if (near && Number.isFinite(near.lat) && Number.isFinite(near.lng)) {
+            // A wide bias only: someone in Paris looking for Austin finds it.
+            var d = 5;
+            url += '&viewbox=' + [
+                (near.lng - d).toFixed(6), (near.lat + d).toFixed(6),
+                (near.lng + d).toFixed(6), (near.lat - d).toFixed(6)
+            ].join(',') + '&bounded=0';
+        }
+
+        return runQueued(function () {
+            return fetchJson(url).then(function (data) {
+                if (!Array.isArray(data)) return [];
+                return data.map(function (row) {
+                    var addr = row.address || {};
+                    return {
+                        city: pickCity(addr) || row.name || String(row.display_name || '').split(',')[0].trim() || null,
+                        state: pickState(addr),
+                        country: addr.country || null,
+                        country_code: (addr.country_code || '').toUpperCase() || null,
+                        lat: parseFloat(row.lat),
+                        lng: parseFloat(row.lon)
+                    };
+                }).filter(function (c) { return !!c.city; });
+            });
+        });
+    }
+
+    /**
+     * The city a coordinate is in ("Use my current location").
+     * @returns {Promise<{city:string, state:string|null, country:string|null}|null>} never rejects.
+     */
+    function reverseCity(lat, lng) {
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return Promise.resolve(null);
+        // zoom=10 is city level: a street address is more than a profile needs.
+        var url = REVERSE_ENDPOINT + '?lat=' + lat.toFixed(5) + '&lon=' + lng.toFixed(5)
+            + '&format=json&zoom=10&addressdetails=1';
+        return runQueued(function () {
+            return fetchJson(url).then(function (row) {
+                if (!row || row.error) return null;
+                var addr = row.address || {};
+                var city = pickCity(addr) || pickState(addr);
+                if (!city) return null;
+                return { city: city, state: pickState(addr), country: addr.country || null };
+            });
+        });
+    }
+
     // OSM tags that map onto a nightlife venue, used to guess the category
     // select's initial value. A guess only — the owner can always change it,
     // and anything unrecognised falls back to the app's broadest category.
@@ -183,6 +248,8 @@
     global.VenuePlaces = {
         geocodeAddress: geocodeAddress,
         searchPlaces: searchPlaces,
+        searchCities: searchCities,
+        reverseCity: reverseCity,
         guessCategory: guessCategory
     };
 })(window);

@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
-    <link rel="stylesheet" href="/customer-app/social.css?v=20">
+    <link rel="stylesheet" href="/customer-app/social.css?v=21">
 </head>
 <body>
 
@@ -317,14 +317,35 @@
 
         <!-- Signed IN -->
         <div class="me-signed-in" id="me-signed-in" style="display:none;">
-            <div class="member-page-identity">
-                <div class="member-page-avatar" id="me-avatar"></div>
-                <h2 class="member-page-name" id="me-name"></h2>
-                <p class="member-page-bio" id="me-bio" style="display:none;"></p>
-                <p class="member-page-location" id="me-location" style="display:none;"></p>
-                <div class="member-page-stats" id="me-stats"></div>
-                <button class="follow-btn following" id="me-edit-profile-btn" type="button" data-i18n="social.editProfile">Edit Profile</button>
+            <!-- Redesigned 2026-10-27 (Jay's board: "Profile Page Cleaner
+                 Design"): the avatar beside the name, location and bio; the
+                 three counts in one divided row; Edit Profile and Share
+                 profile side by side; then "Been to", then the grid. -->
+            <div class="me-identity">
+                <div class="me-identity-row">
+                    <div class="member-page-avatar me-avatar" id="me-avatar"></div>
+                    <div class="me-identity-text">
+                        <h2 class="member-page-name" id="me-name"></h2>
+                        <p class="member-page-location" id="me-location" style="display:none;"></p>
+                        <p class="member-page-bio" id="me-bio" style="display:none;"></p>
+                    </div>
+                </div>
+                <div class="member-page-stats me-stats" id="me-stats"></div>
+                <div class="me-actions">
+                    <button class="follow-btn following" id="me-edit-profile-btn" type="button" data-i18n="social.editProfile">Edit Profile</button>
+                    <button class="follow-btn following" id="me-share-btn" type="button" data-i18n="social.shareProfileBtn" onclick="shareMyProfile()">Share profile</button>
+                </div>
             </div>
+
+            <!-- The same "Been to" as a member's page (renderVenueHistory). -->
+            <section class="member-venues me-venues" id="me-venues" style="display:none;">
+                <div class="member-venues-header">
+                    <h4 data-i18n="social.beenTo">Been to</h4>
+                    <button type="button" class="member-venues-more" id="me-venues-more"
+                            style="display:none;" data-i18n="social.seeAll">See all</button>
+                </div>
+                <div class="member-venues-list" id="me-venues-list"></div>
+            </section>
 
             <div class="member-grid" id="me-grid"></div>
 
@@ -828,9 +849,9 @@
     <div class="create-post-backdrop" id="create-post-backdrop"></div>
     <div class="create-post-modal" id="create-post-modal">
         <div class="create-post-header">
-            <button class="create-post-cancel" id="create-post-cancel">Cancel</button>
-            <h3>New Post</h3>
-            <button class="create-post-submit" id="create-post-submit" disabled>Post</button>
+            <button class="create-post-cancel" id="create-post-cancel" data-i18n="social.cancel">Cancel</button>
+            <h3 data-i18n="social.composerTitle">New Post</h3>
+            <button class="create-post-submit" id="create-post-submit" disabled data-i18n="social.composerPost">Post</button>
         </div>
 
         <div class="create-post-body">
@@ -851,7 +872,7 @@
                         <polygon points="23,7 16,12 23,17 23,7"/>
                         <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
                     </svg>
-                    <span>Tap to open camera</span>
+                    <span data-i18n="social.tapToOpenCamera">Tap to open camera</span>
                 </div>
 
                 <!-- Desktop: recording is phones only (Jay, 2026-10-06). Shown
@@ -897,21 +918,34 @@
                 <div class="upload-preview" id="upload-preview" style="display:none;"></div>
 
                 <!-- Re-record button shown after recording -->
-                <button class="retake-btn" id="retake-btn" type="button" style="display:none;">Retake</button>
+                <button class="retake-btn" id="retake-btn" type="button" style="display:none;" data-i18n="social.retake">Retake</button>
             </div>
 
             <!-- Caption -->
             <div class="create-post-field">
-                <textarea id="post-caption" placeholder="Write a caption..." rows="3" maxlength="500"></textarea>
+                <textarea id="post-caption" placeholder="Write a caption…" data-i18n-placeholder="social.writeCaption" rows="3" maxlength="500"></textarea>
                 <div class="caption-count"><span id="caption-count">0</span>/500</div>
             </div>
 
-            <!-- Upload progress -->
+            <!-- Upload progress (2026-10-27): a card with the Viibe's poster,
+                 what is happening, the real upload percentage, and a check
+                 mark at "Posted!". -->
             <div class="create-post-progress" id="create-post-progress" style="display:none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="post-progress-fill"></div>
+                <div class="post-progress-card">
+                    <div class="post-progress-thumb" id="post-progress-thumb" aria-hidden="true"></div>
+                    <div class="post-progress-main">
+                        <div class="post-progress-row">
+                            <span class="progress-text" id="post-progress-text">Uploading…</span>
+                            <span class="post-progress-pct" id="post-progress-pct"></span>
+                            <span class="post-progress-done" id="post-progress-done" hidden>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="post-progress-fill"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="progress-text" id="post-progress-text">Uploading...</div>
             </div>
         </div>
     </div>
@@ -1235,16 +1269,26 @@
                 </div>
             </div>
 
-            <!-- Free text, never geocoded. maxlength matches the 80-char cap
-                 update_social_profile applies server-side, so the input cannot
-                 accept something the save would silently truncate.
-                 autocomplete="address-level2" = city, which is what people
-                 actually type here. -->
-            <div class="auth-field">
+            <!-- The location switcher (2026-10-27, Jay's board: "Switching
+                 Locations in Profile UI"). Still the same free-text field,
+                 saved as typed through update_social_profile(p_location), so
+                 nothing about the save changed. Typing now suggests cities
+                 (VenuePlaces.searchCities), and "Use my current location"
+                 fills in the city the phone is in (VenuePlaces.reverseCity).
+                 maxlength matches the 80-char cap the server applies.
+                 autocomplete off: the suggestions are ours. -->
+            <div class="auth-field location-switcher">
                 <label for="edit-profile-location" data-i18n="social.location">Location</label>
                 <input type="text" id="edit-profile-location" maxlength="80"
-                       autocomplete="address-level2"
-                       placeholder="City, Country" data-i18n-placeholder="social.locationPlaceholder">
+                       autocomplete="off" role="combobox" aria-autocomplete="list"
+                       aria-expanded="false" aria-controls="edit-profile-location-results"
+                       placeholder="Search for your city" data-i18n-placeholder="social.locationPlaceholder">
+                <ul class="location-results" id="edit-profile-location-results" role="listbox" hidden></ul>
+                <button type="button" class="location-use-current" id="edit-profile-use-location">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+                    <span data-i18n="social.useMyLocation">Use my current location</span>
+                </button>
+                <div class="location-status" id="edit-profile-location-status" role="status" aria-live="polite" hidden></div>
             </div>
 
             <!-- The off switch for the public-by-default backfill. It ships in
@@ -1652,7 +1696,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=10"></script>
+    <script src="/i18n/i18n.js?v=11"></script>
     <script src="/js/venue-categories.js?v=2"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1665,11 +1709,11 @@
     <script src="/js/venue-hours.js?v=1"></script>
     <!-- The Nominatim client behind the mobile "Add venue" flow, shared with
          app/venues.html so there is one rate-limit queue for the whole site. -->
-    <script src="/js/venue-places.js?v=1"></script>
+    <script src="/js/venue-places.js?v=2"></script>
     <script src="/customer-app/social-auth.js?v=5"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=25"></script>
+    <script src="/customer-app/social.js?v=26"></script>
 
 </body>
 </html>

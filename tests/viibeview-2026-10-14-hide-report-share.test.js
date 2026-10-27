@@ -543,7 +543,8 @@ describe('Share (jsdom)', () => {
         w.eval(`openShareSheet({ postId: '${UUID_A}' })`);
         expect(d.getElementById('share-sheet').classList.contains('visible')).toBe(true);
         const body = d.getElementById('share-options');
-        const hrefs = [...body.querySelectorAll('a.post-option')].map(a => a.getAttribute('href'));
+        // Round buttons since the 2026-10-27 redesign (.share-action).
+        const hrefs = [...body.querySelectorAll('a.share-action')].map(a => a.getAttribute('href'));
         expect(hrefs[0].startsWith('sms:')).toBe(true);
         expect(hrefs[1].startsWith('mailto:')).toBe(true);
         expect(body.innerHTML).toContain('copyShareLink()');
@@ -561,8 +562,15 @@ describe('Share (jsdom)', () => {
         w.eval(`openShareSheet({ venueId: '${UUID_V}' })`);
         await w.eval('copyShareLink()');
         expect(writes).toEqual([`https://royaltyapp.ai/a/viibeview/social?venue=${UUID_V}`]);
-        expect(w.__toasts.at(-1)).toBe('Link copied');
-        expect(d.getElementById('share-sheet').classList.contains('visible')).toBe(false);
+        // Since 2026-10-27 the answer is shown INSIDE the sheet, which stays
+        // open, and the button turns into "Copied".
+        const copied = () => d.getElementById('share-copied');
+        expect(copied().hidden).toBe(false);
+        expect(copied().textContent).toBe('Link copied');
+        expect(d.getElementById('share-copy').textContent).toContain('Copied');
+        expect(d.getElementById('share-sheet').classList.contains('visible')).toBe(true);
+        expect(w.__toasts.length).toBe(0);
+        w.eval('closeShareSheet()');
 
         // No Clipboard API: the textarea fallback copies.
         Object.defineProperty(w.navigator, 'clipboard', { value: undefined, configurable: true });
@@ -571,13 +579,18 @@ describe('Share (jsdom)', () => {
         w.eval(`openShareSheet({ postId: '${UUID_A}' })`);
         await w.eval('copyShareLink()');
         expect(copiedTexts.map(c => c[0])).toEqual(['copy']);
-        expect(w.__toasts.at(-1)).toBe('Link copied');
+        expect(copied().textContent).toBe('Link copied');
+        w.eval('closeShareSheet()');
         expect(d.querySelectorAll('textarea[readonly]').length, 'the helper textarea was left behind').toBe(0);
 
         d.execCommand = () => false;
         w.eval(`openShareSheet({ venueId: '${UUID_V}' })`);
         await w.eval('copyShareLink()');
-        expect(w.__toasts.at(-1), 'nothing could copy: show the link').toBe(`https://royaltyapp.ai/a/viibeview/social?venue=${UUID_V}`);
+        // Nothing could copy: the link itself, in a read-only field in the sheet.
+        const field = copied().querySelector('input');
+        expect(field, 'nothing could copy: show the link').toBeTruthy();
+        expect(field.value).toBe(`https://royaltyapp.ai/a/viibeview/social?venue=${UUID_V}`);
+        expect(d.getElementById('share-copy').textContent).not.toContain('Copied');
     });
 
     it('the buttons: every panel strip, the venue page, and post options', () => {

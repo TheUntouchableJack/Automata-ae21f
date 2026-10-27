@@ -495,6 +495,19 @@ describe('publishing: the poster while the clip uploads, the Viibe on screen at 
         for (const k of ['upload', 'poster', 'save']) expect(typeof times[k], k).toBe('number');
     });
 
+    it('the poster reaches the progress card as soon as it is made (onPoster)', async () => {
+        const blob = new w.Blob(['jpeg']);
+        w.generateThumbnail = async () => blob;
+        w.uploadWithRetry = async () => ({ ok: true });
+        w.__rpc = (name) => name === 'create_social_post'
+            ? { data: [{ success: true, media_id: 'new-1', error_message: null }], error: null } : { data: [], error: null };
+        w.__payload = payload;
+        const seen = [];
+        w.__onPoster = b => seen.push(b);
+        await w.eval('publishViibe(__payload, { onPoster: __onPoster })');
+        expect(seen).toEqual([blob]);
+    });
+
     it('a failed poster never fails the post', async () => {
         w.generateThumbnail = async () => { throw new Error('decode'); };
         w.uploadWithRetry = async () => ({ ok: true });
@@ -542,8 +555,14 @@ describe('publishing: the poster while the clip uploads, the Viibe on screen at 
     it('no sleeps between "posted" and the feed', () => {
         expect(fnCode('async function afterViibePublished(newRow = null)')).not.toContain('setTimeout');
         const submit = fnCode('async function submitPost()');
-        expect(submit).not.toContain('setTimeout');
-        expect(submit).toContain('afterViibePublished(newViibeRow(payload, published, userId))');
+        // The feed is updated BEFORE the only timer, which closes the composer
+        // after its check mark (Phase 2) and waits on nothing.
+        const feedAt = submit.indexOf('afterViibePublished(newViibeRow(payload, published, userId))');
+        expect(feedAt).toBeGreaterThan(-1);
+        expect(submit.split('setTimeout(').length - 1).toBe(1);
+        expect(submit.indexOf('setTimeout(')).toBeGreaterThan(feedAt);
+        expect(submit).toMatch(/setTimeout\(\(\) => \{\n\s+closeCreatePost\(\);/);
+        expect(w.eval('POSTED_BEAT_MS')).toBeLessThanOrEqual(500);
         expect(submit).toContain("console.info(`[viibe post] gps");
         // A refresh that fails AFTER the post landed is not an upload failure.
         expect(submit).toContain("shown.catch(err => console.warn(");

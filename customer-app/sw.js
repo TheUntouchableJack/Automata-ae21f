@@ -37,6 +37,19 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v21 (2026-10-27, later): the share sheet, the composer, your profile and the
+// location switcher redesigned; profiles can be shared (?member=). social.html
+// now loads social.js?v=26, social.css?v=21, i18n.js?v=11 and
+// venue-places.js?v=2.
+//
+// Mandatory in both pairings:
+//   - cached v20 social.html has no #me-share-btn, #me-venues, the progress
+//     card or the location switcher's list and button; new social.js reaches
+//     for them and Share profile, Been to and the percentage are missing.
+//   - new social.html against cached v20 social.js: Share profile calls a
+//     shareMyProfile() that does not exist, and the location field's
+//     suggestions never appear (venue-places.js?v=1 has no searchCities).
+//
 // v20 (2026-10-27): each Viibe adapts to its shape (portrait fills, a switch
 // shows it whole), faster posting, the delete dialog, the venue image viewer,
 // post pins open the venue. social.html now loads social.js?v=25,
@@ -137,9 +150,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v20';
-const STATIC_CACHE = 'royalty-static-v20';
-const DYNAMIC_CACHE = 'royalty-dynamic-v20';
+const CACHE_NAME = 'royalty-rewards-v21';
+const STATIC_CACHE = 'royalty-static-v21';
+const DYNAMIC_CACHE = 'royalty-dynamic-v21';
 
 // Static assets to cache on install.
 //
