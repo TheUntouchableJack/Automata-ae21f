@@ -1696,7 +1696,7 @@
     <!-- ⚠️ Bump this alongside TRANSLATION_VERSION in i18n.js. That constant
          lives INSIDE this cached file, so a stale copy keeps requesting the old
          en.json and new keys never arrive. -->
-    <script src="/i18n/i18n.js?v=11"></script>
+    <script src="/i18n/i18n.js?v=12"></script>
     <script src="/js/venue-categories.js?v=2"></script>
     <!-- Same contract as venue-categories.js, for venues.music_genres. Must
          load before social.js, which renders the genre pills from it. -->
@@ -1713,7 +1713,7 @@
     <script src="/customer-app/social-auth.js?v=5"></script>
     <!-- ?v bump is load-bearing: sw.js caches cache-first keyed on the full
          URL, so returning PWA users keep the old renderer without it. -->
-    <script src="/customer-app/social.js?v=26"></script>
+    <script src="/customer-app/social.js?v=27"></script>
 
 </body>
 </html>

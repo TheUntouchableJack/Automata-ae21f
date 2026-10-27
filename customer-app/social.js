@@ -10315,6 +10315,12 @@ async function publishViibe(payload, { onProgress, onStatus, timings, onUploadPr
     times.save = Date.now() - savingAt;
     if (postError) throw postError;
     if (!row || row.success === false) {
+        // Suspended by the app team (20261027000001): said in the member's own
+        // language, and plainly, rather than the server's English.
+        if (/suspended/i.test(row?.error_message || '')) {
+            throw new Error(translateOr('social.accountSuspended', null,
+                'Your account is suspended in this app, so you cannot post right now.'));
+        }
         throw new Error(row?.error_message || 'Could not publish your Viibe');
     }
 

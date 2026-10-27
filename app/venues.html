@@ -514,6 +514,156 @@
         }
 
         /* ===== Members table ===== */
+        /* ===== Admin tools (2026-10-27) ===== */
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+            border: 1px solid #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .deleted-venues {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .deleted-venues-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+
+        .deleted-venues-header p {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            margin: 0 0 12px;
+        }
+
+        .deleted-venues-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .deleted-venue-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-surface);
+        }
+
+        .deleted-venue-name {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .deleted-venue-meta {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .deleted-venue-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .member-actions {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .member-actions .member-remove-btn + .member-remove-btn {
+            margin-left: 6px;
+        }
+
+        /* Unsuspend gives something back: not in the red of Remove. */
+        .member-remove-btn.member-neutral-btn {
+            color: var(--color-text);
+        }
+
+        .suspend-reason-label {
+            display: block;
+            margin: 12px 0 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        #suspend-reason {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font: inherit;
+            resize: vertical;
+        }
+
+        .suspend-error {
+            margin-top: 8px;
+            color: #ef4444;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .suspend-error[hidden] {
+            display: none;
+        }
+
+        .activity-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .activity-row {
+            padding: 12px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-surface);
+        }
+
+        .activity-text {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .activity-details {
+            margin-top: 2px;
+            font-size: 13px;
+            color: var(--color-text);
+        }
+
+        .activity-meta {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .activity-more-wrap {
+            display: flex;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .deleted-venue-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
         .members-table-wrap {
             border: 1px solid var(--color-border);
             border-radius: 8px;
@@ -1312,6 +1462,12 @@
                     <button class="admin-tab" data-admin-tab="reports">
                         <span data-i18n="venues.reportsTab">Reports</span> <span class="admin-tab-count" id="reports-count"></span>
                     </button>
+                    <!-- What the team did here, newest first: venues deleted,
+                         restored or deleted forever, members suspended or
+                         removed, reports reviewed, posts deleted (2026-10-27). -->
+                    <button class="admin-tab" data-admin-tab="activity">
+                        <span data-i18n="venues.activityTab">Activity</span>
+                    </button>
                 </div>
             </div>
 
@@ -1356,6 +1512,19 @@
                             Add First Venue
                         </button>
                     </div>
+
+                    <!-- Recently deleted (2026-10-27, Jay's board: "Venue
+                         Administration: Delete Venue"). Delete stays the soft,
+                         restorable one; from here a venue can be restored, or
+                         deleted forever with its posts and files (purge-venue,
+                         after the venue's name is typed). -->
+                    <section class="deleted-venues" id="deleted-venues" style="display: none;">
+                        <div class="deleted-venues-header">
+                            <h3><span data-i18n="venues.recentlyDeleted">Recently deleted</span> <span class="admin-tab-count" id="deleted-venues-count"></span></h3>
+                            <p data-i18n="venues.recentlyDeletedHint">Hidden from the app. Restore a venue, or delete it forever with its posts and files.</p>
+                        </div>
+                        <div class="deleted-venues-list" id="deleted-venues-list"></div>
+                    </section>
                 </div>
             </section>
 
@@ -1380,6 +1549,7 @@
                                     <th>Member</th>
                                     <th>Joined</th>
                                     <th>Last seen</th>
+                                    <th data-i18n="venues.memberStatus">Status</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -1420,6 +1590,24 @@
                     <div class="empty-state" id="reports-empty" style="display: none;">
                         <h3 id="reports-empty-title" data-i18n="venues.reportsEmptyOpen">No open reports</h3>
                         <p data-i18n="venues.reportsEmptyBody">When someone reports a post in the app, it appears here.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Activity (2026-10-27) =====
+                 This app's audit_logs, newest first, 20 at a time. -->
+            <section class="projects-section" id="admin-panel-activity" style="display: none;">
+                <div class="container">
+                    <div class="loading-container" id="activity-loading" style="display: none;">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div class="activity-list" id="activity-list"></div>
+                    <div class="empty-state" id="activity-empty" style="display: none;">
+                        <h3 data-i18n="venues.activityEmpty">No activity yet</h3>
+                        <p data-i18n="venues.activityEmptyBody">Changes the team makes to venues, members and reports appear here.</p>
+                    </div>
+                    <div class="activity-more-wrap">
+                        <button type="button" class="btn btn-secondary" id="activity-more" style="display: none;" data-i18n="venues.activityMore">Load more</button>
                     </div>
                 </div>
             </section>
@@ -1671,6 +1859,27 @@
     </div>
 
     <!-- Missing Coordinates Choice Modal (non-dismissable) -->
+    <!-- Suspend a member (2026-10-27). suspend_app_member hides their posts
+         in this app and stops them posting; Unsuspend puts the same posts
+         back. The reason is for the team, in the Activity tab. -->
+    <div class="modal-overlay" id="suspend-modal">
+        <div class="modal" style="max-width: 440px;" role="dialog" aria-modal="true" aria-labelledby="suspend-modal-title">
+            <div class="modal-header">
+                <h3 id="suspend-modal-title" data-i18n="venues.suspendTitle">Suspend this member?</h3>
+            </div>
+            <div class="modal-body">
+                <p id="suspend-modal-body" data-i18n="venues.suspendBody">Their posts are hidden from the app and they can't post until you unsuspend them. Unsuspending puts the same posts back.</p>
+                <label for="suspend-reason" class="suspend-reason-label" data-i18n="venues.suspendReason">Reason (only the team sees this)</label>
+                <textarea id="suspend-reason" rows="3" maxlength="500"></textarea>
+                <p class="suspend-error" id="suspend-error" role="alert" hidden></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="suspend-cancel" data-i18n="venues.cancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="suspend-confirm" data-i18n="venues.suspendConfirm">Suspend</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="coords-required-modal">
         <div class="modal" style="max-width: 420px;">
             <div class="modal-header">
@@ -1746,8 +1955,8 @@
     <script src="/js/venue-hours.js?v=1"></script>
     <!-- The Nominatim client, shared with the customer app's mobile venue
          admin. One promise queue for the whole site — see the file header. -->
-    <script src="/js/venue-places.js?v=1"></script>
-    <script src="../i18n/i18n.js?v=2"></script>
+    <script src="/js/venue-places.js?v=2"></script>
+    <script src="../i18n/i18n.js?v=3"></script>
     <script src="workspace.js?v=1"></script>
     <script src="auth.js?v=14"></script>
     <script src="utils.js?v=6"></script>
@@ -1765,6 +1974,13 @@
     let allVenues = [];
     let venueSearchQuery = '';
     let allMembers = [];
+    // Soft-deleted venues, for "Recently deleted" (2026-10-27).
+    let deletedVenues = [];
+    // The Activity tab: audit_logs, newest first, a page at a time.
+    const ACTIVITY_PAGE_SIZE = 20;
+    const ACTIVITY_ENTITY_TYPES = ['venue', 'app_member', 'venue_media'];
+    let activityRows = [];
+    let activityHasMore = false;
     let memberSearchQuery = '';
     let membersLoaded = false;
     let editingVenueId = null;
@@ -1826,11 +2042,290 @@
         if (tab === 'members' && !membersLoaded) loadMembers();
         // Every time: a report filed a minute ago must not need a reload.
         if (tab === 'reports') loadReports();
+        // Every time, for the same reason: it is a log of what just happened.
+        if (tab === 'activity') loadActivity(true);
     }
 
     // The report email links to venues.html#reports.
     function applyAdminTabFromHash() {
         if (location.hash === '#reports') switchAdminTab('reports');
+    }
+
+    // ===== Audit (2026-10-27) =====
+    // One row per change the team makes here, for the Activity tab. Never in
+    // the way: AuditLog.log() swallows its own errors, and nothing waits on it.
+    function auditViibe({ entityType, entityId = null, entityName = null, action, previousData = null, newData = {} }) {
+        if (typeof AuditLog === 'undefined' || !currentOrganization) return;
+        AuditLog.log({
+            organizationId: currentOrganization.id,
+            entityType,
+            entityId,
+            entityName,
+            action,
+            previousData,
+            newData: { app_id: currentApp?.id || null, ...newData }
+        });
+    }
+
+    // ===== Activity =====
+    async function loadActivity(reset = false) {
+        const list = document.getElementById('activity-list');
+        const empty = document.getElementById('activity-empty');
+        const more = document.getElementById('activity-more');
+        const loading = document.getElementById('activity-loading');
+        if (!list || !currentOrganization) return;
+
+        if (reset) {
+            activityRows = [];
+            list.innerHTML = '';
+            if (loading) loading.style.display = 'flex';
+        }
+        if (empty) empty.style.display = 'none';
+
+        const from = activityRows.length;
+        const { data, error } = await supabase
+            .from('audit_logs')
+            .select('id, created_at, user_name, user_email, entity_type, entity_id, entity_name, action, new_data')
+            .eq('organization_id', currentOrganization.id)
+            .in('entity_type', ACTIVITY_ENTITY_TYPES)
+            .order('created_at', { ascending: false })
+            .range(from, from + ACTIVITY_PAGE_SIZE - 1);
+
+        if (loading) loading.style.display = 'none';
+        if (error) {
+            console.error('Failed to load activity:', error);
+            showToast(AppUtils.tr('venues.activityFailed', 'Could not load the activity'), 'error');
+            return;
+        }
+
+        // Another app's entries in the same organization are not this page's.
+        const rows = (data || []).filter(r => !r.new_data?.app_id || r.new_data.app_id === currentApp?.id);
+        activityRows = [...activityRows, ...rows];
+        activityHasMore = (data || []).length === ACTIVITY_PAGE_SIZE;
+        renderActivity();
+    }
+
+    // What one entry says, in words.
+    function activityLine(row) {
+        const name = AppUtils.escapeHtml(row.entity_name || '');
+        const d = row.new_data || {};
+        const lines = {
+            'venue:delete': ['venues.actDeletedVenue', 'Deleted the venue {name}'],
+            'venue:restore': ['venues.actRestoredVenue', 'Restored the venue {name}'],
+            'venue:delete_forever': ['venues.actPurgedVenue', 'Deleted the venue {name} forever'],
+            'app_member:suspend': ['venues.actSuspended', 'Suspended {name}'],
+            'app_member:unsuspend': ['venues.actUnsuspended', 'Unsuspended {name}'],
+            'app_member:remove': ['venues.actRemovedMember', 'Removed the member {name}'],
+            'venue_media:report_remove': ['venues.actReportRemoved', 'Removed a reported post'],
+            'venue_media:report_dismiss': ['venues.actReportDismissed', 'Dismissed the reports on a post'],
+            'venue_media:report_restore': ['venues.actReportRestored', 'Restored a reported post'],
+            'venue_media:delete': ['venues.actDeletedPost', 'Deleted a post']
+        };
+        const [key, fallback] = lines[`${row.entity_type}:${row.action}`] || ['venues.actOther', '{action}: {name}'];
+        const text = AppUtils.tr(key, fallback, { name, action: AppUtils.escapeHtml(row.action || '') });
+
+        const details = [];
+        if (Array.isArray(d.removed_post_ids)) {
+            details.push(AppUtils.tr('venues.actPostsHidden', '{n} posts hidden', { n: d.removed_post_ids.length }));
+        }
+        if (Array.isArray(d.restored_post_ids)) {
+            details.push(AppUtils.tr('venues.actPostsRestored', '{n} posts restored', { n: d.restored_post_ids.length }));
+        }
+        if (Number.isFinite(d.posts_removed)) {
+            details.push(AppUtils.tr('venues.actPostsDeleted', '{n} posts deleted', { n: d.posts_removed }));
+        }
+        if (d.reason) details.push(`“${AppUtils.escapeHtml(d.reason)}”`);
+        return { text, details: details.join(' · ') };
+    }
+
+    function renderActivity() {
+        const list = document.getElementById('activity-list');
+        const empty = document.getElementById('activity-empty');
+        const more = document.getElementById('activity-more');
+        if (!list) return;
+        if (activityRows.length === 0) {
+            list.innerHTML = '';
+            if (empty) empty.style.display = 'block';
+            if (more) more.style.display = 'none';
+            return;
+        }
+        list.innerHTML = activityRows.map(row => {
+            const { text, details } = activityLine(row);
+            const who = AppUtils.escapeHtml(row.user_name || row.user_email || '');
+            const when = row.created_at ? new Date(row.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
+            return `
+                <div class="activity-row">
+                    <div class="activity-text">${text}</div>
+                    ${details ? `<div class="activity-details">${details}</div>` : ''}
+                    <div class="activity-meta">${who}${who && when ? ' · ' : ''}${AppUtils.escapeHtml(when)}</div>
+                </div>
+            `;
+        }).join('');
+        if (more) more.style.display = activityHasMore ? '' : 'none';
+    }
+
+    // ===== Recently deleted venues =====
+    async function loadDeletedVenues() {
+        const { data, error } = await supabase
+            .from('venues')
+            .select('id, name, city, state, deleted_at, profile_image_url')
+            .eq('app_id', currentApp.id)
+            .not('deleted_at', 'is', null)
+            .order('deleted_at', { ascending: false })
+            .limit(100);
+        if (error) {
+            console.error('Failed to load deleted venues:', error);
+            return;
+        }
+        deletedVenues = data || [];
+        renderDeletedVenues();
+    }
+
+    function renderDeletedVenues() {
+        const section = document.getElementById('deleted-venues');
+        const list = document.getElementById('deleted-venues-list');
+        const count = document.getElementById('deleted-venues-count');
+        if (!section || !list) return;
+        if (deletedVenues.length === 0) {
+            section.style.display = 'none';
+            list.innerHTML = '';
+            return;
+        }
+        section.style.display = '';
+        if (count) count.textContent = String(deletedVenues.length);
+        list.innerHTML = deletedVenues.map(v => {
+            const where = [v.city, v.state].filter(Boolean).join(', ');
+            const when = formatAdminDate(v.deleted_at);
+            return `
+                <div class="deleted-venue-row" data-venue-id="${v.id}">
+                    <div class="deleted-venue-text">
+                        <div class="deleted-venue-name">${AppUtils.escapeHtml(v.name || '')}</div>
+                        <div class="deleted-venue-meta">${AppUtils.escapeHtml([where, AppUtils.tr('venues.deletedOn', 'Deleted {date}', { date: when })].filter(Boolean).join(' · '))}</div>
+                    </div>
+                    <div class="deleted-venue-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="restoreVenue('${v.id}')" data-i18n="venues.restore">Restore</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmPurgeVenue('${v.id}')" data-i18n="venues.deleteForever">Delete forever</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function restoreVenue(venueId) {
+        const venue = deletedVenues.find(v => v.id === venueId);
+        const { error } = await supabase
+            .from('venues')
+            .update({ deleted_at: null })
+            .eq('id', venueId);
+        if (error) {
+            console.error('Failed to restore venue:', error);
+            showToast(AppUtils.tr('venues.restoreFailed', 'Could not restore this venue'), 'error');
+            return;
+        }
+        auditViibe({ entityType: 'venue', entityId: venueId, entityName: venue?.name || null, action: 'restore' });
+        showToast(AppUtils.tr('venues.restored', 'Venue restored'), 'success');
+        await Promise.all([loadVenues(), loadDeletedVenues()]);
+    }
+
+    // "Delete forever": the venue's name, typed, then purge-venue.
+    function confirmPurgeVenue(venueId) {
+        const venue = deletedVenues.find(v => v.id === venueId);
+        if (!venue) return;
+        DangerModal.show({
+            title: AppUtils.tr('venues.deleteForeverTitle', 'Delete this venue forever'),
+            itemName: venue.name,
+            warningText: AppUtils.tr('venues.deleteForeverWarning',
+                'This permanently deletes the venue, every post at it, and their files. Followers and owners lose it too. This cannot be undone.'),
+            confirmPhrase: venue.name,
+            confirmButtonText: AppUtils.tr('venues.deleteForever', 'Delete forever'),
+            onConfirm: async () => {
+                const { data, error } = await supabase.functions.invoke('purge-venue', { body: { venue_id: venueId } });
+                if (error || data?.success === false) {
+                    console.error('purge-venue failed:', error || data);
+                    showToast(data?.error || AppUtils.tr('venues.deleteForeverFailed', 'Could not delete this venue'), 'error');
+                    return;
+                }
+                showToast(AppUtils.tr('venues.deletedForever', 'Venue deleted forever'), 'success');
+                await loadDeletedVenues();
+            }
+        });
+    }
+
+    // ===== Suspend / unsuspend a member =====
+    let suspendingMemberId = null;
+
+    function openSuspendMember(memberId) {
+        const member = allMembers.find(m => m.id === memberId);
+        const modal = document.getElementById('suspend-modal');
+        if (!member || !modal) return;
+        suspendingMemberId = memberId;
+        const name = memberDisplayName(member);
+        document.getElementById('suspend-modal-title').textContent =
+            AppUtils.tr('venues.suspendTitleNamed', 'Suspend {name}?', { name });
+        document.getElementById('suspend-reason').value = '';
+        const err = document.getElementById('suspend-error');
+        err.hidden = true;
+        err.textContent = '';
+        const confirmBtn = document.getElementById('suspend-confirm');
+        confirmBtn.disabled = false;
+        modal.classList.add('active');
+        document.getElementById('suspend-reason').focus();
+    }
+
+    function closeSuspendMember() {
+        document.getElementById('suspend-modal')?.classList.remove('active');
+        suspendingMemberId = null;
+    }
+
+    async function confirmSuspendMember() {
+        const memberId = suspendingMemberId;
+        if (!memberId) return;
+        const member = allMembers.find(m => m.id === memberId);
+        const confirmBtn = document.getElementById('suspend-confirm');
+        const err = document.getElementById('suspend-error');
+        confirmBtn.disabled = true;
+
+        const { data, error } = await supabase.rpc('suspend_app_member', {
+            p_member_id: memberId,
+            p_reason: document.getElementById('suspend-reason').value.trim() || null
+        });
+        const row = Array.isArray(data) ? data[0] : data;
+        // A SECURITY DEFINER function's success:false does not set `error`.
+        if (error || !row || row.success === false) {
+            confirmBtn.disabled = false;
+            err.textContent = row?.error_message || AppUtils.tr('venues.suspendFailed', 'Could not suspend this member');
+            err.hidden = false;
+            return;
+        }
+        closeSuspendMember();
+        showToast(AppUtils.tr('venues.suspended', '{name} is suspended. {n} posts hidden.',
+            { name: memberDisplayName(member), n: row.posts_removed ?? 0 }), 'success');
+        await loadMembers();
+    }
+
+    async function unsuspendMember(memberId) {
+        const member = allMembers.find(m => m.id === memberId);
+        if (!member) return;
+        if (!confirm(AppUtils.tr('venues.unsuspendConfirm', 'Unsuspend {name}? Their hidden posts come back and they can post again.',
+            { name: memberDisplayName(member) }))) {
+            return;
+        }
+        const { data, error } = await supabase.rpc('unsuspend_app_member', { p_member_id: memberId });
+        const row = Array.isArray(data) ? data[0] : data;
+        if (error || !row || row.success === false) {
+            showToast(row?.error_message || AppUtils.tr('venues.unsuspendFailed', 'Could not unsuspend this member'), 'error');
+            return;
+        }
+        showToast(AppUtils.tr('venues.unsuspended', '{name} can post again. {n} posts restored.',
+            { name: memberDisplayName(member), n: row.posts_restored ?? 0 }), 'success');
+        await loadMembers();
+    }
+
+    // ⚠️ AppUtils.escapeHtml() is text-context only: it leaves " alone. A value
+    // placed inside an attribute (the Suspended badge's title) also needs
+    // .replace(/"/g, '&quot;'), or a reason with a quote writes an attribute.
+    function memberDisplayName(m) {
+        return (m && (m.display_name || [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email)) || '';
     }
 
     // ===== Reports =====
@@ -1970,6 +2465,8 @@
             return;
         }
 
+        auditViibe({ entityType: 'venue_media', entityId: mediaId, action: `report_${action}` });
+
         const done = {
             remove: ['venues.reportsRemoved', 'Post removed'],
             dismiss: ['venues.reportsDismissed', 'Reports dismissed'],
@@ -2011,7 +2508,7 @@
         // organization, so no extra filter is needed beyond app_id.
         const { data, error } = await supabase
             .from('app_members')
-            .select('id, first_name, last_name, display_name, email, phone, avatar_url, user_id, joined_at, last_login_at')
+            .select('id, first_name, last_name, display_name, email, phone, avatar_url, user_id, joined_at, last_login_at, suspended_at, suspended_reason')
             .eq('app_id', currentApp.id)
             .is('deleted_at', null)
             .order('joined_at', { ascending: false })
@@ -2081,8 +2578,14 @@
                     </td>
                     <td class="member-muted">${formatAdminDate(m.joined_at)}</td>
                     <td class="member-muted">${m.last_login_at ? formatAdminDate(m.last_login_at) : 'Never'}</td>
-                    <td style="text-align:right;">
-                        <button class="member-remove-btn" onclick="removeMember('${m.id}', '${AppUtils.escapeHtml(name).replace(/'/g, "\\'")}')">Remove</button>
+                    <td>${m.suspended_at
+                        ? `<span class="badge badge-inactive" title="${AppUtils.escapeHtml(m.suspended_reason || '').replace(/"/g, '&quot;')}">${AppUtils.escapeHtml(AppUtils.tr('venues.suspendedBadge', 'Suspended'))}</span>`
+                        : `<span class="member-muted">${AppUtils.escapeHtml(AppUtils.tr('venues.memberActive', 'Active'))}</span>`}</td>
+                    <td class="member-actions">
+                        ${m.user_id ? (m.suspended_at
+                            ? `<button class="member-remove-btn member-neutral-btn" onclick="unsuspendMember('${m.id}')">${AppUtils.escapeHtml(AppUtils.tr('venues.unsuspend', 'Unsuspend'))}</button>`
+                            : `<button class="member-remove-btn" onclick="openSuspendMember('${m.id}')">${AppUtils.escapeHtml(AppUtils.tr('venues.suspend', 'Suspend'))}</button>`) : ''}
+                        <button class="member-remove-btn" onclick="removeMember('${m.id}')">Remove</button>
                     </td>
                 </tr>
             `;
@@ -2103,6 +2606,11 @@
      * (delete-social-account edge function).
      */
     async function removeMember(memberId, memberName) {
+        // ⚠️ The name is looked up here, never passed in the onclick. It used
+        // to be: escapeHtml() leaves " alone, so a member who named themselves
+        // `x" onmouseover="…"` wrote an attribute into the owner's dashboard
+        // (stored XSS; display names are free text up to 60 characters).
+        memberName = memberName || memberDisplayName(allMembers.find(m => m.id === memberId)) || '(no name)';
         if (!confirm(`Remove ${memberName} from this app?\n\nTheir membership and profile are removed. Their login is not deleted — only they can do that, from the app.`)) {
             return;
         }
@@ -2118,6 +2626,7 @@
             return;
         }
 
+        auditViibe({ entityType: 'app_member', entityId: memberId, entityName: memberName, action: 'remove' });
         allMembers = allMembers.filter(m => m.id !== memberId);
         const countEl = document.getElementById('members-count');
         if (countEl) countEl.textContent = allMembers.length ? String(allMembers.length) : '';
@@ -2260,6 +2769,8 @@
 
         await loadVenues();
         setupEventListeners();
+        // Recently deleted, under the grid. Not awaited: the grid is the page.
+        loadDeletedVenues();
 
         // The badge on the Reports tab, and the tab itself when the report
         // email's link (#reports) brought the owner here.
@@ -2414,7 +2925,7 @@
                                     ${venue.is_active ? 'Deactivate' : 'Activate'}
                                 </button>
                                 <div class="dropdown-divider"></div>
-                                <button class="danger" onclick="deleteVenue('${venue.id}', '${AppUtils.escapeHtml(venue.name).replace(/'/g, "\\'")}', event)">
+                                <button class="danger" onclick="deleteVenue('${venue.id}', null, event)">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                                     Delete
                                 </button>
@@ -2453,6 +2964,15 @@
             btn.addEventListener('click', () => switchAdminTab(btn.dataset.adminTab));
         });
         window.addEventListener('hashchange', applyAdminTabFromHash);
+
+        // Activity: the next page. Suspend: the dialog's two buttons, and a
+        // click on the dimmed backdrop closes it like Cancel.
+        document.getElementById('activity-more')?.addEventListener('click', () => loadActivity(false));
+        document.getElementById('suspend-cancel')?.addEventListener('click', closeSuspendMember);
+        document.getElementById('suspend-confirm')?.addEventListener('click', confirmSuspendMember);
+        document.getElementById('suspend-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'suspend-modal') closeSuspendMember();
+        });
 
         // Reports: Open | Resolved
         document.querySelectorAll('.reports-filter-btn').forEach(btn => {
@@ -3352,6 +3872,10 @@
 
     async function deleteVenue(venueId, venueName, event) {
         event.stopPropagation();
+        // Looked up, not passed in the onclick, for the same reason as
+        // removeMember(): members can create venues from the app, so a venue's
+        // name is member text too.
+        venueName = venueName || allVenues.find(v => v.id === venueId)?.name || '';
         closeAllDropdowns();
 
         if (!confirm(`Delete "${venueName}"? This can be undone within 1 hour.`)) return;
@@ -3364,6 +3888,7 @@
 
             if (error) throw error;
 
+            auditViibe({ entityType: 'venue', entityId: venueId, entityName: venueName, action: 'delete' });
             showToast('Venue deleted', 'success');
 
             // Show undo toast
@@ -3373,11 +3898,11 @@
                     entityType: 'venues',
                     entityId: venueId,
                     entityName: venueName,
-                    onUndo: () => loadVenues()
+                    onUndo: () => { loadVenues(); loadDeletedVenues(); }
                 });
             }
 
-            await loadVenues();
+            await Promise.all([loadVenues(), loadDeletedVenues()]);
         } catch (err) {
             showToast('Failed to delete venue', 'error');
         }
@@ -3590,6 +4115,7 @@
                 throw new Error(data?.error || error?.message || 'Delete failed');
             }
 
+            auditViibe({ entityType: 'venue_media', entityId: mediaId, action: 'delete', newData: { venue_id: venueId } });
             showToast('Media deleted', 'success');
             await loadExistingMedia(venueId);
             await loadVenues();
