@@ -900,6 +900,44 @@ if (retryBtn) {
     });
 }
 
+// ── ?prompt= : the /loyalty-program/<industry> pages send visitors here with a
+// sample description already written. Value only (never parsed as HTML), capped
+// at 500 characters like the landing-page textarea. It beats a restored draft:
+// the visitor just chose this text by clicking through. The prompt is then
+// stripped from the address bar (and so from PostHog's pageview URL, since this
+// runs before the deferred analytics script); `from` stays for attribution.
+const HERO_URL_PROMPT = (function () {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const value = (params.get('prompt') || '').slice(0, 500).trim();
+        if (!value) return null;
+        const from = (params.get('from') || '').replace(/[^a-z0-9-]/gi, '').slice(0, 60);
+        params.delete('prompt');
+        const qs = params.toString();
+        history.replaceState(history.state, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+        return { value, from };
+    } catch (e) {
+        return null;
+    }
+})();
+
+function applyPromptFromUrl() {
+    if (!HERO_URL_PROMPT) return;
+    const promptEl = document.getElementById('hero-business-prompt');
+    if (!promptEl) return;
+    showHeroState('hero-prompt-state');
+    promptEl.value = HERO_URL_PROMPT.value;
+    // window.Analytics is created by a deferred script, i.e. after this file runs.
+    document.addEventListener('DOMContentLoaded', () => {
+        window.Analytics?.track('hero_prompt_prefilled', { from: HERO_URL_PROMPT.from || null });
+    }, { once: true });
+    // On a phone the card sits below the headline, so the text they just sent
+    // would be off screen. Bring it into view; no focus, so no keyboard pops up.
+    window.addEventListener('load', () => {
+        document.getElementById('discovery-card')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, { once: true });
+}
+
 // Restore onboarding data if returning user has saved data
 function restoreOnboardingData() {
     if (typeof OnboardingStorage === 'undefined') return;
@@ -926,7 +964,8 @@ function restoreOnboardingData() {
 
 function applyOnboardingData(data) {
     // If they have a business prompt, show the prompt state with their text pre-filled
-    if (data.businessPrompt) {
+    // (unless they arrived with one in the URL, which wins).
+    if (data.businessPrompt && !HERO_URL_PROMPT) {
         showHeroState('hero-prompt-state');
         const promptEl = document.getElementById('hero-business-prompt');
         if (promptEl) promptEl.value = data.businessPrompt;
@@ -934,6 +973,7 @@ function applyOnboardingData(data) {
 }
 
 restoreOnboardingData();
+applyPromptFromUrl();
 
 // ─── Word-cycling utility for the AI orb (item 3) ──────────────────
 const ORB_WORD_KEYS = [

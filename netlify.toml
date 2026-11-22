@@ -408,6 +408,24 @@
   to = "/royalty-vs-loyalty.html"
   status = 200
 
+# Industry landing pages (/loyalty-program/<industry>). The clean URL is the
+# canonical one: it is what the pages' <link rel="canonical"> and the sitemap say.
+# Add one block per new page; they must stay above the /* -> 404 catch-all.
+[[redirects]]
+  from = "/loyalty-program/coffee-shop"
+  to = "/loyalty-program/coffee-shop.html"
+  status = 200
+
+[[redirects]]
+  from = "/loyalty-program/barbershop"
+  to = "/loyalty-program/barbershop.html"
+  status = 200
+
+[[redirects]]
+  from = "/loyalty-program/nail-salon"
+  to = "/loyalty-program/nail-salon.html"
+  status = 200
+
 # Clean URLs for legal/contact pages
 [[redirects]]
   from = "/contact"

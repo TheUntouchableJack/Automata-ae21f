@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Industry landing page. How to add one: docs/templates/loyalty-program-page.md.
+         Hand-edited: the reward and tier numbers match the "coffee" niche in
+         app/app-config-fallback.js, so the app the generator builds agrees with this page. -->
+    <title>Coffee Shop Loyalty Program Ideas (With Point Values)</title>
+    <meta name="description" content="Coffee shop loyalty program ideas priced in visits: a free pastry on the 5th, every 10th coffee free, tiers, birthday and win-back tips. Build yours free.">
+    <link rel="canonical" href="https://royaltyapp.ai/loyalty-program/coffee-shop">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://royaltyapp.ai/loyalty-program/coffee-shop">
+    <meta property="og:title" content="Coffee Shop Loyalty Program Ideas (With Point Values)">
+    <meta property="og:description" content="Reward ideas priced in visits, a four-tier ladder for daily regulars, and the follow-ups that bring lapsed customers back.">
+    <meta property="og:image" content="https://royaltyapp.ai/og-image.png">
+    <meta property="og:site_name" content="Royalty">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Coffee Shop Loyalty Program Ideas (With Point Values)">
+    <meta name="twitter:description" content="Reward ideas priced in visits, a four-tier ladder for daily regulars, and the follow-ups that bring lapsed customers back.">
+    <meta name="twitter:image" content="https://royaltyapp.ai/og-image.png">
+
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "url": "https://royaltyapp.ai/loyalty-program/coffee-shop",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "What is a good loyalty program for a coffee shop?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A visit-based digital punch card with an early first reward (around the 5th visit), a free coffee on the 10th visit, a bigger reward for long-time regulars, and automatic birthday and win-back messages. Counting visits rather than dollars keeps it simple for customers and fair for people who order a plain drip."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "How many stamps should a coffee punch card have?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Ten is the standard because customers already understand \"buy nine, the tenth is free\". Adding a smaller reward around the fifth visit helps new customers reach a first reward before they lose interest."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Should a coffee shop loyalty program count visits or dollars spent?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Visits, for most independent cafés. Order sizes are similar, visits are what you want more of, and a visit count is easy to explain at the counter. Spend-based points make more sense when basket sizes vary a lot, as in a bakery-café with whole cakes."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "How do customers check in without an app download?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "With Royalty they scan a QR code at the counter with their phone camera, which opens your loyalty app in the browser. They can add it to their home screen, but nobody has to download anything from an app store."
+            }
+        }
+    ]
+}
+    </script>
+
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://royaltyapp.ai/"
+        },
+        {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Coffee shops loyalty program",
+            "item": "https://royaltyapp.ai/loyalty-program/coffee-shop"
+        }
+    ]
+}
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css?v=21">
+    <link rel="stylesheet" href="/i18n/i18n.css">
+    <link rel="stylesheet" href="/loyalty-program/industry.css?v=2">
+
+    <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
+         Cookieless on public pages, so there is no consent banner. See js/analytics.js. -->
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">
+                <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                <span class="logo-text">Royalty</span>
+            </a>
+            <div class="nav-links">
+                <a href="/#features" data-i18n="nav.features">Features</a>
+                <a href="/pricing.html" data-i18n="nav.pricing">Pricing</a>
+                <a href="/estimate.html" data-i18n="nav.customBuilds">Custom Apps</a>
+                <a href="/roadmap" data-i18n="nav.roadmap">Roadmap</a>
+                <a href="/blog/" data-i18n="nav.blog">Blog</a>
+            </div>
+            <div class="nav-cta">
+                <a href="/app/login.html" class="btn btn-secondary" data-i18n="nav.login">Log In</a>
+                <a href="/#cta" class="btn btn-primary" data-i18n="nav.joinWaitlist">Get Started</a>
+                <!-- Language Selector -->
+                <div class="lang-selector">
+                    <button class="lang-selector-btn" type="button" aria-label="Change language">
+                        <span class="lang-selector-current">EN</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-option active" data-lang="en">EN</a>
+                        <a href="#" class="lang-option" data-lang="es">ES</a>
+                        <a href="#" class="lang-option" data-lang="fr">FR</a>
+                        <a href="#" class="lang-option" data-lang="de">DE</a>
+                        <a href="#" class="lang-option" data-lang="it">IT</a>
+                        <a href="#" class="lang-option" data-lang="pt">PT</a>
+                        <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                        <a href="#" class="lang-option" data-lang="ar">AR</a>
+                    </div>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Drawer -->
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay" aria-hidden="true"></div>
+    <div class="mobile-menu-drawer" id="mobile-menu-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu" aria-hidden="true">
+        <div class="mobile-menu-header">
+            <a href="/" class="logo">
+                <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                <span class="logo-text">Royalty</span>
+            </a>
+            <button class="mobile-menu-close" aria-label="Close menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="/" class="mobile-menu-link" data-i18n="nav.home">Home</a>
+            <a href="/#features" class="mobile-menu-link" data-i18n="nav.features">Features</a>
+            <a href="/pricing.html" class="mobile-menu-link" data-i18n="nav.pricing">Pricing</a>
+            <a href="/estimate.html" class="mobile-menu-link" data-i18n="nav.customBuilds">Custom Apps</a>
+            <a href="/blog/" class="mobile-menu-link" data-i18n="nav.blog">Blog</a>
+        </nav>
+        <div class="mobile-menu-cta">
+            <a href="/app/login.html" class="btn btn-secondary btn-block" data-i18n="nav.login">Log In</a>
+            <a href="/#cta" class="btn btn-primary btn-block" data-i18n="nav.joinWaitlist">Get Started</a>
+        </div>
+        <div class="mobile-menu-footer">
+            <div class="lang-selector mobile-lang-selector">
+                <button class="lang-selector-btn" type="button" aria-label="Change language">
+                    <span class="lang-selector-current">EN</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="lang-dropdown">
+                    <a href="#" class="lang-option active" data-lang="en">EN</a>
+                    <a href="#" class="lang-option" data-lang="es">ES</a>
+                    <a href="#" class="lang-option" data-lang="fr">FR</a>
+                    <a href="#" class="lang-option" data-lang="de">DE</a>
+                    <a href="#" class="lang-option" data-lang="it">IT</a>
+                    <a href="#" class="lang-option" data-lang="pt">PT</a>
+                    <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                    <a href="#" class="lang-option" data-lang="ar">AR</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="industry">
+        <div class="container">
+            <article class="industry-inner">
+                <nav class="industry-crumbs" aria-label="Breadcrumb">
+                    <ol>
+                        <li><a href="/">Home</a></li>
+                        <li aria-current="page">Coffee shops</li>
+                    </ol>
+                </nav>
+
+                <h1>Coffee shop loyalty program ideas that keep regulars coming back</h1>
+
+                <p class="industry-answer">
+                    The coffee shop programs that work count <strong>visits</strong>, not dollars, and pay out early: something small around the <strong>5th visit</strong>, a free coffee on the <strong>10th</strong>, and a bigger reward for people who have been in dozens of times. Your regulars come in several times a week, so a reward that takes a month to reach is one they will actually see.
+                </p>
+
+                <!-- The generator, pre-filled. A plain GET form so it works without
+                     JavaScript: the homepage reads ?prompt= into the hero textarea
+                     (script.js, HERO_URL_PROMPT) and ?from= attributes the visit. -->
+                <section class="industry-build" id="build" aria-labelledby="build-heading">
+                    <h2 id="build-heading">See your coffee shop&#x27;s loyalty app</h2>
+                    <p>Royalty builds the whole program, with rewards, tiers and the follow-up messages, from one description. You see the finished app before you sign up.</p>
+                    <form class="industry-generator" action="/" method="get" data-industry="coffee-shop">
+                        <label for="industry-prompt">Describe your coffee shop</label>
+                        <textarea id="industry-prompt" name="prompt" rows="4" maxlength="500">I run a neighborhood coffee shop called Bean There. Most of our regulars come in a few times a week for a latte or a drip coffee, and I want to reward them and win back people who stop coming in.</textarea>
+                        <input type="hidden" name="from" value="industry-coffee-shop">
+                        <p class="industry-build-hint">Change the name and details to yours, or keep the example to see how it works.</p>
+                        <button type="submit" class="btn btn-primary btn-large">Build my loyalty app, free</button>
+                    </form>
+                </section>
+
+                <h2>Who this is for</h2>
+                <p>This is for an independent café, espresso bar, roastery counter or tea and boba shop where the same faces come back several times a week. A typical regular visits <strong>two to four times a week</strong>, which is 100 to 150 visits a year. That rhythm is what every number below is built around.</p>
+                <p>If most of your sales are one-off tourists or office catering orders, a loyalty program will do less for you than a good Google Business profile. It pays off when a slice of your customers already has a routine and you want that routine to include you more often.</p>
+
+                <h2>Reward ideas, priced in visits</h2>
+                <p>In Royalty, a coffee shop program is a digital punch card: <strong>1 point per visit</strong>, so every number below is also a number of visits.</p>
+                <ol class="reward-ladder">
+                    <li>
+                        <span class="reward-name">Free Pastry</span>
+                        <span class="reward-cost">5 visits</span>
+                        <p class="reward-why">The first reward lands within the first couple of weeks. An early win is what turns a new customer into someone who checks their balance.</p>
+                    </li>
+                    <li>
+                        <span class="reward-name">Free House Coffee</span>
+                        <span class="reward-cost">10 visits</span>
+                        <p class="reward-why">The classic &quot;10th one is on us&quot; punch card. Everyone understands it without reading the rules.</p>
+                    </li>
+                    <li>
+                        <span class="reward-name">Free Specialty Drink</span>
+                        <span class="reward-cost">15 visits</span>
+                        <p class="reward-why">A latte, mocha or signature drink costs you more than drip, so it sits one step higher and gives regulars something to save toward.</p>
+                    </li>
+                    <li>
+                        <span class="reward-name">Bag of House Beans</span>
+                        <span class="reward-cost">30 visits, Regular tier and up</span>
+                        <p class="reward-why">Your best customers take your coffee home, which keeps you in their morning even on the days they don’t come in.</p>
+                    </li>
+                    <li>
+                        <span class="reward-name">Birthday drink</span>
+                        <span class="reward-cost">no points needed</span>
+                        <p class="reward-why">Any drink on their birthday, sent automatically. It’s the reward people mention to friends.</p>
+                    </li>
+                </ol>
+
+                <h2>A tier ladder that fits the visit rhythm</h2>
+                <p>Tiers give a customer a reason to pick your shop over the one next door when both are on the way. At several visits a week, these come in reachable steps:</p>
+                <div class="tier-ladder">
+                    <div class="tier-card">
+                        <h3>Newcomer</h3>
+                        <p class="tier-when">From the first visit</p>
+                        <p>Earns toward every reward from day one.</p>
+                    </div>
+                    <div class="tier-card">
+                        <h3>Regular</h3>
+                        <p class="tier-when">25 visits, about 2 months</p>
+                        <p>Unlocks the bag of beans and early tastes of seasonal drinks.</p>
+                    </div>
+                    <div class="tier-card">
+                        <h3>The Usual</h3>
+                        <p class="tier-when">75 visits, about 6 months</p>
+                        <p>Their order started before they reach the counter. Say it out loud: they’ve earned it.</p>
+                    </div>
+                    <div class="tier-card">
+                        <h3>House Legend</h3>
+                        <p class="tier-when">200 visits, about 18 months</p>
+                        <p>A free drink every month, or their name on a mug that lives behind the bar.</p>
+                    </div>
+                </div>
+                <p>The perks are suggestions. Pick the ones that cost you little and mean something to your regulars.</p>
+
+                <h2>Four things that make it work</h2>
+                <h3>Put the QR code where the line forms</h3>
+                <p>A check-in happens in the ten seconds between ordering and paying. Tape the code to the counter or the pastry case, not by the door, and have the barista say &quot;scan for your point&quot; while the card reader thinks.</p>
+                <h3>Send a birthday drink automatically</h3>
+                <p>Ask for a birthday at sign-up and let the app send the reward that morning. It costs one drink and brings in the friend they bring with them.</p>
+                <h3>Win back regulars after 21 days</h3>
+                <p>A daily customer who hasn’t been in for three weeks has usually found another shop. A short &quot;we miss you, your next drink is on us&quot; message then works far better than a discount sent to everyone.</p>
+                <h3>Use double points on your slowest mornings</h3>
+                <p>If Tuesdays after 10am are quiet, double points in that window moves visits to when you have capacity instead of giving away margin at the rush.</p>
+
+                <section class="industry-faq" aria-labelledby="faq-heading">
+                    <h2 id="faq-heading">Questions owners ask</h2>
+                    <h3>What is a good loyalty program for a coffee shop?</h3>
+                    <p>A visit-based digital punch card with an early first reward (around the 5th visit), a free coffee on the 10th visit, a bigger reward for long-time regulars, and automatic birthday and win-back messages. Counting visits rather than dollars keeps it simple for customers and fair for people who order a plain drip.</p>
+                    <h3>How many stamps should a coffee punch card have?</h3>
+                    <p>Ten is the standard because customers already understand &quot;buy nine, the tenth is free&quot;. Adding a smaller reward around the fifth visit helps new customers reach a first reward before they lose interest.</p>
+                    <h3>Should a coffee shop loyalty program count visits or dollars spent?</h3>
+                    <p>Visits, for most independent cafés. Order sizes are similar, visits are what you want more of, and a visit count is easy to explain at the counter. Spend-based points make more sense when basket sizes vary a lot, as in a bakery-café with whole cakes.</p>
+                    <h3>How do customers check in without an app download?</h3>
+                    <p>With Royalty they scan a QR code at the counter with their phone camera, which opens your loyalty app in the browser. They can add it to their home screen, but nobody has to download anything from an app store.</p>
+                </section>
+
+                <p class="industry-end-cta">
+                    <a href="#build" class="btn btn-primary btn-large">Build my loyalty app, free</a>
+                </p>
+
+                <section class="industry-more" aria-labelledby="more-heading">
+                    <h2 id="more-heading">Loyalty programs for other businesses</h2>
+                    <ul>
+                    <li><a href="/loyalty-program/barbershop">Barbershop loyalty program ideas</a></li>
+                    <li><a href="/loyalty-program/nail-salon">Nail salon loyalty program ideas</a></li>
+                    </ul>
+                    <p>Or read <a href="/royalty-vs-loyalty.html">what a loyalty program actually is</a>, see <a href="/automations/">the automations that run it</a>, or check <a href="/pricing.html">what it costs</a>.</p>
+                </section>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <img src="/logo.svg" alt="Royalty" class="logo-icon">
+                        <span class="logo-text">Royalty</span>
+                    </a>
+                    <p data-i18n="footer.tagline">AI that builds and runs your loyalty program.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.product">Product</h4>
+                        <a href="/#features" data-i18n="footer.features">Features</a>
+                        <a href="/pricing.html" data-i18n="nav.pricing">Pricing</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.company">Company</h4>
+                        <a href="/about.html" data-i18n="footer.about">About</a>
+                        <a href="/blog/" data-i18n="nav.blog">Blog</a>
+                        <a href="/contact" data-i18n="footer.contact">Contact</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 data-i18n="footer.legal">Legal</h4>
+                        <a href="/privacy" data-i18n="footer.privacy">Privacy</a>
+                        <a href="/terms" data-i18n="footer.terms">Terms</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p data-i18n="footer.copyright">&copy; 2026 Royalty. All rights reserved.</p>
+                <!-- Footer Language Selector -->
+                <div class="lang-selector compact">
+                    <button class="lang-selector-btn" type="button" aria-label="Change language">
+                        <span class="lang-selector-current">EN</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-option active" data-lang="en">EN</a>
+                        <a href="#" class="lang-option" data-lang="es">ES</a>
+                        <a href="#" class="lang-option" data-lang="fr">FR</a>
+                        <a href="#" class="lang-option" data-lang="de">DE</a>
+                        <a href="#" class="lang-option" data-lang="it">IT</a>
+                        <a href="#" class="lang-option" data-lang="pt">PT</a>
+                        <a href="#" class="lang-option" data-lang="zh">ZH</a>
+                        <a href="#" class="lang-option" data-lang="ar">AR</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Best-effort click event; the reliable signal is ?from= on the homepage
+        // pageview and its hero_prompt_prefilled event, since this page unloads
+        // straight away.
+        document.querySelector('.industry-generator')?.addEventListener('submit', function () {
+            window.Analytics?.track('industry_page_cta', { industry: this.dataset.industry });
+        });
+    </script>
+    <script src="/i18n/i18n.js?v=3"></script>
+    <script src="/script.js?v=24"></script>
+</body>
+</html>
