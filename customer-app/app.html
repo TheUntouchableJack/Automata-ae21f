@@ -8,11 +8,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>My Rewards</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/customer-app/manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="/customer-app/app.css">
     <style>
         /* App-specific styles */
         body {
@@ -2762,9 +2762,9 @@
             // ⚠️ The printed QR is /a/{slug}/checkin. Netlify rewrites it to this page with
             // status 200, so the browser keeps THAT url: no ?slug=, no ?action=. Read both from
             // the path too, or a first-time scan arrives here knowing neither.
-            const pathMatch = window.location.pathname.match(/^\/a\/([^\/?#]+)(\/checkin)?\/?$/);
+            const pathMatch = window.location.pathname.match(/^\/a\/([^\/?#]+)(\/checkin|\/app)?\/?$/);
             appSlug = params.get('slug') || (pathMatch ? decodeURIComponent(pathMatch[1]) : null) || localStorage.getItem('app_slug');
-            const wantsCheckin = params.get('action') === 'checkin' || !!(pathMatch && pathMatch[2]);
+            const wantsCheckin = params.get('action') === 'checkin' || !!(pathMatch && pathMatch[2] === '/checkin');
 
             if (!appSlug) {
                 window.location.href = '/customer-app/index.html';

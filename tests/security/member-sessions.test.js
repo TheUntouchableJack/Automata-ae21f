@@ -208,10 +208,18 @@ describe('customer app ↔ SQL contract', () => {
   it('app.html reads the slug and the check-in from the /a/{slug}/checkin path, not only the query', () => {
     // Netlify's 200 rewrite keeps the browser on /a/{slug}/checkin: location.search is empty there.
     const init = APP.slice(APP.indexOf('async function init()'), APP.indexOf('async function loadApp()'))
-    expect(init).toContain("const pathMatch = window.location.pathname.match(/^\\/a\\/([^\\/?#]+)(\\/checkin)?\\/?$/);")
+    expect(init).toContain("const pathMatch = window.location.pathname.match(/^\\/a\\/([^\\/?#]+)(\\/checkin|\\/app)?\\/?$/);")
     expect(init).toMatch(/appSlug = params\.get\('slug'\) \|\| \(pathMatch \? decodeURIComponent\(pathMatch\[1\]\) : null\)/)
-    expect(init).toMatch(/const wantsCheckin = params\.get\('action'\) === 'checkin' \|\| !!\(pathMatch && pathMatch\[2\]\);/)
+    expect(init).toContain("const wantsCheckin = params.get('action') === 'checkin' || !!(pathMatch && pathMatch[2] === '/checkin');")
     expect(init).toMatch(/const action = wantsCheckin \? 'checkin'/)
+  })
+
+  it('both pages load their own assets by absolute path (they are served under /a/{slug}/...)', () => {
+    for (const src of [INDEX, APP]) {
+      expect(src).toContain('<link rel="manifest" href="/customer-app/manifest.json">')
+      expect(src).not.toMatch(/<link[^>]+href="(?!\/|https?:)[^"]+"/)
+    }
+    expect(APP).toContain('<link rel="stylesheet" href="/customer-app/app.css">')
   })
 
   it('every new index.html string exists in all 8 languages', () => {
