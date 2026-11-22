@@ -41,6 +41,7 @@
     "chatPlaceholder": "Quick question?",
     "fullChat": "Open full chat",
     "rewards": "Rewards",
+    "counter": "Mostrador",
     "customBuilds": "Custom Apps",
     "blogReview": "Revisión de Blog",
     "ceo": "CEO"
@@ -521,7 +522,9 @@
     "switchApp": "Cambiar App",
     "appLive": "En Vivo",
     "appDraft": "Borrador",
-    "today": "Hoy"
+    "today": "Hoy",
+    "rewardsGivenToday": "Recompensas entregadas hoy",
+    "openCounter": "Abrir mostrador"
   },
   "aiFeed": {
     "title": "Feed de Inteligencia IA",
@@ -2501,5 +2504,34 @@
     "bannerBody": "Estás en la lista y te enviaremos un correo cuando esté activo para tu negocio. Todo lo demás funciona con normalidad.",
     "chatReply": "Royal AI está en acceso anticipado, así que todavía no puedo responder. Estás en la lista y te enviaremos un correo en cuanto esté activo para tu negocio. Tu app de fidelización y tus recompensas funcionan con normalidad.",
     "dismiss": "Cerrar"
+  },
+  "counter": {
+    "title": "Mostrador",
+    "subtitle": "Comprueba el código de recompensa del cliente y entrégale la recompensa",
+    "givenToday": "Entregadas hoy",
+    "waiting": "Códigos sin usar",
+    "noApp": "Primero crea tu programa de fidelidad. Después los clientes podrán canjear recompensas y tú las entregarás aquí.",
+    "codeLabel": "Código de recompensa",
+    "lookUp": "Buscar",
+    "scan": "Escanear código",
+    "stopScan": "Detener cámara",
+    "help": "El cliente abre su app, va a Recompensas y toca la recompensa en \"Listas para usar\".",
+    "give": "Entregar recompensa",
+    "forCustomer": "Para {name}",
+    "points": "{points} puntos",
+    "redeemedOn": "Canjeada el {date}",
+    "useBy": "Usar antes del {date}",
+    "ready": "Lista para entregar",
+    "givenNow": "Recompensa entregada",
+    "alreadyGiven": "Ya entregada",
+    "givenByOn": "Entregada el {date} por {name}",
+    "givenOn": "Entregada el {date}",
+    "expired": "Este código ha caducado",
+    "cancelled": "Este código fue cancelado",
+    "notFound": "Ninguna recompensa tiene este código. Revisa las letras e inténtalo de nuevo.",
+    "otherBusiness": "Este código es de otro negocio.",
+    "signedOut": "Tu sesión terminó. Vuelve a iniciar sesión.",
+    "error": "Algo salió mal. Inténtalo de nuevo.",
+    "noCamera": "Este dispositivo no puede usar la cámara aquí. Escribe el código."
   }
 }

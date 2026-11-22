@@ -36,6 +36,7 @@
     "superAdmin": "Super Admin",
     "intelligence": "Intelligence",
     "rewards": "Rewards",
+    "counter": "Counter",
     "support": "Support",
     "customBuilds": "Custom Apps",
     "askRoyal": "Ask Royal AI",
@@ -844,7 +845,9 @@
     "switchApp": "Switch App",
     "appLive": "Live",
     "appDraft": "Draft",
-    "today": "Today"
+    "today": "Today",
+    "rewardsGivenToday": "Rewards given today",
+    "openCounter": "Open counter"
   },
   "aiFeed": {
     "title": "AI Intelligence Feed",
@@ -2501,5 +2504,34 @@
     "bannerBody": "You’re on the list, and we’ll email you when it’s on for your business. Everything else works as normal.",
     "chatReply": "Royal AI is in early access, so I can’t answer yet. You’re on the list, and we’ll email you the moment it’s on for your business. Your loyalty app and rewards work as normal.",
     "dismiss": "Dismiss"
+  },
+  "counter": {
+    "title": "Counter",
+    "subtitle": "Check a customer's reward code and give the reward",
+    "givenToday": "Given today",
+    "waiting": "Codes not used yet",
+    "noApp": "Create your loyalty program first. Then customers can redeem rewards and you give them here.",
+    "codeLabel": "Reward code",
+    "lookUp": "Look up",
+    "scan": "Scan code",
+    "stopScan": "Stop camera",
+    "help": "The customer opens their app, goes to Rewards and taps the reward under \"Ready to use\".",
+    "give": "Give reward",
+    "forCustomer": "For {name}",
+    "points": "{points} points",
+    "redeemedOn": "Redeemed {date}",
+    "useBy": "Use by {date}",
+    "ready": "Ready to give",
+    "givenNow": "Reward given",
+    "alreadyGiven": "Already given",
+    "givenByOn": "Given {date} by {name}",
+    "givenOn": "Given {date}",
+    "expired": "This code has expired",
+    "cancelled": "This code was cancelled",
+    "notFound": "No reward has this code. Check the letters and try again.",
+    "otherBusiness": "This code is for another business.",
+    "signedOut": "Your session ended. Sign in again.",
+    "error": "Something went wrong. Try again.",
+    "noCamera": "This device can't use the camera here. Type the code instead."
   }
 }

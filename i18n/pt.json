@@ -41,6 +41,7 @@
     "chatPlaceholder": "Quick question?",
     "fullChat": "Open full chat",
     "rewards": "Rewards",
+    "counter": "Balcão",
     "customBuilds": "Custom Apps",
     "blogReview": "Revisão do Blog",
     "ceo": "CEO"
@@ -521,7 +522,9 @@
     "switchApp": "Trocar App",
     "appLive": "Ao Vivo",
     "appDraft": "Rascunho",
-    "today": "Hoje"
+    "today": "Hoje",
+    "rewardsGivenToday": "Recompensas entregues hoje",
+    "openCounter": "Abrir balcão"
   },
   "aiFeed": {
     "title": "Feed de Inteligência IA",
@@ -2501,5 +2504,34 @@
     "bannerBody": "Está na lista e enviaremos um email quando estiver ativa para o seu negócio. Tudo o resto funciona normalmente.",
     "chatReply": "A Royal AI está em acesso antecipado, por isso ainda não posso responder. Está na lista e enviaremos um email assim que estiver ativa para o seu negócio. A sua app de fidelização e as recompensas funcionam normalmente.",
     "dismiss": "Fechar"
+  },
+  "counter": {
+    "title": "Balcão",
+    "subtitle": "Confira o código de recompensa do cliente e entregue a recompensa",
+    "givenToday": "Entregues hoje",
+    "waiting": "Códigos ainda não usados",
+    "noApp": "Crie primeiro seu programa de fidelidade. Depois os clientes poderão resgatar recompensas e você as entrega aqui.",
+    "codeLabel": "Código da recompensa",
+    "lookUp": "Buscar",
+    "scan": "Escanear código",
+    "stopScan": "Parar câmera",
+    "help": "O cliente abre o app, vai em Recompensas e toca na recompensa em \"Prontas para usar\".",
+    "give": "Entregar recompensa",
+    "forCustomer": "Para {name}",
+    "points": "{points} pontos",
+    "redeemedOn": "Resgatada em {date}",
+    "useBy": "Usar até {date}",
+    "ready": "Pronta para entregar",
+    "givenNow": "Recompensa entregue",
+    "alreadyGiven": "Já entregue",
+    "givenByOn": "Entregue em {date} por {name}",
+    "givenOn": "Entregue em {date}",
+    "expired": "Este código expirou",
+    "cancelled": "Este código foi cancelado",
+    "notFound": "Nenhuma recompensa tem este código. Confira as letras e tente de novo.",
+    "otherBusiness": "Este código é de outro estabelecimento.",
+    "signedOut": "Sua sessão terminou. Entre de novo.",
+    "error": "Algo deu errado. Tente de novo.",
+    "noCamera": "Este aparelho não pode usar a câmera aqui. Digite o código."
   }
 }

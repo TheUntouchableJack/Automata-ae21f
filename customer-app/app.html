@@ -1484,6 +1484,29 @@
             height: 28px;
         }
 
+        /* My rewards: codes to show at the counter (B2, 2026-11-22) */
+        .my-rewards-hint { margin: -4px 0 12px; font-size: 14px; color: #64748b; }
+        .my-rewards-list { display: flex; flex-direction: column; gap: 10px; }
+        .my-reward-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            width: 100%; padding: 14px 16px; border-radius: 14px; text-align: left;
+            background: #fff; border: 1.5px solid rgba(var(--app-primary-rgb, 99, 102, 241), 0.35);
+            font: inherit; color: inherit; cursor: pointer;
+        }
+        .my-reward-name { display: block; font-weight: 600; color: #0f172a; }
+        .my-reward-expiry { display: block; font-size: 13px; color: #64748b; margin-top: 2px; }
+        .my-reward-code {
+            font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-weight: 700;
+            letter-spacing: 2px; color: var(--app-primary, #6366f1); white-space: nowrap;
+        }
+        .code-show-qr { display: flex; justify-content: center; margin: 8px 0 4px; min-height: 8px; }
+        .code-show-qr canvas { width: 200px; height: 200px; image-rendering: pixelated; }
+        .code-show-value {
+            font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 32px; font-weight: 800;
+            letter-spacing: 6px; color: #0f172a; margin: 10px 0 4px;
+        }
+        .code-show-expires { font-size: 14px; color: #64748b; margin-bottom: 20px; }
+
         .redeem-btn {
             width: 100%;
             padding: 16px 24px;
@@ -2052,6 +2075,14 @@
             </div>
         </div>
 
+        <div class="section" id="my-rewards-section" style="margin-top: 20px; display: none;">
+            <div class="section-header">
+                <h2 class="section-title">Ready to use</h2>
+            </div>
+            <p class="my-rewards-hint">Tap one and show the code at the counter.</p>
+            <div class="my-rewards-list" id="my-rewards-list"></div>
+        </div>
+
         <div class="section" style="margin-top: 20px;">
             <div class="rewards-grid" id="rewards-grid">
                 <div class="empty-state" style="grid-column: 1 / -1;">
@@ -2526,6 +2557,19 @@
         </div>
     </div>
 
+    <!-- Show a redemption code at the counter (B2) -->
+    <div class="modal-overlay" id="code-show-modal">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-handle"></div>
+            <h2 class="reward-modal-name" id="code-show-name">Reward</h2>
+            <p class="reward-modal-description">Show this at the counter. Staff will scan it or type the code.</p>
+            <div class="code-show-qr" id="code-show-qr"></div>
+            <div class="code-show-value" id="code-show-value"></div>
+            <p class="code-show-expires" id="code-show-expires"></p>
+            <button class="redeem-btn" type="button" onclick="closeCodeModal()">Done</button>
+        </div>
+    </div>
+
     <!-- Member Profile Modal (leaderboard click) -->
     <div class="modal-overlay" id="member-profile-modal">
         <div class="modal-content" style="text-align: center; padding: 32px 24px;">
@@ -2708,6 +2752,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- QR encoder for redemption codes. NOT qrcode@1.5.3/build/qrcode.min.js: that path 404s (see app/my-app.html). -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <!-- Firebase SDK for push notifications -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
@@ -2794,7 +2840,8 @@
                 loadLeaderboard(),
                 loadRewards(),
                 loadArticles(),
-                loadHelpContent()
+                loadHelpContent(),
+                loadMyRedemptions()
             ]);
 
             document.getElementById('loading-screen').classList.add('hidden');
@@ -4594,10 +4641,11 @@
                     renderApp();
 
                     document.getElementById('reward-modal').classList.remove('active');
-                    showToast(`Redeemed! Code: ${result.redemption_code}`, 'success');
+                    showRedemptionCode({ reward_name: reward.name, redemption_code: result.redemption_code, expires_at: result.expires_at });
 
                     await loadActivity();
                     await loadRewards();
+                    await loadMyRedemptions();
                 } else {
                     throw new Error(result?.error_message || 'Could not redeem reward');
                 }
@@ -4608,6 +4656,82 @@
                 btn.textContent = 'Redeem Reward';
             }
         }
+
+        // ===== My rewards: unused codes to show at the counter (B2) =====
+        let myRedemptions = [];
+
+        async function loadMyRedemptions() {
+            const section = document.getElementById('my-rewards-section');
+            const list = document.getElementById('my-rewards-list');
+            try {
+                const { data, error } = await supabaseClient.rpc('member_get_redemptions', { p_app_id: currentApp.id });
+                if (error) throw error;
+                myRedemptions = data || [];
+            } catch (e) {
+                console.warn('Failed to load redemptions:', e);
+                myRedemptions = [];
+            }
+            if (myRedemptions.length === 0) { section.style.display = 'none'; list.innerHTML = ''; return; }
+            section.style.display = 'block';
+            list.innerHTML = myRedemptions.map((r, i) => `
+                <button type="button" class="my-reward-item" data-index="${i}">
+                    <span>
+                        <span class="my-reward-name">${escapeHtml(r.reward_name || 'Reward')}</span>
+                        <span class="my-reward-expiry">${r.expires_at ? 'Use by ' + escapeHtml(new Date(r.expires_at).toLocaleDateString()) : ''}</span>
+                    </span>
+                    <span class="my-reward-code">${escapeHtml(r.redemption_code || '')}</span>
+                </button>`).join('');
+        }
+
+        document.getElementById('my-rewards-list').addEventListener('click', (e) => {
+            const item = e.target.closest('.my-reward-item');
+            if (item) showRedemptionCode(myRedemptions[Number(item.dataset.index)]);
+        });
+
+        function showRedemptionCode(r) {
+            if (!r || !r.redemption_code) return;
+            document.getElementById('code-show-name').textContent = r.reward_name || 'Reward';
+            document.getElementById('code-show-value').textContent = r.redemption_code;
+            document.getElementById('code-show-expires').textContent = r.expires_at
+                ? `Use by ${new Date(r.expires_at).toLocaleDateString()}` : '';
+            const qrBox = document.getElementById('code-show-qr');
+            qrBox.innerHTML = '';
+            // The QR holds only the code; the counter page reads it. No QR library → the code alone still works.
+            if (typeof qrcode === 'function') {
+                try {
+                    const qr = qrcode(0, 'M');
+                    qr.addData(r.redemption_code);
+                    qr.make();
+                    const count = qr.getModuleCount(), quiet = 4, scale = 8;
+                    const size = (count + quiet * 2) * scale;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.fillStyle = '#0f172a';
+                    for (let row = 0; row < count; row++) {
+                        for (let col = 0; col < count; col++) {
+                            if (qr.isDark(row, col)) ctx.fillRect((col + quiet) * scale, (row + quiet) * scale, scale, scale);
+                        }
+                    }
+                    canvas.setAttribute('aria-label', `QR code for ${r.redemption_code}`);
+                    qrBox.appendChild(canvas);
+                } catch (e) {
+                    console.warn('QR draw failed:', e);
+                }
+            }
+            document.getElementById('code-show-modal').classList.add('active');
+        }
+
+        function closeCodeModal() {
+            document.getElementById('code-show-modal').classList.remove('active');
+        }
+
+        document.getElementById('code-show-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeCodeModal();
+        });
 
         // Tab Navigation
         function showTab(tabName) {

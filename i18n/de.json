@@ -41,6 +41,7 @@
     "chatPlaceholder": "Quick question?",
     "fullChat": "Open full chat",
     "rewards": "Rewards",
+    "counter": "Theke",
     "customBuilds": "Custom Apps",
     "blogReview": "Blog-Überprüfung",
     "ceo": "CEO"
@@ -521,7 +522,9 @@
     "switchApp": "App wechseln",
     "appLive": "Live",
     "appDraft": "Entwurf",
-    "today": "Heute"
+    "today": "Heute",
+    "rewardsGivenToday": "Heute ausgegebene Prämien",
+    "openCounter": "Theke öffnen"
   },
   "aiFeed": {
     "title": "KI-Intelligenz-Feed",
@@ -2501,5 +2504,34 @@
     "bannerBody": "Sie stehen auf der Liste, und wir schreiben Ihnen, wenn es für Ihr Geschäft freigeschaltet ist. Alles andere funktioniert wie gewohnt.",
     "chatReply": "Royal AI ist im Early Access, deshalb kann ich noch nicht antworten. Sie stehen auf der Liste, und wir schreiben Ihnen, sobald es für Ihr Geschäft freigeschaltet ist. Ihre Treue-App und Ihre Prämien funktionieren wie gewohnt.",
     "dismiss": "Schließen"
+  },
+  "counter": {
+    "title": "Theke",
+    "subtitle": "Prüfe den Prämiencode der Kundschaft und gib die Prämie aus",
+    "givenToday": "Heute ausgegeben",
+    "waiting": "Noch nicht eingelöste Codes",
+    "noApp": "Erstelle zuerst dein Treueprogramm. Dann können Kunden Prämien einlösen und du gibst sie hier aus.",
+    "codeLabel": "Prämiencode",
+    "lookUp": "Nachschlagen",
+    "scan": "Code scannen",
+    "stopScan": "Kamera stoppen",
+    "help": "Der Kunde öffnet seine App, geht zu Prämien und tippt die Prämie unter „Bereit zum Einlösen“ an.",
+    "give": "Prämie ausgeben",
+    "forCustomer": "Für {name}",
+    "points": "{points} Punkte",
+    "redeemedOn": "Eingelöst am {date}",
+    "useBy": "Gültig bis {date}",
+    "ready": "Bereit zur Ausgabe",
+    "givenNow": "Prämie ausgegeben",
+    "alreadyGiven": "Bereits ausgegeben",
+    "givenByOn": "Ausgegeben am {date} von {name}",
+    "givenOn": "Ausgegeben am {date}",
+    "expired": "Dieser Code ist abgelaufen",
+    "cancelled": "Dieser Code wurde storniert",
+    "notFound": "Keine Prämie hat diesen Code. Prüfe die Buchstaben und versuch es noch einmal.",
+    "otherBusiness": "Dieser Code gehört zu einem anderen Geschäft.",
+    "signedOut": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
+    "error": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
+    "noCamera": "Dieses Gerät kann hier die Kamera nicht nutzen. Gib den Code ein."
   }
 }

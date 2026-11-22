@@ -41,6 +41,7 @@
     "chatPlaceholder": "Quick question?",
     "fullChat": "Open full chat",
     "rewards": "Rewards",
+    "counter": "Comptoir",
     "customBuilds": "Custom Apps",
     "blogReview": "Révision Blog",
     "ceo": "CEO"
@@ -521,7 +522,9 @@
     "switchApp": "Changer d'App",
     "appLive": "En ligne",
     "appDraft": "Brouillon",
-    "today": "Aujourd'hui"
+    "today": "Aujourd'hui",
+    "rewardsGivenToday": "Récompenses remises aujourd'hui",
+    "openCounter": "Ouvrir le comptoir"
   },
   "aiFeed": {
     "title": "Fil d'Intelligence IA",
@@ -2501,5 +2504,34 @@
     "bannerBody": "Vous êtes sur la liste, et nous vous écrirons quand il sera activé pour votre commerce. Tout le reste fonctionne normalement.",
     "chatReply": "Royal AI est en accès anticipé, je ne peux donc pas encore répondre. Vous êtes sur la liste, et nous vous écrirons dès qu'il sera activé pour votre commerce. Votre application de fidélité et vos récompenses fonctionnent normalement.",
     "dismiss": "Fermer"
+  },
+  "counter": {
+    "title": "Comptoir",
+    "subtitle": "Vérifiez le code de récompense du client et remettez-lui sa récompense",
+    "givenToday": "Remises aujourd'hui",
+    "waiting": "Codes pas encore utilisés",
+    "noApp": "Créez d'abord votre programme de fidélité. Ensuite, les clients pourront échanger des récompenses et vous les remettrez ici.",
+    "codeLabel": "Code de récompense",
+    "lookUp": "Rechercher",
+    "scan": "Scanner le code",
+    "stopScan": "Arrêter la caméra",
+    "help": "Le client ouvre son app, va dans Récompenses et touche la récompense sous « Prêtes à utiliser ».",
+    "give": "Remettre la récompense",
+    "forCustomer": "Pour {name}",
+    "points": "{points} points",
+    "redeemedOn": "Échangée le {date}",
+    "useBy": "À utiliser avant le {date}",
+    "ready": "Prête à remettre",
+    "givenNow": "Récompense remise",
+    "alreadyGiven": "Déjà remise",
+    "givenByOn": "Remise le {date} par {name}",
+    "givenOn": "Remise le {date}",
+    "expired": "Ce code a expiré",
+    "cancelled": "Ce code a été annulé",
+    "notFound": "Aucune récompense n'a ce code. Vérifiez les lettres et réessayez.",
+    "otherBusiness": "Ce code appartient à un autre commerce.",
+    "signedOut": "Votre session a expiré. Reconnectez-vous.",
+    "error": "Une erreur s'est produite. Réessayez.",
+    "noCamera": "Cet appareil ne peut pas utiliser la caméra ici. Saisissez le code."
   }
 }

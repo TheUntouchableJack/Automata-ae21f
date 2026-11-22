@@ -41,6 +41,7 @@
     "chatPlaceholder": "Quick question?",
     "fullChat": "Open full chat",
     "rewards": "Rewards",
+    "counter": "柜台",
     "customBuilds": "Custom Apps",
     "blogReview": "博客审阅",
     "ceo": "CEO"
@@ -521,7 +522,9 @@
     "switchApp": "切换应用",
     "appLive": "已上线",
     "appDraft": "草稿",
-    "today": "今天"
+    "today": "今天",
+    "rewardsGivenToday": "今日已兑现奖励",
+    "openCounter": "打开柜台"
   },
   "aiFeed": {
     "title": "AI智能推送",
@@ -2501,5 +2504,34 @@
     "bannerBody": "您已在候补名单上，为您的店铺开通后我们会发邮件通知您。其他功能照常运行。",
     "chatReply": "Royal AI 处于抢先体验阶段，所以我暂时还不能回答。您已在候补名单上，一旦为您的店铺开通，我们会立即发邮件通知您。您的会员积分应用和奖励照常运行。",
     "dismiss": "关闭"
+  },
+  "counter": {
+    "title": "柜台",
+    "subtitle": "核对顾客的奖励兑换码并发放奖励",
+    "givenToday": "今日已发放",
+    "waiting": "尚未使用的兑换码",
+    "noApp": "请先创建你的会员计划。之后顾客可以兑换奖励，你在这里发放。",
+    "codeLabel": "奖励兑换码",
+    "lookUp": "查询",
+    "scan": "扫描兑换码",
+    "stopScan": "关闭摄像头",
+    "help": "顾客打开 App，进入\"奖励\"，点击\"可使用\"下的奖励。",
+    "give": "发放奖励",
+    "forCustomer": "顾客：{name}",
+    "points": "{points} 积分",
+    "redeemedOn": "兑换于 {date}",
+    "useBy": "有效期至 {date}",
+    "ready": "可以发放",
+    "givenNow": "奖励已发放",
+    "alreadyGiven": "已发放过",
+    "givenByOn": "{date} 由 {name} 发放",
+    "givenOn": "{date} 已发放",
+    "expired": "此兑换码已过期",
+    "cancelled": "此兑换码已取消",
+    "notFound": "没有奖励对应此兑换码。请核对字母后重试。",
+    "otherBusiness": "此兑换码属于其他商家。",
+    "signedOut": "登录已过期，请重新登录。",
+    "error": "出了点问题，请重试。",
+    "noCamera": "此设备无法在这里使用摄像头，请手动输入兑换码。"
   }
 }

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter - Royalty</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="sidebar.css?v=5">
+    <link rel="stylesheet" href="../i18n/i18n.css">
+    <style>
+        .stats-bar { padding: 16px 0; border-bottom: 1px solid var(--color-border-light); }
+        .stats-bar .container { display: flex; gap: 32px; }
+        .stat-item { display: flex; flex-direction: column; gap: 2px; }
+        .stat-value { font-size: 20px; font-weight: 700; color: var(--color-text); }
+        .stat-label { font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .counter-wrap { max-width: 560px; padding-top: 24px; padding-bottom: 48px; }
+        .counter-card {
+            background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 16px;
+            padding: 24px; margin-bottom: 16px;
+        }
+        .counter-label { display: block; font-weight: 600; font-size: 14px; color: var(--color-text); margin-bottom: 8px; }
+        .counter-code-input {
+            width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 12px;
+            border: 2px solid var(--color-border); background: var(--color-bg);
+            font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 26px; font-weight: 700;
+            letter-spacing: 6px; text-transform: uppercase; text-align: center; color: var(--color-text);
+        }
+        .counter-code-input:focus { outline: none; border-color: var(--color-border-focus); }
+        .counter-actions { display: flex; gap: 10px; margin-top: 12px; }
+        .counter-actions .btn { flex: 1; justify-content: center; }
+        .counter-help { font-size: 13px; color: var(--color-text-secondary); margin: 12px 0 0; }
+
+        .counter-scanner { display: none; margin-top: 14px; }
+        .counter-scanner.active { display: block; }
+        .counter-scanner video { width: 100%; border-radius: 12px; background: #000; aspect-ratio: 4 / 3; object-fit: cover; }
+
+        .counter-result { display: none; }
+        .counter-result.active { display: block; }
+        .counter-status {
+            display: inline-block; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 14px;
+            margin-bottom: 14px; background: var(--color-bg-tertiary); color: var(--color-text);
+        }
+        .counter-status.ok { background: rgba(16, 185, 129, 0.12); color: #047857; }
+        .counter-status.warn { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+        .counter-status.bad { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
+        .counter-reward-name { font-size: 24px; font-weight: 800; color: var(--color-text); margin: 0 0 4px; }
+        .counter-detail { color: var(--color-text-secondary); font-size: 15px; margin: 2px 0; }
+        .counter-give { width: 100%; justify-content: center; margin-top: 18px; padding: 16px; font-size: 17px; }
+        .counter-message { font-size: 15px; color: var(--color-text); margin: 0; }
+        .counter-empty { color: var(--color-text-secondary); }
+
+        @media (max-width: 640px) {
+            .stats-bar .container { gap: 20px; }
+            .counter-wrap { padding-left: 16px; padding-right: 16px; }
+        }
+    </style>
+    <script src="/js/analytics-config.js?v=1" defer></script>
+    <script src="/js/notrack.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=1" defer></script>
+</head>
+<body>
+    <div class="app-layout">
+        <main class="app-main">
+            <div class="page-header">
+                <div class="container">
+                    <div>
+                        <h1 class="page-title" data-i18n="counter.title">Counter</h1>
+                        <p class="page-subtitle" data-i18n="counter.subtitle">Check a customer's reward code and give the reward</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-bar">
+                <div class="container">
+                    <div class="stat-item">
+                        <span class="stat-value" id="counter-given-today">–</span>
+                        <span class="stat-label" data-i18n="counter.givenToday">Given today</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="counter-waiting">–</span>
+                        <span class="stat-label" data-i18n="counter.waiting">Codes not used yet</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container counter-wrap">
+                <div class="counter-card counter-empty" id="counter-no-app" style="display: none;">
+                    <p class="counter-message" data-i18n="counter.noApp">Create your loyalty program first. Then customers can redeem rewards and you give them here.</p>
+                </div>
+
+                <form class="counter-card" id="counter-form" autocomplete="off">
+                    <label class="counter-label" for="counter-code" data-i18n="counter.codeLabel">Reward code</label>
+                    <input type="text" id="counter-code" class="counter-code-input" maxlength="16" autocapitalize="characters" spellcheck="false" placeholder="ABCD2345">
+                    <div class="counter-actions">
+                        <button type="submit" class="btn btn-primary" id="counter-lookup-btn" data-i18n="counter.lookUp">Look up</button>
+                        <button type="button" class="btn btn-secondary" id="counter-scan-btn" data-i18n="counter.scan">Scan code</button>
+                    </div>
+                    <div class="counter-scanner" id="counter-scanner">
+                        <video id="counter-video" playsinline muted></video>
+                        <div class="counter-actions">
+                            <button type="button" class="btn btn-secondary" id="counter-stop-btn" data-i18n="counter.stopScan">Stop camera</button>
+                        </div>
+                    </div>
+                    <p class="counter-help" data-i18n="counter.help">The customer opens their app, goes to Rewards and taps the reward under "Ready to use".</p>
+                </form>
+
+                <div class="counter-card counter-result" id="counter-result" aria-live="polite">
+                    <span class="counter-status" id="counter-status"></span>
+                    <h2 class="counter-reward-name" id="counter-reward-name"></h2>
+                    <p class="counter-detail" id="counter-customer"></p>
+                    <p class="counter-detail" id="counter-dates"></p>
+                    <p class="counter-detail" id="counter-extra"></p>
+                    <button type="button" class="btn btn-primary counter-give" id="counter-give-btn" style="display: none;" data-i18n="counter.give">Give reward</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="../i18n/i18n.js?v=1"></script>
+    <script src="workspace.js?v=1"></script>
+    <script src="auth.js?v=14"></script>
+    <script src="utils.js?v=6"></script>
+    <script src="sidebar.js?v=26"></script>
+    <script src="counter.js?v=1"></script>
+</body>
+</html>

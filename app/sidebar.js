@@ -23,6 +23,8 @@ const AppSidebar = (function() {
                 { id: 'dashboard', icon: 'layout', href: '/app/dashboard.html', labelKey: 'nav.dashboard', label: 'Application' },
                 // Rewards - manage loyalty rewards (elevated — daily-use feature)
                 { id: 'rewards', icon: 'gift', href: '/app/rewards.html', labelKey: 'nav.rewards', label: 'Rewards' },
+                // Counter - staff check a customer's reward code and give the reward (B2, 2026-11-22)
+                { id: 'counter', icon: 'scan', href: '/app/counter.html', labelKey: 'nav.counter', label: 'Counter' },
                 // Apps - admin only (SMB users manage their single program)
                 { id: 'apps', icon: 'smartphone', href: '/app/apps.html', labelKey: 'nav.apps', label: 'Apps', advancedOnly: true },
                 // Automations - visible to all
@@ -173,6 +175,9 @@ const AppSidebar = (function() {
         </svg>`,
         shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>`,
+        scan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/>
         </svg>`,
         gift: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 12 20 22 4 22 4 12"></polyline>

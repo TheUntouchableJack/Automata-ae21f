@@ -41,6 +41,7 @@
     "chatPlaceholder": "Quick question?",
     "fullChat": "Open full chat",
     "rewards": "Rewards",
+    "counter": "Banco",
     "customBuilds": "Custom Apps",
     "blogReview": "Revisione Blog",
     "ceo": "CEO"
@@ -521,7 +522,9 @@
     "switchApp": "Cambia App",
     "appLive": "Attiva",
     "appDraft": "Bozza",
-    "today": "Oggi"
+    "today": "Oggi",
+    "rewardsGivenToday": "Premi consegnati oggi",
+    "openCounter": "Apri il banco"
   },
   "aiFeed": {
     "title": "Feed Intelligenza IA",
@@ -2501,5 +2504,34 @@
     "bannerBody": "Sei in lista e ti scriveremo quando sarà attivo per la tua attività. Tutto il resto funziona normalmente.",
     "chatReply": "Royal AI è in accesso anticipato, quindi non posso ancora rispondere. Sei in lista e ti scriveremo appena sarà attivo per la tua attività. La tua app fedeltà e i tuoi premi funzionano normalmente.",
     "dismiss": "Chiudi"
+  },
+  "counter": {
+    "title": "Banco",
+    "subtitle": "Controlla il codice premio del cliente e consegna il premio",
+    "givenToday": "Consegnati oggi",
+    "waiting": "Codici non ancora usati",
+    "noApp": "Crea prima il tuo programma fedeltà. Poi i clienti potranno riscattare i premi e tu li consegnerai qui.",
+    "codeLabel": "Codice premio",
+    "lookUp": "Cerca",
+    "scan": "Scansiona codice",
+    "stopScan": "Ferma fotocamera",
+    "help": "Il cliente apre la sua app, va su Premi e tocca il premio sotto \"Pronti all'uso\".",
+    "give": "Consegna premio",
+    "forCustomer": "Per {name}",
+    "points": "{points} punti",
+    "redeemedOn": "Riscattato il {date}",
+    "useBy": "Da usare entro il {date}",
+    "ready": "Pronto da consegnare",
+    "givenNow": "Premio consegnato",
+    "alreadyGiven": "Già consegnato",
+    "givenByOn": "Consegnato il {date} da {name}",
+    "givenOn": "Consegnato il {date}",
+    "expired": "Questo codice è scaduto",
+    "cancelled": "Questo codice è stato annullato",
+    "notFound": "Nessun premio ha questo codice. Controlla le lettere e riprova.",
+    "otherBusiness": "Questo codice è di un'altra attività.",
+    "signedOut": "La sessione è scaduta. Accedi di nuovo.",
+    "error": "Qualcosa è andato storto. Riprova.",
+    "noCamera": "Questo dispositivo non può usare la fotocamera qui. Digita il codice."
   }
 }

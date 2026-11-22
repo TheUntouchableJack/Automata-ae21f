@@ -786,9 +786,26 @@ function printPreviewQR() {
     setTimeout(() => { printWindow.print(); }, 500);
 }
 
+// ===== Rewards given today (counter_summary, 20261122000003) =====
+// Since the owner's local midnight. Runs beside the summary; a failure leaves the "-".
+async function loadRewardsGivenToday() {
+    const el = document.getElementById('stat-rewards-given-today');
+    if (!el || !currentApp) return;
+    try {
+        const since = new Date();
+        since.setHours(0, 0, 0, 0);
+        const { data, error } = await supabase.rpc('counter_summary', { p_app_id: currentApp.id, p_since: since.toISOString() });
+        if (error || !data?.allowed) return;
+        el.textContent = Number(data.given_since || 0).toLocaleString();
+    } catch (e) {
+        console.warn('Rewards given today failed:', e);
+    }
+}
+
 // ===== Load Dashboard Summary (org-wide aggregate) =====
 async function loadDashboardSummary() {
     if (!currentOrganization) return;
+    loadRewardsGivenToday();
 
     try {
         // Try org-level aggregate RPC first (sums across ALL apps)
