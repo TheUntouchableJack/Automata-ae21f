@@ -63,8 +63,21 @@ const SERVICE_ONLY = [
     ['member_ticket_owner', { p_ticket_id: NIL }],
 ];
 
-test.describe('B1a — member functions refuse anon', () => {
-    for (const [name, body] of [...SESSION_ONLY, ...SERVICE_ONLY]) {
+// B2 (20261122000003): counter redemption.
+const B2_SESSION_ONLY = [
+    ['lookup_redemption',      { p_code: 'ZZZZZZZZ' }],
+    ['fulfill_redemption',     { p_code: 'ZZZZZZZZ' }],
+    ['counter_summary',        { p_app_id: NIL, p_since: '2026-01-01T00:00:00Z' }],
+    ['member_get_redemptions', { p_app_id: NIL }],
+];
+const B2_SERVICE_ONLY = [
+    ['staff_manages_app',         { p_app_id: NIL }],
+    ['normalize_redemption_code', { p_code: 'x' }],
+    ['redemption_view',           { p_id: NIL, p_result: 'x' }],
+];
+
+test.describe('B1a + B2 — member and counter functions refuse anon', () => {
+    for (const [name, body] of [...SESSION_ONLY, ...SERVICE_ONLY, ...B2_SESSION_ONLY, ...B2_SERVICE_ONLY]) {
         test(`${name} → 42501 for anon`, async ({ request }) => {
             const { code, json } = await rpc(request, name, body);
             expect(code, `${name} answered ${JSON.stringify(json)}`).toBe('42501');
