@@ -76,7 +76,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=21">
+    <link rel="stylesheet" href="styles.css?v=22">
     <link rel="stylesheet" href="i18n/i18n.css">
     <!-- Cloudflare Turnstile CAPTCHA -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -399,8 +399,8 @@
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat">
-                        <span class="stat-number">40%</span>
-                        <span class="stat-label" data-i18n="hero.stats.moreRepeatVisits">More Repeat Visits</span>
+                        <span class="stat-number">$0</span>
+                        <span class="stat-label" data-i18n="hero.stats.freeStart">Free To Start</span>
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat">
@@ -695,80 +695,37 @@
         </div>
     </div>
 
-    <!-- Social Proof Section -->
+    <!-- Social Proof Section: "See it build" (js/build-demo.js). The invented
+         testimonials and the unsourced "40% more repeat visits" stat that were
+         here were removed on 2026-11-22. Real owner quotes go here once they exist. -->
     <section id="social-proof" class="social-proof">
         <div class="container">
             <div class="section-header">
-                <span class="section-tag" data-i18n="testimonials.tag">Results</span>
-                <h2 data-i18n="testimonials.title">Local businesses love Royalty</h2>
-                <p data-i18n="testimonials.subtitle">Real results from businesses running loyalty on autopilot</p>
+                <span class="section-tag" data-i18n="buildDemo.tag">See it build</span>
+                <h2 data-i18n="buildDemo.title">One sentence in. A loyalty app out.</h2>
+                <p data-i18n="buildDemo.subtitle">These three apps came from the same generator as the box at the top of this page.</p>
             </div>
 
-            <!-- Stats strip -->
-            <div class="social-proof-stats">
-                <div class="social-proof-stat">
-                    <span class="social-proof-stat-number">60s</span>
-                    <span class="social-proof-stat-label" data-i18n="testimonials.stats.setupTime">Average setup time</span>
+            <div class="build-demo" id="build-demo">
+                <div class="build-demo-tabs" role="tablist" aria-label="Example businesses">
+                    <button type="button" role="tab" aria-selected="true" data-demo="coffee" data-i18n="buildDemo.tabCoffee">Coffee shop</button>
+                    <button type="button" role="tab" aria-selected="false" tabindex="-1" data-demo="barber" data-i18n="buildDemo.tabBarber">Barbershop</button>
+                    <button type="button" role="tab" aria-selected="false" tabindex="-1" data-demo="nails" data-i18n="buildDemo.tabNails">Nail salon</button>
                 </div>
-                <div class="social-proof-stat-divider"></div>
-                <div class="social-proof-stat">
-                    <span class="social-proof-stat-number">40%</span>
-                    <span class="social-proof-stat-label" data-i18n="testimonials.stats.repeatVisits">More repeat visits</span>
-                </div>
-                <div class="social-proof-stat-divider"></div>
-                <div class="social-proof-stat">
-                    <span class="social-proof-stat-number">24/7</span>
-                    <span class="social-proof-stat-label" data-i18n="testimonials.stats.aiRunning">AI running your program</span>
+                <div class="build-demo-stage" role="tabpanel">
+                    <div class="build-demo-prompt">
+                        <span class="build-demo-label" data-i18n="buildDemo.typedLabel">They typed</span>
+                        <p class="build-demo-text" id="build-demo-text" aria-hidden="true">I run a small coffee shop in Austin called Bean There. About 200 regulars, mostly morning commuters.</p>
+                        <a href="#discovery-card" class="build-demo-cta" data-i18n="buildDemo.tryCta">Describe your business →</a>
+                    </div>
+                    <div class="build-demo-mount" id="build-demo-mount"></div>
                 </div>
             </div>
 
-            <!-- 3-card testimonial grid -->
-            <div class="testimonials-grid">
-                <!-- Card 1: Maria Rodriguez -->
-                <div class="testimonial-card">
-                    <div class="testimonial-author">
-                        <img class="author-avatar" src="https://i.pravatar.cc/96?img=49" alt="Maria Rodriguez" loading="lazy">
-                        <div class="author-info">
-                            <span class="author-name" data-i18n="testimonials.quote1.author">Maria Rodriguez</span>
-                            <span class="author-title" data-i18n="testimonials.quote1.title">Owner, Casa del Sol Restaurant</span>
-                        </div>
-                    </div>
-                    <div class="testimonial-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <blockquote data-i18n="testimonials.quote1.text">
-                        "I set up Royalty in literally one minute. Now I get a weekly email showing me which regulars haven't been in, and AI automatically sends them offers. Our repeat visits are up 40% and I didn't do anything."
-                    </blockquote>
-                </div>
-
-                <!-- Card 2: James Okafor -->
-                <div class="testimonial-card">
-                    <div class="testimonial-author">
-                        <img class="author-avatar" src="https://i.pravatar.cc/96?img=68" alt="James Okafor" loading="lazy">
-                        <div class="author-info">
-                            <span class="author-name" data-i18n="testimonials.quote2.author">James Okafor</span>
-                            <span class="author-title" data-i18n="testimonials.quote2.title">Owner, Peak Form Fitness Studio</span>
-                        </div>
-                    </div>
-                    <div class="testimonial-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <blockquote data-i18n="testimonials.quote2.text">
-                        "We tried a stamp card for years. Nobody tracked it. With Royalty, AI sends a message when someone hasn't been in 2 weeks — and they come back. It's like having a retention manager I never had to hire."
-                    </blockquote>
-                </div>
-
-                <!-- Card 3: Sophie Tan -->
-                <div class="testimonial-card">
-                    <div class="testimonial-author">
-                        <img class="author-avatar" src="https://i.pravatar.cc/96?img=45" alt="Sophie Tan" loading="lazy">
-                        <div class="author-info">
-                            <span class="author-name" data-i18n="testimonials.quote3.author">Sophie Tan</span>
-                            <span class="author-title" data-i18n="testimonials.quote3.title">Owner, The Lemon Boutique</span>
-                        </div>
-                    </div>
-                    <div class="testimonial-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <blockquote data-i18n="testimonials.quote3.text">
-                        "My regulars feel like VIPs now. They ask about their points, refer friends, come in just to hit a tier milestone. Royalty turned my checkout line into a conversation."
-                    </blockquote>
-                </div>
-            </div>
+            <figure class="founder-note">
+                <blockquote data-i18n="buildDemo.founderNote">Royalty is new, so instead of quotes, here’s the product itself. Describe your business and judge the app it builds for you. As owners tell us what it’s done for them, their words will go here.</blockquote>
+                <figcaption data-i18n="buildDemo.founderCite">The Royalty team</figcaption>
+            </figure>
         </div>
     </section>
 
@@ -1110,10 +1067,11 @@
     <script src="app/app-templates-library.js?v=1"></script>
     <script src="app/app-config-fallback.js?v=2"></script>
     <script src="app/app-preview-card.js?v=2"></script>
+    <script src="js/build-demo.js?v=1" defer></script>
     <script src="app/ai-recommendations.js"></script>
     <script src="app/rate-limiter.js?v=1"></script>
     <script src="script.js?v=23"></script>
     <script src="network-bg.js?v=7"></script>
-    <script src="js/section-nav.js?v=1"></script>
+    <script src="js/section-nav.js?v=2"></script>
 </body>
 </html>

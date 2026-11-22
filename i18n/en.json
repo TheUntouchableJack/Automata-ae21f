@@ -62,7 +62,7 @@
     "discoveryPlaceholder": "e.g., I run a coffee shop in Austin with 200 regulars. I want to reward loyalty and bring back customers who haven't visited in a while...",
     "stats": {
       "setupTime": "Setup Time",
-      "moreRepeatVisits": "More Repeat Visits",
+      "freeStart": "Free To Start",
       "aiRunning": "AI Running For You"
     },
     "ctaTitle": "Build your loyalty program in 60 seconds",
@@ -225,30 +225,20 @@
       "desc": "AI identifies your happiest customers (Gold/Platinum) and nudges them to refer friends for bonus points."
     }
   },
-  "testimonials": {
-    "tag": "Results",
-    "title": "Local businesses love Royalty",
-    "subtitle": "Real results from businesses running loyalty on autopilot",
-    "stats": {
-      "setupTime": "Average setup time",
-      "repeatVisits": "More repeat visits",
-      "aiRunning": "AI running your program"
-    },
-    "quote1": {
-      "text": "\"I set up Royalty in literally one minute. Now I get a weekly email showing me which regulars haven't been in, and AI automatically sends them offers. Our repeat visits are up 40% and I didn't do anything.\"",
-      "author": "Maria Rodriguez",
-      "title": "Owner, Casa del Sol Restaurant"
-    },
-    "quote2": {
-      "text": "\"We tried a stamp card for years. Nobody tracked it. With Royalty, AI sends a message when someone hasn't been in 2 weeks — and they come back. It's like having a retention manager I never had to hire.\"",
-      "author": "James Okafor",
-      "title": "Owner, Peak Form Fitness Studio"
-    },
-    "quote3": {
-      "text": "\"My regulars feel like VIPs now. They ask about their points, refer friends, come in just to hit a tier milestone. Royalty turned my checkout line into a conversation.\"",
-      "author": "Sophie Tan",
-      "title": "Owner, The Lemon Boutique"
-    }
+  "buildDemo": {
+    "tag": "See it build",
+    "title": "One sentence in. A loyalty app out.",
+    "subtitle": "These three apps came from the same generator as the box at the top of this page.",
+    "tabCoffee": "Coffee shop",
+    "tabBarber": "Barbershop",
+    "tabNails": "Nail salon",
+    "typedLabel": "They typed",
+    "promptCoffee": "I run a small coffee shop in Austin called Bean There. About 200 regulars, mostly morning commuters.",
+    "promptBarber": "Fade Factory is my barbershop in Queens. Three chairs, and most clients come back every few weeks.",
+    "promptNails": "We own a nail salon called Polished in Miami. Gel sets, pedicures and lots of repeat clients.",
+    "tryCta": "Describe your business →",
+    "founderNote": "Royalty is new, so instead of quotes, here’s the product itself. Describe your business and judge the app it builds for you. As owners tell us what it’s done for them, their words will go here.",
+    "founderCite": "The Royalty team"
   },
   "pricing": {
     "tag": "Pricing",
@@ -463,7 +453,7 @@
       "q6": "What's white-label branding?",
       "a6": "White-label removes \"Powered by Royalty\" branding from your customer-facing loyalty app. Your customers see your brand only.",
       "q7": "Is there a money-back guarantee?",
-      "a7": "Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform.",
+      "a7": "Yes! We offer a 30-day money-back guarantee on subscriptions.",
       "q8": "Can I stack AppSumo codes?",
       "a8": "Yes! Each code increases your customer limit. Tier 1 = 500 customers, Tier 2 = 2,000 customers, Tier 3 = unlimited customers. Stack to reach the tier you need."
     }

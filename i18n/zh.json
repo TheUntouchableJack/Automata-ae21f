@@ -62,7 +62,7 @@
     "discoveryPlaceholder": "例如，我在上海经营一家咖啡店，有200位常客。我想奖励忠诚顾客，并把好久没来的顾客吸引回来...",
     "stats": {
       "setupTime": "搭建时间",
-      "moreRepeatVisits": "更多回头客",
+      "freeStart": "免费开始",
       "aiRunning": "AI为您运营"
     },
     "ctaTitle": "60秒创建您的会员计划",
@@ -225,30 +225,20 @@
       "desc": "AI识别您最满意的顾客（金牌/白金），鼓励他们推荐朋友以获得额外积分。"
     }
   },
-  "testimonials": {
-    "tag": "成果",
-    "title": "本地商家喜爱Royalty",
-    "subtitle": "自动化会员计划的真实商业成效",
-    "stats": {
-      "setupTime": "平均设置时间",
-      "repeatVisits": "回头客增加",
-      "aiRunning": "AI全天候运营"
-    },
-    "quote1": {
-      "text": "\"我花了一分钟就设置好了Royalty。现在我每周收到邮件，告诉我哪些常客好久没来了，AI自动给他们发优惠。我们的回头客增加了40%，而我什么都没做。\"",
-      "author": "Maria Rodriguez",
-      "title": "Casa del Sol餐厅老板"
-    },
-    "quote2": {
-      "text": "\"我们用了多年的盖章卡，但没人追踪。用了Royalty之后，AI会在顾客两周没来时发消息——他们就回来了。就像有个留客经理，但我从没雇用过。\"",
-      "author": "James Okafor",
-      "title": "Peak Form健身工作室老板"
-    },
-    "quote3": {
-      "text": "\"我的老顾客现在感觉像VIP。他们会问积分情况，介绍朋友，特地来达到等级目标。Royalty让我的收银台变成了对话。\"",
-      "author": "Sophie Tan",
-      "title": "The Lemon Boutique老板"
-    }
+  "buildDemo": {
+    "tag": "看它生成",
+    "title": "一句话，一个会员应用。",
+    "subtitle": "这三个应用来自本页顶部输入框使用的同一个生成器。",
+    "tabCoffee": "咖啡店",
+    "tabBarber": "理发店",
+    "tabNails": "美甲店",
+    "typedLabel": "他们输入的",
+    "promptCoffee": "我在奥斯汀经营一家名叫 Bean There 的小咖啡店。大约 200 位常客，大多是早上通勤的人。",
+    "promptBarber": "Fade Factory 是我在皇后区的理发店。三把椅子，大多数顾客每隔几周就会回来。",
+    "promptNails": "我们在迈阿密有一家名叫 Polished 的美甲店。做凝胶甲和足部护理，回头客很多。",
+    "tryCta": "描述您的店铺 →",
+    "founderNote": "Royalty 刚刚起步，所以这里没有客户评价，只有产品本身。描述您的店铺，看看它为您生成的应用。等店主们告诉我们它带来了什么，他们的话会放在这里。",
+    "founderCite": "Royalty 团队"
   },
   "pricing": {
     "tag": "定价",
@@ -448,7 +438,7 @@
       "q6": "什么是白标品牌？",
       "a6": "白标会移除客户端会员应用上的\"Powered by Royal\"品牌标识。您的客户只看到您的品牌。",
       "q7": "有退款保证吗？",
-      "a7": "有！订阅享30天退款保证。AppSumo优惠通过其平台享有60天退款政策。",
+      "a7": "有！订阅享30天退款保证。",
       "q8": "可以叠加AppSumo代码吗？",
       "a8": "可以！每个代码增加您的客户上限。等级1 = 500位客户，等级2 = 2,000位客户，等级3 = 无限客户。叠加以达到您需要的等级。"
     }

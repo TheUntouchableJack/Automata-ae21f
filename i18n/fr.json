@@ -62,7 +62,7 @@
     "discoveryPlaceholder": "ex., Je gère un café à Paris avec 200 habitués. Je veux récompenser la fidélité et faire revenir les clients qui ne sont pas venus depuis un moment...",
     "stats": {
       "setupTime": "Temps de Configuration",
-      "moreRepeatVisits": "Plus de Visites Récurrentes",
+      "freeStart": "Gratuit Pour Commencer",
       "aiRunning": "IA Qui Travaille Pour Vous"
     },
     "ctaTitle": "Créez votre programme de fidélité en 60 secondes",
@@ -225,30 +225,20 @@
       "desc": "L'IA identifie vos clients les plus satisfaits (Or/Platine) et les encourage à parrainer des amis pour des points bonus."
     }
   },
-  "testimonials": {
-    "tag": "Résultats",
-    "title": "Les commerces locaux adorent Royalty",
-    "subtitle": "Des résultats réels d'entreprises qui automatisent leur fidélisation",
-    "stats": {
-      "setupTime": "Temps de configuration moyen",
-      "repeatVisits": "Plus de visites récurrentes",
-      "aiRunning": "IA qui gère votre programme"
-    },
-    "quote1": {
-      "text": "\"J'ai configuré Royalty en littéralement une minute. Maintenant je reçois un email hebdomadaire me montrant quels habitués ne sont pas venus, et l'IA leur envoie automatiquement des offres. Nos visites récurrentes ont augmenté de 40% et je n'ai rien fait.\"",
-      "author": "Maria Rodriguez",
-      "title": "Propriétaire, Restaurant Casa del Sol"
-    },
-    "quote2": {
-      "text": "\"On a essayé une carte à tampon pendant des années. Personne ne la suivait. Avec Royalty, l'IA envoie un message quand quelqu'un n'est pas venu depuis 2 semaines — et ils reviennent. C'est comme avoir un responsable fidélisation que je n'ai jamais eu à recruter.\"",
-      "author": "James Okafor",
-      "title": "Propriétaire, Peak Form Fitness Studio"
-    },
-    "quote3": {
-      "text": "\"Mes habitués se sentent VIP maintenant. Ils demandent leurs points, recommandent des amis, viennent juste pour atteindre un palier. Royalty a transformé ma caisse en conversation.\"",
-      "author": "Sophie Tan",
-      "title": "Propriétaire, The Lemon Boutique"
-    }
+  "buildDemo": {
+    "tag": "Voyez-le à l’œuvre",
+    "title": "Une phrase. Une app de fidélité.",
+    "subtitle": "Ces trois apps viennent du même générateur que le champ en haut de cette page.",
+    "tabCoffee": "Café",
+    "tabBarber": "Barbier",
+    "tabNails": "Onglerie",
+    "typedLabel": "Ils ont écrit",
+    "promptCoffee": "Je tiens un petit café à Austin qui s’appelle Bean There. Environ 200 habitués, surtout des gens qui vont au travail le matin.",
+    "promptBarber": "Fade Factory est mon salon de barbier dans le Queens. Trois fauteuils, et la plupart des clients reviennent toutes les quelques semaines.",
+    "promptNails": "Nous avons une onglerie appelée Polished à Miami. Poses gel, pédicures et beaucoup de clientes fidèles.",
+    "tryCta": "Décrivez votre commerce →",
+    "founderNote": "Royalty est tout nouveau : plutôt que des témoignages, voici le produit lui-même. Décrivez votre commerce et jugez l’app qu’il crée pour vous. Quand des commerçants nous diront ce qu’il leur a apporté, leurs mots seront ici.",
+    "founderCite": "L’équipe Royalty"
   },
   "pricing": {
     "tag": "Tarifs",
@@ -448,7 +438,7 @@
       "q6": "Qu'est-ce que la marque blanche ?",
       "a6": "La marque blanche supprime le branding « Powered by Royalty » de votre app de fidélité côté client. Vos clients ne voient que votre marque.",
       "q7": "Y a-t-il une garantie satisfait ou remboursé ?",
-      "a7": "Oui ! Nous offrons une garantie satisfait ou remboursé de 30 jours sur les abonnements. Les offres AppSumo bénéficient d'une politique de remboursement de 60 jours via leur plateforme.",
+      "a7": "Oui ! Nous offrons une garantie satisfait ou remboursé de 30 jours sur les abonnements.",
       "q8": "Puis-je cumuler les codes AppSumo ?",
       "a8": "Oui ! Chaque code augmente votre limite de clients. Palier 1 = 500 clients, Palier 2 = 2 000 clients, Palier 3 = clients illimités. Cumulez pour atteindre le palier dont vous avez besoin."
     }

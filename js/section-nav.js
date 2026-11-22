@@ -24,8 +24,6 @@ function initSectionMap() {
             { id: 'pricing-hero', label: 'Overview' },
             { id: 'pricing-cards', label: 'Plans' },
             { id: 'comparison', label: 'Compare' },
-            { id: 'appsumo', label: 'AppSumo' },
-            { id: 'royalty-pro', label: 'Royalty Pro' },
             { id: 'faq', label: 'FAQ' }
         ];
     } else {
@@ -35,7 +33,7 @@ function initSectionMap() {
             { id: 'features', label: 'Features' },
             { id: 'how-it-works', label: 'How It Works' },
             { id: 'automations', label: 'Automations' },
-            { id: 'social-proof', label: 'Results' },
+            { id: 'social-proof', label: 'See it build' },
             { id: 'pricing', label: 'Pricing' },
             { id: 'cta', label: 'Get Started' }
         ];

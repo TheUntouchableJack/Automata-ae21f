@@ -62,7 +62,7 @@
     "discoveryPlaceholder": "ex., Tenho uma cafeteria em São Paulo com 200 clientes regulares. Quero recompensar a fidelidade e trazer de volta clientes que não visitam há um tempo...",
     "stats": {
       "setupTime": "Tempo de Configuração",
-      "moreRepeatVisits": "Mais Visitas Repetidas",
+      "freeStart": "Grátis Para Começar",
       "aiRunning": "IA Trabalhando por Você"
     },
     "ctaTitle": "Crie seu programa de fidelidade em 60 segundos",
@@ -225,30 +225,20 @@
       "desc": "A IA identifica seus clientes mais felizes (Ouro/Platina) e os incentiva a indicar amigos por pontos bônus."
     }
   },
-  "testimonials": {
-    "tag": "Resultados",
-    "title": "Negócios locais amam Royalty",
-    "subtitle": "Resultados reais de negócios que automatizam sua fidelização",
-    "stats": {
-      "setupTime": "Tempo médio de configuração",
-      "repeatVisits": "Mais visitas recorrentes",
-      "aiRunning": "IA gerenciando seu programa"
-    },
-    "quote1": {
-      "text": "\"Configurei o Royalty literalmente em um minuto. Agora recebo um email semanal mostrando quais clientes regulares não vieram, e a IA envia ofertas automaticamente. Nossas visitas repetidas aumentaram 40% e eu não fiz nada.\"",
-      "author": "Maria Rodriguez",
-      "title": "Proprietária, Restaurante Casa del Sol"
-    },
-    "quote2": {
-      "text": "\"Tentamos um cartão de selos por anos. Ninguém controlava. Com o Royalty, a IA envia uma mensagem quando alguém não vem há 2 semanas — e eles voltam. É como ter um gerente de retenção que nunca precisei contratar.\"",
-      "author": "James Okafor",
-      "title": "Proprietário, Peak Form Fitness Studio"
-    },
-    "quote3": {
-      "text": "\"Meus clientes habituais se sentem VIPs agora. Perguntam sobre os pontos, indicam amigos, vêm só para alcançar uma meta. O Royalty transformou meu caixa em conversa.\"",
-      "author": "Sophie Tan",
-      "title": "Proprietária, The Lemon Boutique"
-    }
+  "buildDemo": {
+    "tag": "Veja a criação",
+    "title": "Uma frase. Uma app de fidelização.",
+    "subtitle": "Estas três apps saíram do mesmo gerador que a caixa no topo desta página.",
+    "tabCoffee": "Cafetaria",
+    "tabBarber": "Barbearia",
+    "tabNails": "Salão de unhas",
+    "typedLabel": "Escreveram",
+    "promptCoffee": "Tenho uma pequena cafetaria em Austin chamada Bean There. Cerca de 200 clientes habituais, sobretudo quem vai para o trabalho de manhã.",
+    "promptBarber": "A Fade Factory é a minha barbearia em Queens. Três cadeiras, e a maioria dos clientes volta a cada poucas semanas.",
+    "promptNails": "Temos um salão de unhas chamado Polished em Miami. Gel, pedicure e muitas clientes habituais.",
+    "tryCta": "Descreva o seu negócio →",
+    "founderNote": "O Royalty é novo, por isso, em vez de testemunhos, aqui está o próprio produto. Descreva o seu negócio e avalie a app que ele cria para si. Quando os donos nos contarem o que ele fez por eles, as palavras deles vão aparecer aqui.",
+    "founderCite": "A equipa Royalty"
   },
   "pricing": {
     "tag": "Preços",
@@ -448,7 +438,7 @@
       "q6": "O que é marca branca?",
       "a6": "Marca branca remove a marca \"Powered by Royalty\" do seu app de fidelidade voltado ao cliente. Seus clientes veem apenas sua marca.",
       "q7": "Há garantia de reembolso?",
-      "a7": "Sim! Oferecemos garantia de reembolso de 30 dias para assinaturas. Ofertas do AppSumo têm política de reembolso de 60 dias pela plataforma deles.",
+      "a7": "Sim! Oferecemos garantia de reembolso de 30 dias para assinaturas.",
       "q8": "Posso acumular códigos do AppSumo?",
       "a8": "Sim! Cada código aumenta seu limite de membros. Nível 1 = 500 membros, Nível 2 = 2.000 membros, Nível 3 = membros ilimitados. Acumule para atingir o nível que precisa."
     }

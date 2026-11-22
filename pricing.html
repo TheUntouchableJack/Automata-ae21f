@@ -11,7 +11,7 @@
 
     <!-- Open Graph / Social Sharing -->
     <meta property="og:title" content="Pricing — Royalty | AI-Powered Loyalty Programs">
-    <meta property="og:description" content="Simple, transparent pricing. Start free, scale as you grow. AppSumo lifetime deal available.">
+    <meta property="og:description" content="Simple, transparent pricing. Start free, scale as you grow.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://royaltyapp.ai/pricing.html">
     <meta property="og:image" content="https://royaltyapp.ai/og-image.png">
@@ -19,7 +19,7 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Pricing — Royalty | AI-Powered Loyalty Programs">
-    <meta name="twitter:description" content="Simple, transparent pricing. Start free, scale as you grow. AppSumo lifetime deal available.">
+    <meta name="twitter:description" content="Simple, transparent pricing. Start free, scale as you grow.">
     <meta name="twitter:image" content="https://royaltyapp.ai/og-image.png">
 
     <!-- Canonical URL -->
@@ -105,11 +105,6 @@
             },
             {
                 "@type": "Question",
-                "name": "What's the difference between LTD and subscriptions?",
-                "acceptedAnswer": { "@type": "Answer", "text": "AppSumo Lifetime Deal (LTD) includes the loyalty platform and email campaigns forever. Subscription plans add Royal AI, SMS campaigns, and more features. LTD users can add Royalty Pro ($79/mo) to unlock full Royal AI, SMS, and white-label branding." }
-            },
-            {
-                "@type": "Question",
                 "name": "Can I change plans anytime?",
                 "acceptedAnswer": { "@type": "Answer", "text": "Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing." }
             },
@@ -121,12 +116,7 @@
             {
                 "@type": "Question",
                 "name": "Is there a money-back guarantee?",
-                "acceptedAnswer": { "@type": "Answer", "text": "Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform." }
-            },
-            {
-                "@type": "Question",
-                "name": "Can I stack AppSumo codes?",
-                "acceptedAnswer": { "@type": "Answer", "text": "Yes! Each code increases your customer limit. Tier 1 = 500 customers, Tier 2 = 2,000 customers, Tier 3 = unlimited customers. Stack to reach the tier you need." }
+                "acceptedAnswer": { "@type": "Answer", "text": "Yes! We offer a 30-day money-back guarantee on subscriptions." }
             }
         ]
     }
@@ -199,19 +189,11 @@
             opacity: 1;
         }
 
-        body:not(.banner-dismissed) .navbar {
-            top: 56px;
-        }
-
         /* Pricing Page Styles */
         .pricing-hero {
-            padding: 200px 0 40px;
+            padding: 140px 0 40px;
             text-align: center;
             background: var(--color-bg);
-        }
-
-        body.banner-dismissed .pricing-hero {
-            padding: 140px 0 40px;
         }
 
         .pricing-hero h1 {
@@ -662,19 +644,6 @@
     <script src="/js/analytics.js?v=1" defer></script>
 </head>
 <body>
-    <!-- AppSumo Announcement Banner -->
-    <div class="announcement-banner" id="appsumo-banner">
-        <div class="container">
-            <span><span data-i18n="pricingPage.bannerPrefix">Limited Time: Get </span><strong data-i18n="pricingPage.bannerHighlight">lifetime access</strong><span data-i18n="pricingPage.bannerSuffix"> on AppSumo</span></span>
-            <a href="#appsumo" class="btn-deal" data-i18n="pricingPage.bannerBtn">View Deal</a>
-            <button class="banner-close" aria-label="Close banner">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </button>
-        </div>
-    </div>
-
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container nav-container">
@@ -1031,137 +1000,6 @@
         </div>
     </section>
 
-    <!-- AppSumo Lifetime Deal Section -->
-    <section class="pricing-section appsumo-section" id="appsumo">
-        <div class="container">
-            <div class="appsumo-banner">
-                <div class="appsumo-badge">
-                    <img src="https://appsumo2-cdn.appsumo.com/static/images/as-logo-dark.svg" alt="AppSumo" class="appsumo-logo">
-                    <span class="limited-badge" data-i18n="pricingPage.appsumo.limitedTime">Limited Time</span>
-                </div>
-                <h2 data-i18n="pricingPage.appsumo.title">Lifetime Deal on AppSumo</h2>
-                <p data-i18n="pricingPage.appsumo.subtitle">Get lifetime access to Royalty at a one-time price. No monthly fees, ever. AI builds your loyalty program, automations run forever.</p>
-            </div>
-
-            <div class="appsumo-tiers">
-                <!-- Tier 1 -->
-                <div class="appsumo-tier">
-                    <div class="tier-header">
-                        <span class="tier-label" data-i18n="pricingPage.appsumo.tier1">Tier 1</span>
-                        <span class="tier-codes" data-i18n="pricingPage.appsumo.code1">1 Code</span>
-                    </div>
-                    <div class="tier-price">
-                        <span class="price-strike" data-i18n="pricingPage.appsumo.strike1">$948/yr value</span>
-                        <span class="price-main">$59</span>
-                        <span class="price-type" data-i18n="pricingPage.appsumo.oneTime">one-time</span>
-                    </div>
-                    <ul class="tier-features">
-                        <li data-i18n="pricingPage.appsumo.t1f1">500 customers</li>
-                        <li data-i18n="pricingPage.appsumo.t1f2">500 emails/month</li>
-                        <li data-i18n="pricingPage.appsumo.t1f3">Points, tiers & rewards</li>
-                        <li data-i18n="pricingPage.appsumo.t1f4">QR check-ins & referrals</li>
-                        <li data-i18n="pricingPage.appsumo.t1f5">Lifetime updates</li>
-                    </ul>
-                    <a href="https://appsumo.com/products/royalty/" class="btn btn-secondary btn-block" target="_blank" data-i18n="pricingPage.appsumo.cta">Get Deal on AppSumo</a>
-                </div>
-
-                <!-- Tier 2 -->
-                <div class="appsumo-tier featured">
-                    <div class="tier-popular" data-i18n="pricingPage.appsumo.mostPopular">Most Popular</div>
-                    <div class="tier-header">
-                        <span class="tier-label" data-i18n="pricingPage.appsumo.tier2">Tier 2</span>
-                        <span class="tier-codes" data-i18n="pricingPage.appsumo.codes2">2 Codes</span>
-                    </div>
-                    <div class="tier-price">
-                        <span class="price-strike" data-i18n="pricingPage.appsumo.strike2">$2,388/yr value</span>
-                        <span class="price-main">$118</span>
-                        <span class="price-type" data-i18n="pricingPage.appsumo.oneTime">one-time</span>
-                    </div>
-                    <ul class="tier-features">
-                        <li data-i18n="pricingPage.appsumo.t2f1">2,000 customers</li>
-                        <li data-i18n="pricingPage.appsumo.t2f2">2,000 emails/month</li>
-                        <li data-i18n="pricingPage.appsumo.t2f3">Points, tiers & rewards</li>
-                        <li data-i18n="pricingPage.appsumo.t2f4">QR check-ins & referrals</li>
-                        <li data-i18n="pricingPage.appsumo.t2f5">Lifetime updates</li>
-                    </ul>
-                    <a href="https://appsumo.com/products/royalty/" class="btn btn-primary btn-block" target="_blank" data-i18n="pricingPage.appsumo.cta">Get Deal on AppSumo</a>
-                </div>
-
-                <!-- Tier 3 -->
-                <div class="appsumo-tier">
-                    <div class="tier-header">
-                        <span class="tier-label" data-i18n="pricingPage.appsumo.tier3">Tier 3</span>
-                        <span class="tier-codes" data-i18n="pricingPage.appsumo.codes3">3 Codes</span>
-                    </div>
-                    <div class="tier-price">
-                        <span class="price-strike" data-i18n="pricingPage.appsumo.strike3">$5,988/yr value</span>
-                        <span class="price-main">$177</span>
-                        <span class="price-type" data-i18n="pricingPage.appsumo.oneTime">one-time</span>
-                    </div>
-                    <ul class="tier-features">
-                        <li data-i18n="pricingPage.appsumo.t3f1">Unlimited customers</li>
-                        <li data-i18n="pricingPage.appsumo.t3f2">5,000 emails/month</li>
-                        <li data-i18n="pricingPage.appsumo.t3f3">Points, tiers & rewards</li>
-                        <li data-i18n="pricingPage.appsumo.t3f4">QR check-ins & referrals</li>
-                        <li data-i18n="pricingPage.appsumo.t3f5">Lifetime updates</li>
-                    </ul>
-                    <a href="https://appsumo.com/products/royalty/" class="btn btn-secondary btn-block" target="_blank" data-i18n="pricingPage.appsumo.cta">Get Deal on AppSumo</a>
-                </div>
-            </div>
-
-            <div class="appsumo-guarantee">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span data-i18n="pricingPage.appsumo.guarantee">60-day money-back guarantee via AppSumo</span>
-            </div>
-
-            <p class="appsumo-note" style="text-align: center; margin-top: 24px; font-size: 13px; color: rgba(255,255,255,0.5);">
-                Lifetime deals include AI-built loyalty program setup. Continuous AI learning &amp; Autonomous Mode available via <a href="#royalty-pro" style="color: #f59e0b;">Royalty Pro</a> add-on.
-            </p>
-        </div>
-    </section>
-
-    <!-- Royalty Pro Add-on for LTD Users -->
-    <section class="royalty-pro-section" id="royalty-pro">
-        <div class="container">
-            <div class="royalty-pro-content">
-                <div class="royalty-pro-info">
-                    <h3 data-i18n="pricingPage.royaltyPro.title">Royalty Pro — Let Royal Run Your Marketing</h3>
-                    <p data-i18n="pricingPage.royaltyPro.desc">Add Royal AI to your lifetime deal. Royal learns your business, creates automations, sends campaigns autonomously, and proves your marketing ROI.</p>
-                    <div class="royalty-pro-features">
-                        <span>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span data-i18n="pricingPage.royaltyPro.f1">Royal AI + Autonomous Mode</span>
-                        </span>
-                        <span>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span data-i18n="pricingPage.royaltyPro.f2">500 SMS/month + 10K emails</span>
-                        </span>
-                        <span>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span data-i18n="pricingPage.royaltyPro.f3">White-label branding</span>
-                        </span>
-                        <span>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span data-i18n="pricingPage.royaltyPro.f4">Visit attribution</span>
-                        </span>
-                    </div>
-                </div>
-                <div class="royalty-pro-price">
-                    <div class="price-label" data-i18n="pricingPage.royaltyPro.priceLabel">Add to your LTD</div>
-                    <div class="price-amount">$79</div>
-                    <div class="price-period" data-i18n="pricingPage.royaltyPro.pricePeriod">/month</div>
-                    <a href="/app/signup.html?plan=royalty_pro" class="btn btn-block" data-i18n="pricingPage.royaltyPro.cta">Add Royalty Pro</a>
-                </div>
-            </div>
-            <p style="text-align: center; margin-top: 32px; font-size: 14px; color: rgba(255,255,255,0.6);">
-                Need higher limits? <a href="/estimate.html" style="color: #fff; text-decoration: underline;">Contact us</a> for custom plans.
-            </p>
-        </div>
-    </section>
-
     <!-- FAQ Section -->
     <section id="faq" class="pricing-section alt-bg">
         <div class="container">
@@ -1187,11 +1025,6 @@
                 </div>
 
                 <div class="faq-item">
-                    <h4 data-i18n="pricingPage.faq.q4">What's the difference between LTD and subscriptions?</h4>
-                    <p data-i18n="pricingPage.faq.a4">AppSumo Lifetime Deal (LTD) includes the loyalty platform and email campaigns forever. Subscription plans add Royal AI, SMS campaigns, and more features. LTD users can add Royalty Pro ($79/mo) to unlock full Royal AI, SMS, and white-label branding.</p>
-                </div>
-
-                <div class="faq-item">
                     <h4 data-i18n="pricingPage.faq.q5">Can I change plans anytime?</h4>
                     <p data-i18n="pricingPage.faq.a5">Yes! Upgrade or downgrade at any time. When upgrading, you'll be charged the prorated difference. When downgrading, you'll receive credit toward future billing.</p>
                 </div>
@@ -1203,12 +1036,7 @@
 
                 <div class="faq-item">
                     <h4 data-i18n="pricingPage.faq.q7">Is there a money-back guarantee?</h4>
-                    <p data-i18n="pricingPage.faq.a7">Yes! We offer a 30-day money-back guarantee on subscriptions. AppSumo deals have a 60-day refund policy through their platform.</p>
-                </div>
-
-                <div class="faq-item">
-                    <h4 data-i18n="pricingPage.faq.q8">Can I stack AppSumo codes?</h4>
-                    <p data-i18n="pricingPage.faq.a8">Yes! Each code increases your customer limit. Tier 1 = 500 customers, Tier 2 = 2,000 customers, Tier 3 = unlimited customers. Stack to reach the tier you need.</p>
+                    <p data-i18n="pricingPage.faq.a7">Yes! We offer a 30-day money-back guarantee on subscriptions.</p>
                 </div>
             </div>
         </div>
@@ -1252,23 +1080,6 @@
     <script src="i18n/i18n.js"></script>
     <script src="script.js?v=23"></script>
     <script>
-        // Banner dismissal
-        (function() {
-            const banner = document.getElementById('appsumo-banner');
-            const closeBtn = banner?.querySelector('.banner-close');
-
-            if (localStorage.getItem('appsumo-banner-dismissed') === 'true') {
-                banner?.classList.add('hidden');
-                document.body.classList.add('banner-dismissed');
-            }
-
-            closeBtn?.addEventListener('click', function() {
-                banner.classList.add('hidden');
-                document.body.classList.add('banner-dismissed');
-                localStorage.setItem('appsumo-banner-dismissed', 'true');
-            });
-        })();
-
         // Billing toggle
         document.getElementById('billing-toggle')?.addEventListener('change', (e) => {
             const isAnnual = e.target.checked;
@@ -1281,6 +1092,6 @@
             });
         });
     </script>
-    <script src="js/section-nav.js?v=1"></script>
+    <script src="js/section-nav.js?v=2"></script>
 </body>
 </html>
