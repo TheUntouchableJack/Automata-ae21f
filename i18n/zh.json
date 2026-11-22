@@ -531,7 +531,12 @@
     "draftPublish": "检查并发布",
     "draftEditRewards": "编辑奖励",
     "draftNoRewards": "还没有奖励。发布前请先添加一个。",
-    "draftPts": "积分"
+    "draftPts": "积分",
+    "capNearTitle": "您已使用 {limit} 个顾客名额中的 {current} 个",
+    "capNearDesc": "达到 {limit} 后，新顾客将无法加入。升级以继续增长。",
+    "capFullTitle": "您的会员计划已满：{current} / {limit} 位顾客",
+    "capFullDesc": "升级之前，新顾客无法加入。",
+    "capUpgrade": "升级"
   },
   "aiFeed": {
     "title": "AI智能推送",

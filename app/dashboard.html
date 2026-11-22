@@ -68,6 +68,14 @@
             <!-- App Metrics Section (SMB View) -->
             <section class="app-metrics-section" id="app-metrics-section" style="display: none;">
                 <div class="container">
+                    <!-- Customer cap: shown at 80% of the plan's limit and when full (check_member_limit) -->
+                    <div class="member-cap-warning" id="member-cap-warning" role="status" hidden>
+                        <div class="member-cap-warning-text">
+                            <strong id="member-cap-warning-title"></strong>
+                            <span id="member-cap-warning-desc"></span>
+                        </div>
+                        <a href="/app/upgrade.html" class="btn btn-sm btn-primary" data-i18n="dashboard.capUpgrade">Upgrade</a>
+                    </div>
                     <!-- Primary Metrics Cards -->
                     <div class="metrics-grid" id="metrics-grid">
                         <div class="metric-card">
@@ -486,7 +494,7 @@
     <script src="sidebar.js?v=26"></script>
     <script src="shared/ai-templates.js?v=1"></script>
     <script src="ai-feed.js?v=6"></script>
-    <script src="dashboard.js?v=24"></script>
+    <script src="dashboard.js?v=25"></script>
     <script src="/js/ai-status.js?v=1"></script>
     <script>window.AiStatus && window.AiStatus.showBannerIfOff();</script>
 </body>

@@ -531,7 +531,12 @@
     "draftPublish": "Revisar e publicar",
     "draftEditRewards": "Editar recompensas",
     "draftNoRewards": "Ainda não há recompensas. Adicione uma antes de publicar.",
-    "draftPts": "pts"
+    "draftPts": "pts",
+    "capNearTitle": "Você usou {current} das suas {limit} vagas de clientes",
+    "capNearDesc": "Ao chegar a {limit}, novos clientes não poderão participar. Faça upgrade para continuar crescendo.",
+    "capFullTitle": "Seu programa está cheio: {current} de {limit} clientes",
+    "capFullDesc": "Novos clientes não poderão participar até você fazer upgrade.",
+    "capUpgrade": "Fazer upgrade"
   },
   "aiFeed": {
     "title": "Feed de Inteligência IA",

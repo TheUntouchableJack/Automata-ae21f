@@ -531,7 +531,12 @@
     "draftPublish": "Controlla e pubblica",
     "draftEditRewards": "Modifica premi",
     "draftNoRewards": "Ancora nessun premio. Aggiungine uno prima di pubblicare.",
-    "draftPts": "pt"
+    "draftPts": "pt",
+    "capNearTitle": "Hai usato {current} dei tuoi {limit} posti clienti",
+    "capNearDesc": "A {limit}, i nuovi clienti non potranno iscriversi. Passa a un piano superiore per continuare a crescere.",
+    "capFullTitle": "Il tuo programma è pieno: {current} clienti su {limit}",
+    "capFullDesc": "I nuovi clienti non potranno iscriversi finché non passi a un piano superiore.",
+    "capUpgrade": "Passa a un piano superiore"
   },
   "aiFeed": {
     "title": "Feed Intelligenza IA",

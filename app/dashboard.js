@@ -252,6 +252,9 @@ async function loadAppMetrics() {
         // Load dashboard summary
         await loadDashboardSummary();
 
+        // Customer cap warning (80% and full). Not awaited: it never blocks the page.
+        loadMemberCapWarning();
+
         // Load member growth chart
         await loadMemberGrowthChart(currentPeriodDays);
 
@@ -405,8 +408,9 @@ async function seedDefaultRewards(appId) {
     const defaults = [
         { name: 'Free Item', description: 'Redeem for a free item of your choice', points_cost: 100, tier_required: null, display_order: 0 },
         { name: '10% Off', description: 'Get 10% off your next purchase', points_cost: 50, tier_required: null, display_order: 1 },
-        { name: 'VIP Treatment', description: 'Exclusive VIP experience on your next visit', points_cost: 250, tier_required: 'silver', display_order: 2 },
-        { name: 'Birthday Bonus', description: 'Special birthday reward - redeem during your birthday month', points_cost: 0, tier_required: null, display_order: 3, featured: true }
+        { name: 'VIP Treatment', description: 'Exclusive VIP experience on your next visit', points_cost: 250, tier_required: 'silver', display_order: 2 }
+        // No 0-point "Birthday Bonus": with no cap, every member could redeem it every day.
+        // member_redeem_reward refuses points_cost < 1 since 20261122000005.
     ];
 
     const rewards = defaults.map(r => ({
@@ -727,6 +731,51 @@ function hidePreviewPanel() {
     }
     if (grid) grid.style.gridTemplateColumns = '1fr';
     if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+}
+
+// ===== Customer cap =====
+// check_member_limit is the cap join_app enforces (plan, AppSumo tier, override), so the
+// warning and the "program is full" a customer would see can never disagree.
+// Returns null (no warning), or { level: 'near' | 'full', current, limit }.
+function memberCapState(result) {
+    if (!result) return null;
+    const limit = Number(result.limit);
+    const current = Number(result.current);
+    if (!Number.isFinite(limit) || !Number.isFinite(current) || limit <= 0) return null; // -1 = unlimited
+    if (current >= limit) return { level: 'full', current, limit };
+    if (current >= Math.ceil(limit * 0.8)) return { level: 'near', current, limit };
+    return null;
+}
+
+async function loadMemberCapWarning() {
+    const box = document.getElementById('member-cap-warning');
+    if (!box || !currentOrganization?.id) return;
+    try {
+        const { data, error } = await supabase.rpc('check_member_limit', { p_org_id: currentOrganization.id });
+        if (error) return;
+        const state = memberCapState(data);
+        if (!state) { box.hidden = true; return; }
+
+        const tr = (key, fallback, vars) => {
+            let s = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key, vars) : null;
+            if (!s || s === key) s = fallback.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined ? vars[k] : m));
+            return s;
+        };
+        const vars = { current: state.current.toLocaleString(), limit: state.limit.toLocaleString() };
+        const title = state.level === 'full'
+            ? tr('dashboard.capFullTitle', 'Your program is full: {current} of {limit} customers', vars)
+            : tr('dashboard.capNearTitle', "You've used {current} of your {limit} customer spots", vars);
+        const desc = state.level === 'full'
+            ? tr('dashboard.capFullDesc', "New customers can't join until you upgrade.", vars)
+            : tr('dashboard.capNearDesc', "At {limit}, new customers can't join. Upgrade to keep growing.", vars);
+
+        document.getElementById('member-cap-warning-title').textContent = title;
+        document.getElementById('member-cap-warning-desc').textContent = desc;
+        box.classList.toggle('is-full', state.level === 'full');
+        box.hidden = false;
+    } catch (e) {
+        console.warn('[Dashboard] member cap check failed:', e);
+    }
 }
 
 // ===== Draft state =====

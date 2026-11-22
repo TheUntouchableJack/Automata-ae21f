@@ -531,7 +531,12 @@
     "draftPublish": "Vérifier et publier",
     "draftEditRewards": "Modifier les récompenses",
     "draftNoRewards": "Aucune récompense pour l'instant. Ajoutez-en une avant de publier.",
-    "draftPts": "pts"
+    "draftPts": "pts",
+    "capNearTitle": "Vous avez utilisé {current} de vos {limit} places clients",
+    "capNearDesc": "À {limit}, les nouveaux clients ne pourront plus s'inscrire. Passez à l'offre supérieure pour continuer à grandir.",
+    "capFullTitle": "Votre programme est complet : {current} clients sur {limit}",
+    "capFullDesc": "Les nouveaux clients ne peuvent pas s'inscrire tant que vous ne passez pas à l'offre supérieure.",
+    "capUpgrade": "Passer à l'offre supérieure"
   },
   "aiFeed": {
     "title": "Fil d'Intelligence IA",

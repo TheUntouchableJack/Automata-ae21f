@@ -854,7 +854,12 @@
     "draftPublish": "Review and publish",
     "draftEditRewards": "Edit rewards",
     "draftNoRewards": "No rewards yet. Add one before you publish.",
-    "draftPts": "pts"
+    "draftPts": "pts",
+    "capNearTitle": "You've used {current} of your {limit} customer spots",
+    "capNearDesc": "At {limit}, new customers can't join. Upgrade to keep growing.",
+    "capFullTitle": "Your program is full: {current} of {limit} customers",
+    "capFullDesc": "New customers can't join until you upgrade.",
+    "capUpgrade": "Upgrade"
   },
   "aiFeed": {
     "title": "AI Intelligence Feed",

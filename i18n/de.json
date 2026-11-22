@@ -531,7 +531,12 @@
     "draftPublish": "Prüfen und veröffentlichen",
     "draftEditRewards": "Prämien bearbeiten",
     "draftNoRewards": "Noch keine Prämien. Fügen Sie vor dem Veröffentlichen eine hinzu.",
-    "draftPts": "Pkt."
+    "draftPts": "Pkt.",
+    "capNearTitle": "Sie haben {current} von {limit} Kundenplätzen belegt",
+    "capNearDesc": "Ab {limit} können keine neuen Kunden mehr beitreten. Upgraden Sie, um weiter zu wachsen.",
+    "capFullTitle": "Ihr Programm ist voll: {current} von {limit} Kunden",
+    "capFullDesc": "Neue Kunden können erst nach einem Upgrade beitreten.",
+    "capUpgrade": "Upgrade"
   },
   "aiFeed": {
     "title": "KI-Intelligenz-Feed",

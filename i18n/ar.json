@@ -531,7 +531,12 @@
     "draftPublish": "مراجعة ونشر",
     "draftEditRewards": "تعديل المكافآت",
     "draftNoRewards": "لا توجد مكافآت بعد. أضف واحدة قبل النشر.",
-    "draftPts": "نقطة"
+    "draftPts": "نقطة",
+    "capNearTitle": "لقد استخدمت {current} من أصل {limit} مقعدًا للعملاء",
+    "capNearDesc": "عند الوصول إلى {limit} لن يتمكن عملاء جدد من الانضمام. قم بالترقية لمواصلة النمو.",
+    "capFullTitle": "برنامجك ممتلئ: {current} من أصل {limit} عميل",
+    "capFullDesc": "لن يتمكن عملاء جدد من الانضمام حتى تقوم بالترقية.",
+    "capUpgrade": "ترقية"
   },
   "aiFeed": {
     "title": "موجز الذكاء الاصطناعي",
