@@ -2545,5 +2545,11 @@
     "signedOut": "Sua sessão terminou. Entre de novo.",
     "error": "Algo deu errado. Tente de novo.",
     "noCamera": "Este aparelho não pode usar a câmera aqui. Digite o código."
+  },
+  "qrSign": {
+    "headline": "Escaneie a cada visita para ganhar pontos",
+    "sub": "Participe grátis em segundos. Seus pontos viram recompensas.",
+    "orVisit": "Ou acesse",
+    "powered": "Desenvolvido por Royalty"
   }
 }

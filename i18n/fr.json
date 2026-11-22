@@ -2545,5 +2545,11 @@
     "signedOut": "Votre session a expiré. Reconnectez-vous.",
     "error": "Une erreur s'est produite. Réessayez.",
     "noCamera": "Cet appareil ne peut pas utiliser la caméra ici. Saisissez le code."
+  },
+  "qrSign": {
+    "headline": "Scannez à chaque visite pour gagner des points",
+    "sub": "Inscription gratuite en quelques secondes. Vos points se transforment en récompenses.",
+    "orVisit": "Ou rendez-vous sur",
+    "powered": "Propulsé par Royalty"
   }
 }

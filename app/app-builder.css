@@ -652,6 +652,16 @@
     max-height: 100%;
 }
 
+.qr-draft-hint {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #92400e;
+}
+
+.qr-draft-hint[hidden] {
+    display: none;
+}
+
 .qr-placeholder {
     display: flex;
     flex-direction: column;

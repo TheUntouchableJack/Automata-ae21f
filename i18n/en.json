@@ -2545,5 +2545,11 @@
     "signedOut": "Your session ended. Sign in again.",
     "error": "Something went wrong. Try again.",
     "noCamera": "This device can't use the camera here. Type the code instead."
+  },
+  "qrSign": {
+    "headline": "Scan every visit to earn points",
+    "sub": "Join free in seconds. Your points add up to rewards.",
+    "orVisit": "Or visit",
+    "powered": "Powered by Royalty"
   }
 }

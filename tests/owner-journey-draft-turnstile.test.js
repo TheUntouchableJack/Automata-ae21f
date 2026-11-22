@@ -60,11 +60,14 @@ function loadDashboard(supabaseStub) {
       setApp: (a) => { currentApp = a; },
       updatePreviewContent, loadDraftRewards, draftPublishUrl, revealPreviewQR,
     };`
+  // RoyaltyQR (qr-sign.js) stands in for the QR library; tests/qr-sign.test.js covers it.
+  const RoyaltyQR = { available: () => true, canvas: () => document.createElement('canvas') }
   // eslint-disable-next-line no-new-func
-  return new Function('supabase', 'AppUtils', 'i18n', body)(
+  return new Function('supabase', 'AppUtils', 'i18n', 'RoyaltyQR', body)(
     supabaseStub,
     { escapeHtml, generateSlug: (s) => s, showToast: () => {} },
     undefined,
+    RoyaltyQR,
   )
 }
 

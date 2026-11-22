@@ -757,7 +757,7 @@ async function loadMemberCapWarning() {
         if (!state) { box.hidden = true; return; }
 
         const tr = (key, fallback, vars) => {
-            let s = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key, vars) : null;
+            let s = window.I18n?.t ? window.I18n.t(key, vars) : null;
             if (!s || s === key) s = fallback.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined ? vars[k] : m));
             return s;
         };
@@ -789,8 +789,9 @@ function draftPublishUrl(appId) {
 async function loadDraftRewards(appId) {
     const list = document.getElementById('preview-draft-rewards');
     if (!list) return;
+    // window.I18n (i18n/i18n.js); the lowercase `i18n` the older code here checks is never defined.
     const tr = (key, fallback) => {
-        const s = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : null;
+        const s = window.I18n?.t ? window.I18n.t(key) : null;
         return (s && s !== key) ? s : fallback;
     };
     try {
@@ -831,83 +832,49 @@ function revealPreviewQR(previewCol) {
 }
 
 // ===== Preview QR Code =====
+// RoyaltyQR (qr-sign.js) draws it on a canvas: 288 px, shown at 72 px by dashboard.css, so the
+// panel stays sharp. Download saves a 1024 px PNG; Print makes the counter sign.
+function previewCheckinUrl() {
+    return `${window.location.origin}/a/${currentApp.slug}/checkin`;
+}
+
 function generatePreviewQR() {
     if (!currentApp) return;
 
     const container = document.getElementById('preview-qr-code');
+    const section = document.getElementById('preview-qr-section');
     if (!container) return;
 
-    const url = `${window.location.origin}/a/${currentApp.slug}/checkin`;
-
-    if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
-        try {
-            QRCode.toCanvas(document.createElement('canvas'), url, {
-                width: 72,
-                margin: 1,
-                color: { dark: '#1e293b', light: '#ffffff' }
-            }, (error, canvas) => {
-                if (error) {
-                    console.error('QR generation error:', error);
-                    generatePreviewQRFallback(container, url);
-                    return;
-                }
-                container.innerHTML = '';
-                container.appendChild(canvas);
-            });
-        } catch (e) {
-            generatePreviewQRFallback(container, url);
-        }
-    } else {
-        generatePreviewQRFallback(container, url);
+    // No library, no QR: hide the block rather than fall back to a third-party image.
+    if (typeof RoyaltyQR === 'undefined' || !RoyaltyQR.available()) {
+        console.warn('[Dashboard] QR library unavailable; hiding the QR block.');
+        if (section) section.style.display = 'none';
+        return;
     }
-}
-
-function generatePreviewQRFallback(container, url) {
-    const encoded = encodeURIComponent(url);
-    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=${encoded}" alt="QR Code" width="72" height="72" style="border-radius:4px;" onerror="this.parentElement.innerHTML='<div style=\\'width:72px;height:72px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:4px;font-size:10px;color:var(--color-text-muted);\\'>QR</div>'">`;
+    try {
+        container.innerHTML = '';
+        container.appendChild(RoyaltyQR.canvas(previewCheckinUrl(), 288));
+    } catch (e) {
+        console.error('[Dashboard] QR generation failed:', e);
+        if (section) section.style.display = 'none';
+    }
 }
 
 function downloadPreviewQR() {
-    const canvas = document.querySelector('#preview-qr-code canvas');
-    const img = document.querySelector('#preview-qr-code img');
-
-    if (canvas) {
-        const link = document.createElement('a');
-        link.download = `${currentApp?.slug || 'app'}-qr-code.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    } else if (img) {
-        const link = document.createElement('a');
-        link.download = `${currentApp?.slug || 'app'}-qr-code.png`;
-        link.href = img.src;
-        link.target = '_blank';
-        link.click();
-    }
+    if (!currentApp?.is_published || typeof RoyaltyQR === 'undefined' || !RoyaltyQR.available()) return;
+    RoyaltyQR.downloadPng(previewCheckinUrl(), `${currentApp.slug || 'app'}-qr-code.png`);
 }
 
 function printPreviewQR() {
-    const canvas = document.querySelector('#preview-qr-code canvas');
-    const img = document.querySelector('#preview-qr-code img');
-    const qrSrc = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
-
-    if (!qrSrc) return;
-
-    const url = `${window.location.origin}/a/${currentApp?.slug || ''}`;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-        <head><title>QR Code - ${escapeHtml(currentApp?.name || 'App')}</title></head>
-        <body style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; margin: 0;">
-            <h2 style="margin-bottom: 8px;">${escapeHtml(currentApp?.name || 'My App')}</h2>
-            <p style="color: #666; margin-bottom: 24px;">Scan to join our rewards program</p>
-            <img src="${escapeHtml(qrSrc)}" style="width: 250px; height: 250px;" />
-            <p style="margin-top: 16px; color: #888; font-size: 14px;">${escapeHtml(url)}</p>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); }, 500);
+    if (!currentApp?.is_published || typeof RoyaltyQR === 'undefined' || !RoyaltyQR.available()) return;
+    const branding = currentApp.branding || {};
+    RoyaltyQR.printSign({
+        name: currentApp.name || 'Rewards',
+        logoUrl: branding.logo_url,
+        color: branding.primary_color,
+        qrText: previewCheckinUrl(),
+        displayUrl: `${window.location.host}/a/${currentApp.slug}`
+    });
 }
 
 // ===== Rewards given today (counter_summary, 20261122000003) =====

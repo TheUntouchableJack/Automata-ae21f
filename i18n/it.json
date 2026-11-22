@@ -2545,5 +2545,11 @@
     "signedOut": "La sessione è scaduta. Accedi di nuovo.",
     "error": "Qualcosa è andato storto. Riprova.",
     "noCamera": "Questo dispositivo non può usare la fotocamera qui. Digita il codice."
+  },
+  "qrSign": {
+    "headline": "Scansiona a ogni visita per guadagnare punti",
+    "sub": "Iscriviti gratis in pochi secondi. I tuoi punti diventano premi.",
+    "orVisit": "Oppure visita",
+    "powered": "Realizzato con Royalty"
   }
 }

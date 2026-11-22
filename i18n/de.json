@@ -2545,5 +2545,11 @@
     "signedOut": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
     "error": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
     "noCamera": "Dieses Gerät kann hier die Kamera nicht nutzen. Gib den Code ein."
+  },
+  "qrSign": {
+    "headline": "Bei jedem Besuch scannen und Punkte sammeln",
+    "sub": "In Sekunden kostenlos beitreten. Ihre Punkte werden zu Prämien.",
+    "orVisit": "Oder besuchen Sie",
+    "powered": "Bereitgestellt von Royalty"
   }
 }

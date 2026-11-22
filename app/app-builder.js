@@ -1197,44 +1197,31 @@ function generateQRCode() {
         slugPrefix.textContent = `${baseUrl}/a/`;
     }
 
-    const container = document.getElementById('qr-code');
+    // A draft's QR leads to "This app doesn't exist" until it is published.
+    const draftHint = document.getElementById('qr-draft-hint');
+    if (draftHint) draftHint.hidden = !!currentApp?.is_published;
 
-    // Clear previous
+    const container = document.getElementById('qr-code');
     container.innerHTML = '';
 
-    // QR code encodes /checkin URL so scanning triggers auto-checkin
-    if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
-        try {
-            QRCode.toCanvas(document.createElement('canvas'), qrUrl, {
-                width: 220,
-                margin: 2,
-                color: {
-                    dark: '#1e293b',
-                    light: '#ffffff'
-                }
-            }, (error, canvas) => {
-                if (error) {
-                    console.error('QR generation error:', error);
-                    generateQRCodeFallback(container, qrUrl);
-                    return;
-                }
-                container.innerHTML = '';
-                container.appendChild(canvas);
-            });
-        } catch (e) {
-            console.warn('QRCode library error:', e);
-            generateQRCodeFallback(container, qrUrl);
-        }
-    } else {
-        console.warn('QRCode library not loaded, using fallback');
-        generateQRCodeFallback(container, qrUrl);
+    // QR code encodes /checkin URL so scanning triggers auto-checkin. RoyaltyQR (qr-sign.js)
+    // draws it on a canvas; no third-party image fallback.
+    if (typeof RoyaltyQR === 'undefined' || !RoyaltyQR.available()) {
+        console.warn('QR library not loaded');
+        container.innerHTML = '<div class="qr-placeholder"><span>QR code unavailable. Reload the page to try again.</span></div>';
+        return;
+    }
+    try {
+        container.appendChild(RoyaltyQR.canvas(qrUrl, 448));
+    } catch (e) {
+        console.error('QR generation error:', e);
+        container.innerHTML = '<div class="qr-placeholder"><span>QR code unavailable. Reload the page to try again.</span></div>';
     }
 }
 
-// Fallback when QRCode library is unavailable
-function generateQRCodeFallback(container, url) {
-    const encoded = encodeURIComponent(url);
-    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encoded}" alt="QR Code" width="220" height="220" style="border-radius:8px;" onerror="this.parentElement.innerHTML='<div style=\\'width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:var(--color-bg-secondary);border-radius:8px;font-size:12px;color:var(--color-text-muted);\\'>QR unavailable</div>'">`;
+function builderCheckinUrl() {
+    const slug = document.getElementById('app-slug').value || currentApp?.slug || 'your-app';
+    return `${getBaseUrl()}/a/${slug}/checkin`;
 }
 
 function getAppUrl() {
@@ -1321,70 +1308,31 @@ function shareEmail() {
 }
 
 function downloadQRCode() {
-    const canvas = document.querySelector('#qr-code canvas');
-    const img = document.querySelector('#qr-code img');
-
-    if (canvas) {
-        // Download from canvas
-        const link = document.createElement('a');
-        link.download = `${currentApp?.slug || 'app'}-qr-code.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    } else if (img && img.src) {
-        // Download from API-generated image
-        // Fetch the image and create a download link
-        fetch(img.src)
-            .then(response => response.blob())
-            .then(blob => {
-                const link = document.createElement('a');
-                link.download = `${currentApp?.slug || 'app'}-qr-code.png`;
-                link.href = URL.createObjectURL(blob);
-                link.click();
-                URL.revokeObjectURL(link.href);
-            })
-            .catch(() => {
-                // Fallback: open image in new tab
-                window.open(img.src, '_blank');
-            });
-    } else {
-        showError('Please generate QR code first');
-    }
-}
-
-function printQRCode() {
-    const canvas = document.querySelector('#qr-code canvas');
-    const img = document.querySelector('#qr-code img');
-
-    let imgSrc = '';
-    if (canvas) {
-        imgSrc = canvas.toDataURL();
-    } else if (img && img.src) {
-        imgSrc = img.src;
-    } else {
-        showError('Please generate QR code first');
+    if (typeof RoyaltyQR === 'undefined' || !RoyaltyQR.available()) {
+        showError('QR code unavailable. Reload the page to try again.');
         return;
     }
+    const slug = document.getElementById('app-slug').value || currentApp?.slug || 'app';
+    RoyaltyQR.downloadPng(builderCheckinUrl(), `${slug}-qr-code.png`);
+}
 
-    const esc = AppUtils.escapeHtml;
-    const win = window.open('', '_blank');
-    win.document.write(`
-        <html>
-        <head><title>QR Code - ${esc(currentApp?.name || 'App')}</title></head>
-        <body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;">
-            <div style="text-align: center;">
-                <img src="${esc(imgSrc)}" style="width: 300px; height: 300px;">
-                <p style="font-family: sans-serif; font-size: 18px; margin-top: 20px;">
-                    Scan to join ${esc(currentApp?.name || 'our loyalty program')}
-                </p>
-                <p style="font-family: monospace; color: #7c3aed;">
-                    ${esc(document.getElementById('qr-url-display').textContent)}
-                </p>
-            </div>
-        </body>
-        </html>
-    `);
-    win.document.close();
-    win.print();
+// The counter sign: logo, name, colours, "Scan every visit to earn points", the QR, the URL.
+// Printed from this page once its images have loaded (qr-sign.js), so it is never blank.
+function printQRCode() {
+    if (typeof RoyaltyQR === 'undefined' || !RoyaltyQR.available()) {
+        showError('QR code unavailable. Reload the page to try again.');
+        return;
+    }
+    const appData = getAppData();
+    const branding = appData.branding || currentApp?.branding || {};
+    const slug = document.getElementById('app-slug').value || currentApp?.slug || 'your-app';
+    RoyaltyQR.printSign({
+        name: appData.name || currentApp?.name || 'Rewards',
+        logoUrl: branding.logo_url || currentApp?.branding?.logo_url,
+        color: branding.primary_color,
+        qrText: builderCheckinUrl(),
+        displayUrl: `${window.location.host}/a/${slug}`
+    });
 }
 
 // ===== Preview =====
