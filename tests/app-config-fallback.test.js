@@ -125,3 +125,82 @@ describe('AppConfigFallback.build', () => {
     expect(AppConfigFallback._normalizeIndustry(undefined)).toBe('other')
   })
 })
+
+// 2026-11-22: with the AI step down, "a small coffee shop… called Bean There"
+// rendered as "small coffee Rewards" with "1 pts per visit · 1 welcome points ·
+// 1 rewards ready" and a 50-point reward (50 visits on the punch-card template).
+describe('AppConfigFallback.guessName', () => {
+  it.each([
+    ['I run a small coffee shop in Austin called Bean There, about 200 regulars', 'Bean There'],
+    ['A small coffee shop… called Bean There', 'Bean There'],
+    ['Bean There is a coffee shop in Austin', 'Bean There'],
+    ['Fade Factory is my barbershop', 'Fade Factory'],
+    ['my barbershop is called Fade Factory.', 'Fade Factory'],
+    ['We own The Daily Grind, a cafe downtown', 'The Daily Grind'],
+    ['i run Cuts by Maria in Miami', 'Cuts by Maria'],
+  ])('%s -> %s', (prompt, name) => {
+    expect(AppConfigFallback.guessName(prompt)).toBe(name)
+  })
+
+  it.each([
+    'I run a small coffee shop in Austin',
+    'I own a nail salon with 3 chairs',
+    'We are a family restaurant',
+    'My shop is a bakery',
+    '',
+  ])('returns no name rather than a wrong one: %s', (prompt) => {
+    expect(AppConfigFallback.guessName(prompt)).toBe('')
+  })
+})
+
+describe('AppConfigFallback niches (AI analysis unavailable)', () => {
+  const CASES = [
+    ['a small coffee shop in Austin', 'coffee', 'food'],
+    ['neighborhood bakery and cupcakes', 'bakery', 'food'],
+    ['a barbershop in Queens', 'barber', 'service'],
+    ['hair salon with 4 stylists', 'salon', 'service'],
+    ['a nail salon', 'nails', 'service'],
+    ['yoga and pilates studio', 'yoga', 'health'],
+    ['a crossfit gym', 'gym', 'health'],
+    ['self-serve car wash', 'carwash', 'service'],
+    ['family pizza restaurant', 'restaurant', 'food'],
+  ]
+
+  it.each(CASES)('%s is read as %s', (prompt, key, industry) => {
+    const niche = AppConfigFallback.detectNiche(prompt)
+    expect(niche && niche.key).toBe(key)
+    expect(niche.industry).toBe(industry)
+  })
+
+  it.each(CASES)('%s gets a coherent app with no industry from the AI', (prompt, key, industry) => {
+    const cfg = AppConfigFallback.build({ prompt, industry: '', businessName: '' })
+    expect(cfg.primaryColor).toBe(AppConfigFallback._INDUSTRY_PALETTE[industry].primary)
+    expect(cfg.appName).not.toMatch(/^Loyalty Rewards$/)
+    expect(cfg.rewards.length).toBeGreaterThanOrEqual(3)
+
+    // Economy in VISITS, whatever the template's points per visit.
+    const visits = cfg.rewards.map(r => r.pointsCost / cfg.pointsPerScan)
+    expect(Math.min(...visits), 'first reward should take a few visits').toBeGreaterThanOrEqual(3)
+    expect(Math.min(...visits), 'first reward should not take months').toBeLessThanOrEqual(15)
+    const cheapest = Math.min(...cfg.rewards.map(r => r.pointsCost))
+    expect(cheapest).toBeLessThanOrEqual(cfg.tiers[1].points)
+    // Signup alone never unlocks a reward: at least two visits are needed.
+    expect(cfg.welcomePoints + 2 * cfg.pointsPerScan).toBeLessThanOrEqual(cheapest)
+  })
+
+  it('the punch-card coffee app is internally consistent', () => {
+    const cfg = AppConfigFallback.build({ prompt: 'a small coffee shop in Austin', industry: '', businessName: 'Bean There' })
+    expect(cfg.appName).toBe('Bean There Rewards')
+    expect(cfg.templateId).toBe('cafe-rewards')
+    expect(cfg.pointsPerScan).toBe(1)
+    expect(cfg.rewards.map(r => r.name)).toContain('Free House Coffee')
+    expect(cfg.rewards.find(r => r.name === 'Free House Coffee').pointsCost).toBe(10)
+  })
+
+  it('a niche the AI disagrees with does not override the AI industry', () => {
+    // The analysis says retail; the word "coffee" alone must not turn it into a cafe.
+    const cfg = AppConfigFallback.build({ prompt: 'we sell coffee machines', industry: 'retail', businessName: 'Brew Supply' })
+    expect(cfg.primaryColor).toBe(AppConfigFallback._INDUSTRY_PALETTE.retail.primary)
+    expect(cfg.rewards.map(r => r.name)).not.toContain('Free House Coffee')
+  })
+})

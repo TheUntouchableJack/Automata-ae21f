@@ -168,7 +168,7 @@
          (control arm of the preview A/B, or the cold path), it rebuilds one
          from these so a signup still ends with a real loyalty app. -->
     <script src="app-templates-library.js?v=1"></script>
-    <script src="app-config-fallback.js?v=1"></script>
+    <script src="app-config-fallback.js?v=2"></script>
     <script src="onboarding-save.js?v=2"></script>
     <script>
         // Cold-signup business-description page. The account already exists; this
@@ -241,21 +241,13 @@
             _orbTimers = [];
         }
 
-        // ── Smart business-name guess from the prompt ──
+        // ── Smart business-name guess from the prompt (shared: app-config-fallback.js) ──
         function guessBusinessNameFromPrompt(prompt) {
-            if (!prompt) return '';
-            const trimmed = prompt.trim();
-            const patterns = [
-                /(?:own|run|operate|have)\s+(?:a\s+|an\s+|the\s+)?([A-Z][\w'&.\- ]{1,40}?)(?:\s+(?:which|that|is|in|where|shop|store|restaurant|business|cafe|company))/i,
-                /(?:called|named)\s+["']?([A-Z][\w'&.\- ]{1,40}?)["']?(?:\s|$|\.|,)/i,
-                /^([A-Z][\w'&.\- ]{1,40}?)\s+(?:is|was)\s+(?:a|an|the)\s+/i,
-            ];
-            for (const re of patterns) {
-                const m = trimmed.match(re);
-                if (m && m[1]) return m[1].trim();
+            try {
+                return (window.AppConfigFallback && AppConfigFallback.guessName) ? AppConfigFallback.guessName(prompt) : '';
+            } catch (e) {
+                return '';
             }
-            const caps = trimmed.match(/\b[A-Z][\w'&.\-]*(?:\s+[A-Z][\w'&.\-]*){0,2}/);
-            return caps ? caps[0] : '';
         }
 
         // ── Analyze: call the edge function, stream results into editable fields ──
@@ -308,7 +300,7 @@
             try {
                 const response = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+                    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
                     body: JSON.stringify({ businessPrompt: prompt, language: lang })
                 });
 

@@ -111,6 +111,127 @@ const AppConfigFallback = (function () {
         ]
     };
 
+    // ── Niches ───────────────────────────────────────────────────────────────
+    // The signup analysis normally supplies the industry. When it fails (AI down,
+    // timeout) the industry arrives empty, and before 2026-11-22 a coffee shop got
+    // the generic "other" app. The visitor's own words still say what the business
+    // is, so these keywords recover it, along with rewards that trade actually
+    // hands over. First match wins: keep the specific ones ("nail salon") above the
+    // general ones ("salon").
+    //
+    // Reward costs here use the same scale as INDUSTRY_REWARDS: 10 points = one
+    // visit. build() rescales them to the template's points per visit, so a reward
+    // always takes the same number of VISITS whatever the template's economy.
+    // Costs are multiples of 50 so the 1-point-a-visit punch card scales cleanly.
+    const NICHES = [
+        { key: 'nails', template: 'loyalty-points', industry: 'service', label: 'Nail',
+          re: /\b(nail salon|nail bar|nail studio|nails|manicures?|pedicures?|mani-?pedi)\b/i,
+          rewards: [
+            { name: 'Free Nail Art',          description: 'Accent nails on your next set',      pointsCost: 50,  tierRequired: null },
+            { name: 'Free Paraffin Treatment', description: 'Add it to any manicure or pedicure', pointsCost: 100, tierRequired: null },
+            { name: 'Free Gel Upgrade',        description: 'Gel finish at no extra cost',        pointsCost: 150, tierRequired: null },
+            { name: 'Free Manicure',           description: 'A classic manicure, on us',          pointsCost: 300, tierRequired: 'silver' }
+          ] },
+        { key: 'barber', template: 'loyalty-points', industry: 'service', label: 'Barber',
+          re: /\b(barbers?|barbershops?|barber shop)\b/i,
+          rewards: [
+            { name: 'Free Line-Up',        description: 'A quick edge-up between cuts',        pointsCost: 50,  tierRequired: null },
+            { name: 'Free Beard Trim',     description: 'Shape and trim with your next cut',   pointsCost: 100, tierRequired: null },
+            { name: 'Free Hot Towel Shave', description: 'The full hot towel treatment',       pointsCost: 150, tierRequired: null },
+            { name: 'Free Haircut',        description: 'Your usual cut, on the house',        pointsCost: 250, tierRequired: 'silver' }
+          ] },
+        { key: 'salon', template: 'loyalty-points', industry: 'service', label: 'Salon',
+          re: /\b(hair salons?|salons?|hairdressers?|hair stylists?|blow ?dry bar|blowouts?)\b/i,
+          rewards: [
+            { name: 'Free Deep Conditioning', description: 'Added to your next appointment', pointsCost: 50,  tierRequired: null },
+            { name: 'Free Blowout',           description: 'A wash and blowout, on us',      pointsCost: 100, tierRequired: null },
+            { name: 'Free Gloss Treatment',   description: 'Shine and tone with any service', pointsCost: 150, tierRequired: null },
+            { name: 'Free Cut',               description: 'Your next cut, on the house',     pointsCost: 300, tierRequired: 'silver' }
+          ] },
+        { key: 'bakery', template: 'loyalty-points', industry: 'food', label: 'Bakery',
+          re: /\b(bakery|bakeries|bake shop|bakeshop|patisserie|p\u00e2tisserie|boulangerie|donuts?|doughnuts?|cupcakes?)\b/i,
+          rewards: [
+            { name: 'Free Cookie',           description: 'Any cookie from the counter',     pointsCost: 50,  tierRequired: null },
+            { name: 'Free Coffee and Pastry', description: 'Any pastry with a regular coffee', pointsCost: 100, tierRequired: null },
+            { name: 'Free Loaf',             description: 'Any bread from today\u2019s bake', pointsCost: 150, tierRequired: null },
+            { name: 'Half-Dozen on Us',      description: 'Six of your favourites, free',    pointsCost: 300, tierRequired: 'silver' }
+          ] },
+        { key: 'coffee', template: 'cafe-rewards', industry: 'food', label: 'Coffee',
+          re: /\b(coffee|caf[e\u00e9]s?|espresso|coffee ?house|roastery|roasters?|tea ?house|tea shop|boba|bubble tea)\b/i,
+          rewards: [
+            { name: 'Free Pastry',           description: 'Anything from the pastry case',   pointsCost: 50,  tierRequired: null },
+            { name: 'Free House Coffee',     description: 'Any size, your 10th one is on us', pointsCost: 100, tierRequired: null },
+            { name: 'Free Specialty Drink',  description: 'Latte, mocha or any signature drink', pointsCost: 150, tierRequired: null },
+            { name: 'Bag of House Beans',    description: 'Take our house roast home',       pointsCost: 300, tierRequired: 'silver' }
+          ] },
+        { key: 'restaurant', template: 'restaurant-rewards', industry: 'food', label: 'Table', rewards: null,
+          re: /\b(restaurants?|bistros?|diners?|pizzerias?|pizza|taquerias?|tacos?|ramen|sushi|burgers?|grills?|eatery|eateries|brunch|food truck|kitchen)\b/i },
+        { key: 'yoga', template: 'fitness-club', industry: 'health', label: 'Studio',
+          re: /\b(yoga|pilates|barre|spin studio|cycling studio|dance studio|meditation)\b/i,
+          rewards: [
+            { name: 'Free Mat and Towel',  description: 'Rental included on your next class', pointsCost: 50,  tierRequired: null },
+            { name: 'Bring a Friend',      description: 'A friend joins any class free',      pointsCost: 100, tierRequired: null },
+            { name: 'Free Class',          description: 'Any class on the schedule, on us',   pointsCost: 150, tierRequired: null },
+            { name: 'Free Workshop',       description: 'A place at our next workshop',       pointsCost: 400, tierRequired: 'silver' }
+          ] },
+        { key: 'gym', template: 'fitness-club', industry: 'health', label: 'Gym',
+          re: /\b(gyms?|fitness|crossfit|boxing|kickboxing|martial arts|jiu-?jitsu|karate|bootcamp|personal train(?:er|ing))\b/i,
+          rewards: [
+            { name: 'Guest Pass',             description: 'Bring a friend for a workout', pointsCost: 50,  tierRequired: null },
+            { name: 'Free Shake or Smoothie', description: 'Any drink from the bar',      pointsCost: 100, tierRequired: null },
+            { name: 'Free Coaching Session',  description: 'One session with a trainer',  pointsCost: 200, tierRequired: null },
+            { name: 'A Month On Us',          description: 'One month of membership free', pointsCost: 450, tierRequired: 'silver' }
+          ] },
+        { key: 'carwash', template: 'loyalty-points', industry: 'service', label: 'Wash',
+          re: /\b(car ?wash(?:es)?|auto detail(?:ing|er)?|car detail(?:ing|er)?|detailing)\b/i,
+          rewards: [
+            { name: 'Free Tire Shine',      description: 'Added to any wash',            pointsCost: 50,  tierRequired: null },
+            { name: 'Free Interior Vacuum', description: 'Full vacuum with your wash',   pointsCost: 100, tierRequired: null },
+            { name: 'Free Basic Wash',      description: 'Your next exterior wash, free', pointsCost: 150, tierRequired: null },
+            { name: 'Free Full Detail',     description: 'Inside and out, on us',         pointsCost: 400, tierRequired: 'silver' }
+          ] }
+    ];
+
+    function detectNiche(prompt) {
+        const text = String(prompt || '');
+        if (!text) return null;
+        return NICHES.find(n => n.re.test(text)) || null;
+    }
+
+    // ── Business name from the description ───────────────────────────────────
+    // Used while the analysis runs (and when it fails). The old guess applied the
+    // /i flag to the whole pattern, so its "[A-Z]" also matched lowercase: "I run a
+    // small coffee shop called Bean There" came out as "small coffee". Here only
+    // the keywords ignore case; a name must really start with a capital letter or
+    // digit, and when nothing reads as a name the result is '' (the preview then
+    // uses the industry label rather than a wrong name).
+    const NAME_WORD = "[A-Z0-9][\\w\u2019'&-]*";
+    const NAME_JOIN = "(?:of|the|and|by|on|at|de|la|le|du|el|y|&|n'|'n')";
+    const NAME = '(' + NAME_WORD + '(?:\\s+(?:' + NAME_JOIN + '\\s+)?' + NAME_WORD + '){0,4})';
+    const NAME_PATTERNS = [
+        // "... called Bean There", "... named Fade Factory"
+        new RegExp("\\b(?:[Cc]alled|[Nn]amed)\\s+[\"\u201c'\u2018]?" + NAME),
+        // "Bean There is a coffee shop", "Fade Factory is my barbershop"
+        new RegExp('^' + NAME + "\\s+(?:is|was|are)\\s+(?:a|an|the|my|our)\\b"),
+        // "I own Bean There, a cafe", "we run The Daily Grind in Austin"
+        new RegExp('\\b(?:[Oo]wn|[Rr]un|[Oo]perate|[Mm]anage|[Hh]ave)\\s+' + NAME + '(?=\\s*[,.;!]|\\s+(?:which|that|is|in|on|near|where|a|an)\\b|\\s*$)')
+    ];
+    const NAME_STOPWORDS = ['i', 'we', 'my', 'our', 'the', 'a', 'an', 'it', 'this', 'that', 'hi', 'hello', 'hey', 'im'];
+
+    function guessName(prompt) {
+        const text = String(prompt || '').trim();
+        if (!text) return '';
+        for (const re of NAME_PATTERNS) {
+            const m = text.match(re);
+            if (!m || !m[1]) continue;
+            const name = m[1].replace(/[\s'\u2019&-]+$/, '').trim();
+            if (!name || name.length > 40) continue;
+            if (NAME_STOPWORDS.includes(name.toLowerCase().replace(/[^a-z]/g, ''))) continue;
+            return name;
+        }
+        return '';
+    }
+
     const VALID_INDUSTRIES = Object.keys(INDUSTRY_PALETTE);
 
     // Templates that are not loyalty programmes. getSuggestedAppTemplates will
@@ -124,7 +245,15 @@ const AppConfigFallback = (function () {
     }
 
     // ── Tier 1: template ─────────────────────────────────────────────────────
-    function pickTemplate(prompt, industry) {
+    function pickTemplate(prompt, industry, preferredId) {
+        // A niche names the template that fits its trade. Keyword matching alone
+        // sends "barbershop" to the retail rewards-club template (it contains "shop").
+        if (preferredId && typeof getAppTemplateById === 'function') {
+            try {
+                const preferred = getAppTemplateById(preferredId);
+                if (preferred && !EXCLUDED_APP_TYPES.includes(preferred.app_type)) return preferred;
+            } catch (e) { /* fall through to suggestions */ }
+        }
         if (typeof getSuggestedAppTemplates !== 'function') return null;
         try {
             const suggestions = getSuggestedAppTemplates(prompt || '', industry || '') || [];
@@ -151,9 +280,10 @@ const AppConfigFallback = (function () {
         ];
     }
 
-    function appNameFor(businessName, industry) {
+    function appNameFor(businessName, industry, niche) {
         const clean = String(businessName || '').trim();
         if (clean) return `${clean} Rewards`;
+        if (niche && niche.label) return `${niche.label} Rewards`;
         const label = {
             food: 'Table', retail: 'Shop', health: 'Studio', service: 'Client',
             technology: 'Member', education: 'Class', other: 'Loyalty'
@@ -211,20 +341,36 @@ const AppConfigFallback = (function () {
     function build(input) {
         const opts = input || {};
         try {
-            const industry = normalizeIndustry(opts.industry);
+            // The prompt's keywords fill in a missing industry, and pick niche
+            // rewards when they agree with the industry the analysis returned.
+            const niche = detectNiche(opts.prompt);
+            let industry = normalizeIndustry(opts.industry);
+            if (industry === 'other' && niche) industry = niche.industry;
+            const nicheFits = !!(niche && niche.industry === industry);
             const palette = INDUSTRY_PALETTE[industry];
-            const template = pickTemplate(opts.prompt, industry);
+            const template = pickTemplate(opts.prompt, industry, nicheFits ? niche.template : null);
             const tSettings = (template && template.settings) || {};
 
             const silver   = Number(tSettings.tier_thresholds?.silver)   || 500;
             const gold     = Number(tSettings.tier_thresholds?.gold)     || 1500;
             const platinum = Number(tSettings.tier_thresholds?.platinum) || 5000;
+            const pointsPerScan = Number(tSettings.points_per_scan) || 10;
 
-            const rewards = (INDUSTRY_REWARDS[industry] || INDUSTRY_REWARDS.other)
-                // Keep the cheapest reward reachable well before silver, so there
-                // is something to aim at in the first couple of weeks.
-                .filter(r => r.pointsCost <= silver)
-                .map(r => ({ ...r }));
+            // Reward lists are written at 10 points a visit. Rescale to this
+            // template's rate, or the 1-point-a-visit cafe card showed a 50-point
+            // reward (50 visits) next to "1 pts per visit".
+            const scale = pointsPerScan / 10;
+            const rescale = (cost) => {
+                const v = cost * scale;
+                return v >= 10 ? Math.max(5, Math.round(v / 5) * 5) : Math.max(1, Math.round(v));
+            };
+            const sourceRewards = (nicheFits && niche.rewards) || INDUSTRY_REWARDS[industry] || INDUSTRY_REWARDS.other;
+            const scaled = sourceRewards.map(r => ({ ...r, pointsCost: rescale(r.pointsCost) }));
+            // Keep the cheapest reward reachable well before silver, so there is
+            // something to aim at in the first couple of weeks. A template with a
+            // low silver line must still show a few rewards.
+            let rewards = scaled.filter(r => r.pointsCost <= silver);
+            if (rewards.length < 3) rewards = scaled.slice().sort((a, b) => a.pointsCost - b.pointsCost).slice(0, 3);
 
             const cheapest = rewards.length
                 ? Math.min(...rewards.map(r => r.pointsCost))
@@ -233,17 +379,18 @@ const AppConfigFallback = (function () {
             const config = {
                 source: template ? 'template' : 'hardcoded',
                 templateId: template ? template.id : null,
-                appName: appNameFor(opts.businessName, industry),
+                appName: appNameFor(opts.businessName, industry, nicheFits ? niche : null),
                 appDescription: template && template.description
                     ? template.description
                     : 'Earn points every visit and turn them into rewards.',
                 appType: (template && template.app_type) || 'loyalty',
                 primaryColor: palette.primary,
                 secondaryColor: palette.secondary,
-                pointsPerScan: Number(tSettings.points_per_scan) || 10,
+                pointsPerScan,
                 pointsPerDollar: Number(tSettings.points_per_dollar) || 1,
-                // Never hand out enough at signup to claim a paid reward for free.
-                welcomePoints: Math.min(Number(tSettings.welcome_points) || 50, cheapest),
+                // Never hand out enough at signup to claim a reward for free: the
+                // first one should take at least two visits.
+                welcomePoints: Math.max(0, Math.min(Number(tSettings.welcome_points) || 50, cheapest - 2 * pointsPerScan)),
                 dailyScanLimit: Number(tSettings.daily_scan_limit) || 1,
                 tiers: buildTiers(industry, silver, gold, platinum),
                 rewards: rewards.length ? rewards : hardcodedConfig(opts.businessName).rewards,
@@ -263,6 +410,8 @@ const AppConfigFallback = (function () {
 
     return {
         build,
+        guessName,
+        detectNiche: (prompt) => { const n = detectNiche(prompt); return n ? { key: n.key, industry: n.industry, label: n.label } : null; },
         // exposed for tests
         _INDUSTRY_PALETTE: INDUSTRY_PALETTE,
         _INDUSTRY_REWARDS: INDUSTRY_REWARDS,

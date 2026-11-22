@@ -983,22 +983,14 @@ function stopOrbWordCycle() {
 }
 
 // ─── Smart business name guess from prompt text ────────────────────
+// Lives in app/app-config-fallback.js (loaded before this file) so the homepage,
+// get-started and the tests share one implementation.
 function guessBusinessNameFromPrompt(prompt) {
-    if (!prompt) return '';
-    const trimmed = prompt.trim();
-    // Look for patterns like "I own X", "my shop X", "X is a ramen shop"
-    const patterns = [
-        /(?:own|run|operate|have)\s+(?:a\s+|an\s+|the\s+)?([A-Z][\w'&.\- ]{1,40}?)(?:\s+(?:which|that|is|in|where|shop|store|restaurant|business|cafe|company))/i,
-        /(?:called|named)\s+["']?([A-Z][\w'&.\- ]{1,40}?)["']?(?:\s|$|\.|,)/i,
-        /^([A-Z][\w'&.\- ]{1,40}?)\s+(?:is|was)\s+(?:a|an|the)\s+/i,
-    ];
-    for (const re of patterns) {
-        const m = trimmed.match(re);
-        if (m && m[1]) return m[1].trim();
+    try {
+        return (window.AppConfigFallback && AppConfigFallback.guessName) ? AppConfigFallback.guessName(prompt) : '';
+    } catch (e) {
+        return '';
     }
-    // Fallback: first 2-3 capitalized words
-    const caps = trimmed.match(/\b[A-Z][\w'&.\-]*(?:\s+[A-Z][\w'&.\-]*){0,2}/);
-    return caps ? caps[0] : '';
 }
 
 // ── Preview variant ────────────────────────────────────────────────────────
@@ -1206,7 +1198,7 @@ async function handleAnalyzeBusiness() {
     try {
         const response = await fetch(EDGE_FUNCTION_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+            headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
             body: JSON.stringify({
                 businessPrompt: prompt,
                 language: lang

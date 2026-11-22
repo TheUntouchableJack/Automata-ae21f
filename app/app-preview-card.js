@@ -51,6 +51,18 @@ const AppPreviewCard = (function () {
         return out;
     }
 
+    // Count-aware variant of t(): uses the `<key>One` string when the language's
+    // plural rule for n is "one". Before this the card read "1 pts per visit" and
+    // "1 welcome points" for the 1-point-a-visit cafe template.
+    function tCount(key, fallbackOther, fallbackOne, n, vars) {
+        let isOne = n === 1;
+        try {
+            const lang = (document.documentElement.lang || 'en').split('-')[0];
+            isOne = new Intl.PluralRules(lang).select(Number(n)) === 'one';
+        } catch (e) { /* keep the English rule */ }
+        return isOne ? t(key + 'One', fallbackOne, vars) : t(key, fallbackOther, vars);
+    }
+
     const ICONS = {
         home:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>',
         rewards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>',
@@ -90,7 +102,7 @@ const AppPreviewCard = (function () {
                     <div class="preview-app-body">
                         <div class="preview-points-ring" style="border-color: ${primary}">
                             <span class="preview-points-value" style="color: ${primary}">${esc(config.welcomePoints)}</span>
-                            <span class="preview-points-label">${esc(t('hero.previewPointsLabel', 'points'))}</span>
+                            <span class="preview-points-label">${esc(tCount('hero.previewPointsLabel', 'points', 'point', Number(config.welcomePoints)))}</span>
                         </div>
                         <div class="preview-tier-row">${tierChips}</div>
                         <div class="preview-rewards-list">${rewardRows}</div>
@@ -108,11 +120,13 @@ const AppPreviewCard = (function () {
     }
 
     function renderFacts(config) {
+        const nTiers = (config.tiers || []).length;
+        const nRewards = (config.rewards || []).length;
         const chips = [
-            t('hero.previewChipPoints',  '{n} pts per visit', { n: esc(config.pointsPerScan) }),
-            t('hero.previewChipWelcome', '{n} welcome points', { n: esc(config.welcomePoints) }),
-            t('hero.previewChipTiers',   '{n} tiers',          { n: (config.tiers || []).length }),
-            t('hero.previewChipRewards', '{n} rewards ready',  { n: (config.rewards || []).length })
+            tCount('hero.previewChipPoints',  '{n} pts per visit',  '{n} pt per visit',  Number(config.pointsPerScan), { n: esc(config.pointsPerScan) }),
+            tCount('hero.previewChipWelcome', '{n} welcome points', '{n} welcome point', Number(config.welcomePoints), { n: esc(config.welcomePoints) }),
+            tCount('hero.previewChipTiers',   '{n} tiers',          '{n} tier',          nTiers,   { n: nTiers }),
+            tCount('hero.previewChipRewards', '{n} rewards ready',  '{n} reward ready',  nRewards, { n: nRewards })
         ];
         return chips.map(c => `<span class="preview-fact-chip">${c}</span>`).join('');
     }

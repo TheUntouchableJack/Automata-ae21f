@@ -189,7 +189,7 @@ export interface ClaudeToolResponse {
   role: 'assistant'
   content: ContentBlock[]
   model: string
-  stop_reason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence'
+  stop_reason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'refusal' | 'pause_turn'
   usage: {
     input_tokens: number
     output_tokens: number
@@ -236,7 +236,9 @@ export const TOOL_USE_CONFIG = {
   maxIterations: 5,      // Maximum tool use loops
   maxTokens: 4000,       // Max tokens per Claude call
   toolTimeout: 10000,    // Timeout per tool execution (ms)
-  tokenBudget: 15000,    // Max total tokens per request (prevents runaway cost)
+  // Max total tokens per request (prevents runaway cost). 22000 on Sonnet 5.5 ($2/$10 per MTok)
+  // costs about what 15000 did on Sonnet 4 ($3/$15), and leaves room for its thinking tokens.
+  tokenBudget: 22000,
 }
 
 // ============================================================================

@@ -11,21 +11,54 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+// This function is deployed with verify_jwt = false and anyone can POST to it, so it trusts
+// nothing in the request except a user id: it only emails about an auth user that really
+// exists and was created in the last few minutes, and it reads that user's details from Auth.
+const MAX_SIGNUP_AGE_MS = 10 * 60 * 1000
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const reject = (status: number, error: string) =>
+  new Response(JSON.stringify({ success: false, error }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
 Deno.serve(async (req) => {
   try {
-    const body = await req.json()
-    const {
-      email = '',
-      first_name = '',
-      last_name = '',
-      org_name = '',
-      org_slug = '',
-      user_id = '',
-      raw_meta = {},
-    } = body
+    if (req.method !== 'POST') return reject(405, 'Method not allowed')
 
-    // Fetch extra context from the database
+    const body = await req.json().catch(() => ({}))
+    const userId = String(body?.user_id ?? '')
+    if (!UUID_RE.test(userId)) return reject(400, 'Invalid request')
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId)
+    const user = userData?.user
+    if (userError || !user) return reject(404, 'Unknown user')
+    const createdAt = Date.parse(user.created_at)
+    if (!Number.isFinite(createdAt) || Date.now() - createdAt > MAX_SIGNUP_AGE_MS) {
+      return reject(409, 'Not a new signup')
+    }
+
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>
+    const email = esc(user.email)
+    const first_name = esc(meta.first_name)
+    const last_name = esc(meta.last_name)
+    const user_id = esc(user.id)
+    // Org name and slug come from the trigger's body; they're display-only and escaped.
+    const org_name = esc(body?.org_name)
+    const org_slug = esc(body?.org_slug)
+    const raw_meta = meta
 
     // Count total users for context
     const { count: totalUsers } = await supabase
@@ -51,7 +84,7 @@ Deno.serve(async (req) => {
     // Build metadata rows from raw_user_meta_data
     const metaRows = Object.entries(raw_meta)
       .filter(([k]) => !['first_name', 'last_name'].includes(k))
-      .map(([k, v]) => `<tr><td style="padding:6px 0;color:#6b7280;width:140px;">${k}</td><td style="padding:6px 0;">${String(v)}</td></tr>`)
+      .map(([k, v]) => `<tr><td style="padding:6px 0;color:#6b7280;width:140px;">${esc(k)}</td><td style="padding:6px 0;">${esc(typeof v === 'object' ? JSON.stringify(v) : v)}</td></tr>`)
       .join('')
 
     const htmlBody = wrapEmail(`
@@ -92,7 +125,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: 'Royalty <notifications@royaltyapp.ai>',
         to: [NOTIFY_EMAIL],
-        subject: `[Royalty] New signup — ${first_name || email}`,
+        // Plain text (not HTML), so the raw name; a JSON API field can't inject headers.
+        subject: `[Royalty] New signup — ${String(meta.first_name || user.email || '').slice(0, 80)}`,
         html: htmlBody,
       }),
     })
@@ -103,7 +137,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: 'Email send failed' }), { status: 500 })
     }
 
-    console.log(`Signup notify sent for ${email}`)
+    console.log(`Signup notify sent for user ${userId}`)
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },
     })

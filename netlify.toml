@@ -353,6 +353,13 @@
   status = 301
   force = true
 
+# /app and /app/ were a 404 (there is no app/index.html). The dashboard sends a
+# signed-out visitor on to the login page. Must sit above the /app/* rule.
+[[redirects]]
+  from = "/app"
+  to = "/app/dashboard.html"
+  status = 302
+
 # Redirects for SPA-like behavior (optional)
 [[redirects]]
   from = "/app/*"

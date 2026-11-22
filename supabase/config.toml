@@ -420,3 +420,100 @@ entrypoint = "./functions/create-portal-session/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/royal-ai-recommend/index.ts"
+
+# ---------------------------------------------------------------------------
+# verify_jwt pinned for EVERY deployed function (2026-11-22), each at the value prod ran.
+# A function missing from this file deploys with verify_jwt = true unless --no-verify-jwt
+# is passed. That is how analyze-business-signup (the homepage hero) started returning
+# 401 to every visitor after a redeploy on 2026-09-06. Add new functions here too.
+# ---------------------------------------------------------------------------
+
+[functions.admin-actions]
+verify_jwt = false
+
+[functions.ai-owner-assistant]
+verify_jwt = false
+
+[functions.ai-support-agent]
+verify_jwt = true
+
+[functions.analyze-business-signup]
+verify_jwt = true
+
+[functions.analyze-suggestion]
+verify_jwt = false
+
+[functions.automation-engine]
+verify_jwt = true
+
+[functions.blog-humanize]
+verify_jwt = false
+
+[functions.cancel-subscription]
+verify_jwt = false
+
+[functions.contact-inquiry]
+verify_jwt = false
+
+[functions.delete-social-account]
+verify_jwt = true
+
+[functions.delete-social-post]
+verify_jwt = true
+
+[functions.generate-article]
+verify_jwt = false
+
+[functions.generate-member-token]
+verify_jwt = false
+
+[functions.message-sender]
+verify_jwt = false
+
+[functions.mfa-email-otp]
+verify_jwt = false
+
+[functions.proposal-comment-notify]
+verify_jwt = false
+
+[functions.proposal-sow-notify]
+verify_jwt = false
+
+[functions.proposal-visitor-notify]
+verify_jwt = false
+
+[functions.purge-venue]
+verify_jwt = true
+
+[functions.report-content]
+verify_jwt = true
+
+[functions.resend-webhook]
+verify_jwt = false
+
+[functions.royal-ai-autonomous]
+verify_jwt = false
+
+[functions.royal-ai-prompt]
+verify_jwt = false
+
+[functions.royalty-self-growth]
+verify_jwt = false
+
+[functions.send-analysis-report]
+verify_jwt = false
+
+[functions.send-approved-outreach]
+verify_jwt = false
+
+[functions.signup-notify]
+verify_jwt = false
+
+[functions.smb-lifecycle-email]
+verify_jwt = false
+
+[functions.social-signup]
+verify_jwt = true
+
+[functions.twilio-webhook]
+verify_jwt = false

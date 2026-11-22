@@ -8,6 +8,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { checkRateLimit, rateLimitHeaders } from '../_shared/rate-limit.ts'
+import { MODEL_SONNET, MODEL_SONNET_DISPLAY_NAME, sonnetExtras, anthropicHeaders, responseText, THINKING_HEADROOM } from '../_shared/claude.ts'
 
 // Module imports
 import type { ToolContext, PromptRequest, PromptResponse, DiscoveryQuestion, ContentBlock, TextBlock, ToolUseBlock, ClaudeToolResponse } from './types.ts'
@@ -30,10 +31,14 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // Model configuration - tiered for cost optimization
-const MODEL_SONNET = 'claude-sonnet-4-20250514'
+// MODEL_SONNET comes from ../_shared/claude.ts (claude-sonnet-4-20250514 retired 2026-06-15).
 const MODEL_HAIKU = 'claude-haiku-4-5-20251001'
 const MODEL_ID = MODEL_SONNET // Default for backward compatibility
-const MODEL_DISPLAY_NAME = 'Sonnet 4'
+const MODEL_DISPLAY_NAME = MODEL_SONNET_DISPLAY_NAME
+
+// Sonnet 5.5 counts thinking toward max_tokens; Haiku 4.5 does no thinking here.
+const withHeadroom = (modelId: string, maxTokens: number) =>
+  modelId === MODEL_SONNET ? maxTokens + THINKING_HEADROOM : maxTokens
 
 // Simple query patterns that can be handled by Haiku (10x cheaper)
 const SIMPLE_QUERY_PATTERNS = [
@@ -148,29 +153,28 @@ async function callClaudeWithTools(
         : tool
     )
 
+    // Kept identical across the loop and the summary call below: Sonnet 5.5 checks that
+    // system, tools and earlier messages are unchanged before it reads its thinking blocks.
+    const requestBase = {
+      model: modelId,
+      max_tokens: withHeadroom(modelId, maxTokens),
+      system: [
+        {
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' }
+        }
+      ],
+      tools: toolsWithCache,
+      ...sonnetExtras(modelId, 'medium'),
+    }
+
     const response = await fetchWithTimeout(
       'https://api.anthropic.com/v1/messages',
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-beta': 'prompt-caching-2024-07-31',
-        },
-        body: JSON.stringify({
-          model: modelId,
-          max_tokens: maxTokens,
-          system: [
-            {
-              type: 'text',
-              text: systemPrompt,
-              cache_control: { type: 'ephemeral' }
-            }
-          ],
-          messages: currentMessages,
-          tools: toolsWithCache,
-        }),
+        headers: anthropicHeaders(ANTHROPIC_API_KEY, modelId),
+        body: JSON.stringify({ ...requestBase, messages: currentMessages }),
       },
       API_TIMEOUT_MS
     )
@@ -187,6 +191,18 @@ async function callClaudeWithTools(
 
     const data: ClaudeToolResponse = await response.json()
     totalTokensUsed += data.usage.input_tokens + data.usage.output_tokens
+
+    // A safety-classifier decline is HTTP 200 with stop_reason 'refusal' (after the server-side
+    // fallback also declined). Its content is empty or partial, so don't show or continue it.
+    if (data.stop_reason === 'refusal') {
+      log('warn', 'Claude declined the request', { iteration: iterations, model: modelId })
+      return {
+        text: "I can't help with that request. Try rephrasing it, or ask me something else about your business.",
+        toolsUsed: [...new Set(toolsUsed)],
+        tokensUsed: totalTokensUsed,
+        modelUsed: modelId
+      }
+    }
     log('info', 'Claude API response received', { iteration: iterations, tokensUsed: data.usage.input_tokens + data.usage.output_tokens, model: modelId })
 
     // Token budget check - prevent runaway cost on complex tool loops
@@ -279,31 +295,28 @@ async function callClaudeWithTools(
         'https://api.anthropic.com/v1/messages',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01',
-          },
+          headers: anthropicHeaders(ANTHROPIC_API_KEY, modelId),
           body: JSON.stringify({
-            model: modelId,
-            max_tokens: maxTokens,
-            system: systemPrompt,
+            // Same system and tools as the loop, so the history stays append-only;
+            // tool_choice 'none' is what forces a text-only reply.
+            ...requestBase,
+            tool_choice: { type: 'none' },
             messages: [
               ...currentMessages,
               { role: 'assistant', content: data.content },
               { role: 'user', content: 'Please summarize what you found.' }
             ],
-            // No tools param — forces text-only response
           }),
         },
         API_TIMEOUT_MS
       )
       if (forceResponse.ok) {
         const forceData = await forceResponse.json()
-        const forceBlocks = forceData.content.filter(
-          (block: ContentBlock): block is TextBlock => block.type === 'text'
-        )
-        finalText = forceBlocks.map((b: TextBlock) => b.text).join('\n')
+        try {
+          finalText = responseText(forceData)
+        } catch {
+          finalText = ''  // refusal: fall through to the caller's empty-text handling
+        }
         totalTokensUsed += forceData.usage.input_tokens + forceData.usage.output_tokens
       }
     }
@@ -331,15 +344,10 @@ async function callClaude(
     'https://api.anthropic.com/v1/messages',
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'prompt-caching-2024-07-31',
-      },
+      headers: anthropicHeaders(ANTHROPIC_API_KEY, modelId),
       body: JSON.stringify({
         model: modelId,
-        max_tokens: maxTokens,
+        max_tokens: withHeadroom(modelId, maxTokens),
         system: [
           {
             type: 'text',
@@ -348,6 +356,7 @@ async function callClaude(
           }
         ],
         messages,
+        ...sonnetExtras(modelId, 'low'),
       }),
     },
     API_TIMEOUT_MS
@@ -360,7 +369,7 @@ async function callClaude(
   }
 
   const data = await response.json()
-  return data.content[0].text
+  return responseText(data)
 }
 
 // ============================================================================

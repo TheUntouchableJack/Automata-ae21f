@@ -6,6 +6,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { checkRateLimit, rateLimitHeaders } from '../_shared/rate-limit.ts'
+import { MODEL_SONNET, sonnetExtras, anthropicHeaders, responseText, THINKING_HEADROOM } from '../_shared/claude.ts'
 import { loadBusinessKnowledge, loadBusinessProfile, buildKnowledgeContextSection } from '../_shared/knowledge.ts'
 
 // Per-request token accumulator (track-only cost monitoring; not concurrency-shared).
@@ -226,15 +227,12 @@ interface ArticleResult {
 async function callClaude(prompt: string, maxTokens: number = 4000, usage?: UsageAccumulator): Promise<string> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
+    headers: anthropicHeaders(ANTHROPIC_API_KEY, MODEL_SONNET),
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: maxTokens,
+      model: MODEL_SONNET,
+      max_tokens: maxTokens + THINKING_HEADROOM,
       messages: [{ role: 'user', content: prompt }],
+      ...sonnetExtras(MODEL_SONNET, 'low'),
     }),
   })
 
@@ -248,7 +246,7 @@ async function callClaude(prompt: string, maxTokens: number = 4000, usage?: Usag
     usage.input += data.usage.input_tokens || 0
     usage.output += data.usage.output_tokens || 0
   }
-  return data.content[0].text
+  return responseText(data)
 }
 
 // Generate the article
