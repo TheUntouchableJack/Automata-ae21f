@@ -1068,7 +1068,20 @@ function moveExtractedFieldsTo(mountId) {
 // a visible failure here is worse than the report it replaced, because it lands
 // exactly where the payoff was promised.
 function renderHeroPreview(extracted, prompt) {
-    const industry = extracted?.industry || '';
+    // When the analysis failed, the description's own words still name the trade
+    // (AppConfigFallback.detectNiche). Fill the empty industry field from them so
+    // the preview note, and the signup that follows, carry a real industry rather
+    // than "small business".
+    const industrySelectEl = document.getElementById('extracted-industry');
+    let industry = extracted?.industry || industrySelectEl?.value || '';
+    if (!industry) {
+        let niche = null;
+        try { niche = window.AppConfigFallback?.detectNiche?.(prompt) || null; } catch (e) { niche = null; }
+        if (niche) {
+            industry = niche.industry;
+            if (industrySelectEl && !industrySelectEl.value) industrySelectEl.value = niche.industry;
+        }
+    }
     const businessName = document.getElementById('extracted-name')?.value?.trim()
         || extracted?.businessName || '';
 
