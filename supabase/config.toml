@@ -476,6 +476,9 @@ verify_jwt = false
 [functions.member-code]
 verify_jwt = false
 
+[functions.org-invite-send]
+verify_jwt = false
+
 [functions.message-sender]
 verify_jwt = false
 

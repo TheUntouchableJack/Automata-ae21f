@@ -388,8 +388,10 @@
                     if (!passed) return;
                 }
 
-                // Check for pending onboarding data and save it
-                const newProjectId = await saveOnboardingDataAfterLogin(user.id);
+                // Check for pending onboarding data and save it (never for staff:
+                // they join the inviting org and have no org of their own to fill).
+                const newProjectId = user?.user_metadata?.user_type === 'staff'
+                    ? null : await saveOnboardingDataAfterLogin(user.id);
 
                 // Success! Hide form and show celebration
                 loginForm.style.display = 'none';
@@ -488,7 +490,8 @@
                 // User is authenticated!
                 if (hasAuthParams) {
                     // Coming from email confirmation — show onboarding transition if available
-                    const hasOnboarding = typeof OnboardingStorage !== 'undefined' && OnboardingStorage.isComplete();
+                    const hasOnboarding = typeof OnboardingStorage !== 'undefined' && OnboardingStorage.isComplete()
+                        && user.user_metadata?.user_type !== 'staff'; // staff join an org; they never build one
 
                     if (hasOnboarding && typeof OnboardingTransition !== 'undefined') {
                         // Hide the login card entirely and show the beautiful transition
@@ -563,6 +566,24 @@
         // them to the business-description page so onboarding has real content.
         async function firstRunDestination(user) {
             try {
+                // Staff (signed up from an invitation, 20261122000006) have no org of
+                // their own. Until they've joined the inviting org, back to the invite
+                // (its token rides in their metadata); after, the Counter (admins: the
+                // dashboard). Never get-started.html: that writes the business profile.
+                const meta = user?.user_metadata || {};
+                if (meta.user_type === 'staff' && user?.id) {
+                    const { data: staffOrgs } = await db
+                        .from('organization_members')
+                        .select('role')
+                        .eq('user_id', user.id)
+                        .limit(1);
+                    if (!staffOrgs || staffOrgs.length === 0) {
+                        const t = /^[A-Za-z0-9-]{20,100}$/.test(String(meta.invite_token || '')) ? meta.invite_token : '';
+                        return `/app/accept-invite.html${t ? `?token=${encodeURIComponent(t)}` : ''}`;
+                    }
+                    return staffOrgs[0].role === 'admin' ? '/app/dashboard.html' : '/app/counter.html';
+                }
+
                 // Email-confirmation signups have no session on signup.html, so
                 // their onboarding commit runs here instead. When THAT commit
                 // just created a loyalty app in this same page load, send them to

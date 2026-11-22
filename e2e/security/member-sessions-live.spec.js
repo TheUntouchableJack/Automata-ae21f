@@ -7,7 +7,7 @@
  *   42501     = closed to anon (what every new function must answer)
  *   PGRST202  = PROVES NOTHING: the function is missing or the argument names are wrong
  *
- * Edge-function probes pick inputs that stop before any side effect:
+ * Edge-function probes pick inputs that stop before any side effect (org-invite-send: 401 before the body is read):
  *   member-code send   with the nil app id      → 404 app_not_found (no code issued, no email)
  *   member-code verify with no code ever issued → 410 expired (no row, nothing counted)
  *   royal-ai-recommend as anon                  → 401/403 before the AI switch is read
@@ -113,5 +113,33 @@ test.describe('B1a — member-code and royal-ai-recommend at the door', () => {
     test('royal-ai-recommend on-demand refuses a caller who is not signed in', async ({ request }) => {
         const { status } = await fn(request, 'royal-ai-recommend', { organization_id: NIL });
         expect(status).toBe(401);
+    });
+});
+
+// Staff invitations (20261122000006, org-invite-send). The lookup is anon by design: the accept page
+// shows the invite before anyone signs in, and a token is a random uuid only the invitee's email has.
+const INVITE_CLOSED = [
+    ['accept_org_invitation', { p_token: 'probe-probe-probe-probe-probe' }],
+    ['org_invite_claim_send', { p_invitation_id: NIL, p_caller: NIL }],
+];
+
+test.describe('Invites — accept and the send gate refuse anon; a bogus token reveals nothing', () => {
+    for (const [name, body] of INVITE_CLOSED) {
+        test(`${name} → 42501 for anon`, async ({ request }) => {
+            const { code, json } = await rpc(request, name, body);
+            expect(code, `${name} answered ${JSON.stringify(json)}`).toBe('42501');
+        });
+    }
+
+    test('get_org_invitation with a bogus token: {status: invalid} and nothing else', async ({ request }) => {
+        const { status, json } = await rpc(request, 'get_org_invitation', { p_token: 'probe-probe-probe-probe-probe' });
+        expect(status).toBe(200);
+        expect(json).toEqual({ status: 'invalid' });
+    });
+
+    test('org-invite-send refuses a caller who is not signed in, before reading anything', async ({ request }) => {
+        const { status, json } = await fn(request, 'org-invite-send', { invitation_id: NIL });
+        expect(status).toBe(401);
+        expect(json?.code).toBe('not_signed_in');
     });
 });

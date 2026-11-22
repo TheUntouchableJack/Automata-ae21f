@@ -306,7 +306,9 @@ function renderTeam() {
                     </div>
                 </div>
                 <div class="invitation-actions">
-                    <button class="btn btn-sm btn-ghost cancel-invite-btn" data-invitation-id="${inv.id}">Cancel</button>
+                    <button class="btn btn-sm btn-ghost resend-invite-btn" data-invitation-id="${inv.id}">${escapeHtml(tKey('settings.team.resendInvite', 'Resend'))}</button>
+                    <button class="btn btn-sm btn-ghost copy-invite-btn" data-invitation-id="${inv.id}">${escapeHtml(tKey('settings.team.copyInviteLink', 'Copy link'))}</button>
+                    <button class="btn btn-sm btn-ghost cancel-invite-btn" data-invitation-id="${inv.id}">${escapeHtml(tKey('settings.team.cancelInvite', 'Cancel'))}</button>
                 </div>
             </div>
         `).join('');
@@ -1316,7 +1318,15 @@ function setupEventListeners() {
         const cancelBtn = e.target.closest('.cancel-invite-btn');
         if (cancelBtn) {
             handleCancelInvitation(cancelBtn.dataset.invitationId);
+            return;
         }
+        const resendBtn = e.target.closest('.resend-invite-btn');
+        if (resendBtn) {
+            handleResendInvitation(resendBtn.dataset.invitationId, resendBtn);
+            return;
+        }
+        const copyBtn = e.target.closest('.copy-invite-btn');
+        if (copyBtn) handleCopyInviteLink(copyBtn.dataset.invitationId);
     });
 
     // Delete account
@@ -1681,14 +1691,16 @@ async function handleInvite(e) {
     }
 
     try {
-        const { error } = await supabase
+        const { data: created, error } = await supabase
             .from('organization_invitations')
             .insert({
                 organization_id: currentOrganization.id,
                 email: email,
                 role: role,
                 invited_by: currentUser.id
-            });
+            })
+            .select('id')
+            .single();
 
         if (error) {
             if (error.code === '23505') {
@@ -1703,14 +1715,84 @@ async function handleInvite(e) {
         AuditLog.logTeamInvite(currentOrganization.id, email, role);
 
         document.getElementById('invite-form').reset();
+
+        // The row alone emails nobody: org-invite-send does (20261122000006).
+        const sent = await sendInviteEmail(created.id);
         await loadPendingInvitations();
         renderTeam();
 
-        showToast(`Invitation sent to ${email}`, 'success');
-        celebrate();
+        if (sent.success) {
+            showToast(tKey('toasts.inviteSent', `Invitation sent to ${email}`, { email }), 'success');
+            celebrate();
+        } else {
+            showToast(tKey('toasts.inviteNotEmailed',
+                `Invitation saved, but the email didn't go out: ${sent.error} Use Copy link to send it yourself.`,
+                { reason: sent.error }), 'error');
+        }
     } catch (err) {
         console.error('Error sending invitation:', err);
         showToast(window.t ? window.t('toasts.inviteFailed') : 'Failed to send invitation', 'error');
+    }
+}
+
+// window.t (I18n.t) with {placeholders}; the English fallback when a key is missing.
+function tKey(key, fallback, vars) {
+    const s = window.t ? window.t(key, vars || {}) : null;
+    return (s && s !== key) ? s : fallback;
+}
+
+// org-invite-send (supabase/functions/org-invite-send): checks the caller is the org's
+// owner/admin, throttles, and emails the invitee the accept link.
+async function sendInviteEmail(invitationId) {
+    try {
+        const session = await getValidSession();
+        if (!session) return { success: false, error: 'Please sign in again.' };
+        const lang = window.I18n?.getCurrentLanguage?.() || 'en';
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/org-invite-send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ invitation_id: invitationId, lang })
+        });
+        let body = {};
+        try { body = await res.json(); } catch (e) { /* not JSON */ }
+        if (res.ok && body.success) return { success: true };
+        return { success: false, code: body.code || String(res.status), error: body.error || 'Could not send the invitation.' };
+    } catch (err) {
+        console.error('Error sending invitation email:', err);
+        return { success: false, error: 'Could not reach the email service.' };
+    }
+}
+
+function inviteLink(token) {
+    return `${window.location.origin}/app/accept-invite.html?token=${encodeURIComponent(token)}`;
+}
+
+async function handleResendInvitation(invitationId, btn) {
+    const invitation = pendingInvitations.find(i => i.id === invitationId);
+    if (btn) btn.disabled = true;
+    const sent = await sendInviteEmail(invitationId);
+    if (btn) btn.disabled = false;
+    if (sent.success) {
+        showToast(tKey('toasts.inviteSent', `Invitation sent to ${invitation?.email || ''}`, { email: invitation?.email || '' }), 'success');
+        await loadPendingInvitations();
+        renderTeam();
+    } else {
+        showToast(sent.error, 'error');
+    }
+}
+
+async function handleCopyInviteLink(invitationId) {
+    const invitation = pendingInvitations.find(i => i.id === invitationId);
+    if (!invitation?.token) return;
+    try {
+        await navigator.clipboard.writeText(inviteLink(invitation.token));
+        showToast(tKey('toasts.inviteLinkCopied', 'Invite link copied'), 'success');
+    } catch (e) {
+        showToast(inviteLink(invitation.token), 'info');
     }
 }
 
