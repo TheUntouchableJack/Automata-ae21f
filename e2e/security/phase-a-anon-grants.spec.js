@@ -11,9 +11,10 @@
  * It asserts BOTH directions, and the second is the one that protects
  * royaltyapp.ai:
  *
- *   CLOSED — the 11 functions revoked by 20260904000005/6 answer 42501.
- *   OPEN   — the 8 functions live pages depend on still answer. Revoking any of
- *            them would switch off the loyalty app or the /a/:slug join page.
+ *   CLOSED — the 11 functions revoked by 20260904000005/6 answer 42501, and
+ *            since B1b (20261122000007) the 8 member-id functions the loyalty
+ *            app used before it signed members in (20261122000002) do too.
+ *   OPEN   — what the join page needs as anon (get_app_by_slug) still answers.
  *
  * Probe technique (from the 20260904000004 header): call with the nil UUID so
  * the call can only ever abort.
@@ -69,21 +70,29 @@ const CLOSED = [
 ];
 
 // ---------------------------------------------------------------------------
-// 🔴 OPEN: royaltyapp.ai functionality. These must NOT be revoked.
+// CLOSED by B1b (20261122000007): they took a member id FROM THE CALLER. Until then they were
+// MUST_STAY_OPEN (the loyalty app and the /a/:slug join page called them). Since
+// 20261122000002 the customer app signs members in and calls only session-keyed functions.
+// ---------------------------------------------------------------------------
+const B1B_CLOSED = [
+    ['get_member_profile',       { p_member_id: NIL }],
+    ['get_member_activity',      { p_member_id: NIL, p_limit: 1 }],
+    ['redeem_reward',            { p_app_id: NIL, p_member_id: NIL, p_reward_id: NIL }],
+    ['submit_reward_suggestion', { p_app_id: NIL, p_member_id: NIL, p_reward_name: 'x',
+                                   p_description: null, p_suggested_points: null, p_category: null }],
+    ['get_my_tickets',           { p_member_id: NIL, p_app_id: NIL }],
+    ['get_customer_unread_count',{ p_member_id: NIL, p_app_id: NIL }],
+    ['customer_reply_to_ticket', { p_ticket_id: NIL, p_member_id: NIL, p_message: 'x' }],
+    ['customer_app_signup',      { p_app_id: NIL, p_first_name: 'x', p_last_name: 'x',
+                                   p_email: 'probe@example.invalid', p_phone: null, p_pin_hash: null }],
+];
+CLOSED.push(...B1B_CLOSED);
+
+// ---------------------------------------------------------------------------
+// 🔴 OPEN: what royaltyapp.ai needs from anon. Revoking it breaks the /a/:slug join page.
 // ---------------------------------------------------------------------------
 const MUST_STAY_OPEN = [
-    ['get_member_profile',       { p_member_id: NIL },                                'loyalty app.html:2817'],
-    ['get_member_activity',      { p_member_id: NIL, p_limit: 1 },                    'loyalty app.html:2953'],
-    ['redeem_reward',            { p_app_id: NIL, p_member_id: NIL, p_reward_id: NIL }, 'loyalty app.html:4563'],
-    ['submit_reward_suggestion', { p_app_id: NIL, p_member_id: NIL, p_reward_name: 'x',
-                                   p_description: null, p_suggested_points: null, p_category: null },
-                                                                                       'loyalty app.html'],
-    ['get_my_tickets',           { p_member_id: NIL, p_app_id: NIL },                 'loyalty app.html'],
-    ['get_customer_unread_count',{ p_member_id: NIL, p_app_id: NIL },                 'loyalty app.html'],
-    ['customer_reply_to_ticket', { p_ticket_id: NIL, p_member_id: NIL, p_message: 'x' }, 'loyalty app.html'],
-    ['customer_app_signup',      { p_app_id: NIL, p_first_name: 'x', p_last_name: 'x',
-                                   p_email: 'probe@example.invalid', p_phone: null, p_pin_hash: null },
-                                                                                       '/a/:slug join page, index.html:2519'],
+    ['get_app_by_slug', { p_slug: 'jack-rewards' }, '/a/:slug join page (customer-app/index.html)'],
 ];
 
 test.describe('Phase A — the anon key cannot reach the revoked member surface', () => {
@@ -272,33 +281,16 @@ test.describe('M4 — the member PII harvest chain is dead', () => {
         }
     });
 
-    test('step 2: get_member_profile returns no email and no phone', async ({ request }) => {
+    // Since B1b (20261122000007) the 1-arg get_member_profile is closed to anon outright, so the
+    // dereference half of the chain is gone with the access, not just the columns. (Until then
+    // this test asserted the profile came back without email and phone.)
+    test('step 2: get_member_profile(member id) is closed to anon', async ({ request }) => {
         const { status, code, json } = await rpc(request, 'get_member_profile',
             { p_member_id: PINNED_MEMBER_ID });
 
         expect(code, 'PGRST202 — argument names wrong, proves nothing').not.toBe('PGRST202');
-        expect(status).toBe(200);
-
-        // Anti-vacuity: this id was real on 2026-09-04. If it stops resolving,
-        // the assertions below pass over an empty array and mean nothing.
-        expect(Array.isArray(json) && json.length,
-            `the pinned member id ${PINNED_MEMBER_ID} no longer resolves. This test ` +
-            'is now vacuous — re-pin it against a live row rather than deleting it.')
-            .toBeTruthy();
-
-        const profile = json[0];
-        // 🔴 Key ABSENCE. A member with a null phone would pass a truthiness check
-        // while the column was still in the result shape for everyone else.
-        expect(profile, 'get_member_profile still returns email — this is the ' +
-            'dereference half of the PII chain and it is REOPEN')
-            .not.toHaveProperty('email');
-        expect(profile, 'get_member_profile still returns phone — the PII chain is REOPEN')
-            .not.toHaveProperty('phone');
-
-        // Positive control: the function still works, it just carries no contact
-        // details. Without this, a function that returned {} would pass above.
-        expect(profile).toHaveProperty('points_balance');
-        expect(profile).toHaveProperty('first_name');
+        expect(code, `get_member_profile(member id) still answers anon: ${status} ${JSON.stringify(json)}`)
+            .toBe('42501');
     });
 
     test('is_me is true for your own id and false for everyone else', async ({ request }) => {
