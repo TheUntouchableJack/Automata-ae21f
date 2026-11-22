@@ -1542,7 +1542,9 @@
       "royaltyPro": "Royalty Pro",
       "royaltyProActive": "Active",
       "addRoyaltyPro": "Add Royalty Pro",
-      "billingNote": "14-day free trial, then billed monthly or annually. Cancel anytime."
+      "billingNote": "14-day free trial, then billed monthly or annually. Cancel anytime.",
+      "upgradeSubtitle": "More customers, Royal AI and messaging. Compare plans and upgrade in a minute.",
+      "seePlans": "See plans"
     },
     "activity": {
       "title": "Activity Log",

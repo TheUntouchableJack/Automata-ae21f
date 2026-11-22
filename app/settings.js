@@ -413,60 +413,17 @@ function renderPlan() {
     }
 }
 
+// The upgrade card is a link to /app/upgrade.html, which knows the current plans. Hide it only
+// where there is nothing left to buy: the top subscription tier (scale, or legacy max), or an
+// AppSumo deal that already has Royalty Pro.
 function updateUpgradePlansVisibility() {
-    const currentTier = currentOrganization?.subscription_tier;
-    const planType = currentOrganization?.plan_type;
-    const tierOrder = ['pro', 'max'];
-    const currentIndex = tierOrder.indexOf(currentTier);
     const upgradeSection = document.getElementById('upgrade-section');
-    const royaltyProSection = document.getElementById('royalty-pro-section');
-
-    // Handle subscription users
-    if (planType === 'subscription') {
-        document.querySelectorAll('.upgrade-plan-card').forEach(card => {
-            const planTier = card.dataset.plan;
-            if (planTier === 'royalty_pro' || planTier === 'enterprise') return; // Skip Royalty Pro and Enterprise cards
-
-            const planIndex = tierOrder.indexOf(planTier);
-
-            if (currentIndex >= 0 && planIndex <= currentIndex) {
-                card.style.display = 'none';
-            } else {
-                card.style.display = '';
-            }
-        });
-
-        // If on max (highest subscription tier), hide upgrade section
-        if (currentTier === 'max') {
-            upgradeSection.style.display = 'none';
-        }
-
-        // Hide Royalty Pro for subscription users
-        if (royaltyProSection) {
-            royaltyProSection.style.display = 'none';
-        }
-    }
-
-    // Handle AppSumo LTD users
-    if (planType === 'appsumo_lifetime') {
-        // Hide subscription upgrade cards for LTD users
-        document.querySelectorAll('.upgrade-plan-card').forEach(card => {
-            const planTier = card.dataset.plan;
-            if (planTier !== 'royalty_pro') {
-                card.style.display = 'none';
-            }
-        });
-
-        // Show Royalty Pro section if they don't have it yet
-        if (royaltyProSection) {
-            if (currentOrganization?.has_royalty_pro) {
-                royaltyProSection.style.display = 'none';
-            } else {
-                royaltyProSection.style.display = 'block';
-                upgradeSection.style.display = 'block';
-            }
-        }
-    }
+    if (!upgradeSection) return;
+    const planType = currentOrganization?.plan_type;
+    const tier = currentOrganization?.subscription_tier;
+    const nothingToBuy = (planType === 'subscription' && (tier === 'scale' || tier === 'max'))
+        || (planType === 'appsumo_lifetime' && !!currentOrganization?.has_royalty_pro);
+    upgradeSection.style.display = nothingToBuy ? 'none' : 'block';
 }
 
 // ===== Stripe Checkout =====

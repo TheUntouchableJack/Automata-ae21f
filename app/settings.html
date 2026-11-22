@@ -309,121 +309,13 @@
                                     </div>
                                 </div>
 
-                                <!-- Upgrade Options (shown for free/lower tier users) -->
+                                <!-- Upgrade: one door, /app/upgrade.html (current plans, Stripe checkout, Royalty Pro for
+                                     AppSumo). The old in-page cards sold retired $299/$749 Pro/Max plans and their
+                                     checkout failed with "Invalid price key". -->
                                 <div class="settings-card" id="upgrade-section">
-                                    <h3>Upgrade Your Plan</h3>
-                                    <p class="settings-card-subtitle">Get more features and capacity. Start with a 14-day free trial.</p>
-
-                                    <!-- Billing Toggle -->
-                                    <div class="billing-toggle-container">
-                                        <span class="billing-label" data-billing="monthly">Monthly</span>
-                                        <label class="billing-toggle">
-                                            <input type="checkbox" id="billing-toggle">
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                        <span class="billing-label" data-billing="annual">Annual <span class="save-badge">Save 20%</span></span>
-                                    </div>
-
-                                    <div class="upgrade-plans" id="upgrade-plans">
-                                        <!-- Pro Plan -->
-                                        <div class="upgrade-plan-card featured" data-plan="pro">
-                                            <div class="plan-badge">Most Popular</div>
-                                            <div class="plan-card-header">
-                                                <h4>Pro</h4>
-                                                <p class="plan-tagline">Royal Runs Your Marketing</p>
-                                            </div>
-                                            <div class="plan-price">
-                                                <span class="price-amount" data-monthly="299" data-annual="239">$299</span>
-                                                <span class="price-period">/month</span>
-                                            </div>
-                                            <ul class="plan-features-list">
-                                                <li>Unlimited customers</li>
-                                                <li>10,000 emails + 500 SMS/mo</li>
-                                                <li>Unlimited Royal AI + Autonomous</li>
-                                                <li>Business learning & analytics</li>
-                                            </ul>
-                                            <button class="btn btn-primary btn-block checkout-btn" data-plan="pro">
-                                                Start Free Trial
-                                            </button>
-                                        </div>
-
-                                        <!-- Max Plan -->
-                                        <div class="upgrade-plan-card" data-plan="max">
-                                            <div class="plan-card-header">
-                                                <h4>Max</h4>
-                                                <p class="plan-tagline">Royal Proves Your ROI</p>
-                                            </div>
-                                            <div class="plan-price">
-                                                <span class="price-amount" data-monthly="749" data-annual="599">$749</span>
-                                                <span class="price-period">/month</span>
-                                            </div>
-                                            <ul class="plan-features-list">
-                                                <li>Everything in Pro</li>
-                                                <li>50,000 emails + 2,000 SMS/mo</li>
-                                                <li>Visit Attribution (prove ROI)</li>
-                                                <li>White-label + priority support</li>
-                                            </ul>
-                                            <button class="btn btn-primary btn-block checkout-btn" data-plan="max">
-                                                Start Free Trial
-                                            </button>
-                                        </div>
-
-                                        <!-- Enterprise Plan -->
-                                        <div class="upgrade-plan-card" data-plan="enterprise">
-                                            <div class="plan-card-header">
-                                                <h4>Enterprise</h4>
-                                                <p class="plan-tagline">Custom Solutions</p>
-                                            </div>
-                                            <div class="plan-price">
-                                                <span class="price-amount">Custom</span>
-                                                <span class="price-period">pricing</span>
-                                            </div>
-                                            <ul class="plan-features-list">
-                                                <li>Everything in Max</li>
-                                                <li>Dedicated support & SLAs</li>
-                                                <li>API access</li>
-                                                <li>Custom integrations</li>
-                                            </ul>
-                                            <a href="/estimate.html" class="btn btn-secondary btn-block">
-                                                Contact Us
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <!-- Royalty Pro Add-on (shown for AppSumo LTD users) -->
-                                    <div class="royalty-pro-upsell" id="royalty-pro-section" style="display: none;">
-                                        <div class="royalty-pro-card">
-                                            <div class="royalty-pro-header">
-                                                <div>
-                                                    <h4>Royalty Pro</h4>
-                                                    <p>Let Royal Run Your Marketing</p>
-                                                </div>
-                                                <div class="royalty-pro-price-tag">
-                                                    <span class="price">$79</span>
-                                                    <span class="period">/month</span>
-                                                </div>
-                                            </div>
-                                            <ul class="royalty-pro-features">
-                                                <li>
-                                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                    Royal AI + Autonomous Mode
-                                                </li>
-                                                <li>
-                                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                    +10,000 emails/mo + 500 SMS/mo
-                                                </li>
-                                                <li>
-                                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                    White-label branding
-                                                </li>
-                                            </ul>
-                                            <button class="btn btn-primary btn-block checkout-btn" data-plan="royalty_pro">
-                                                Add Royalty Pro
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <p class="billing-note">14-day free trial, then billed monthly or annually. Cancel anytime.</p>
+                                    <h3 data-i18n="settings.plan.upgrade">Upgrade Plan</h3>
+                                    <p class="settings-card-subtitle" data-i18n="settings.plan.upgradeSubtitle">More customers, Royal AI and messaging. Compare plans and upgrade in a minute.</p>
+                                    <a href="/app/upgrade.html" class="btn btn-primary" id="upgrade-see-plans-btn" data-i18n="settings.plan.seePlans">See plans</a>
                                 </div>
 
                                 <!-- Manage Subscription (shown for paying users) -->
@@ -801,7 +693,7 @@
     <script src="audit-log.js?v=1"></script>
     <script src="sidebar.js?v=26"></script>
     <script src="coaching.js?v=2"></script>
-    <script src="settings.js?v=9"></script>
+    <script src="settings.js?v=10"></script>
     <script>
         // Populate MFA status badge on security tab open
         (async function initMfaBadge() {
