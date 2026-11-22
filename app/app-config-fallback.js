@@ -123,22 +123,33 @@ const AppConfigFallback = (function () {
     // visit. build() rescales them to the template's points per visit, so a reward
     // always takes the same number of VISITS whatever the template's economy.
     // Costs are multiples of 50 so the 1-point-a-visit punch card scales cleanly.
+    //
+    // `tiers` (optional) is a ladder in VISITS for trades whose visit rhythm the
+    // template ladder doesn't fit: the generic template puts silver at 50 visits,
+    // which is four years of monthly haircuts. A niche with `tiers` also keeps all
+    // its curated rewards (no "cheaper than silver" filter). These three match the
+    // /loyalty-program/ landing pages, which quote the same visits and names.
     const NICHES = [
+        // Nails: a fill or new set every 2-3 weeks, about 20 visits a year.
         { key: 'nails', template: 'loyalty-points', industry: 'service', label: 'Nail',
           re: /\b(nail salon|nail bar|nail studio|nails|manicures?|pedicures?|mani-?pedi)\b/i,
+          tiers: { names: ['First Set', 'Regular', 'Polished', 'Icon'], visits: [0, 8, 20, 40] },
           rewards: [
-            { name: 'Free Nail Art',          description: 'Accent nails on your next set',      pointsCost: 50,  tierRequired: null },
-            { name: 'Free Paraffin Treatment', description: 'Add it to any manicure or pedicure', pointsCost: 100, tierRequired: null },
-            { name: 'Free Gel Upgrade',        description: 'Gel finish at no extra cost',        pointsCost: 150, tierRequired: null },
-            { name: 'Free Manicure',           description: 'A classic manicure, on us',          pointsCost: 300, tierRequired: 'silver' }
+            { name: 'Free Nail Art',          description: 'Accent nails on your next set',      pointsCost: 40,  tierRequired: null },
+            { name: 'Free Paraffin Treatment', description: 'Add it to any manicure or pedicure', pointsCost: 60,  tierRequired: null },
+            { name: 'Free Gel Upgrade',        description: 'Gel finish at no extra cost',        pointsCost: 80,  tierRequired: null },
+            { name: 'Free Manicure',           description: 'A classic manicure, on us',          pointsCost: 120, tierRequired: 'silver' }
           ] },
+        // Barber: a cut every 3-5 weeks, about 12 visits a year. "10th cut free" is
+        // the trade's own punch card, so the free haircut sits at 10 visits.
         { key: 'barber', template: 'loyalty-points', industry: 'service', label: 'Barber',
           re: /\b(barbers?|barbershops?|barber shop)\b/i,
+          tiers: { names: ['Fresh Cut', 'Regular', 'Sharp', 'Legend'], visits: [0, 6, 12, 24] },
           rewards: [
-            { name: 'Free Line-Up',        description: 'A quick edge-up between cuts',        pointsCost: 50,  tierRequired: null },
-            { name: 'Free Beard Trim',     description: 'Shape and trim with your next cut',   pointsCost: 100, tierRequired: null },
-            { name: 'Free Hot Towel Shave', description: 'The full hot towel treatment',       pointsCost: 150, tierRequired: null },
-            { name: 'Free Haircut',        description: 'Your usual cut, on the house',        pointsCost: 250, tierRequired: 'silver' }
+            { name: 'Free Line-Up',        description: 'A quick edge-up between cuts',        pointsCost: 30,  tierRequired: null },
+            { name: 'Free Beard Trim',     description: 'Shape and trim with your next cut',   pointsCost: 50,  tierRequired: null },
+            { name: 'Free Hot Towel Shave', description: 'The full hot towel treatment',       pointsCost: 80,  tierRequired: null },
+            { name: 'Free Haircut',        description: 'Your usual cut, on the house',        pointsCost: 100, tierRequired: null }
           ] },
         { key: 'salon', template: 'loyalty-points', industry: 'service', label: 'Salon',
           re: /\b(hair salons?|salons?|hairdressers?|hair stylists?|blow ?dry bar|blowouts?)\b/i,
@@ -156,7 +167,9 @@ const AppConfigFallback = (function () {
             { name: 'Free Loaf',             description: 'Any bread from today\u2019s bake', pointsCost: 150, tierRequired: null },
             { name: 'Half-Dozen on Us',      description: 'Six of your favourites, free',    pointsCost: 300, tierRequired: 'silver' }
           ] },
+        // Coffee: several visits a week, 100-150 a year.
         { key: 'coffee', template: 'cafe-rewards', industry: 'food', label: 'Coffee',
+          tiers: { names: ['Newcomer', 'Regular', 'The Usual', 'House Legend'], visits: [0, 25, 75, 200] },
           re: /\b(coffee|caf[e\u00e9]s?|espresso|coffee ?house|roastery|roasters?|tea ?house|tea shop|boba|bubble tea)\b/i,
           rewards: [
             { name: 'Free Pastry',           description: 'Anything from the pastry case',   pointsCost: 50,  tierRequired: null },
@@ -369,7 +382,8 @@ const AppConfigFallback = (function () {
             // Keep the cheapest reward reachable well before silver, so there is
             // something to aim at in the first couple of weeks. A template with a
             // low silver line must still show a few rewards.
-            let rewards = scaled.filter(r => r.pointsCost <= silver);
+            const nicheTiers = (nicheFits && niche.tiers) ? niche.tiers : null;
+            let rewards = nicheTiers ? scaled : scaled.filter(r => r.pointsCost <= silver);
             if (rewards.length < 3) rewards = scaled.slice().sort((a, b) => a.pointsCost - b.pointsCost).slice(0, 3);
 
             const cheapest = rewards.length
@@ -392,7 +406,11 @@ const AppConfigFallback = (function () {
                 // first one should take at least two visits.
                 welcomePoints: Math.max(0, Math.min(Number(tSettings.welcome_points) || 50, cheapest - 2 * pointsPerScan)),
                 dailyScanLimit: Number(tSettings.daily_scan_limit) || 1,
-                tiers: buildTiers(industry, silver, gold, platinum),
+                tiers: nicheTiers
+                    ? ['bronze', 'silver', 'gold', 'platinum'].map((key, i) => ({
+                        key, name: nicheTiers.names[i], points: nicheTiers.visits[i] * pointsPerScan
+                    }))
+                    : buildTiers(industry, silver, gold, platinum),
                 rewards: rewards.length ? rewards : hardcodedConfig(opts.businessName).rewards,
                 features: (template && template.features) || hardcodedConfig().features
             };
