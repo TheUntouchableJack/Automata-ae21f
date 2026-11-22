@@ -97,8 +97,15 @@ async function loadPosts(topic = 'all') {
     const postsGrid = document.getElementById('posts-grid');
     const emptyState = document.getElementById('empty-state');
 
-    loading.style.display = 'flex';
-    postsGrid.style.display = 'none';
+    // The build bakes the published cards into the grid (scripts/prerender-blog.mjs).
+    // Leave them on screen while the live list loads, and keep them if the fetch
+    // fails or comes back empty, rather than replacing real links with a spinner.
+    const hasBaked = postsGrid.dataset.prerendered === '1' && topic === 'all' && postsGrid.children.length > 0;
+
+    if (!hasBaked) {
+        loading.style.display = 'flex';
+        postsGrid.style.display = 'none';
+    }
     emptyState.style.display = 'none';
 
     try {
@@ -135,6 +142,7 @@ async function loadPosts(topic = 'all') {
         loading.style.display = 'none';
 
         if (posts.length === 0) {
+            if (hasBaked) return;
             emptyState.style.display = 'block';
             return;
         }
@@ -144,6 +152,7 @@ async function loadPosts(topic = 'all') {
 
     } catch (error) {
         console.error('Error loading posts:', error);
+        if (hasBaked) return;
         loading.innerHTML = '<p style="color: var(--color-error);">Error loading posts. Please refresh.</p>';
     }
 }

@@ -124,13 +124,18 @@
         <!-- Posts -->
         <section class="blog-posts-section">
             <div class="container">
-                <!-- Loading -->
+                <!-- Loading spinner + posts grid. At build time scripts/prerender-blog.mjs
+                     replaces everything between the two prerender markers with the published
+                     article cards as real <a href> links, so crawlers see every article in the
+                     raw HTML. blog.js then refreshes the grid in place. Keep the block between
+                     the markers exactly as it is in git (empty grid): a local prerender run
+                     rewrites it, and that change should not be committed. -->
+                <!-- prerender:posts -->
                 <div class="blog-loading" id="loading">
                     <div class="loading-spinner"></div>
                 </div>
-
-                <!-- Posts Grid -->
                 <div class="posts-grid" id="posts-grid" style="display: none;"></div>
+                <!-- /prerender:posts -->
 
                 <!-- Empty State -->
                 <div class="blog-empty" id="empty-state" style="display: none;">
@@ -220,6 +225,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js?v=1"></script>
-    <script src="blog.js?v=10"></script>
+    <script src="blog.js?v=11"></script>
 </body>
 </html>
