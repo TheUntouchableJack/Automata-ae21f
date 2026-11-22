@@ -14,6 +14,11 @@
  * only the progressive enhancements: table of contents, mid-article CTA, related
  * posts, share buttons.
  *
+ * It also bakes the article list into blog/index.html (between the
+ * <!-- prerender:posts --> markers) as real <a href> cards. The blog index used to
+ * render its list client-side only, so its raw HTML linked to no article and
+ * Google never found them: 0 of 7 articles were indexed as of 2026-11-22.
+ *
  * Run: node scripts/prerender-blog.mjs
  * Wired into the Netlify build command in netlify.toml.
  */
@@ -26,6 +31,9 @@ import { marked } from 'marked';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const BLOG_DIR = join(ROOT, 'blog');
+const INDEX_PATH = join(BLOG_DIR, 'index.html');
+const GRID_START = '<!-- prerender:posts -->';
+const GRID_END = '<!-- /prerender:posts -->';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vhpmmfhfwnpmavytoomd.supabase.co';
 // Anon key. Not a secret — the identical key already ships in the client bundle.
@@ -374,6 +382,69 @@ ${jsonLd(breadcrumbSchema)}
   return `${head}${bodyOpenTag}\n${bodyHtml}\n                ${template.tail}`;
 }
 
+/** One card, same markup and classes as renderPosts() in blog/blog.js. */
+function postCardHtml(post) {
+  const date = formatDate(post.published_at || post.created_at);
+  const topic = post.primary_topic || post.industry || '';
+  const excerptText = post.excerpt || post.meta_description || '';
+  const keywords = (post.tags || post.seo_keywords || []).slice(0, 3);
+  const imageHtml = post.og_image_url
+    ? `<div class="post-card-image" style="background-image: url('${escapeHtml(post.og_image_url)}'); background-size: cover; background-position: center;"></div>`
+    : `<div class="post-card-image">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                                <rect x="8" y="6" width="32" height="36" rx="2" stroke="currentColor" stroke-width="2"/>
+                                <path d="M16 16H32M16 24H32M16 32H24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>`;
+  const keywordsHtml = keywords.length
+    ? `
+                            <div class="post-card-keywords">${keywords.map(k => `<span class="post-card-keyword">${escapeHtml(k)}</span>`).join('')}</div>`
+    : '';
+  return `                    <a href="/blog/${encodeURIComponent(post.slug)}" class="post-card">
+                        ${imageHtml}
+                        <div class="post-card-content">
+                            <div class="post-card-meta">
+                                ${topic ? `<span class="post-card-industry">${escapeHtml(topic)}</span>` : ''}
+                                <span class="post-card-date">${escapeHtml(date)}</span>
+                            </div>
+                            <h2 class="post-card-title">${escapeHtml(post.title)}</h2>
+                            <p class="post-card-excerpt">${escapeHtml(excerptText)}</p>${keywordsHtml}
+                        </div>
+                    </a>`;
+}
+
+/**
+ * Writes the article cards into blog/index.html between the prerender markers.
+ * With no posts it writes the original empty block back, so the client's empty
+ * state still works. Idempotent: every run replaces the whole block.
+ */
+function writeIndexGrid(posts) {
+  const html = readFileSync(INDEX_PATH, 'utf-8');
+  const start = html.indexOf(GRID_START);
+  const end = html.indexOf(GRID_END);
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error(`blog/index.html is missing the ${GRID_START} … ${GRID_END} markers`);
+  }
+  const indent = '                ';
+  const block = posts.length
+    ? `${GRID_START}
+${indent}<div class="blog-loading" id="loading" style="display: none;">
+${indent}    <div class="loading-spinner"></div>
+${indent}</div>
+${indent}<div class="posts-grid" id="posts-grid" data-prerendered="1">
+${posts.map(postCardHtml).join('\n')}
+${indent}</div>
+${indent}`
+    : `${GRID_START}
+${indent}<div class="blog-loading" id="loading">
+${indent}    <div class="loading-spinner"></div>
+${indent}</div>
+${indent}<div class="posts-grid" id="posts-grid" style="display: none;"></div>
+${indent}`;
+  writeFileSync(INDEX_PATH, html.slice(0, start) + block + html.slice(end), 'utf-8');
+  console.log(`  baked ${posts.length} card(s) into blog/index.html`);
+}
+
 /** Refuses to write a page carrying importer annotations. */
 function assertClean(article, bodyMarkdown) {
   const problems = FORBIDDEN_IN_BODY
@@ -431,6 +502,7 @@ async function main() {
   if (articles.length === 0) {
     console.log('No published articles — nothing to prerender.');
     cleanupStale(new Set());
+    writeIndexGrid([]);
     return;
   }
 
@@ -482,6 +554,19 @@ async function main() {
     console.warn('  skipping stale cleanup — some articles failed this run');
   }
   console.log(`Prerendered ${written}/${articles.length} article(s).`);
+
+  // Link only to articles that have a page on disk: this run's, or a previous
+  // good page kept because this run failed for that article. A card pointing at
+  // a missing page would hand crawlers a 404.
+  const linkable = articles.filter(
+    (a) => a.slug && (slugs.has(a.slug) || existsSync(join(BLOG_DIR, `${a.slug}.html`)))
+  );
+  try {
+    writeIndexGrid(linkable);
+  } catch (err) {
+    console.error(`  index grid not written — ${err.message}`);
+    process.exitCode = 1;
+  }
 
   if (failures.length) {
     console.error(`\n${failures.length} article(s) failed:`);
