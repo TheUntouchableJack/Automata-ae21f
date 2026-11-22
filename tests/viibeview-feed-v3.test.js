@@ -873,7 +873,7 @@ describe('release plumbing', () => {
     it('new translation keys can actually reach a returning visitor', () => {
         // TRANSLATION_VERSION lives INSIDE the cached i18n.js, so both move.
         const i18n = fs.readFileSync(path.join(ROOT, 'i18n/i18n.js'), 'utf8');
-        expect(i18n).toContain('const TRANSLATION_VERSION = 24;');
+        expect(i18n).toContain('const TRANSLATION_VERSION = 25;');
         expect(html).toContain('/i18n/i18n.js?v=13');
     });
 

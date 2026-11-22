@@ -23,6 +23,7 @@
 //   getSuggestedAppTemplates / getAppTemplateById — app-templates-library.js
 //
 // Exposes: AppConfigFallback.build({ prompt, industry, businessName }) -> config
+//          AppConfigFallback.isSane(config) -> false for a stored config nobody could use
 
 const AppConfigFallback = (function () {
 
@@ -318,7 +319,8 @@ const AppConfigFallback = (function () {
             secondaryColor: '#2E1065',
             pointsPerScan: 10,
             pointsPerDollar: 1,
-            welcomePoints: 50,
+            // 30, not 50: the first reward (50) still takes two visits.
+            welcomePoints: 30,
             dailyScanLimit: 1,
             tiers: [
                 { key: 'bronze',   name: 'Member',  points: 0 },
@@ -340,6 +342,26 @@ const AppConfigFallback = (function () {
                 referrals_enabled: false
             }
         };
+    }
+
+    // ── Sanity check for a stored config ─────────────────────────────────────
+    // A config saved by an older build (before the reward rescale) can pair 1
+    // point a visit with a 50-point first reward: 49 visits to anything. The
+    // signup page and OnboardingSave rebuild a stored config that fails this, so
+    // one is neither shown nor turned into a real app. Every build() passes it.
+    function isSane(config) {
+        if (!config || typeof config !== 'object') return false;
+        const pointsPerScan = Number(config.pointsPerScan);
+        if (!Number.isFinite(pointsPerScan) || pointsPerScan < 1) return false;
+        const rewards = Array.isArray(config.rewards) ? config.rewards : [];
+        if (!rewards.length) return false;
+        const costs = rewards.map(r => Number(r && r.pointsCost));
+        if (costs.some(c => !Number.isFinite(c) || c < 1)) return false;
+        const cheapest = Math.min(...costs);
+        const welcome = Number(config.welcomePoints || 0);
+        if (!Number.isFinite(welcome) || welcome < 0 || welcome >= cheapest) return false;
+        const visits = Math.ceil((cheapest - welcome) / pointsPerScan);
+        return visits >= 2 && visits <= 20;
     }
 
     /**
@@ -428,6 +450,7 @@ const AppConfigFallback = (function () {
 
     return {
         build,
+        isSane,
         guessName,
         detectNiche: (prompt) => { const n = detectNiche(prompt); return n ? { key: n.key, industry: n.industry, label: n.label } : null; },
         // exposed for tests

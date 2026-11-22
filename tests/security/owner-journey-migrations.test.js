@@ -124,8 +124,9 @@ describe('dashboard: customer cap warning', () => {
     expect(memberCapState(null)).toBeNull()
   })
 
-  it('reads the cap join_app enforces (check_member_limit), and is wired into the page', () => {
-    expect(DASH).toContain("supabase.rpc('check_member_limit', { p_org_id: currentOrganization.id })")
+  it('reads the cap join_app enforces (via org_member_usage since 20261122000008), and is wired into the page', () => {
+    expect(DASH).toContain("supabase.rpc('org_member_usage', { p_org_id: currentOrganization.id })")
+    expect(DASH).not.toContain("supabase.rpc('check_member_limit'")
     expect(DASH).toMatch(/await loadDashboardSummary\(\);\s+\/\/[^\n]*\n\s+loadMemberCapWarning\(\);/)
     const html = read('app/dashboard.html')
     for (const id of ['member-cap-warning', 'member-cap-warning-title', 'member-cap-warning-desc']) expect(html).toContain(`id="${id}"`)

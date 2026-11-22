@@ -1569,7 +1569,7 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "passwordUpdated": "Password updated successfully!",
     "teamLimitReached": "You've reached your team member limit. Upgrade to invite more.",
-    "emailAlreadyInvited": "This email has already been invited",
+    "emailAlreadyInvited": "Für diese E-Mail gibt es bereits eine offene Einladung. Mit „Erneut Senden“ schicken Sie sie noch einmal.",
     "inviteSent": "Invitation sent to {email}",
     "inviteFailed": "Failed to send invitation",
     "roleUpdated": "Role updated",

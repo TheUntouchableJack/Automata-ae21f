@@ -15,8 +15,8 @@ let counterDetector = null;
 
 function counterT(key, fallback, replacements) {
     const fill = (s) => String(s).replace(/\{(\w+)\}/g, (m, k) => (replacements && replacements[k] !== undefined ? replacements[k] : m));
-    if (typeof i18n !== 'undefined' && i18n.t) {
-        const v = i18n.t(key, replacements || {});
+    if (window.I18n && window.I18n.t) {
+        const v = window.I18n.t(key, replacements || {});
         if (v && v !== key) return v;
     }
     return fill(fallback);

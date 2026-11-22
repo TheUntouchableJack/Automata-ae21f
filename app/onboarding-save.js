@@ -237,8 +237,14 @@ const OnboardingSave = (function () {
             //
             // If no config was stored (an older OnboardingStorage blob, or the
             // control arm of the preview A/B), rebuild one from the template so a
-            // signup still ends with a real app rather than nothing.
+            // signup still ends with a real app rather than nothing. A stored config
+            // that fails isSane (an older build's 1 pt a visit with a 50-point first
+            // reward) is rebuilt the same way, so it never becomes a real app.
             let appConfig = onboardingData.appConfig || null;
+            if (appConfig && typeof AppConfigFallback !== 'undefined' &&
+                typeof AppConfigFallback.isSane === 'function' && !AppConfigFallback.isSane(appConfig)) {
+                appConfig = null;
+            }
             if (!appConfig && typeof AppConfigFallback !== 'undefined') {
                 appConfig = AppConfigFallback.build({
                     prompt: onboardingData.businessPrompt || '',

@@ -1,3 +1,11 @@
+// ===== Translation =====
+// The translated string for key, or the English fallback. I18n.t answers with the key
+// itself until the language file has loaded, so that answer means "use the fallback".
+function dashT(key, fallback) {
+    const v = (window.I18n && window.I18n.t) ? window.I18n.t(key) : null;
+    return (v && v !== key) ? v : fallback;
+}
+
 // ===== Dashboard Initialization =====
 let currentUser = null;
 let currentOrganization = null;
@@ -231,7 +239,7 @@ async function loadAppMetrics() {
             }
 
             // Show success toast
-            const toastMsg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appAutoCreated') : 'Your loyalty program is ready! Customize it anytime.';
+            const toastMsg = dashT('dashboard.appAutoCreated', 'Your loyalty program is ready! Customize it anytime.');
             if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
                 AppUtils.showToast(toastMsg, 'success');
             }
@@ -559,7 +567,7 @@ function showPreviewPanel() {
             const url = `${window.location.origin}/a/${currentApp.slug}`;
             navigator.clipboard.writeText(url).then(() => {
                 const origText = copyBtn.textContent;
-                copyBtn.textContent = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewCopied') : 'Copied!';
+                copyBtn.textContent = dashT('dashboard.previewCopied', 'Copied!');
                 setTimeout(() => { copyBtn.textContent = origText; }, 2000);
             }).catch(() => {
                 if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
@@ -646,11 +654,11 @@ function updatePreviewContent(previewCol, toggleBtn, grid) {
         const logoUrl = branding.logo_url;
         const appName = currentApp.name || 'My App';
         const initial = appName.charAt(0).toUpperCase();
-        const rewardsLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.rewardsProgram') : 'Rewards Program';
+        const rewardsLabel = dashT('dashboard.rewardsProgram', 'Rewards Program');
         const isPublished = currentApp.is_published;
         const buttonLabel = isPublished
-            ? ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.launchApp') : 'Launch App')
-            : ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewButton') : 'Preview');
+            ? dashT('dashboard.launchApp', 'Launch App')
+            : dashT('dashboard.previewButton', 'Preview');
         const buttonUrl = isPublished
             ? `${window.location.origin}/a/${currentApp.slug}`
             : `/customer-app/index.html?preview=true&app_id=${currentApp.id}&published=0`;
@@ -673,8 +681,8 @@ function updatePreviewContent(previewCol, toggleBtn, grid) {
         const toggleBtnText = document.querySelector('#preview-toggle-btn span');
         if (toggleBtnText) {
             toggleBtnText.textContent = isPublished
-                ? ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.launchApp') : 'Launch App')
-                : ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.previewMobileToggle') : 'Preview App');
+                ? dashT('dashboard.launchApp', 'Launch App')
+                : dashT('dashboard.previewMobileToggle', 'Preview App');
         }
     }
 
@@ -734,8 +742,9 @@ function hidePreviewPanel() {
 }
 
 // ===== Customer cap =====
-// check_member_limit is the cap join_app enforces (plan, AppSumo tier, override), so the
-// warning and the "program is full" a customer would see can never disagree.
+// org_member_usage returns check_member_limit, the cap join_app enforces (plan, AppSumo tier,
+// override), so the warning and the "program is full" a customer would see can never disagree.
+// It answers only the org's own members (NULL otherwise); check_member_limit itself is server-only.
 // Returns null (no warning), or { level: 'near' | 'full', current, limit }.
 function memberCapState(result) {
     if (!result) return null;
@@ -751,7 +760,7 @@ async function loadMemberCapWarning() {
     const box = document.getElementById('member-cap-warning');
     if (!box || !currentOrganization?.id) return;
     try {
-        const { data, error } = await supabase.rpc('check_member_limit', { p_org_id: currentOrganization.id });
+        const { data, error } = await supabase.rpc('org_member_usage', { p_org_id: currentOrganization.id });
         if (error) return;
         const state = memberCapState(data);
         if (!state) { box.hidden = true; return; }
@@ -1442,7 +1451,7 @@ function getTimeAgo(timestamp) {
     const now = new Date();
     const date = new Date(timestamp);
     const seconds = Math.floor((now - date) / 1000);
-    const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+    const t = dashT;
 
     if (seconds < 60) return t('dashboard.timeJustNow', 'just now');
     if (seconds < 3600) return t('dashboard.timeMinutesAgo', '{n}m ago').replace('{n}', Math.floor(seconds / 60));
@@ -1494,13 +1503,13 @@ function setupAppSwitcher() {
     menu.innerHTML = allApps.map(app => {
         const isActive = app.id === currentApp?.id;
         const statusLabel = app.is_published
-            ? ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appLive') : 'Live')
-            : ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.appDraft') : 'Draft');
+            ? dashT('dashboard.appLive', 'Live')
+            : dashT('dashboard.appDraft', 'Draft');
         const statusClass = app.is_published ? 'live' : 'draft';
         return `
             <button class="app-switcher-item ${isActive ? 'active' : ''}" data-app-id="${app.id}">
                 <span class="app-switcher-item-name">${escapeHtml(app.name || 'Untitled')}</span>
-                <span class="app-status-badge ${statusClass}">${statusLabel}</span>
+                <span class="app-status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
             </button>
         `;
     }).join('');

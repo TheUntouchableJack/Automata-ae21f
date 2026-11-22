@@ -625,7 +625,7 @@ describe('dashboard: every change is logged', () => {
 
 describe('dashboard: release plumbing', () => {
     it('the shared scripts it uses are current', () => {
-        expect(adminHtml).toContain('<script src="../i18n/i18n.js?v=3"></script>');
+        expect(adminHtml).toContain('<script src="../i18n/i18n.js?v=14"></script>');
         expect(adminHtml).toContain('<script src="/js/venue-places.js?v=2"></script>');
         expect(adminHtml).toContain('<script src="audit-log.js?v=1"></script>');
         expect(adminHtml).toContain('<script src="danger-modal.js?v=1"></script>');

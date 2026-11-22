@@ -15,9 +15,14 @@ const WelcomeBanner = (function() {
 
     const CARDS = ['ai', 'automations', 'app', 'rewards'];
 
-    function t(key, fallback) {
-        if (typeof i18n !== 'undefined' && i18n.t) return i18n.t(key) || fallback;
-        return fallback;
+    // I18n.t answers with the key itself until the language file has loaded: use the fallback then.
+    function t(key, fallback, vars) {
+        const v = (window.I18n && window.I18n.t) ? window.I18n.t(key, vars || {}) : null;
+        return (v && v !== key) ? v : fallback;
+    }
+
+    function escapeBannerText(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
     // ── Public: show banner if needed ──
@@ -185,7 +190,7 @@ const WelcomeBanner = (function() {
         const descs = {
             ai: t('welcome.aiDesc', 'Answer a few questions so Royal AI can personalize your automations, rewards, and growth strategy.'),
             automations: t('welcome.automationsDesc', 'We\'ve drafted 4 automations based on your business: Welcome Message, Visit Bonus, At-Risk Check-in, and Win-Back Offer. Review and activate the ones that fit your strategy.'),
-            app: t('welcome.appDesc', `${orgName} Rewards is ready to customize. Add your branding, set point values, and configure rewards before sharing with customers.`),
+            app: t('welcome.appDesc', `${escapeBannerText(orgName)} Rewards is ready to customize. Add your branding, set point values, and configure rewards before sharing with customers.`, { name: escapeBannerText(orgName) }),
             rewards: t('welcome.rewardsDesc', 'Set up rewards your customers will love. Create point-based perks, tier exclusives, or let AI suggest the best rewards for your business.')
         };
 

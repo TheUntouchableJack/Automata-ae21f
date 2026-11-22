@@ -143,3 +143,24 @@ test.describe('Invites — accept and the send gate refuse anon; a bogus token r
         expect(json?.code).toBe('not_signed_in');
     });
 });
+
+// Member-limit functions (20261122000008). Before it they answered anon with any org's customer count
+// and cap (probe: the nil org). After it: service_role only, and the dashboard's warning goes through
+// org_member_usage, which is authenticated-only (PGRST202 before the migration: it didn't exist).
+const MEMBER_LIMIT_CLOSED = [
+    ['get_org_member_limit', { p_org_id: NIL }],
+    ['count_org_members', { p_org_id: NIL }],
+    ['check_member_limit', { p_org_id: NIL }],
+    ['org_member_usage', { p_org_id: NIL }],
+];
+
+test.describe('Member limits — no org\'s customer count or cap for anon', () => {
+    for (const [name, body] of MEMBER_LIMIT_CLOSED) {
+        test(`${name} → 42501 for anon`, async ({ request }) => {
+            const { code, json } = await rpc(request, name, body);
+            expect(code, `${name} answered ${JSON.stringify(json)}`).toBe('42501');
+            // The EXECUTE check itself, not something the body raised for the nil id.
+            expect(json?.message).toMatch(new RegExp(`permission denied for function ${name}`));
+        });
+    }
+});

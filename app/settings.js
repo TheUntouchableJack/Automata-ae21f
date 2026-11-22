@@ -1704,7 +1704,8 @@ async function handleInvite(e) {
 
         if (error) {
             if (error.code === '23505') {
-                showToast(window.t ? window.t('toasts.emailAlreadyInvited') : 'This email has already been invited', 'error');
+                // 23505 = organization_invitations_one_pending: a pending invite to this address exists.
+                showToast(window.t ? window.t('toasts.emailAlreadyInvited') : 'This email already has a pending invitation. Use Resend to send it again.', 'error');
             } else {
                 throw error;
             }

@@ -41,7 +41,7 @@ const SignupPreview = (function () {
     /**
      * The config the visitor was shown on the homepage, or one rebuilt from
      * their description when none was stored (preview A/B control arm, an older
-     * stored blob). If they corrected the business name after the preview was
+     * stored blob) or the stored one fails AppConfigFallback.isSane. If they corrected the business name after the preview was
      * built, the stored appName is stale: rename it so the page and the app
      * OnboardingSave creates both carry the name they confirmed.
      *
@@ -52,12 +52,15 @@ const SignupPreview = (function () {
     function resolveConfig(data) {
         if (!data) return { config: null, changed: false };
         const businessName = String(data.businessDetails?.businessName || '').trim();
-        let config = isUsableConfig(data.appConfig) ? { ...data.appConfig } : null;
+        const builder = (typeof window !== 'undefined' && window.AppConfigFallback) ||
+            (typeof AppConfigFallback !== 'undefined' ? AppConfigFallback : null);
+        // A stored config from an older build can be unusable in practice (1 pt a
+        // visit, a 50-point first reward): rebuild it like a missing one.
+        const sane = (c) => !(builder && typeof builder.isSane === 'function') || builder.isSane(c);
+        let config = isUsableConfig(data.appConfig) && sane(data.appConfig) ? { ...data.appConfig } : null;
         let changed = false;
 
         if (!config) {
-            const builder = (typeof window !== 'undefined' && window.AppConfigFallback) ||
-                (typeof AppConfigFallback !== 'undefined' ? AppConfigFallback : null);
             if (!builder || !data.businessPrompt) return { config: null, changed: false };
             config = builder.build({
                 prompt: data.businessPrompt || '',

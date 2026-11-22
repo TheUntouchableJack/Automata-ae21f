@@ -1569,7 +1569,7 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "passwordUpdated": "Password updated successfully!",
     "teamLimitReached": "You've reached your team member limit. Upgrade to invite more.",
-    "emailAlreadyInvited": "This email has already been invited",
+    "emailAlreadyInvited": "该邮箱已有一个待处理的邀请。点击“重新发送”可再次发送。",
     "inviteSent": "Invitation sent to {email}",
     "inviteFailed": "Failed to send invitation",
     "roleUpdated": "Role updated",
