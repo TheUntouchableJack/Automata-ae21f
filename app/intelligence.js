@@ -165,7 +165,7 @@ const IntelligencePage = (function() {
 
         // Show welcome banner for new users
         if (typeof WelcomeBanner !== 'undefined') {
-            WelcomeBanner.show(supabase, userInfo, fullOrg?.name || 'Your');
+            WelcomeBanner.show(supabase, userInfo, fullOrg?.name || 'Your', organizationId);
         }
 
         // Setup event listeners

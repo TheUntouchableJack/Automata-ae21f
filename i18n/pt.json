@@ -524,7 +524,14 @@
     "appDraft": "Rascunho",
     "today": "Hoje",
     "rewardsGivenToday": "Recompensas entregues hoje",
-    "openCounter": "Abrir balcão"
+    "openCounter": "Abrir balcão",
+    "draftBadge": "Ainda não está ativo",
+    "draftTitle": "Seu programa ainda não está ativo",
+    "draftDesc": "Os clientes não podem participar até você publicar. Confira as recompensas que eles verão e publique para obter seu QR code.",
+    "draftPublish": "Revisar e publicar",
+    "draftEditRewards": "Editar recompensas",
+    "draftNoRewards": "Ainda não há recompensas. Adicione uma antes de publicar.",
+    "draftPts": "pts"
   },
   "aiFeed": {
     "title": "Feed de Inteligência IA",

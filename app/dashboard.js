@@ -236,7 +236,10 @@ async function loadAppMetrics() {
                 AppUtils.showToast(toastMsg, 'success');
             }
         } else {
-            currentApp = apps[0];
+            // ?app=<id> (the builder's "Publish & Get My QR Code" sends it) picks
+            // that app; otherwise the newest.
+            const wantedAppId = new URLSearchParams(window.location.search).get('app');
+            currentApp = (wantedAppId && apps.find(a => a.id === wantedAppId)) || apps[0];
             allApps = apps;
         }
 
@@ -615,8 +618,12 @@ function updatePreviewContent(previewCol, toggleBtn, grid) {
     if (!toggleBtn) toggleBtn = document.getElementById('preview-toggle-btn');
     if (!grid) grid = document.getElementById('dashboard-with-preview');
 
-    // Check if user previously hid the preview
-    const isHidden = localStorage.getItem('previewHidden') === 'true';
+    // Check if user previously hid the preview. A draft ignores it: "not live
+    // yet" is the one thing an owner must see. So does arriving from publish (#qr).
+    const isDraft = !currentApp.is_published;
+    const wantsQR = window.location.hash === '#qr';
+    if (wantsQR) localStorage.removeItem('previewHidden');
+    const isHidden = !isDraft && localStorage.getItem('previewHidden') === 'true';
     if (isHidden) {
         previewCol.style.display = 'none';
         if (grid) grid.style.gridTemplateColumns = '1fr';
@@ -667,22 +674,38 @@ function updatePreviewContent(previewCol, toggleBtn, grid) {
         }
     }
 
-    // Show URL
-    const urlDisplay = document.getElementById('preview-url-display');
-    if (urlDisplay) {
-        const appUrl = `${window.location.origin}/a/${currentApp.slug}`;
-        urlDisplay.textContent = appUrl;
-        urlDisplay.title = appUrl;
-    }
-
     // Edit button -> app-builder with app ID
     const editBtn = document.getElementById('preview-edit-btn');
     if (editBtn && currentApp.id) {
         editBtn.href = `/app/app-builder.html?id=${currentApp.id}`;
     }
 
-    // Generate QR code
-    generatePreviewQR();
+    // A draft has no public page: /a/{slug} answers "This app doesn't exist".
+    // So no QR, no link, no Copy — "not live yet" and the way to publish instead.
+    const draftNotice = document.getElementById('preview-draft-notice');
+    const qrSection = document.getElementById('preview-qr-section');
+    const footer = document.getElementById('preview-panel-footer');
+    if (draftNotice) draftNotice.hidden = !isDraft;
+    previewCol.classList.toggle('is-draft', isDraft);
+    if (qrSection) qrSection.style.display = isDraft ? 'none' : '';
+    if (footer) footer.style.display = isDraft ? 'none' : '';
+
+    if (isDraft) {
+        const publishBtn = document.getElementById('preview-draft-publish-btn');
+        if (publishBtn) publishBtn.href = draftPublishUrl(currentApp.id);
+        const qrContainer = document.getElementById('preview-qr-code');
+        if (qrContainer) qrContainer.innerHTML = '';
+        loadDraftRewards(currentApp.id);
+    } else {
+        const urlDisplay = document.getElementById('preview-url-display');
+        if (urlDisplay) {
+            const appUrl = `${window.location.origin}/a/${currentApp.slug}`;
+            urlDisplay.textContent = appUrl;
+            urlDisplay.title = appUrl;
+        }
+        generatePreviewQR();
+        if (wantsQR) revealPreviewQR(previewCol);
+    }
 
     // Re-apply translations
     if (typeof i18n !== 'undefined' && i18n.updatePageTranslations) {
@@ -704,6 +727,58 @@ function hidePreviewPanel() {
     }
     if (grid) grid.style.gridTemplateColumns = '1fr';
     if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+}
+
+// ===== Draft state =====
+// The builder publishes (publishApp sets is_published + is_active) and then
+// comes back here to the QR (?app=<id>#qr). review=1 relabels its button.
+function draftPublishUrl(appId) {
+    return `/app/app-builder.html?id=${encodeURIComponent(appId)}&review=1`;
+}
+
+// The rewards customers will see once it's live. A failure leaves the list empty.
+async function loadDraftRewards(appId) {
+    const list = document.getElementById('preview-draft-rewards');
+    if (!list) return;
+    const tr = (key, fallback) => {
+        const s = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : null;
+        return (s && s !== key) ? s : fallback;
+    };
+    try {
+        const { data, error } = await supabase
+            .from('app_rewards')
+            .select('name, points_cost')
+            .eq('app_id', appId)
+            .eq('is_active', true)
+            .is('deleted_at', null)
+            .order('display_order', { ascending: true })
+            .limit(5);
+        if (error) throw error;
+        // The owner may have switched apps while this ran.
+        if (currentApp?.id !== appId) return;
+        if (!data || data.length === 0) {
+            list.innerHTML = `<li class="preview-draft-rewards-empty">${escapeHtml(tr('dashboard.draftNoRewards', 'No rewards yet. Add one before you publish.'))}</li>`;
+            return;
+        }
+        const ptsLabel = tr('dashboard.draftPts', 'pts');
+        list.innerHTML = data.map(r => `
+            <li><span>${escapeHtml(r.name || '')}</span><span>${escapeHtml(String(r.points_cost ?? 0))} ${escapeHtml(ptsLabel)}</span></li>
+        `).join('');
+    } catch (e) {
+        console.warn('[Dashboard] Could not load rewards for the draft panel:', e);
+        list.innerHTML = '';
+    }
+}
+
+// Arriving from "Publish & Get My QR Code": open the panel (a drawer on mobile)
+// and bring the QR into view.
+function revealPreviewQR(previewCol) {
+    if (previewCol) previewCol.classList.add('open');
+    const qr = document.getElementById('preview-qr-section');
+    if (qr && typeof qr.scrollIntoView === 'function') {
+        setTimeout(() => qr.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    }
+    history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
 // ===== Preview QR Code =====

@@ -337,6 +337,11 @@
             // Allow login to proceed — Supabase still validates credentials server-side
             turnstileToken = 'captcha-unavailable';
         }
+        // A blocked or failed api.js (ad blocker, network) fires no callback at
+        // all, so the gate also gives way when Turnstile never loaded.
+        function turnstileLoaded() {
+            return typeof window.turnstile !== 'undefined';
+        }
 
         // Set up form handler FIRST (before any async operations)
         const loginForm = document.getElementById('login-form');
@@ -360,7 +365,7 @@
             // Validate CAPTCHA (skip if site key not configured)
             const captchaWidget = document.querySelector('.cf-turnstile');
             const siteKey = captchaWidget?.getAttribute('data-sitekey');
-            if (siteKey && siteKey !== 'YOUR_SITE_KEY' && !turnstileToken) {
+            if (siteKey && siteKey !== 'YOUR_SITE_KEY' && !turnstileToken && turnstileLoaded()) {
                 document.getElementById('captcha-error').style.display = 'block';
                 return;
             }

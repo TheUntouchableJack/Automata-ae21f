@@ -7,6 +7,11 @@ const WelcomeBanner = (function() {
     let supabaseClient = null;
     let currentProgress = null;
     let orgName = '';
+    let orgId = null;
+    // Card 3 opens the org's own app in the builder. Bare app-builder.html
+    // means "new app" and would start a second draft, so until the lookup
+    // answers it points at the dashboard, which shows the existing one.
+    let appHref = '/app/dashboard.html';
 
     const CARDS = ['ai', 'automations', 'app', 'rewards'];
 
@@ -16,9 +21,10 @@ const WelcomeBanner = (function() {
     }
 
     // ── Public: show banner if needed ──
-    async function show(supabase, profile, organizationName) {
+    async function show(supabase, profile, organizationName, organizationId) {
         supabaseClient = supabase;
         orgName = organizationName || 'Your';
+        orgId = organizationId || null;
 
         // Already completed — never show
         if (profile?.welcome_progress?.completed_at) return;
@@ -48,6 +54,7 @@ const WelcomeBanner = (function() {
         if (CARDS.every(c => currentProgress[c])) return;
 
         render(currentProgress);
+        resolveAppLink();
 
         // Auto-hide right cards panel when banner is showing
         hidePanel();
@@ -185,7 +192,7 @@ const WelcomeBanner = (function() {
         const links = {
             ai: { href: '#learnings', text: t('welcome.aiLink', 'Get Started') },
             automations: { href: '/app/automations.html', text: t('welcome.automationsLink', 'Review Automations') },
-            app: { href: '/app/app-builder.html', text: t('welcome.appLink', 'Customize App') },
+            app: { href: appHref, text: t('welcome.appLink', 'Customize App') },
             rewards: { href: '/app/rewards.html', text: t('welcome.rewardsLink', 'Browse Rewards') }
         };
 
@@ -338,6 +345,27 @@ const WelcomeBanner = (function() {
     }
 
     // ── Mark individual card ──
+    // The org's newest app: the builder on it (review=1 relabels publish while
+    // it is still a draft). No app yet: the dashboard, which creates exactly one.
+    async function resolveAppLink() {
+        if (!supabaseClient || !orgId) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from('customer_apps')
+                .select('id, is_published')
+                .eq('organization_id', orgId)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            if (error || !data || !data.length) return;
+            const app = data[0];
+            appHref = `/app/app-builder.html?id=${encodeURIComponent(app.id)}${app.is_published ? '' : '&review=1'}`;
+            document.querySelectorAll('.welcome-cta[data-card="app"]').forEach(a => { a.href = appHref; });
+        } catch (e) {
+            console.warn('[WelcomeBanner] app link lookup failed:', e);
+        }
+    }
+
     function markCard(cardId, status) {
         if (!CARDS.includes(cardId)) return;
         currentProgress[cardId] = status;

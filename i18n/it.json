@@ -524,7 +524,14 @@
     "appDraft": "Bozza",
     "today": "Oggi",
     "rewardsGivenToday": "Premi consegnati oggi",
-    "openCounter": "Apri il banco"
+    "openCounter": "Apri il banco",
+    "draftBadge": "Non ancora attivo",
+    "draftTitle": "Il tuo programma non è ancora attivo",
+    "draftDesc": "I clienti non possono iscriversi finché non pubblichi. Controlla i premi che vedranno, poi pubblica per ottenere il tuo codice QR.",
+    "draftPublish": "Controlla e pubblica",
+    "draftEditRewards": "Modifica premi",
+    "draftNoRewards": "Ancora nessun premio. Aggiungine uno prima di pubblicare.",
+    "draftPts": "pt"
   },
   "aiFeed": {
     "title": "Feed Intelligenza IA",

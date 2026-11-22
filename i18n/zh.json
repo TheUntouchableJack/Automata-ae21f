@@ -524,7 +524,14 @@
     "appDraft": "草稿",
     "today": "今天",
     "rewardsGivenToday": "今日已兑现奖励",
-    "openCounter": "打开柜台"
+    "openCounter": "打开柜台",
+    "draftBadge": "尚未上线",
+    "draftTitle": "您的会员计划尚未上线",
+    "draftDesc": "发布之前，顾客无法加入。请检查顾客将看到的奖励，然后发布以获取您的二维码。",
+    "draftPublish": "检查并发布",
+    "draftEditRewards": "编辑奖励",
+    "draftNoRewards": "还没有奖励。发布前请先添加一个。",
+    "draftPts": "积分"
   },
   "aiFeed": {
     "title": "AI智能推送",

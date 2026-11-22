@@ -133,7 +133,8 @@ describe('counter page', () => {
     const html = read('app/dashboard.html')
     expect(html).toContain('id="stat-rewards-given-today"')
     expect(html).toContain('<a href="/app/counter.html" data-i18n="dashboard.openCounter">')
-    expect(html).toContain('dashboard.js?v=23')
+    // Bumped since B2 (v23); any later version still carries the count.
+    expect(Number(html.match(/dashboard\.js\?v=(\d+)/)[1])).toBeGreaterThanOrEqual(23)
     expect(typeof EN.dashboard.rewardsGivenToday).toBe('string')
   })
 })

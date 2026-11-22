@@ -847,7 +847,14 @@
     "appDraft": "Draft",
     "today": "Today",
     "rewardsGivenToday": "Rewards given today",
-    "openCounter": "Open counter"
+    "openCounter": "Open counter",
+    "draftBadge": "Not live yet",
+    "draftTitle": "Your program isn't live yet",
+    "draftDesc": "Customers can't join until you publish. Check the rewards they'll see, then publish to get your QR code.",
+    "draftPublish": "Review and publish",
+    "draftEditRewards": "Edit rewards",
+    "draftNoRewards": "No rewards yet. Add one before you publish.",
+    "draftPts": "pts"
   },
   "aiFeed": {
     "title": "AI Intelligence Feed",

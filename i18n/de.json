@@ -524,7 +524,14 @@
     "appDraft": "Entwurf",
     "today": "Heute",
     "rewardsGivenToday": "Heute ausgegebene Prämien",
-    "openCounter": "Theke öffnen"
+    "openCounter": "Theke öffnen",
+    "draftBadge": "Noch nicht live",
+    "draftTitle": "Ihr Programm ist noch nicht live",
+    "draftDesc": "Kunden können erst beitreten, wenn Sie veröffentlichen. Prüfen Sie die Prämien, die sie sehen werden, und veröffentlichen Sie dann, um Ihren QR-Code zu erhalten.",
+    "draftPublish": "Prüfen und veröffentlichen",
+    "draftEditRewards": "Prämien bearbeiten",
+    "draftNoRewards": "Noch keine Prämien. Fügen Sie vor dem Veröffentlichen eine hinzu.",
+    "draftPts": "Pkt."
   },
   "aiFeed": {
     "title": "KI-Intelligenz-Feed",

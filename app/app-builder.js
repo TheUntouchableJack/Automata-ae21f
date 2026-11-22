@@ -241,6 +241,7 @@ async function initAppBuilder() {
             isNewApp = false;
             await loadApp(appId);
             if (isOnboardingRun) applyOnboardingMode();
+            else if (urlParams.get('review') === '1' && currentApp && !currentApp.is_published) applyPublishAndQrLabel();
         } else {
             // New app - render default features and show first step
             const defaultType = 'loyalty';
@@ -963,19 +964,28 @@ function applyOnboardingMode() {
             container.prepend(banner);
         }
 
-        const publishLabel = document.querySelector('#publish-btn span') || document.getElementById('publish-btn');
-        if (publishLabel) {
-            publishLabel.textContent = (window.I18n && I18n.t('builder.publishAndQr') !== 'builder.publishAndQr')
-                ? I18n.t('builder.publishAndQr')
-                : 'Publish & Get My QR Code';
-        }
+        applyPublishAndQrLabel();
     } catch (e) {
         console.warn('[AppBuilder] onboarding mode failed:', e);
     }
 }
 
+// The header publish button promises the QR code. Used by the first run and by
+// the dashboard's "Review and publish" (?review=1) on a draft.
+function applyPublishAndQrLabel() {
+    const publishLabel = document.querySelector('#publish-btn span') || document.getElementById('publish-btn');
+    if (publishLabel) {
+        publishLabel.textContent = (window.I18n && I18n.t('builder.publishAndQr') !== 'builder.publishAndQr')
+            ? I18n.t('builder.publishAndQr')
+            : 'Publish & Get My QR Code';
+    }
+}
+
 async function publishApp() {
     try {
+        // Read before saveApp, which replaces currentApp with the saved row.
+        const wasDraft = !currentApp || !currentApp.is_published;
+
         // Save first
         await saveApp(true);
 
@@ -1001,11 +1011,14 @@ async function publishApp() {
 
         showSuccess('App published successfully!');
 
-        // A first-run publisher has exactly one app, so the apps LIST is a list of
-        // one and a dead end. Send them to the intelligence feed, which is where
-        // the product actually starts doing something for them.
+        // A first publish lands on the dashboard's QR panel: the button promised
+        // the QR code, and the QR is what puts the program in front of customers.
+        // Re-publishing an app that was already live goes back to the apps list.
+        const appId = currentApp?.id;
         setTimeout(() => {
-            window.location.href = isOnboardingRun ? '/app/intelligence.html' : '/app/apps.html';
+            window.location.href = ((isOnboardingRun || wasDraft) && appId)
+                ? `/app/dashboard.html?app=${encodeURIComponent(appId)}#qr`
+                : '/app/apps.html';
         }, 1500);
 
     } catch (error) {

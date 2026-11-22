@@ -524,7 +524,14 @@
     "appDraft": "Brouillon",
     "today": "Aujourd'hui",
     "rewardsGivenToday": "Récompenses remises aujourd'hui",
-    "openCounter": "Ouvrir le comptoir"
+    "openCounter": "Ouvrir le comptoir",
+    "draftBadge": "Pas encore en ligne",
+    "draftTitle": "Votre programme n'est pas encore en ligne",
+    "draftDesc": "Vos clients ne peuvent pas s'inscrire avant la publication. Vérifiez les récompenses qu'ils verront, puis publiez pour obtenir votre QR code.",
+    "draftPublish": "Vérifier et publier",
+    "draftEditRewards": "Modifier les récompenses",
+    "draftNoRewards": "Aucune récompense pour l'instant. Ajoutez-en une avant de publier.",
+    "draftPts": "pts"
   },
   "aiFeed": {
     "title": "Fil d'Intelligence IA",
