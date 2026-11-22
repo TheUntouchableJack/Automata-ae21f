@@ -1398,6 +1398,10 @@
     "resetLinkExpired": "This reset link has expired. Please request a new one.",
     "backToLogin": "Back to login",
     "signUpSubtitleOnboarding": "أوشكت على الانتهاء، {businessName}! أنشئ حسابك للإطلاق.",
+    "signUpSubtitleOnboardingGeneric": "أوشكت على الانتهاء! أنشئ حسابك لإطلاق تطبيقك.",
+    "previewStripLabel": "تطبيق الولاء الخاص بك",
+    "previewStripFirstReward": "المكافأة الأولى: {reward}",
+    "previewEditLater": "يمكنك تغيير الاسم والألوان والمكافآت بعد التسجيل.",
     "showPassword": "إظهار كلمة المرور",
     "hidePassword": "إخفاء كلمة المرور"
   },

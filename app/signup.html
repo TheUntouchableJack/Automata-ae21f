@@ -28,7 +28,7 @@
             height: 100vh;
         }
 
-        /* Left panel — AI Analysis (dark) */
+        /* Left panel — the visitor's app preview (onboarding path) */
         .signup-analysis-panel {
             flex: 1;
             background: #f8f9fc;
@@ -63,560 +63,59 @@
         .analysis-logo .logo-icon { width: 36px; height: 36px; }
         .analysis-logo .logo-text { color: var(--color-text, #1e293b); font-size: 20px; font-weight: 700; font-family: 'Outfit', sans-serif; }
 
-        .analysis-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            background: rgba(124, 58, 237, 0.08);
-            border: 1px solid rgba(124, 58, 237, 0.2);
-            border-radius: 100px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #7c3aed;
-            margin-bottom: 20px;
-        }
+        /* ===== Onboarding: the visitor's app next to the form ===== */
+        .signup-layout.state-preview .analysis-logo { margin-bottom: 32px; }
+        /* Phone (300) + gap (32) + facts (240) must fit side by side. */
+        .signup-layout.state-preview .analysis-content { max-width: 640px; }
+        .signup-layout.state-preview .signup-form-panel { display: flex; }
 
-        .analysis-badge svg { width: 14px; height: 14px; }
-
-        .analysis-heading {
+        .signup-app-preview-title {
+            font-family: 'Outfit', sans-serif;
             font-size: 28px;
             font-weight: 700;
             line-height: 1.3;
-            margin: 0 0 16px;
-            color: var(--color-text, #1e293b);
-            font-family: 'Outfit', sans-serif;
-        }
-
-        .analysis-heading span { color: #7c3aed; }
-
-        /* Business name highlight in analysis heading (item 6) */
-        .biz-name-highlight {
-            color: #7c3aed;
-            font-weight: 700;
-            background: linear-gradient(180deg, transparent 62%, rgba(124, 58, 237, 0.14) 62%);
-            padding: 0 2px;
-        }
-
-        .analysis-summary {
-            font-size: 16px;
-            line-height: 1.6;
-            color: var(--color-text-secondary, #64748b);
+            color: var(--color-text);
             margin: 0 0 24px;
         }
-
-        /* ===== Impact Metrics ===== */
-        .analysis-metrics {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .impact-metric {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 16px 20px;
-            background: white;
-            border: 1px solid var(--color-border, #e2e8f0);
-            border-radius: 12px;
-            opacity: 0;
-            transform: translateX(-20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-        }
-
-        .impact-metric.animate-in {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .impact-metric-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .impact-metric-icon.green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .impact-metric-icon.purple { background: rgba(124, 58, 237, 0.15); color: #a78bfa; }
-        .impact-metric-icon.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-
-        .impact-metric-body { flex: 1; min-width: 0; }
-
-        .impact-metric-value {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
-        }
-
-        .metric-number {
-            font-size: 28px;
-            font-weight: 800;
-            font-family: 'Outfit', sans-serif;
-            color: var(--color-text, #1e293b);
-            line-height: 1;
-            display: inline-block;
-        }
-
-        .metric-number.count-complete {
-            animation: countFlash 0.5s ease;
-        }
-
-        @keyframes countFlash {
-            0% { transform: scale(1.1); color: #10b981; }
-            100% { transform: scale(1); color: var(--color-text, #1e293b); }
-        }
-
-        .metric-arrow {
-            color: #10b981;
-            flex-shrink: 0;
-            animation: arrowBounce 2s ease-in-out infinite;
-        }
-
-        @keyframes arrowBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
-
-        .impact-metric-label {
-            font-size: 13px;
-            color: var(--color-text-muted, #94a3b8);
-            line-height: 1.3;
-        }
-
-        .metric-source {
-            font-size: 11px;
-            color: var(--color-text-muted, #94a3b8);
-            font-style: italic;
-            margin-top: 4px;
-            line-height: 1.3;
-        }
-
-        .impact-metric-bar {
-            height: 6px;
-            background: rgba(0, 0, 0, 0.06);
-            border-radius: 3px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-
-        .impact-metric-bar-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 2px;
-            transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .impact-metric-bar-fill.green { background: #10b981; }
-        .impact-metric-bar-fill.purple { background: #a78bfa; }
-        .impact-metric-bar-fill.blue { background: #60a5fa; }
-
-        /* Sparkline (flex child, right side of metric) */
-        .impact-metric-sparkline {
-            flex-shrink: 0;
-            width: 80px;
-            opacity: 0;
-            transition: opacity 0.6s ease 0.5s;
-            display: flex;
-            align-items: center;
-        }
-
-        .impact-metric.animate-in .impact-metric-sparkline {
-            opacity: 1;
-        }
-
-        .sparkline-svg {
-            display: block;
-        }
-
-        /* Growth arrow on opportunity impact text */
-        .impact-arrow {
-            color: #10b981;
-            vertical-align: middle;
-            margin-right: 4px;
-            flex-shrink: 0;
-        }
-
-        /* ===== Opportunity Cards ===== */
-        .analysis-opportunities {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .opportunity-card {
-            background: white;
-            border: 1px solid var(--color-border, #e2e8f0);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-        }
-
-        /* Gradient border on hover (mask trick) */
-        .opportunity-card::before {
-            content: '';
-            position: absolute;
-            inset: -1px;
-            border-radius: 12px;
-            padding: 1px;
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(16, 185, 129, 0.5));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        .opportunity-card:hover {
-            background: white;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.12);
-        }
-
-        .opportunity-card:hover::before { opacity: 1; }
-
-        /* Expanded state */
-        .opportunity-card.expanded {
-            grid-column: 1 / -1;
-            background: white;
-            border-color: rgba(124, 58, 237, 0.3);
-        }
-
-        .opportunity-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-            animation: floatIcon 3s ease-in-out infinite;
-        }
-
-        /* Cycle icon colors: green, purple, blue, green */
-        .opportunity-card:nth-child(1) .opportunity-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; animation-delay: 0s; }
-        .opportunity-card:nth-child(2) .opportunity-icon { background: rgba(124, 58, 237, 0.2); color: #a78bfa; animation-delay: 0.5s; }
-        .opportunity-card:nth-child(3) .opportunity-icon { background: rgba(59, 130, 246, 0.2); color: #60a5fa; animation-delay: 1s; }
-        .opportunity-card:nth-child(4) .opportunity-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; animation-delay: 1.5s; }
-
-        @keyframes floatIcon {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
-        }
-
-        .opportunity-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--color-text, #1e293b);
-            margin-bottom: 8px;
-        }
-
-        .opportunity-desc {
-            font-size: 13px;
+        .signup-preview-mount .hero-preview-split { justify-content: flex-start; }
+        .signup-app-preview-note {
+            font-size: 14px;
             line-height: 1.5;
-            color: var(--color-text-secondary, #64748b);
-            margin-bottom: 8px;
+            color: var(--color-text-secondary);
+            margin: 20px 0 0;
         }
 
-        .opportunity-impact {
-            font-size: 12px;
-            font-weight: 500;
-            color: #10b981;
-        }
-
-        .opportunity-expand-hint {
-            font-size: 11px;
-            color: var(--color-text-muted, #94a3b8);
-            margin-top: 8px;
-            transition: color 0.2s ease;
-        }
-
-        .opportunity-card:hover .opportunity-expand-hint { color: var(--color-text-secondary, #64748b); }
-        .opportunity-card.expanded .opportunity-expand-hint { display: none; }
-
-        /* Action steps (revealed on expand) */
-        .opportunity-action-steps {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-                        opacity 0.3s ease,
-                        margin 0.3s ease;
-            opacity: 0;
-            margin-top: 0;
-        }
-
-        .opportunity-card.expanded .opportunity-action-steps {
-            max-height: 300px;
-            opacity: 1;
-            margin-top: 16px;
-        }
-
-        .action-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 8px 0;
-            font-size: 13px;
-            color: var(--color-text-secondary, #64748b);
-            border-top: 1px solid var(--color-border-light, #f1f5f9);
-        }
-
-        .action-step:first-child { border-top: none; }
-
-        .action-step-number {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: rgba(124, 58, 237, 0.1);
-            color: #7c3aed;
-            font-size: 11px;
+        /* Narrow screens only: one row with the app, above the form. */
+        .signup-app-strip { display: none; }
+        .signup-app-strip-icon {
+            flex: 0 0 40px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
-            margin-top: 1px;
         }
-
-        .opportunity-source {
+        .signup-app-strip-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+        .signup-app-strip-label {
             font-size: 11px;
-            color: var(--color-text-muted, #94a3b8);
-            font-style: italic;
-            margin-top: 12px;
-            padding-top: 8px;
-            border-top: 1px solid var(--color-border-light, #e2e8f0);
-            line-height: 1.4;
-        }
-
-        /* ===== Disclaimer ===== */
-        .analysis-disclaimer {
-            font-size: 11px;
-            color: var(--color-text-muted, #94a3b8);
-            font-style: italic;
-            margin: -20px 0 24px;
-        }
-
-        /* ===== Section Labels ===== */
-        .analysis-section-label {
-            font-size: 12px;
             font-weight: 600;
-            color: var(--color-text-muted, #94a3b8);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0 0 12px;
+            letter-spacing: 0.04em;
+            color: var(--color-text-secondary);
         }
-
-        /* ===== Platform Highlights ===== */
-        .analysis-highlights { margin-bottom: 24px; }
-
-        .analysis-highlights h3 {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--color-text-muted, #94a3b8);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0 0 12px;
-        }
-
-        .analysis-highlights ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .highlight-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 14px;
-            background: white;
-            border: 1px solid var(--color-border, #e2e8f0);
-            border-radius: 8px;
-            font-size: 13px;
-            color: var(--color-text-secondary, #64748b);
-        }
-
-        .highlight-item strong { color: var(--color-text, #1e293b); }
-        .highlight-check { color: #10b981; flex-shrink: 0; margin-top: 1px; }
-        .highlight-reason { opacity: 0.6; margin-top: 2px; }
-
-        /* ===== Staggered Entrance Animations ===== */
-        .analysis-results .analysis-badge,
-        .analysis-results .analysis-heading,
-        .analysis-results .analysis-summary,
-        .analysis-results .analysis-section-label,
-        .analysis-results .analysis-metrics,
-        .analysis-results .analysis-disclaimer,
-        .analysis-results .analysis-opportunities,
-        .analysis-results .analysis-highlights {
-            opacity: 0;
-            transform: translateY(16px);
-        }
-
-        .analysis-results.animate-in .analysis-badge { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 0ms; }
-        .analysis-results.animate-in .analysis-heading { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 80ms; }
-        .analysis-results.animate-in .analysis-summary { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 160ms; }
-        .analysis-results.animate-in .analysis-section-label:first-of-type { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 220ms; }
-        .analysis-results.animate-in .analysis-metrics { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 240ms; }
-        .analysis-results.animate-in .analysis-disclaimer { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 340ms; }
-        .analysis-results.animate-in .analysis-section-label:nth-of-type(2) { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 380ms; }
-        .analysis-results.animate-in .analysis-opportunities { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 400ms; }
-        .analysis-results.animate-in .analysis-highlights { animation: fadeSlideUp 0.5s ease forwards; animation-delay: 700ms; }
-
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Badge pulse glow */
-        .analysis-results.animate-in .analysis-badge {
-            animation: fadeSlideUp 0.5s ease forwards, badgePulse 3s ease-in-out 1s infinite;
-        }
-
-        @keyframes badgePulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
-            50% { box-shadow: 0 0 12px 2px rgba(124, 58, 237, 0.15); }
-        }
-
-        /* ===== Analysis Tabs ===== */
-        .analysis-tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 24px;
-            background: rgba(0, 0, 0, 0.04);
-            border-radius: 10px;
-            padding: 4px;
-        }
-        .analysis-tab {
-            flex: 1;
-            padding: 8px 12px;
-            border: none;
-            background: transparent;
-            color: var(--color-text-muted, #94a3b8);
-            font-size: 13px;
-            font-weight: 600;
-            font-family: inherit;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .analysis-tab:hover {
-            color: var(--color-text-secondary, #64748b);
-        }
-        .analysis-tab.active {
-            background: rgba(124, 58, 237, 0.1);
-            color: #7c3aed;
-        }
-        .analysis-tab-content {
-            display: none;
-        }
-        .analysis-tab-content.active {
-            display: block;
-        }
-
-        /* Stagger animation for tabs */
-        .analysis-results.animate-in .analysis-tabs {
-            animation: fadeSlideUp 0.5s ease forwards;
-            animation-delay: 200ms;
-        }
-
-        /* Progress bar group — under logo */
-        .analysis-progress {
-            margin-bottom: 32px;
-        }
-
-        .progress-bar-track {
-            height: 6px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 3px;
+        .signup-app-strip-name,
+        .signup-app-strip-reward {
+            white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
         }
-
-        .progress-bar-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 3px;
-            background: linear-gradient(90deg, #7c3aed, #10b981);
-            transition: width 0.3s ease;
-        }
-
-        .progress-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .progress-percent {
-            font-size: 13px;
-            font-weight: 600;
-            color: rgba(196, 181, 253, 0.8);
-            font-family: 'Outfit', sans-serif;
-        }
-
-        /* Skeleton loading */
-        .analysis-skeleton .sk {
-            background: rgba(0, 0, 0, 0.06);
-            border-radius: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .analysis-skeleton .sk::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.06) 40%, rgba(0, 0, 0, 0.04) 50%, rgba(124, 58, 237, 0.06) 60%, transparent 100%);
-            animation: skeletonSweep 2s ease-in-out infinite;
-        }
-
-        .sk-badge { width: 160px; height: 32px; margin-bottom: 20px; }
-        .sk-heading { width: 80%; height: 32px; margin-bottom: 16px; }
-        .sk-text { width: 100%; height: 16px; margin-bottom: 8px; }
-        .sk-text-short { width: 60%; height: 16px; margin-bottom: 32px; }
-        .sk-metric { width: 100%; height: 72px; margin-bottom: 32px; border-radius: 12px; }
-        .sk-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
-        .sk-card { height: 160px; border-radius: 12px; }
-        .sk-auto { width: 100%; height: 48px; margin-bottom: 8px; }
-
-        .skeleton-progress {
-            color: var(--color-text-muted, #94a3b8);
-            font-size: 13px;
-            min-height: 20px;
-            transition: opacity 0.3s ease;
-        }
-
-        .skeleton-progress .progress-dot {
-            display: inline-block;
-            animation: dotPulse 1.4s ease-in-out infinite;
-        }
-        .skeleton-progress .progress-dot:nth-child(2) { animation-delay: 0.2s; }
-        .skeleton-progress .progress-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes skeletonSweep {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        @keyframes dotPulse {
-            0%, 80%, 100% { opacity: 0.3; }
-            40% { opacity: 1; }
-        }
+        .signup-app-strip-name { font-size: 15px; color: var(--color-text); }
+        .signup-app-strip-reward { font-size: 13px; color: var(--color-text-secondary); }
 
         /* Right panel — Signup Form (hidden by default, shown in state-form) */
         .signup-form-panel {
@@ -639,158 +138,6 @@
             transform: translateX(0);
         }
 
-        /* Sticky CTA bar — shown in state-analysis */
-        .signup-sticky-cta {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            padding: 16px 24px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-top: 1px solid var(--color-border, #e2e8f0);
-            z-index: 100;
-            animation: stickySlideUp 0.4s ease;
-        }
-        .signup-layout.state-analysis .signup-sticky-cta { display: flex; }
-        .signup-layout.state-form .signup-sticky-cta { display: none; }
-
-        @keyframes stickySlideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .sticky-cta-primary {
-            padding: 12px 28px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            font-family: 'Outfit', sans-serif;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.2s;
-        }
-        .sticky-cta-primary:hover { background: #059669; transform: translateY(-1px); }
-
-        .sticky-cta-secondary {
-            padding: 12px 28px;
-            background: transparent;
-            color: var(--color-text-secondary, #64748b);
-            border: 1px solid var(--color-border, #e2e8f0);
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 500;
-            font-family: 'Outfit', sans-serif;
-            cursor: pointer;
-            transition: border-color 0.2s, color 0.2s;
-        }
-        .sticky-cta-secondary:hover { border-color: var(--color-primary, #7c3aed); color: var(--color-primary, #7c3aed); }
-
-        /* Bottom padding when sticky bar visible */
-        .signup-layout.state-analysis .analysis-content { padding-bottom: 80px; }
-
-        /* ===== Email Report Modal ===== */
-        .email-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 200;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: modalFadeIn 0.2s ease;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .email-modal {
-            background: white;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 400px;
-            width: 90%;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            animation: modalSlideUp 0.3s ease;
-            text-align: center;
-        }
-        @keyframes modalSlideUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .email-modal-close {
-            position: absolute;
-            top: 12px;
-            right: 16px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--color-text-muted, #94a3b8);
-            cursor: pointer;
-            padding: 4px 8px;
-            line-height: 1;
-        }
-        .email-modal-close:hover { color: var(--color-text, #1e293b); }
-        .email-modal-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-        }
-        .email-modal h3 {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--color-text, #1e293b);
-            margin: 0 0 8px;
-            font-family: 'Outfit', sans-serif;
-        }
-        .email-modal p {
-            font-size: 14px;
-            color: var(--color-text-secondary, #64748b);
-            margin: 0 0 20px;
-        }
-        .email-modal-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid var(--color-border, #e2e8f0);
-            border-radius: 10px;
-            font-size: 15px;
-            color: var(--color-text, #1e293b);
-            outline: none;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-        }
-        .email-modal-input:focus { border-color: var(--color-primary, #7c3aed); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
-        .email-modal-input::placeholder { color: var(--color-text-muted, #94a3b8); }
-        .email-modal-send {
-            width: 100%;
-            padding: 12px 20px;
-            background: #7c3aed;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            font-family: 'Outfit', sans-serif;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .email-modal-send:hover { background: #6d28d9; }
-        .email-modal-send:disabled { opacity: 0.5; cursor: not-allowed; }
-        .email-modal-status {
-            font-size: 13px;
-            margin-top: 12px;
-            line-height: 1.5;
-        }
-        .email-modal-status.success { color: #10b981; }
-        .email-modal-status.error { color: #ef4444; }
-
         .signup-form-panel .auth-container {
             min-height: auto;
             display: flex;
@@ -805,7 +152,6 @@
 
         /* No-analysis fallback: hide left panel, center form */
         .signup-layout.no-analysis .signup-analysis-panel { display: none; }
-        .signup-layout.no-analysis .signup-sticky-cta { display: none; }
         .signup-layout.no-analysis .signup-form-panel {
             display: flex;
             flex: 1;
@@ -837,11 +183,34 @@
                 order: 1;
             }
             .analysis-content { padding-top: 0; }
-            .analysis-opportunities { grid-template-columns: 1fr; }
             .lang-selector.analysis-lang { margin-top: 24px; padding-bottom: 32px; }
-            .signup-sticky-cta { flex-direction: column; padding: 12px 16px; }
-            .sticky-cta-primary, .sticky-cta-secondary { width: 100%; text-align: center; }
             .signup-layout.state-form .signup-form-panel { display: flex; }
+
+            /* Onboarding: form first, the app summed up in one row above it. */
+            .signup-layout.state-preview .signup-app-strip:not([hidden]) {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 12px 14px;
+                margin: 0 0 16px;
+                background: var(--color-bg);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-lg, 12px);
+            }
+            .signup-layout.state-preview .signup-form-panel { padding-top: 16px; }
+            .signup-layout.state-preview .signup-form-panel .auth-container { padding-top: 0; }
+            .signup-layout.state-preview .analysis-logo { display: none; }
+            .signup-layout.state-preview .signup-app-preview-title { font-size: 22px; }
+        }
+
+        /* Phones: the full mockup below the form is just more scrolling. */
+        @media (max-width: 768px) {
+            .signup-layout.state-preview .signup-app-preview { display: none; }
+            .signup-layout.state-preview .auth-card { padding: 24px 20px; }
+            .signup-layout.state-preview .auth-header { margin-bottom: 20px; }
+            .signup-layout.state-preview .auth-header .logo { margin-bottom: 8px; }
         }
 
         /* ===== Auth Card Styles ===== */
@@ -856,7 +225,7 @@
         .auth-header { text-align: center; margin-bottom: 32px; }
         .auth-header .logo { display: inline-flex; margin-bottom: 16px; }
         .auth-header h1 { font-size: 1.5rem; margin-bottom: 8px; }
-        .auth-header p { color: var(--color-text-muted); font-size: 15px; }
+        .auth-header p { color: var(--color-text-secondary); font-size: 15px; }
 
         .onboarding-step-badge {
             display: none;
@@ -912,7 +281,7 @@
         .success-message.visible { display: block; }
 
         .auth-footer { text-align: center; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--color-border); }
-        .auth-footer p { font-size: 14px; color: var(--color-text-muted); }
+        .auth-footer p { font-size: 14px; color: var(--color-text-secondary); }
         .auth-footer a { color: var(--color-primary); font-weight: 500; }
         .auth-footer a:hover { text-decoration: underline; }
 
@@ -1029,9 +398,6 @@
         }
 
         .signup-layout.no-analysis .lang-selector.analysis-lang { display: none; }
-
-        /* Fallback styles */
-        .analysis-fallback { display: none; }
     </style>
     <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
          Cookieless on public pages, so there is no consent banner. Session
@@ -1051,114 +417,12 @@
                     <span class="logo-text">Royalty</span>
                 </a>
 
-                <!-- Progress bar (visible during loading, hidden when results show) -->
-                <div class="analysis-progress" id="analysis-progress">
-                    <div class="progress-bar-track">
-                        <div class="progress-bar-fill" id="progress-bar-fill"></div>
-                    </div>
-                    <div class="progress-info">
-                        <span class="skeleton-progress" id="skeleton-progress">
-                            Analyzing your business<span class="progress-dot">.</span><span class="progress-dot">.</span><span class="progress-dot">.</span>
-                        </span>
-                        <span class="progress-percent" id="progress-percent">0%</span>
-                    </div>
-                </div>
-
-                <!-- Skeleton loading -->
-                <div class="analysis-skeleton" id="analysis-skeleton">
-                    <div class="sk sk-badge"></div>
-                    <div class="sk sk-heading"></div>
-                    <div class="sk sk-text"></div>
-                    <div class="sk sk-text"></div>
-                    <div class="sk sk-text-short"></div>
-                    <div class="sk sk-metric"></div>
-                    <div class="sk-cards">
-                        <div class="sk sk-card"></div>
-                        <div class="sk sk-card"></div>
-                        <div class="sk sk-card"></div>
-                        <div class="sk sk-card"></div>
-                    </div>
-                    <div class="sk sk-auto"></div>
-                    <div class="sk sk-auto"></div>
-                    <div class="sk sk-auto"></div>
-                </div>
-
-                <!-- Analysis results (hidden until loaded) -->
-                <div class="analysis-results" id="analysis-results" style="display: none;">
-                    <div class="analysis-badge">
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 9L20 9L15 13L17 19L12 15L7 19L9 13L4 9L10 9L12 3Z" fill="currentColor"/></svg>
-                        <span data-i18n="analysis.badge">AI Business Analysis</span>
-                    </div>
-
-                    <h2 class="analysis-heading">
-                        Here's what we see for <span id="analysis-biz-name">your business</span>
-                    </h2>
-
-                    <p class="analysis-summary" id="analysis-summary"></p>
-
-                    <!-- Tabs -->
-                    <div class="analysis-tabs">
-                        <button class="analysis-tab active" data-tab="overview" data-i18n="analysis.tabOverview">Overview</button>
-                        <button class="analysis-tab" data-tab="opportunities" data-i18n="analysis.tabOpportunities">Opportunities</button>
-                        <button class="analysis-tab" data-tab="platform" data-i18n="analysis.tabPlatform">Platform</button>
-                    </div>
-
-                    <!-- Tab: Overview -->
-                    <div class="analysis-tab-content active" id="tab-overview">
-                        <h3 class="analysis-section-label" data-i18n="analysis.growthPotential">Your Growth Potential</h3>
-                        <div class="analysis-metrics" id="analysis-metrics"></div>
-                        <p class="analysis-disclaimer" data-i18n="analysis.disclaimer">Projections based on industry averages for similar businesses</p>
-                    </div>
-
-                    <!-- Tab: Opportunities -->
-                    <div class="analysis-tab-content" id="tab-opportunities">
-                        <h3 class="analysis-section-label" data-i18n="analysis.opportunities">Opportunities</h3>
-                        <div class="analysis-opportunities" id="analysis-opportunities"></div>
-                    </div>
-
-                    <!-- Tab: Platform -->
-                    <div class="analysis-tab-content" id="tab-platform">
-                        <div class="analysis-highlights" id="analysis-highlights">
-                            <h3 data-i18n="analysis.platformHighlights">Platform Highlights</h3>
-                            <ul id="highlights-list"></ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fallback: static platform showcase (shown when AI analysis fails) -->
-                <div class="analysis-fallback" id="analysis-fallback">
-                    <div class="analysis-badge">
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 9L20 9L15 13L17 19L12 15L7 19L9 13L4 9L10 9L12 3Z" fill="currentColor"/></svg>
-                        <span data-i18n="analysis.badge">AI Business Analysis</span>
-                    </div>
-                    <h2 class="analysis-heading" id="fallback-title" data-i18n="analysis.fallbackTitle">Your Royalty Platform</h2>
-                    <p style="color: rgba(255,255,255,0.65); font-size: 15px; line-height: 1.6; margin-bottom: 24px;" data-i18n="analysis.fallbackDesc">
-                        Everything you need to build loyalty, automate engagement, and grow revenue — powered by AI.
-                    </p>
-                    <div class="analysis-opportunities" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
-                        <div class="opportunity-card">
-                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
-                            <div class="opportunity-title" data-i18n="analysis.fallback.brandedApp">Your Branded App</div>
-                            <div class="opportunity-desc" data-i18n="analysis.fallback.brandedAppDesc">Custom loyalty app with digital rewards, stamp cards, and push notifications</div>
-                        </div>
-                        <div class="opportunity-card">
-                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                            <div class="opportunity-title" data-i18n="analysis.fallback.automations">Smart Automations</div>
-                            <div class="opportunity-desc" data-i18n="analysis.fallback.automationsDesc">Automated campaigns — win-back, birthday rewards, post-visit follow-ups</div>
-                        </div>
-                        <div class="opportunity-card">
-                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18 3V9H12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8L18 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-                            <div class="opportunity-title" data-i18n="analysis.fallback.insights">Customer Insights</div>
-                            <div class="opportunity-desc" data-i18n="analysis.fallback.insightsDesc">Real-time analytics, spending patterns, and customer segmentation</div>
-                        </div>
-                        <div class="opportunity-card">
-                            <div class="opportunity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                            <div class="opportunity-title" data-i18n="analysis.fallback.revenue">Revenue Growth</div>
-                            <div class="opportunity-desc" data-i18n="analysis.fallback.revenueDesc">Referral programs, targeted promotions, and upsell opportunities</div>
-                        </div>
-                    </div>
-                    <p style="font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 8px;" data-i18n="analysis.fallbackCta">Create your account to see a personalized analysis</p>
-                </div>
+                <!-- The visitor's own app (onboarding path). Rendered by signup-preview.js. -->
+                <section class="signup-app-preview" id="signup-app-preview" hidden>
+                    <h2 class="signup-app-preview-title" id="signup-app-preview-title"></h2>
+                    <div class="signup-preview-mount" id="signup-preview-mount"></div>
+                    <p class="signup-app-preview-note" data-i18n="auth.previewEditLater">You can change the name, colors and rewards after you sign up.</p>
+                </section>
 
                 <!-- Language selector (dark themed, bottom of left panel) -->
                 <div class="lang-selector compact analysis-lang" id="analysis-lang-selector">
@@ -1205,6 +469,16 @@
                     </div>
                 </div>
 
+                <!-- Narrow screens: the visitor's app in one row, above the form. -->
+                <div class="signup-app-strip" id="signup-app-strip" hidden>
+                    <span class="signup-app-strip-icon" id="signup-app-strip-icon" aria-hidden="true"></span>
+                    <span class="signup-app-strip-text">
+                        <span class="signup-app-strip-label" data-i18n="auth.previewStripLabel">Your loyalty app</span>
+                        <strong class="signup-app-strip-name" id="signup-app-strip-name"></strong>
+                        <span class="signup-app-strip-reward" id="signup-app-strip-reward"></span>
+                    </span>
+                </div>
+
                 <div class="auth-card" id="auth-card">
                     <div class="auth-card-progress" id="auth-card-progress">
                         <div class="auth-card-progress-fill" id="auth-card-progress-fill"></div>
@@ -1214,9 +488,9 @@
                             <img src="/logo.svg" alt="Royalty" class="logo-icon">
                             <span class="logo-text">Royalty</span>
                         </a>
-                        <div class="onboarding-step-badge" id="signup-step-badge" style="display: none;">Step 3 of 3</div>
+                        <div class="onboarding-step-badge" id="signup-step-badge" style="display: none;" data-i18n="onboarding.step2of2">Step 2 of 2</div>
                         <h1 data-i18n="auth.createAccount">Create an account</h1>
-                        <p data-i18n="auth.signUpSubtitle">Start automating your customer relationships</p>
+                        <p id="signup-subtitle" data-i18n="auth.signUpSubtitle">Start automating your customer relationships</p>
                     </div>
 
                     <form class="auth-form" id="signup-form">
@@ -1292,24 +566,6 @@
             </div>
         </div>
 
-        <!-- Sticky CTA bar (visible in state-analysis) -->
-        <div class="signup-sticky-cta" id="signup-sticky-cta">
-            <button class="sticky-cta-secondary" id="sticky-email-report-btn" data-i18n="analysis.emailReport">Email Me This Report</button>
-            <button class="sticky-cta-primary" id="build-loyalty-btn" data-i18n="analysis.buildMyProgram">Build My Loyalty Program</button>
-        </div>
-
-        <!-- Email Report Modal -->
-        <div class="email-modal-overlay" id="email-modal-overlay" style="display: none;">
-            <div class="email-modal">
-                <button class="email-modal-close" id="email-modal-close">&times;</button>
-                <div class="email-modal-icon">&#9993;</div>
-                <h3 data-i18n="analysis.emailReport">Email Me This Report</h3>
-                <p data-i18n="analysis.emailModalDesc">We'll send a copy of this analysis to your inbox.</p>
-                <input type="email" id="modal-report-email" class="email-modal-input" placeholder="your@email.com" data-i18n-placeholder="analysis.emailPlaceholder">
-                <button id="modal-send-report-btn" class="email-modal-send" data-i18n="analysis.emailSend">Send</button>
-                <div class="email-modal-status" id="modal-email-status" style="display: none;"></div>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1321,12 +577,14 @@
     <script src="password-toggle.js?v=2"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="onboarding-transition.js?v=2"></script>
-    <script src="business-analysis.js?v=3"></script>
+    <script src="business-analysis.js?v=4"></script>
     <!-- Needed by OnboardingSave.commit(): when no app config was stored
          (control arm of the preview A/B, or the cold path), it rebuilds one
          from these so a signup still ends with a real loyalty app. -->
     <script src="app-templates-library.js?v=1"></script>
     <script src="app-config-fallback.js?v=2"></script>
+    <script src="app-preview-card.js?v=2"></script>
+    <script src="signup-preview.js?v=1"></script>
     <script src="onboarding-save.js?v=2"></script>
     <script>
         // Page-level language
@@ -1337,17 +595,6 @@
         function onTurnstileSuccess(token) {
             turnstileToken = token;
             document.getElementById('captcha-error').style.display = 'none';
-        }
-
-        // Layout state management
-        function setSignupState(state) {
-            const layout = document.getElementById('signup-layout');
-            layout.classList.remove('state-loading', 'state-analysis', 'state-form');
-            layout.classList.add('state-' + state);
-            // These three states share one URL, so page views can't tell them
-            // apart. Reaching 'analysis' but never 'form' is a real drop-off
-            // that would otherwise be invisible.
-            window.Analytics?.track('signup_state', { state: state });
         }
 
         // Record which pricing tier (if any) sent them here. The pricing CTAs
@@ -1374,130 +621,67 @@
         // Redirect if already logged in
         redirectIfAuthenticated();
 
-        // Initialize the signup page
-        async function initSignupPage() {
-            const layout = document.getElementById('signup-layout');
-            const onboardingCheck = typeof OnboardingStorage !== 'undefined' && OnboardingStorage.get();
-            const hasOnboarding = onboardingCheck?.businessPrompt || onboardingCheck?.businessDetails?.businessName;
-
-            if (hasOnboarding) {
-                // Show step badge when coming from onboarding flow
-                const stepBadge = document.getElementById('signup-step-badge');
-                if (stepBadge) stepBadge.style.display = 'block';
-
-                // Personalize subtitle with business name
-                const businessName = onboardingCheck.businessDetails?.businessName;
-                const subtitle = document.querySelector('[data-i18n="auth.signUpSubtitle"]');
-                if (subtitle && businessName) {
-                    subtitle.textContent = `Almost done, ${businessName}! Create your account to launch.`;
-                }
-
-                // Clear analysis cache if business data changed since last fetch
-                const data = OnboardingStorage.get();
-                const currentPrompt = data.businessPrompt || '';
-                const lastPrompt = localStorage.getItem('royalty_last_biz_prompt');
-                if (lastPrompt !== null && lastPrompt !== currentPrompt) {
-                    BusinessAnalysis.clearCache();
-                }
-                localStorage.setItem('royalty_last_biz_prompt', currentPrompt);
-
-                // Build fallback content (shown if AI analysis fails)
-                buildFallbackContent();
-
-                // Progress bar simulation
-                const progressFill = document.getElementById('progress-bar-fill');
-                const progressPercent = document.getElementById('progress-percent');
-                const progressEl = document.getElementById('skeleton-progress');
-                const progressGroup = document.getElementById('analysis-progress');
-                const progressMessages = [
-                    'Analyzing your business',
-                    'Building your platform',
-                    'Calculating impact',
-                    'Preparing recommendations'
-                ];
-                let progressValue = 0;
-                let msgIdx = 0;
-                let tickCount = 0;
-
-                // Hide progress bar immediately if cache will hit
-                const currentLang = localStorage.getItem('royalty_language') || document.documentElement.lang || 'en';
-                const cachedAnalysis = typeof BusinessAnalysis !== 'undefined' && BusinessAnalysis.getCached(currentLang);
-                if (cachedAnalysis && progressGroup) {
-                    progressGroup.style.display = 'none';
-                }
-
-                const progressInterval = setInterval(() => {
-                    tickCount++;
-                    // Ease-out fill: fast start, slows near 90%, caps at 92%
-                    if (progressValue < 60) {
-                        progressValue += 3 + Math.random() * 2;
-                    } else if (progressValue < 85) {
-                        progressValue += 1 + Math.random();
-                    } else if (progressValue < 92) {
-                        progressValue += 0.3 + Math.random() * 0.3;
-                    }
-                    progressValue = Math.min(progressValue, 92);
-
-                    if (progressFill) progressFill.style.width = progressValue + '%';
-                    if (progressPercent) progressPercent.textContent = Math.round(progressValue) + '%';
-
-                    // Cycle message every ~3s (every 6 ticks at 500ms)
-                    if (tickCount % 6 === 0) {
-                        msgIdx = (msgIdx + 1) % progressMessages.length;
-                        if (progressEl) {
-                            progressEl.innerHTML = progressMessages[msgIdx] +
-                                '<span class="progress-dot">.</span><span class="progress-dot">.</span><span class="progress-dot">.</span>';
-                        }
-                    }
-                }, 500);
-
-                // Initialize AI analysis (shows skeleton, then results or fallback)
-                if (typeof BusinessAnalysis !== 'undefined') {
-                    await BusinessAnalysis.init(currentLang);
-                    // Show full-screen analysis with sticky CTA bar
-                    setSignupState('analysis');
-                    clearInterval(progressInterval);
-                    // Snap to 100%
-                    if (progressFill) progressFill.style.width = '100%';
-                    if (progressPercent) progressPercent.textContent = '100%';
-                    // Hide progress bar after brief flash
-                    setTimeout(() => {
-                        if (progressGroup) progressGroup.style.display = 'none';
-                    }, 400);
-                    // Re-fetch analysis when language changes
-                    window.addEventListener('i18n:changed', (e) => {
-                        if (typeof BusinessAnalysis !== 'undefined') {
-                            BusinessAnalysis.refresh(e.detail.language);
-                        }
-                    });
-                } else {
-                    // No analysis module — show fallback + form directly
-                    clearInterval(progressInterval);
-                    if (progressGroup) progressGroup.style.display = 'none';
-                    document.getElementById('analysis-skeleton').style.display = 'none';
-                    document.getElementById('analysis-fallback').style.display = 'block';
-                    setSignupState('form');
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            document.getElementById('form-panel')?.classList.add('visible');
-                        });
-                    });
-                }
-            } else {
-                // No onboarding data: hide analysis panel, show form-only
-                if (layout) layout.classList.add('no-analysis');
-            }
+        // Personalised subtitle. Not left on data-i18n: applyTranslations()
+        // has no placeholder support and would reset it to the generic line the
+        // moment i18n loads, so it is set here and again on every language load.
+        function renderOnboardingSubtitle(businessName) {
+            const subtitle = document.getElementById('signup-subtitle');
+            if (!subtitle) return;
+            subtitle.removeAttribute('data-i18n');
+            const tr = (key, fallback, vars) => {
+                let out = fallback;
+                try {
+                    const v = window.I18n && I18n.t(key, vars || {});
+                    if (v && v !== key) out = v;
+                } catch (e) { /* English fallback */ }
+                return out.replace('{businessName}', (vars && vars.businessName) || '');
+            };
+            subtitle.textContent = businessName
+                ? tr('auth.signUpSubtitleOnboarding', 'Almost done, {businessName}! Create your account to launch.', { businessName })
+                : tr('auth.signUpSubtitleOnboardingGeneric', 'Almost done! Create your account to launch your app.');
         }
 
-        function buildFallbackContent() {
-            const data = OnboardingStorage.get();
-            if (!data) return;
+        // Initialize the signup page
+        function initSignupPage() {
+            const layout = document.getElementById('signup-layout');
+            const onboardingData = typeof OnboardingStorage !== 'undefined' ? OnboardingStorage.get() : null;
+            const hasOnboarding = !!(onboardingData?.businessPrompt || onboardingData?.businessDetails?.businessName);
 
-            const titleEl = document.getElementById('fallback-title');
-            const bizName = data.businessDetails?.businessName || '';
+            if (!hasOnboarding) {
+                // Cold signup: no homepage data. Form only, as before.
+                if (layout) layout.classList.add('no-analysis');
+                return;
+            }
 
-            if (titleEl && bizName) {
-                titleEl.textContent = `Your ${bizName} Platform`;
+            // Warm signup (homepage hero → "Claim My App"): the form is usable
+            // straight away, next to the app they were just shown. There is no
+            // report to click past any more.
+            const stepBadge = document.getElementById('signup-step-badge');
+            if (stepBadge) stepBadge.style.display = 'block';
+
+            const businessName = onboardingData.businessDetails?.businessName || '';
+            renderOnboardingSubtitle(businessName);
+            window.addEventListener('i18n:ready', () => renderOnboardingSubtitle(businessName));
+            window.addEventListener('i18n:changed', () => renderOnboardingSubtitle(businessName));
+
+            // Clear the analysis cache if the business description changed since
+            // it was fetched, so OnboardingSave doesn't store a stale analysis.
+            const currentPrompt = onboardingData.businessPrompt || '';
+            const lastPrompt = localStorage.getItem('royalty_last_biz_prompt');
+            if (lastPrompt !== null && lastPrompt !== currentPrompt && typeof BusinessAnalysis !== 'undefined') {
+                BusinessAnalysis.clearCache();
+            }
+            try { localStorage.setItem('royalty_last_biz_prompt', currentPrompt); } catch (e) { /* private mode */ }
+
+            const shown = typeof SignupPreview !== 'undefined' ? SignupPreview.render(onboardingData) : null;
+            if (layout) layout.classList.add(shown ? 'state-preview' : 'no-analysis');
+            window.Analytics?.track('signup_state', { state: shown ? 'preview' : 'form' });
+
+            // The homepage normally cached the AI analysis already. If it didn't
+            // finish there, fetch it quietly so it still reaches the new account
+            // (OnboardingSave stores it). Nothing on this page waits for it.
+            if (typeof BusinessAnalysis !== 'undefined' && BusinessAnalysis.prefetch) {
+                BusinessAnalysis.prefetch(currentLang);
             }
         }
 
@@ -1764,112 +948,6 @@
             return `/app/app-builder.html?id=${encodeURIComponent(appId)}&onboarding=1`;
         }
 
-        // ── Tab Switching ──
-        document.querySelector('.analysis-tabs')?.addEventListener('click', (e) => {
-            const tab = e.target.closest('.analysis-tab');
-            if (!tab) return;
-            document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.analysis-tab-content').forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById('tab-' + tab.dataset.tab)?.classList.add('active');
-        });
-
-        // ── "Build My Loyalty Program" — reveal form panel ──
-        document.getElementById('build-loyalty-btn')?.addEventListener('click', () => {
-            setSignupState('form');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    document.getElementById('form-panel')?.classList.add('visible');
-                });
-            });
-        });
-
-        // ── Email Report Modal Handler ──
-        const emailModalOverlay = document.getElementById('email-modal-overlay');
-        const emailModalClose = document.getElementById('email-modal-close');
-        const modalEmailInput = document.getElementById('modal-report-email');
-        const modalSendBtn = document.getElementById('modal-send-report-btn');
-        const modalEmailStatus = document.getElementById('modal-email-status');
-
-        function openEmailModal() {
-            emailModalOverlay.style.display = 'flex';
-            modalEmailInput.value = '';
-            modalEmailStatus.style.display = 'none';
-            modalSendBtn.disabled = false;
-            modalSendBtn.textContent = 'Send';
-            setTimeout(() => modalEmailInput.focus(), 100);
-        }
-
-        function closeEmailModal() {
-            emailModalOverlay.style.display = 'none';
-        }
-
-        document.getElementById('sticky-email-report-btn')?.addEventListener('click', openEmailModal);
-        emailModalClose?.addEventListener('click', closeEmailModal);
-        emailModalOverlay?.addEventListener('click', (e) => {
-            if (e.target === emailModalOverlay) closeEmailModal();
-        });
-
-        if (modalSendBtn) {
-            modalSendBtn.addEventListener('click', async () => {
-                const email = modalEmailInput.value.trim();
-                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    modalEmailStatus.textContent = 'Please enter a valid email.';
-                    modalEmailStatus.className = 'email-modal-status error';
-                    modalEmailStatus.style.display = 'block';
-                    return;
-                }
-
-                modalSendBtn.disabled = true;
-                modalSendBtn.textContent = 'Sending...';
-                modalEmailStatus.style.display = 'none';
-
-                try {
-                    const analysis = typeof BusinessAnalysis !== 'undefined'
-                        ? (BusinessAnalysis.getCached(currentLang) || BusinessAnalysis.getCached('en'))
-                        : null;
-
-                    if (!analysis) {
-                        throw new Error('No analysis data available');
-                    }
-
-                    const onboarding = typeof OnboardingStorage !== 'undefined' ? OnboardingStorage.get() : null;
-                    const businessName = onboarding?.businessDetails?.businessName || analysis.extractedDetails?.businessName || '';
-
-                    const res = await fetch(SUPABASE_URL + '/functions/v1/send-analysis-report', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email,
-                            analysis,
-                            businessName,
-                            language: currentLang || 'en'
-                        })
-                    });
-
-                    const result = await res.json();
-                    if (!res.ok || !result.success) {
-                        throw new Error(result.error || 'Failed to send report');
-                    }
-
-                    modalEmailStatus.innerHTML = 'Sent! Check your inbox.<br><small style="opacity:0.7">Don\'t see it? Check your spam folder.</small>';
-                    modalEmailStatus.className = 'email-modal-status success';
-                    modalEmailStatus.style.display = 'block';
-                    modalSendBtn.style.display = 'none';
-                    modalEmailInput.style.display = 'none';
-
-                    // Auto-close modal after 3 seconds
-                    setTimeout(closeEmailModal, 3000);
-                } catch (err) {
-                    console.error('Email report error:', err);
-                    modalEmailStatus.textContent = err.message || 'Something went wrong. Try again.';
-                    modalEmailStatus.className = 'email-modal-status error';
-                    modalEmailStatus.style.display = 'block';
-                    modalSendBtn.disabled = false;
-                    modalSendBtn.textContent = 'Send';
-                }
-            });
-        }
     </script>
 </body>
 </html>

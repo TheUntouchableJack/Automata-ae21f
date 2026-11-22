@@ -1398,6 +1398,10 @@
     "resetLinkExpired": "This reset link has expired. Please request a new one.",
     "backToLogin": "Back to login",
     "signUpSubtitleOnboarding": "Quase pronto, {businessName}! Crie sua conta para lançar.",
+    "signUpSubtitleOnboardingGeneric": "Quase pronto! Crie sua conta para lançar sua app.",
+    "previewStripLabel": "A sua app de fidelização",
+    "previewStripFirstReward": "Primeira recompensa: {reward}",
+    "previewEditLater": "Você pode alterar o nome, as cores e as recompensas depois de se cadastrar.",
     "showPassword": "Mostrar senha",
     "hidePassword": "Ocultar senha"
   },
