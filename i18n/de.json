@@ -1392,6 +1392,10 @@
     "resetLinkExpired": "This reset link has expired. Please request a new one.",
     "backToLogin": "Back to login",
     "signUpSubtitleOnboarding": "Fast fertig, {businessName}! Erstellen Sie Ihr Konto, um loszulegen.",
+    "signUpSubtitleOnboardingGeneric": "Fast fertig! Erstellen Sie Ihr Konto, um Ihre App zu starten.",
+    "previewStripLabel": "Ihre Treue-App",
+    "previewStripFirstReward": "Erste Prämie: {reward}",
+    "previewEditLater": "Name, Farben und Prämien können Sie nach der Registrierung ändern.",
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort verbergen"
   },

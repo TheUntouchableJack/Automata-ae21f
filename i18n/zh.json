@@ -1392,6 +1392,10 @@
     "resetLinkExpired": "This reset link has expired. Please request a new one.",
     "backToLogin": "Back to login",
     "signUpSubtitleOnboarding": "即将完成，{businessName}！创建账户即可启动。",
+    "signUpSubtitleOnboardingGeneric": "即将完成！创建账户即可启动您的应用。",
+    "previewStripLabel": "您的会员应用",
+    "previewStripFirstReward": "首个奖励：{reward}",
+    "previewEditLater": "注册后可随时修改名称、颜色和奖励。",
     "showPassword": "显示密码",
     "hidePassword": "隐藏密码"
   },
