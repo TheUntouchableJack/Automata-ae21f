@@ -5,6 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { assertAiEnabled, claudeFailure, isAiUnavailableError, aiErrorResponse, noteAiSuccess } from '../_shared/ai-status.ts'
 import { loadBusinessKnowledge, loadBusinessProfile } from '../_shared/knowledge.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
@@ -41,6 +42,10 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Royal AI off: leave the suggestion unanalyzed. The owner still sees it in the
+    // Suggestions tab, just without the "Royal AI recommends" proposal.
+    await assertAiEnabled(supabase)
 
     // 1. Load the suggestion
     const { data: suggestion, error: fetchError } = await supabase
@@ -132,13 +137,9 @@ Propose the optimized reward as JSON.`
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Claude API error:', response.status, errorText)
-      return new Response(
-        JSON.stringify({ success: false, error: 'AI analysis failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      throw await claudeFailure(response, supabase, 'analyze-suggestion')
     }
+    await noteAiSuccess(supabase)
 
     const result = await response.json()
     const aiText = result.content?.[0]?.text
@@ -192,6 +193,7 @@ Propose the optimized reward as JSON.`
       )
     }
   } catch (e) {
+    if (isAiUnavailableError(e)) return aiErrorResponse(e.kind, corsHeaders)
     console.error('Unhandled error in analyze-suggestion:', e)
     return new Response(
       JSON.stringify({ success: false, error: 'Internal error' }),

@@ -224,12 +224,22 @@ const AIFeed = (function() {
         const analyzeBtn = document.getElementById('analyze-business-btn');
         if (!analyzeBtn) return;
 
+        // Royal AI in early access: a card where the feed would be, not an error.
+        if (window.AiStatus) {
+            const ai = await window.AiStatus.get();
+            if (!ai.enabled) {
+                showAiEarlyAccess();
+                return;
+            }
+        }
+
         // Plan gate — mirror the Intelligence page: on-demand generation is a paid
         // capability. (The daily cron intentionally runs for all eligible orgs.)
         if (typeof canUseIntelligence === 'function') {
             const canUse = await canUseIntelligence(organizationId);
             if (!canUse || !canUse.allowed) {
-                alert(window.t ? window.t('errors.promptLimit') : "You've reached your monthly prompt limit. Upgrade your plan for more.");
+                const msg = window.t ? window.t('errors.promptLimit') : "You've reached your monthly prompt limit. Upgrade your plan for more.";
+                if (typeof showToast === 'function') showToast(msg, 'info', 5000);
                 return;
             }
         }
@@ -273,13 +283,28 @@ const AIFeed = (function() {
 
         } catch (error) {
             console.error('Error analyzing business:', error);
-            alert(window.t ? window.t('errors.analyzingBusiness') : 'Error analyzing business data. Please try again.');
+            const body = window.AiStatus ? await window.AiStatus.errorBody(error) : null;
+            if (window.AiStatus?.isUnavailable(body)) {
+                window.AiStatus.markUnavailable();
+                showAiEarlyAccess();
+                return;
+            }
+            const msg = window.t ? window.t('errors.analyzingBusiness') : 'Error analyzing business data. Please try again.';
+            if (typeof showToast === 'function') showToast(msg, 'error', 5000);
             showEmptyState();
         } finally {
             isAnalyzing = false;
             analyzeBtn.innerHTML = originalContent;
             analyzeBtn.disabled = false;
         }
+    }
+
+    // Early-access card above the feed's empty state, plus the page banner.
+    function showAiEarlyAccess() {
+        showEmptyState();
+        const empty = document.getElementById('ai-feed-empty');
+        if (empty && window.AiStatus) window.AiStatus.showCardBefore(empty, { compact: true });
+        window.AiStatus?.showBannerIfOff();
     }
 
     // Handle feed action clicks

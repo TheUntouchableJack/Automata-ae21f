@@ -5,6 +5,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { MODEL_SONNET, sonnetExtras, anthropicHeaders, responseText, THINKING_HEADROOM } from '../_shared/claude.ts'
+import { aiEnabledFrom, readAiState, claudeFailure, isAiUnavailableError, noteAiSuccess } from '../_shared/ai-status.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -126,7 +127,9 @@ function containsEscalationKeyword(message: string, keywords: string[]): boolean
 async function callClaude(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  maxTokens: number = 1000
+  maxTokens: number = 1000,
+  // deno-lint-ignore no-explicit-any
+  db: any = null
 ): Promise<{ content: string; confidence: number }> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -141,9 +144,9 @@ async function callClaude(
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Claude API error: ${response.status} - ${error}`)
+    throw await claudeFailure(response, db, 'ai-support-agent')
   }
+  if (db) await noteAiSuccess(db)
 
   const data = await response.json()
   const content = responseText(data)
@@ -464,13 +467,23 @@ Deno.serve(async (req) => {
     let aiResponse: string
     let confidence = 0.8
 
-    // Only call AI if it's enabled
-    if (aiEnabled) {
-      // Generate AI response (references FAQ/KB content)
-      const systemPrompt = buildSystemPrompt(context, supportSettings)
-      const result = await callClaude(systemPrompt, conversationHistory)
-      aiResponse = result.content
-      confidence = result.confidence
+    // Only call AI if it's enabled. Royal AI off platform-wide (credits out, or Jay's switch)
+    // takes the same path as an owner who turned AI support off: the message goes to the
+    // business as a ticket, and the customer is told the team will reply.
+    let aiResult: { content: string; confidence: number } | null = null
+    if (aiEnabled && aiEnabledFrom(await readAiState(supabase))) {
+      try {
+        // Generate AI response (references FAQ/KB content)
+        const systemPrompt = buildSystemPrompt(context, supportSettings)
+        aiResult = await callClaude(systemPrompt, conversationHistory, 1000, supabase)
+      } catch (e) {
+        if (!isAiUnavailableError(e)) throw e
+      }
+    }
+
+    if (aiResult) {
+      aiResponse = aiResult.content
+      confidence = aiResult.confidence
 
       // ===== PROACTIVE ESCALATION: Detect when AI can't help =====
       // Check if the AI response indicates it cannot resolve the issue

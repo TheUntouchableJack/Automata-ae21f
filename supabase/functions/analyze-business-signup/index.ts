@@ -6,6 +6,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { assertAiEnabled, claudeFailure, isAiUnavailableError, aiErrorResponse, noteAiSuccess } from '../_shared/ai-status.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -56,6 +57,11 @@ Deno.serve(async (req) => {
 
     // Rate limit by IP (20 per hour — generous for testing + language switching)
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Royal AI off (credits out, or Jay's switch): answer at once so the client shows its
+    // template preview instead of waiting on a call that can't succeed.
+    await assertAiEnabled(supabase)
+
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 
     try {
@@ -185,13 +191,10 @@ Analyze this business and show what Royalty can do for them.`
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Claude API error:', response.status, errorText)
-      return new Response(
-        JSON.stringify({ success: false, error: `Claude API returned ${response.status}`, detail: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      // No Anthropic text in the response (it used to be echoed back as `detail`).
+      throw await claudeFailure(response, supabase, 'analyze-business-signup')
     }
+    await noteAiSuccess(supabase)
 
     const result = await response.json()
     const aiText = result.content?.[0]?.text
@@ -244,6 +247,7 @@ Analyze this business and show what Royalty can do for them.`
       )
     }
   } catch (e) {
+    if (isAiUnavailableError(e)) return aiErrorResponse(e.kind, corsHeaders)
     console.error('Unhandled error in analyze-business-signup:', e)
     return new Response(
       JSON.stringify({ success: false, error: 'Internal error' }),

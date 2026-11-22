@@ -280,6 +280,8 @@
         }
         .success-message.visible { display: block; }
 
+        .ai-early-access-note { margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: var(--color-text-secondary); text-align: center; }
+        .ai-early-access-note[hidden] { display: none; }
         .auth-footer { text-align: center; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--color-border); }
         .auth-footer p { font-size: 14px; color: var(--color-text-secondary); }
         .auth-footer a { color: var(--color-primary); font-weight: 500; }
@@ -559,6 +561,9 @@
                         </button>
                     </form>
 
+                    <!-- Shown only while Royal AI is in early access (js/ai-status.js). -->
+                    <p class="ai-early-access-note" id="ai-early-access-note" hidden data-i18n="aiEarlyAccess.signupNote">Royal AI, the assistant that runs your campaigns, is in early access. Your account puts you on the list. Your loyalty app works today.</p>
+
                     <div class="auth-footer" id="auth-footer">
                         <p><span data-i18n="auth.hasAccount">Already have an account?</span> <a href="/app/login.html" data-i18n="auth.signIn">Sign in</a></p>
                     </div>
@@ -577,7 +582,7 @@
     <script src="password-toggle.js?v=2"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="onboarding-transition.js?v=2"></script>
-    <script src="business-analysis.js?v=4"></script>
+    <script src="business-analysis.js?v=5"></script>
     <!-- Needed by OnboardingSave.commit(): when no app config was stored
          (control arm of the preview A/B, or the cold path), it rebuilds one
          from these so a signup still ends with a real loyalty app. -->
@@ -585,7 +590,16 @@
     <script src="app-config-fallback.js?v=2"></script>
     <script src="app-preview-card.js?v=2"></script>
     <script src="signup-preview.js?v=1"></script>
-    <script src="onboarding-save.js?v=2"></script>
+    <script src="onboarding-save.js?v=3"></script>
+    <script src="/js/ai-status.js?v=1"></script>
+    <script>
+        // Royal AI in early access: one calm line under the form. Signup itself never waits on it.
+        window.AiStatus && window.AiStatus.get().then(function (s) {
+            if (s.enabled) return;
+            var note = document.getElementById('ai-early-access-note');
+            if (note) note.hidden = false;
+        });
+    </script>
     <script>
         // Page-level language
         const currentLang = localStorage.getItem('royalty_language') || document.documentElement.lang || 'en';

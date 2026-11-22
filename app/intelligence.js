@@ -1084,6 +1084,16 @@ const IntelligencePage = (function() {
         const analyzeBtn = document.getElementById('analyze-btn');
         if (!analyzeBtn) return;
 
+        // Royal AI in early access: say so where the results would appear, instead of an
+        // error (and before the plan gate, which would offer an upgrade that can't help).
+        if (window.AiStatus) {
+            const ai = await window.AiStatus.get();
+            if (!ai.enabled) {
+                showAiEarlyAccess();
+                return;
+            }
+        }
+
         // Check if user can use intelligence
         if (typeof canUseIntelligence === 'function') {
             const canUse = await canUseIntelligence(organizationId);
@@ -1142,13 +1152,28 @@ const IntelligencePage = (function() {
 
         } catch (error) {
             console.error('Error analyzing business:', error);
-            alert(window.t ? window.t('errors.analyzingBusiness') : 'Error analyzing business data. Please try again.');
+            const body = window.AiStatus ? await window.AiStatus.errorBody(error) : null;
+            if (window.AiStatus?.isUnavailable(body)) {
+                window.AiStatus.markUnavailable();
+                showAiEarlyAccess();
+                return;
+            }
+            const msg = window.t ? window.t('errors.analyzingBusiness') : 'Error analyzing business data. Please try again.';
+            if (typeof showToast === 'function') showToast(msg, 'error', 5000);
             showEmptyState();
         } finally {
             isAnalyzing = false;
             analyzeBtn.innerHTML = originalContent;
             analyzeBtn.disabled = false;
         }
+    }
+
+    // Early-access card above the empty state, plus the page banner.
+    function showAiEarlyAccess() {
+        showEmptyState();
+        const empty = document.getElementById('intelligence-empty');
+        if (empty && window.AiStatus) window.AiStatus.showCardBefore(empty);
+        window.AiStatus?.showBannerIfOff();
     }
 
     // Handle recommendation action clicks

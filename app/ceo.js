@@ -910,6 +910,18 @@
         }, { threshold: 0.5 }).observe(chatSection);
     }
 
+    // Royal AI off: royal-ai-prompt answers 503 {code:'ai_unavailable'} when the Anthropic
+    // credits are out or platform_status 'ai' is set to waitlist. Say which, in plain words.
+    const CEO_AI_OFF_TEXT = 'Royal AI is off: the Anthropic credits are out, or platform_status is set to waitlist. Owners see the early-access card until it is back.';
+    async function ceoErrorText(response) {
+        try {
+            const body = await response.json();
+            if (body && body.code === 'ai_unavailable') return CEO_AI_OFF_TEXT;
+            if (body && body.code === 'ai_busy') return body.error || 'Royal AI is busy. Try again in a minute.';
+        } catch (e) { /* not JSON */ }
+        return null;
+    }
+
     // ── Royal Brief ────────────────────────────────────────────────────
     async function generateBrief(metrics) {
         const el = document.getElementById('ceo-brief-text');
@@ -943,6 +955,10 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
                     }],
                 }),
             });
+            if (!res.ok) {
+                el.textContent = (await ceoErrorText(res)) || 'Brief unavailable — ask Royal directly in the chat below.';
+                return;
+            }
             const data = await res.json();
             if (data.content) {
                 el.textContent = data.content;
@@ -1105,7 +1121,11 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
                     context:  { growth_status: ceoCurrentStatus },
                 }),
             });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                const httpErr = new Error(`HTTP ${response.status}`);
+                httpErr.display = await ceoErrorText(response);
+                throw httpErr;
+            }
             const data  = await response.json();
             const reply = data.content || data.message || data.response || 'Royal had no response.';
             if (loadingEl) {
@@ -1117,7 +1137,7 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
             ceoChatHistory = ceoChatHistory.slice(-20);
         } catch (e) {
             console.error('[ceo] sendMessageText error:', e);
-            if (loadingEl) loadingEl.querySelector('.ceo-msg-bubble').textContent = 'Royal encountered an error.';
+            if (loadingEl) loadingEl.querySelector('.ceo-msg-bubble').textContent = (e && e.display) || 'Royal encountered an error.';
         } finally {
             ceoIsTyping = false;
             if (send) send.disabled = false;
@@ -1375,8 +1395,9 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
             });
 
             if (!response.ok) {
-                const err = await response.text();
-                throw new Error(err || `HTTP ${response.status}`);
+                const httpErr = new Error(`HTTP ${response.status}`);
+                httpErr.display = await ceoErrorText(response);
+                throw httpErr;
             }
 
             const data = await response.json();
@@ -1395,7 +1416,7 @@ Give me a 2-3 sentence brief on the state of the business and one specific, acti
             console.error('[ceo] chat error:', e);
             if (loadingEl) {
                 loadingEl.querySelector('.ceo-msg-bubble').textContent =
-                    'Royal encountered an error. Please try again.';
+                    (e && e.display) || 'Royal encountered an error. Please try again.';
             }
         } finally {
             ceoIsTyping = false;

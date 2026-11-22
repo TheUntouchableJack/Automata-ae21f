@@ -2016,7 +2016,7 @@
       "verify": "Überprüfen",
       "dnsIntro": "Füge diese Einträge bei deinem Domain-Registrar hinzu und klicke dann auf Überprüfen:"
     },
-    "onboardingBanner": "Das ist die App, die Royal AI aus Ihrer Beschreibung erstellt hat — prüfen Sie jeden Schritt und veröffentlichen Sie, wenn es passt.",
+    "onboardingBanner": "Das ist die App, die wir aus Ihrer Beschreibung erstellt haben — prüfen Sie jeden Schritt und veröffentlichen Sie, wenn es passt.",
     "publishAndQr": "Veröffentlichen & QR-Code erhalten"
   },
   "faq": {
@@ -2492,5 +2492,14 @@
     "copied": "Link kopiert",
     "copyFailed": "Link konnte nicht kopiert werden. Markiere ihn und kopiere ihn manuell.",
     "openLive": "Live-App öffnen"
+  },
+  "aiEarlyAccess": {
+    "signupNote": "Royal AI, der Assistent für Ihre Kampagnen, ist im Early Access. Mit Ihrem Konto stehen Sie auf der Liste. Ihre Treue-App funktioniert schon heute.",
+    "cardTitle": "Royal AI ist im Early Access",
+    "cardBody": "Sie stehen auf der Liste, und wir schreiben Ihnen, sobald es für Ihr Geschäft freigeschaltet ist. Ihre Treue-App und Ihre Prämien funktionieren wie gewohnt.",
+    "bannerTitle": "Royal AI ist im Early Access.",
+    "bannerBody": "Sie stehen auf der Liste, und wir schreiben Ihnen, wenn es für Ihr Geschäft freigeschaltet ist. Alles andere funktioniert wie gewohnt.",
+    "chatReply": "Royal AI ist im Early Access, deshalb kann ich noch nicht antworten. Sie stehen auf der Liste, und wir schreiben Ihnen, sobald es für Ihr Geschäft freigeschaltet ist. Ihre Treue-App und Ihre Prämien funktionieren wie gewohnt.",
+    "dismiss": "Schließen"
   }
 }

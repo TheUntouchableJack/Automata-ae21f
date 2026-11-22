@@ -5,6 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { assertAiEnabled, claudeFailure, isAiUnavailableError, aiErrorResponse, noteAiSuccess } from '../_shared/ai-status.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -55,6 +56,9 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Royal AI off (credits out, or Jay's switch): no Claude call.
+    await assertAiEnabled(supabase)
 
     // Parse request body
     const { marker_type, prompt, article_title, article_context } = await req.json()
@@ -116,13 +120,9 @@ Return ONLY the replacement text — no introductions, no "Here's the text:", no
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Claude API error:', response.status, errorText)
-      return new Response(
-        JSON.stringify({ error: 'AI generation failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      throw await claudeFailure(response, supabase, 'blog-humanize')
     }
+    await noteAiSuccess(supabase)
 
     const result = await response.json()
     const suggestion = result.content?.[0]?.text?.trim()
@@ -150,6 +150,7 @@ Return ONLY the replacement text — no introductions, no "Here's the text:", no
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (e) {
+    if (isAiUnavailableError(e)) return aiErrorResponse(e.kind, corsHeaders)
     console.error('Unhandled error in blog-humanize:', e)
     return new Response(
       JSON.stringify({ error: 'Internal error' }),

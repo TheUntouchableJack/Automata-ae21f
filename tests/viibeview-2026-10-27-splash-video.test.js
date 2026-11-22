@@ -198,7 +198,9 @@ describe('markup, worker, builder and data', () => {
         const start = builder.indexOf('function getAppData()');
         const body = builder.slice(start, builder.indexOf('\n}', start));
         expect(body).toMatch(/splash_video_url: currentApp\?\.branding\?\.splash_video_url \|\| null/);
-        expect(read('app/app-builder.html')).toContain('<script src="app-builder.js?v=24"></script>');
+        // v=24 shipped the splash save; later rounds bump it further (25: early-access copy).
+        const v = Number((read('app/app-builder.html').match(/<script src="app-builder\.js\?v=(\d+)"><\/script>/) || [])[1]);
+        expect(v).toBeGreaterThanOrEqual(24);
     });
 
     it('the migration sets exactly this file on exactly the ViibeView row, merged', () => {

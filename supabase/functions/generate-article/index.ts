@@ -7,6 +7,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { checkRateLimit, rateLimitHeaders } from '../_shared/rate-limit.ts'
 import { MODEL_SONNET, sonnetExtras, anthropicHeaders, responseText, THINKING_HEADROOM } from '../_shared/claude.ts'
+import { assertAiEnabled, claudeFailure, isAiUnavailableError, aiErrorResponse, reportAiHealth } from '../_shared/ai-status.ts'
 import { loadBusinessKnowledge, loadBusinessProfile, buildKnowledgeContextSection } from '../_shared/knowledge.ts'
 
 // Per-request token accumulator (track-only cost monitoring; not concurrency-shared).
@@ -237,8 +238,8 @@ async function callClaude(prompt: string, maxTokens: number = 4000, usage?: Usag
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Claude API error: ${response.status} - ${error}`)
+    // Typed error; the handler records an outage and answers 503 with no Anthropic text.
+    throw await claudeFailure(response, null, 'generate-article')
   }
 
   const data = await response.json()
@@ -482,6 +483,9 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+    // Royal AI off (credits out, or Jay's switch): no Claude call, no usage counted.
+    await assertAiEnabled(supabase)
+
     // ===== RATE LIMITING =====
     // Check organization's plan and article usage
 
@@ -703,6 +707,12 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
+    if (isAiUnavailableError(error)) {
+      if (error.kind === 'credits' || error.kind === 'auth') {
+        await reportAiHealth(createClient(supabaseUrl, supabaseServiceKey), false, error.kind)
+      }
+      return aiErrorResponse(error.kind, corsHeaders)
+    }
     console.error('Generation error:', error)
     return new Response(
       JSON.stringify({ success: false, error: error.message }),

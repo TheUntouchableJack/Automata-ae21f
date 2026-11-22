@@ -324,7 +324,12 @@
 
             if (!resp.ok) {
                 const errBody = await resp.text();
-                throw new Error(`${resp.status}: ${errBody}`);
+                let parsed = null;
+                try { parsed = JSON.parse(errBody); } catch (e) { /* not JSON */ }
+                if (parsed && parsed.code === 'ai_unavailable') {
+                    throw new Error('Royal AI is off: the Anthropic credits are out, or platform_status is set to waitlist.');
+                }
+                throw new Error(`${resp.status}: ${(parsed && parsed.error) || errBody}`);
             }
 
             // Mark topic as drafted in seo_topics if it came from the queue

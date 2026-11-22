@@ -114,6 +114,11 @@ const BusinessAnalysis = (function() {
         if (typeof OnboardingStorage === 'undefined') return false;
         const data = OnboardingStorage.get();
         if (!data || !data.businessPrompt) return false;
+        // Royal AI in early access: nothing to fetch, and no call to wait on.
+        if (window.AiStatus) {
+            const status = await window.AiStatus.get();
+            if (!status.enabled) return false;
+        }
         if (inFlight) return inFlight;
         inFlight = (async () => {
             try {

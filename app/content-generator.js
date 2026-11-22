@@ -329,7 +329,22 @@ function switchTab(tabName) {
     document.getElementById('seo-content').style.display = tabName === 'seo' ? 'block' : 'none';
 }
 
+// Royal AI in early access: a card above the topic list instead of a failed generation.
+function showAiEarlyAccessCard() {
+    const list = document.getElementById('topic-list');
+    if (list && window.AiStatus) window.AiStatus.showCardBefore(list, { compact: true });
+    window.AiStatus?.showBannerIfOff();
+}
+
 async function generateArticle(topic) {
+    if (window.AiStatus) {
+        const ai = await window.AiStatus.get();
+        if (!ai.enabled) {
+            showAiEarlyAccessCard();
+            return;
+        }
+    }
+
     // Check plan limits before generating (client-side check, server also enforces)
     if (typeof checkLimit === 'function' && typeof getOrgLimits === 'function') {
         const limits = getOrgLimits(currentOrganization);
@@ -425,6 +440,12 @@ async function generateArticle(topic) {
         topic.status = 'ready';
         renderTopicQueue();
 
+        if (error.aiUnavailable) {
+            window.AiStatus?.markUnavailable();
+            showAiEarlyAccessCard();
+            return;
+        }
+
         // Handle rate limit exceeded specifically
         if (error.limitExceeded) {
             showToast('error', 'Limit Reached', error.message);
@@ -502,7 +523,9 @@ async function callGenerateArticleAPI(topic, context) {
     }
 
     if (!response.ok) {
-        throw new Error(data.error || `API error: ${response.status}`);
+        const apiError = new Error(data.error || `API error: ${response.status}`);
+        if (data.code === 'ai_unavailable') apiError.aiUnavailable = true;
+        throw apiError;
     }
 
     return data;
@@ -923,10 +946,16 @@ async function loadArticle(topic) {
     }
 }
 
-// Toast helper (use utils.js if available)
+// Toast helper (use utils.js if available). AppUtils.showToast takes (message, type, duration);
+// this file's callers pass (type, title, message), which used to be forwarded as-is, so every
+// toast here showed the word "error" or "success" as its text.
 function showToast(type, title, message) {
     if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
-        AppUtils.showToast(type, title, message);
+        const text = title && message
+            ? (/[.!?]$/.test(title) ? `${title} ${message}` : `${title}: ${message}`)
+            : (title || message || '');
+        const kind = type === 'success' || type === 'error' ? type : 'info';
+        AppUtils.showToast(text, kind, 4000);
     } else {
         console.log(`[${type}] ${title}: ${message}`);
     }

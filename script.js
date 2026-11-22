@@ -650,6 +650,8 @@ if (billingToggle) {
 // States: CTA → Prompt (textarea) → Loading → Confirmation → Signup redirect
 
 const EDGE_FUNCTION_URL = SUPABASE_URL + '/functions/v1/analyze-business-signup';
+// Read Royal AI's status now, so it's cached before the visitor presses Build (js/ai-status.js).
+window.AiStatus?.get();
 
 // Store analysis result between states
 let _analysisResult = null;
@@ -1249,6 +1251,18 @@ async function handleAnalyzeBusiness() {
     const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     try {
+        // Royal AI in early access (credits out, or switched off): skip the call. The visitor
+        // gets the template app after a short build animation, not a 25-second wait for an
+        // error. `return` here still runs the finally block, which renders the preview.
+        const aiStatus = window.AiStatus ? await window.AiStatus.get() : { enabled: true };
+        if (myToken !== _analysisToken) return;
+        if (!aiStatus.enabled) {
+            window.Analytics?.track('hero_ai_skipped', { reason: 'status', variant: usePreview ? 'preview' : 'control' });
+            if (usePreview) await new Promise(r => setTimeout(r, 2700));
+            if (statusRow) statusRow.classList.add('hidden');
+            return;
+        }
+
         const response = await fetch(EDGE_FUNCTION_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
@@ -1263,6 +1277,15 @@ async function handleAnalyzeBusiness() {
 
         // If the user hit Start Over or triggered a new analyze, this fetch is stale
         if (myToken !== _analysisToken) return;
+
+        // The server found Royal AI off (first visitor after the credits ran out). Same
+        // designed path as above, not an error.
+        if (window.AiStatus?.isUnavailable(data)) {
+            window.AiStatus.markUnavailable();
+            window.Analytics?.track('hero_ai_skipped', { reason: 'server', variant: usePreview ? 'preview' : 'control' });
+            if (statusRow) statusRow.classList.add('hidden');
+            return;
+        }
 
         if (!data.success || !data.analysis) {
             throw new Error(data.error || 'Analysis failed');

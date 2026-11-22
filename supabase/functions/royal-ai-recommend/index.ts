@@ -17,6 +17,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { loadBusinessKnowledge, loadBusinessProfile } from '../_shared/knowledge.ts'
+import { assertAiEnabled, claudeFailure, isAiUnavailableError, aiErrorResponse, noteAiSuccess, isOutage } from '../_shared/ai-status.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -69,6 +70,9 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const onDemand = !!organization_id
+
+    // Royal AI off: the Analyze button gets the early-access answer; the cron run does nothing.
+    await assertAiEnabled(supabase)
     const triggerType = onDemand ? 'manual' : 'scheduled'
 
     // Resolve the org list for this run.
@@ -91,6 +95,8 @@ Deno.serve(async (req) => {
       try {
         results.push(await processOrg(supabase, orgId, triggerType))
       } catch (e) {
+        // Out of credits or a dead key: every remaining org would fail the same way. Stop.
+        if (isAiUnavailableError(e) && (onDemand || isOutage(e.kind))) throw e
         console.error(`royal-ai-recommend: org ${orgId} failed:`, e)
         results.push({ organization_id: orgId, status: 'skipped', reason: 'error' })
       }
@@ -109,6 +115,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (e) {
+    if (isAiUnavailableError(e)) return aiErrorResponse(e.kind, corsHeaders)
     console.error('Unhandled error in royal-ai-recommend:', e)
     return new Response(
       JSON.stringify({ success: false, error: 'Internal error' }),
@@ -217,10 +224,9 @@ async function processOrg(
   })
 
   if (!response.ok) {
-    const errorText = await response.text()
-    console.error(`royal-ai-recommend: Claude error for org ${orgId}:`, response.status, errorText)
-    return { organization_id: orgId, status: 'skipped', reason: 'ai_error' }
+    throw await claudeFailure(response, supabase, `royal-ai-recommend org ${orgId}`)
   }
+  await noteAiSuccess(supabase)
 
   const result = await response.json()
   const aiText = result.content?.[0]?.text

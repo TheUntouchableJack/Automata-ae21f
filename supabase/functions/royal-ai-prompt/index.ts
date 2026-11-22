@@ -9,6 +9,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { checkRateLimit, rateLimitHeaders } from '../_shared/rate-limit.ts'
 import { MODEL_SONNET, MODEL_SONNET_DISPLAY_NAME, sonnetExtras, anthropicHeaders, responseText, THINKING_HEADROOM } from '../_shared/claude.ts'
+import { assertAiEnabled, claudeFailureText, isAiUnavailableError, aiErrorResponse, noteAiSuccess } from '../_shared/ai-status.ts'
 
 // Module imports
 import type { ToolContext, PromptRequest, PromptResponse, DiscoveryQuestion, ContentBlock, TextBlock, ToolUseBlock, ClaudeToolResponse } from './types.ts'
@@ -186,8 +187,11 @@ async function callClaudeWithTools(
       if (response.status === 413 || (response.status === 400 && (error.includes('too many tokens') || error.includes('maximum context length') || error.includes('prompt is too long')))) {
         throw new Error('REQUEST_TOO_LARGE')
       }
-      throw new Error(`Claude API error: ${response.status} - ${error}`)
+      // Credits, key, overload: a typed error the handler turns into a clean 503. The raw
+      // Anthropic JSON used to reach the chat bubble through this message.
+      throw await claudeFailureText(response.status, error, ctx.supabase, 'royal-ai-prompt tool loop')
     }
+    if (iterations === 1) await noteAiSuccess(ctx.supabase)
 
     const data: ClaudeToolResponse = await response.json()
     totalTokensUsed += data.usage.input_tokens + data.usage.output_tokens
@@ -364,8 +368,7 @@ async function callClaude(
 
   if (!response.ok) {
     const error = await response.text()
-    log('error', 'Claude API error', { status: response.status, error })
-    throw new Error(`Claude API error: ${response.status} - ${error}`)
+    throw await claudeFailureText(response.status, error, null, 'royal-ai-prompt callClaude')
   }
 
   const data = await response.json()
@@ -411,6 +414,9 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Royal AI off (credits out, or Jay's switch): no Claude call; the client shows early access.
+    await assertAiEnabled(supabase)
 
     const rawBody = await req.json() as Record<string, unknown>
     const bodyMode = (rawBody.mode as string) || 'review'
@@ -534,9 +540,10 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
           },
           30_000
         )
-        const briefText = briefRes.ok
-          ? ((await briefRes.json()).content?.[0]?.text ?? 'Brief unavailable — ask Royal directly.')
-          : 'Brief unavailable — ask Royal directly.'
+        if (!briefRes.ok) {
+          throw await claudeFailureText(briefRes.status, await briefRes.text().catch(() => ''), supabase, 'royal-ai-prompt ceo brief')
+        }
+        const briefText = (await briefRes.json()).content?.[0]?.text ?? 'Brief unavailable — ask Royal directly.'
         return new Response(
           JSON.stringify({ success: true, content: briefText, mode: 'ceo', tools_used: [] }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -547,9 +554,10 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
       try {
         result = await callClaudeWithTools(ceoSystemPrompt, formatted, ceoCtx, 4000, MODEL_SONNET)
       } catch (ceoErr) {
-        const msg = ceoErr instanceof Error ? ceoErr.message : String(ceoErr)
+        if (isAiUnavailableError(ceoErr)) throw ceoErr
+        console.error('royal-ai-prompt ceo error:', ceoErr)
         return new Response(
-          JSON.stringify({ success: true, content: `I ran into an issue: ${msg}. Try asking again.`, mode: 'ceo', tools_used: [] }),
+          JSON.stringify({ success: true, content: 'I ran into an issue answering that. Try asking again.', mode: 'ceo', tools_used: [] }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -1014,6 +1022,12 @@ Current autonomy status: ${rawBody.context && typeof rawBody.context === 'object
     return result
 
   } catch (error) {
+    if (isAiUnavailableError(error)) {
+      return aiErrorResponse(error.kind, corsHeaders, {
+        ideas: [],
+        follow_up_questions: [],
+      })
+    }
     console.error('Royal AI Prompt error:', error)
     const isTimeout = error instanceof Error && error.message === 'REQUEST_TIMEOUT'
     const isTooLarge = error instanceof Error && error.message === 'REQUEST_TOO_LARGE'

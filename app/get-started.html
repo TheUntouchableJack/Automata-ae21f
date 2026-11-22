@@ -162,14 +162,15 @@
     <script src="workspace.js?v=1"></script>
     <script src="auth.js?v=14"></script>
     <script src="ai-recommendations.js?v=1"></script>
-    <script src="business-analysis.js?v=3"></script>
+    <script src="business-analysis.js?v=5"></script>
     <script src="onboarding-transition.js?v=2"></script>
     <!-- Needed by OnboardingSave.commit(): when no app config was stored
          (control arm of the preview A/B, or the cold path), it rebuilds one
          from these so a signup still ends with a real loyalty app. -->
     <script src="app-templates-library.js?v=1"></script>
     <script src="app-config-fallback.js?v=2"></script>
-    <script src="onboarding-save.js?v=2"></script>
+    <script src="onboarding-save.js?v=3"></script>
+    <script src="/js/ai-status.js?v=1"></script>
     <script>
         // Cold-signup business-description page. The account already exists; this
         // captures the business context the homepage form would have, commits it to
@@ -298,6 +299,17 @@
             const lang = document.documentElement.lang || 'en';
 
             try {
+                // Royal AI in early access: no call, no red line. The smart-guess name stays
+                // and they confirm the details themselves; the app is built from a template.
+                const aiStatus = window.AiStatus ? await window.AiStatus.get() : { enabled: true };
+                if (myToken !== _analysisToken) return;
+                if (!aiStatus.enabled) {
+                    coldTrack('hero_ai_skipped', { reason: 'status', page: 'get-started' });
+                    stopOrbWordCycle();
+                    if (statusRow) statusRow.classList.add('hidden');
+                    return;
+                }
+
                 const response = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
@@ -306,6 +318,14 @@
 
                 const data = await response.json();
                 if (myToken !== _analysisToken) return;  // stale — user moved on
+
+                if (window.AiStatus?.isUnavailable(data)) {
+                    window.AiStatus.markUnavailable();
+                    coldTrack('hero_ai_skipped', { reason: 'server', page: 'get-started' });
+                    stopOrbWordCycle();
+                    if (statusRow) statusRow.classList.add('hidden');
+                    return;
+                }
 
                 if (!data.success || !data.analysis) {
                     throw new Error(data.error || 'Analysis failed');

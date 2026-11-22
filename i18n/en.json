@@ -2016,7 +2016,7 @@
       "verify": "Verify",
       "dnsIntro": "Add these records at your domain registrar, then click Verify:"
     },
-    "onboardingBanner": "This is the app Royal AI built from your description — review each step and publish when it looks right.",
+    "onboardingBanner": "This is the app we built from your description — review each step and publish when it looks right.",
     "publishAndQr": "Publish & Get My QR Code"
   },
   "faq": {
@@ -2492,5 +2492,14 @@
     "copied": "Link copied",
     "copyFailed": "Could not copy the link. Select it and copy manually.",
     "openLive": "Open the live app"
+  },
+  "aiEarlyAccess": {
+    "signupNote": "Royal AI, the assistant that runs your campaigns, is in early access. Your account puts you on the list. Your loyalty app works today.",
+    "cardTitle": "Royal AI is in early access",
+    "cardBody": "You’re on the list, and we’ll email you the moment it’s on for your business. Your loyalty app and rewards work as normal.",
+    "bannerTitle": "Royal AI is in early access.",
+    "bannerBody": "You’re on the list, and we’ll email you when it’s on for your business. Everything else works as normal.",
+    "chatReply": "Royal AI is in early access, so I can’t answer yet. You’re on the list, and we’ll email you the moment it’s on for your business. Your loyalty app and rewards work as normal.",
+    "dismiss": "Dismiss"
   }
 }

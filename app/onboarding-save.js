@@ -258,6 +258,12 @@ const OnboardingSave = (function () {
             // the signature must not change. The app id rides alongside instead.
             OnboardingSave.lastAppId = newAppId;
 
+            // Royal AI in early access: this account goes on the list, so the owner is emailed
+            // when it's on (ai-waitlist-notify). Best-effort; never blocks the signup.
+            if (window.AiStatus) {
+                try { await window.AiStatus.ensureWaitlisted('signup'); } catch (e) { /* ignore */ }
+            }
+
             if (newAppId) {
                 window.Analytics?.track('onboarding_app_created', {
                     app_id: newAppId,

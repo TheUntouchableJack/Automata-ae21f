@@ -431,7 +431,13 @@ entrypoint = "./functions/royal-ai-recommend/index.ts"
 [functions.admin-actions]
 verify_jwt = false
 
+[functions.ai-health]
+verify_jwt = false
+
 [functions.ai-owner-assistant]
+verify_jwt = false
+
+[functions.ai-waitlist-notify]
 verify_jwt = false
 
 [functions.ai-support-agent]

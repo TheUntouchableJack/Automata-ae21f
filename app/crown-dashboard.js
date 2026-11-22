@@ -2658,6 +2658,27 @@ const CrownDashboard = (function() {
 
         const prompt = textarea.value.trim();
 
+        // Royal AI in early access: answer in the chat without calling it, and don't count
+        // the prompt against the plan.
+        if (window.AiStatus) {
+            const ai = await window.AiStatus.get();
+            if (!ai.enabled) {
+                if (typeof ChatThread !== 'undefined') {
+                    ChatThread.activateChatTab();
+                    ChatThread.appendMessage('user', prompt);
+                    ChatThread.appendMessage('assistant', window.AiStatus.message());
+                    ChatThread.scrollToBottom();
+                }
+                textarea.value = '';
+                textarea.style.height = 'auto';
+                window.AiStatus.showBannerIfOff();
+                promptState.loading = false;
+                sendBtn.disabled = false;
+                textarea.disabled = false;
+                return;
+            }
+        }
+
         // Check usage limit
         if (!promptState.usage.unlimited && promptState.usage.used >= promptState.usage.limit) {
             alert(window.t ? window.t('errors.promptLimit') : 'You\'ve reached your monthly prompt limit. Upgrade your plan for more.');
@@ -2765,7 +2786,14 @@ const CrownDashboard = (function() {
             // Remove typing indicator on error
             if (activeMode === 'chat' && typeof ChatThread !== 'undefined') {
                 ChatThread.removeTypingIndicator();
-                ChatThread.appendMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+                if (e && e.aiUnavailable && window.AiStatus) {
+                    ChatThread.appendMessage('assistant', window.AiStatus.message());
+                    window.AiStatus.showBannerIfOff();
+                } else if (e && e.aiBusy) {
+                    ChatThread.appendMessage('assistant', e.message);
+                } else {
+                    ChatThread.appendMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+                }
             } else {
                 alert(window.t ? window.t('errors.failedResponse') : 'Failed to get response. Please try again.');
             }
@@ -2880,6 +2908,22 @@ const CrownDashboard = (function() {
         });
 
         if (error) {
+            // Royal AI in early access (credits out, or switched off): a designed state, not an
+            // error. The server answers 503 {code:'ai_unavailable'}, or 'ai_busy' for a passing
+            // overload.
+            const errBody = window.AiStatus ? await window.AiStatus.errorBody(error) : null;
+            if (window.AiStatus?.isUnavailable(errBody)) {
+                window.AiStatus.markUnavailable();
+                const unavailable = new Error('AI_UNAVAILABLE');
+                unavailable.aiUnavailable = true;
+                throw unavailable;
+            }
+            if (errBody && errBody.code === 'ai_busy') {
+                const busy = new Error(errBody.error || 'Royal AI is busy. Try again in a minute.');
+                busy.aiBusy = true;
+                throw busy;
+            }
+
             // Classify error type
             const isAuthError = error?.status === 401 ||
                                 error?.message?.includes('401') ||

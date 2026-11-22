@@ -2016,7 +2016,7 @@
       "verify": "Vérifier",
       "dnsIntro": "Ajoutez ces enregistrements chez votre registraire de domaine, puis cliquez sur Vérifier :"
     },
-    "onboardingBanner": "Voici l'application que Royal AI a créée à partir de votre description — vérifiez chaque étape et publiez quand cela vous convient.",
+    "onboardingBanner": "Voici l'application que nous avons créée à partir de votre description — vérifiez chaque étape et publiez quand cela vous convient.",
     "publishAndQr": "Publier et obtenir mon QR code"
   },
   "faq": {
@@ -2492,5 +2492,14 @@
     "copied": "Lien copié",
     "copyFailed": "Impossible de copier le lien. Sélectionnez-le et copiez-le manuellement.",
     "openLive": "Ouvrir l'app en ligne"
+  },
+  "aiEarlyAccess": {
+    "signupNote": "Royal AI, l'assistant qui gère vos campagnes, est en accès anticipé. Votre compte vous inscrit sur la liste. Votre application de fidélité fonctionne dès aujourd'hui.",
+    "cardTitle": "Royal AI est en accès anticipé",
+    "cardBody": "Vous êtes sur la liste, et nous vous écrirons dès qu'il sera activé pour votre commerce. Votre application de fidélité et vos récompenses fonctionnent normalement.",
+    "bannerTitle": "Royal AI est en accès anticipé.",
+    "bannerBody": "Vous êtes sur la liste, et nous vous écrirons quand il sera activé pour votre commerce. Tout le reste fonctionne normalement.",
+    "chatReply": "Royal AI est en accès anticipé, je ne peux donc pas encore répondre. Vous êtes sur la liste, et nous vous écrirons dès qu'il sera activé pour votre commerce. Votre application de fidélité et vos récompenses fonctionnent normalement.",
+    "dismiss": "Fermer"
   }
 }

@@ -959,7 +959,7 @@ function applyOnboardingMode() {
             banner.className = 'onboarding-builder-banner';
             banner.textContent = (window.I18n && I18n.t('builder.onboardingBanner') !== 'builder.onboardingBanner')
                 ? I18n.t('builder.onboardingBanner')
-                : 'This is the app Royal AI built from your description — review each step and publish when it looks right.';
+                : 'This is the app we built from your description — review each step and publish when it looks right.';
             container.prepend(banner);
         }
 

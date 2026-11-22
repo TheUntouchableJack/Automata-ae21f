@@ -597,7 +597,7 @@ function showOnboardingRewardBanner() {
         <div class="onboarding-reward-banner-icon">&#x1F381;</div>
         <div class="onboarding-reward-banner-content">
             <div class="onboarding-reward-banner-title">Review your reward suggestions</div>
-            <div class="onboarding-reward-banner-text">Royal AI has proposed rewards based on your industry. Approve the ones you like, edit them, or create your own.</div>
+            <div class="onboarding-reward-banner-text">We’ve suggested rewards for your industry. Approve the ones you like, edit them, or create your own.</div>
         </div>
         <button class="onboarding-reward-banner-close" onclick="this.closest('.onboarding-reward-banner').remove()">&times;</button>
     `;
