@@ -860,13 +860,14 @@ describe('release plumbing', () => {
         // ⚠️ sw.js caches social.HTML too, so a ?v bump alone is not enough for
         // a returning PWA user.
         const sw = fs.readFileSync(path.join(ROOT, 'customer-app/sw.js'), 'utf8');
-        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v24'");
-        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v24'");
-        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v24'");
+        expect(sw).toContain("const CACHE_NAME = 'royalty-rewards-v25'");
+        expect(sw).toContain("const STATIC_CACHE = 'royalty-static-v25'");
+        expect(sw).toContain("const DYNAMIC_CACHE = 'royalty-dynamic-v25'");
         // ...and the generation carries its own dated rationale, in the style
         // every previous one does. A bump with no note is a bump nobody can
         // later tell was mandatory or cosmetic.
         expect(sw).toMatch(/\/\/ v24 \(2026-10-27, splash video\): the splash video loads only while the/);
+        expect(sw).toMatch(/\/\/ v25 \(2026-11-22, member sign-in\): loyalty members sign in with an emailed code/);
     });
 
     it('new translation keys can actually reach a returning visitor', () => {

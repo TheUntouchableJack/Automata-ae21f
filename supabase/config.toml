@@ -473,6 +473,9 @@ verify_jwt = false
 [functions.generate-member-token]
 verify_jwt = false
 
+[functions.member-code]
+verify_jwt = false
+
 [functions.message-sender]
 verify_jwt = false
 

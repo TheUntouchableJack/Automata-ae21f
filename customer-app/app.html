@@ -2715,7 +2715,13 @@
         // Supabase client
         const SUPABASE_URL = 'https://vhpmmfhfwnpmavytoomd.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocG1tZmhmd25wbWF2eXRvb21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTgyMDYsImV4cCI6MjA4NTE3NDIwNn0.6JmfnTTR8onr3ZgFpzdZa4BbVBraUyePVEUHOJgxmuk';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ⚠️ Same storageKey as customer-app/index.html, and NOT the default: /app (the
+        // owner dashboard) shares this origin, and the default key would let a member
+        // sign-in replace an owner's session.
+        const MEMBER_AUTH_STORAGE_KEY = 'royalty-member-auth';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { storageKey: MEMBER_AUTH_STORAGE_KEY, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+        });
 
         // State
         let currentApp = null;
@@ -2753,29 +2759,34 @@
         // Initialize
         async function init() {
             const params = new URLSearchParams(window.location.search);
-            appSlug = params.get('slug') || localStorage.getItem('app_slug');
+            // ⚠️ The printed QR is /a/{slug}/checkin. Netlify rewrites it to this page with
+            // status 200, so the browser keeps THAT url: no ?slug=, no ?action=. Read both from
+            // the path too, or a first-time scan arrives here knowing neither.
+            const pathMatch = window.location.pathname.match(/^\/a\/([^\/?#]+)(\/checkin)?\/?$/);
+            appSlug = params.get('slug') || (pathMatch ? decodeURIComponent(pathMatch[1]) : null) || localStorage.getItem('app_slug');
+            const wantsCheckin = params.get('action') === 'checkin' || !!(pathMatch && pathMatch[2]);
 
             if (!appSlug) {
-                window.location.href = 'index.html';
+                window.location.href = '/customer-app/index.html';
                 return;
             }
 
-            const memberId = localStorage.getItem('app_member_id');
-            if (!memberId) {
-                const checkinAction = params.get('action') === 'checkin' ? '&action=checkin' : '';
-                window.location.href = `index.html?slug=${appSlug}${checkinAction}`;
-                return;
-            }
+            // Identity is the Supabase session (emailed code), never a stored member id.
+            // The PIN-era keys are cleared so nothing reads them again.
+            localStorage.removeItem('app_member_id');
+            localStorage.removeItem('app_auth_token');
+            const checkinAction = wantsCheckin ? '&action=checkin' : '';
+            // ⚠️ Absolute: this page is also served at /a/{slug}/checkin (the printed QR), where a
+            // relative 'index.html' resolves to /a/{slug}/index.html, which no Netlify rule serves (404).
+            const toJoinPage = () => { window.location.href = `/customer-app/index.html?slug=${encodeURIComponent(appSlug)}${checkinAction}`; };
 
-            await Promise.all([
-                loadApp(),
-                loadMember(memberId)
-            ]);
+            const { data: sessionData } = await supabaseClient.auth.getSession();
+            if (!sessionData?.session) { toJoinPage(); return; }
 
-            if (!currentApp || !currentMember) {
-                window.location.href = `index.html?slug=${appSlug}`;
-                return;
-            }
+            await loadApp();
+            if (!currentApp) { toJoinPage(); return; }
+            await loadMember();
+            if (!currentMember) { toJoinPage(); return; }
 
             renderApp();
             await Promise.all([
@@ -2788,14 +2799,12 @@
 
             document.getElementById('loading-screen').classList.add('hidden');
 
-            // Auto-checkin if arrived via QR scan (?action=checkin)
-            const action = params.get('action') || sessionStorage.getItem('pending_checkin_action');
+            // Auto-checkin if arrived via QR scan (/a/{slug}/checkin or ?action=checkin)
+            const action = wantsCheckin ? 'checkin' : sessionStorage.getItem('pending_checkin_action');
             if (action === 'checkin') {
                 sessionStorage.removeItem('pending_checkin_action');
-                // Clean the URL so refresh doesn't re-trigger
-                const cleanUrl = new URL(window.location);
-                cleanUrl.searchParams.delete('action');
-                history.replaceState(null, '', cleanUrl.toString());
+                // Clean the URL so a refresh doesn't re-trigger
+                history.replaceState(null, '', `/customer-app/app.html?slug=${encodeURIComponent(appSlug)}`);
                 // Perform the checkin
                 await performCheckin();
             }
@@ -2814,12 +2823,13 @@
             }
         }
 
-        async function loadMember(memberId) {
+        async function loadMember() {
             try {
-                const { data } = await supabaseClient
-                    .rpc('get_member_profile', { p_member_id: memberId });
+                const { data, error } = await supabaseClient
+                    .rpc('member_get_profile', { p_app_id: currentApp.id });
+                if (error) throw error;
 
-                currentMember = Array.isArray(data) ? data[0] : data;
+                currentMember = (Array.isArray(data) ? data[0] : data) || null;
 
                 // Check for unread messages
                 checkUnreadMessages();
@@ -2956,7 +2966,7 @@
         async function loadActivity() {
             try {
                 const { data } = await supabaseClient
-                    .rpc('get_member_activity', { p_member_id: currentMember.id, p_limit: 10 });
+                    .rpc('member_get_activity', { p_app_id: currentApp.id, p_limit: 10 });
 
                 const realActivity = data || [];
                 const totalSlots = 10;
@@ -2993,9 +3003,8 @@
                     `;
                 }).join('');
 
-                // Update visits count from real data only
-                const visits = realActivity.filter(tx => tx.type === 'scan' || tx.type === 'visit').length;
-                document.getElementById('stat-visits').textContent = visits;
+                // The member row counts every visit; the 10 latest transactions would undercount.
+                document.getElementById('stat-visits').textContent = formatNumber(currentMember?.visit_count || 0);
             } catch (e) {
                 console.error('Failed to load activity:', e);
             }
@@ -3799,8 +3808,7 @@
             listEl.innerHTML = '<div class="loading-spinner"></div>';
 
             try {
-                const { data, error } = await supabaseClient.rpc('get_my_tickets', {
-                    p_member_id: currentMember.id,
+                const { data, error } = await supabaseClient.rpc('member_get_tickets', {
                     p_app_id: currentApp.id
                 });
 
@@ -3890,15 +3898,13 @@
 
             try {
                 // First, check if there's AI history
-                const { data: aiHistory } = await supabaseClient.rpc('get_ticket_ai_history', {
-                    p_ticket_id: ticketId,
-                    p_member_id: currentMember.id
+                const { data: aiHistory } = await supabaseClient.rpc('member_get_ticket_ai_history', {
+                    p_ticket_id: ticketId
                 });
 
                 // Then get ticket messages
-                const { data: messages, error } = await supabaseClient.rpc('get_ticket_messages_for_customer', {
-                    p_ticket_id: ticketId,
-                    p_member_id: currentMember.id
+                const { data: messages, error } = await supabaseClient.rpc('member_get_ticket_messages', {
+                    p_ticket_id: ticketId
                 });
 
                 if (error) throw error;
@@ -3991,9 +3997,8 @@
             input.disabled = true;
 
             try {
-                const { data, error } = await supabaseClient.rpc('customer_reply_to_ticket', {
+                const { data, error } = await supabaseClient.rpc('member_reply_to_ticket', {
                     p_ticket_id: currentViewingTicket.id,
-                    p_member_id: currentMember.id,
                     p_message: message
                 });
 
@@ -4020,8 +4025,7 @@
             if (!currentMember || !currentApp) return;
 
             try {
-                const { data, error } = await supabaseClient.rpc('get_customer_unread_count', {
-                    p_member_id: currentMember.id,
+                const { data, error } = await supabaseClient.rpc('member_get_unread_count', {
                     p_app_id: currentApp.id
                 });
 
@@ -4528,9 +4532,8 @@
             try {
                 const suggestedPts = parseInt(document.getElementById('suggest-points').value) || null;
                 const { data, error } = await supabaseClient
-                    .rpc('submit_reward_suggestion', {
+                    .rpc('member_submit_reward_suggestion', {
                         p_app_id: currentApp.id,
-                        p_member_id: currentMember?.id || null,
                         p_reward_name: name,
                         p_description: document.getElementById('suggest-description').value.trim() || null,
                         p_suggested_points: suggestedPts
@@ -4575,9 +4578,8 @@
 
             try {
                 const { data, error } = await supabaseClient
-                    .rpc('redeem_reward', {
+                    .rpc('member_redeem_reward', {
                         p_app_id: currentApp.id,
-                        p_member_id: currentMember.id,
                         p_reward_id: reward.id
                     });
 
@@ -4586,7 +4588,9 @@
                 const result = data && data[0] ? data[0] : data;
 
                 if (result && result.success) {
-                    currentMember.points_balance -= reward.points_cost;
+                    currentMember.points_balance = typeof result.new_balance === 'number'
+                        ? result.new_balance
+                        : currentMember.points_balance - reward.points_cost;
                     renderApp();
 
                     document.getElementById('reward-modal').classList.remove('active');
@@ -4645,26 +4649,26 @@
         // ===== Daily Scan Limiter =====
         let scanCooldownInterval = null;
 
-        function getLastScanTime() {
-            const key = `last_scan_${currentMember?.id}`;
-            const stored = localStorage.getItem(key);
-            return stored ? new Date(stored) : null;
+        // check_in decides; this only remembers its answer so the button can show a
+        // countdown. Stored when the day's limit is used up: next_at from the server
+        // (the member's midnight), or this device's next midnight as a fallback.
+        function scanBlockKey() {
+            return `scan_blocked_until_${currentApp?.id}_${currentMember?.id}`;
         }
 
-        function setLastScanTime() {
-            const key = `last_scan_${currentMember?.id}`;
-            localStorage.setItem(key, new Date().toISOString());
+        function setScanBlockedUntil(iso) {
+            let until = iso ? new Date(iso) : null;
+            if (!until || isNaN(until)) {
+                until = new Date();
+                until.setHours(24, 0, 0, 0);
+            }
+            localStorage.setItem(scanBlockKey(), until.toISOString());
         }
 
         function getTimeUntilNextScan() {
-            const lastScan = getLastScanTime();
-            if (!lastScan) return 0;
-
-            const now = new Date();
-            const resetTime = new Date(lastScan);
-            resetTime.setHours(24, 0, 0, 0); // Reset at midnight
-
-            const diff = resetTime - now;
+            const stored = localStorage.getItem(scanBlockKey());
+            if (!stored) return 0;
+            const diff = new Date(stored) - new Date();
             return diff > 0 ? diff : 0;
         }
 
@@ -4885,26 +4889,33 @@
             try {
                 showToast('Recording check-in...', 'info');
 
-                const { data, error } = await supabaseClient.rpc('record_member_visit', {
-                    p_app_id: currentApp.id,
-                    p_member_id: currentMember.id
+                // The member is the session (auth.uid()); the server enforces the daily limit.
+                const { data, error } = await supabaseClient.rpc('check_in', {
+                    p_app_id: currentApp.id
                 });
 
                 if (error) throw error;
 
                 const result = data;
+                if (result?.code === 'daily_limit') {
+                    setScanBlockedUntil(result.next_at);
+                    updateScanButton();
+                    showToast(result.error_message || 'You already checked in today. See you tomorrow!', 'info');
+                    return;
+                }
                 if (!result?.success) {
                     throw new Error(result?.error_message || 'Failed to record visit');
                 }
 
-                // Success! Update local state
-                setLastScanTime();
+                // Success! Remember the cooldown only when today's limit is used up.
+                if (result.visits_today >= result.daily_limit) setScanBlockedUntil(null);
                 updateScanButton();
 
                 // Update member's points balance
                 currentMember.points_balance = result.new_balance;
                 currentMember.visit_count = result.visit_count;
                 currentMember.current_streak = result.current_streak;
+                if (result.tier) currentMember.tier = result.tier;
 
                 // Re-render to show new points
                 renderApp();
@@ -4943,7 +4954,9 @@
             // Populate form with current data
             document.getElementById('edit-first-name').value = currentMember?.first_name || '';
             document.getElementById('edit-last-name').value = currentMember?.last_name || '';
-            document.getElementById('edit-email').value = currentMember?.email || '';
+            const editEmail = document.getElementById('edit-email');
+            editEmail.value = currentMember?.email || '';
+            editEmail.readOnly = true;
             document.getElementById('edit-phone').value = currentMember?.phone || '';
 
             modal.classList.add('active');
@@ -4971,11 +4984,11 @@
                 // leaving it out preserves any existing value while passing an
                 // explicit null would too — but naming it invites someone to
                 // wire an upload back up to a bucket that no longer exists.
-                const { data, error } = await supabaseClient.rpc('update_member_profile', {
-                    p_member_id: currentMember.id,
+                // The email is the sign-in identity, so it is not editable here.
+                const { data, error } = await supabaseClient.rpc('member_update_profile', {
+                    p_app_id: currentApp.id,
                     p_first_name: document.getElementById('edit-first-name').value.trim(),
                     p_last_name: document.getElementById('edit-last-name').value.trim(),
-                    p_email: document.getElementById('edit-email').value.trim(),
                     p_phone: phoneFormatted
                 });
 
@@ -5018,11 +5031,12 @@
             }
         });
 
-        function logout() {
+        async function logout() {
             localStorage.removeItem('app_auth_token');
             localStorage.removeItem('app_member_id');
             localStorage.removeItem('app_slug');
-            window.location.href = `index.html?slug=${appSlug}`;
+            try { await supabaseClient.auth.signOut(); } catch (e) { console.warn('signOut failed:', e); }
+            window.location.href = `/customer-app/index.html?slug=${encodeURIComponent(appSlug)}`;
         }
 
         // ===== Language Functions =====

@@ -11,6 +11,13 @@
 //   - Cron mode    (no organization_id in body): process all eligible orgs.
 //   - On-demand    ({ organization_id }): single org, triggered by the Analyze button.
 //
+// Who may call it (2026-11-22, plan royalty-in-store-loop B1.6). verify_jwt is false, so this
+// function checks for itself; before, anyone could run AI for any organization_id, or for
+// every org with an empty body:
+//   - Cron mode: the bearer must be the service-role key (pg_cron sends it).
+//   - On-demand: the bearer must be a signed-in user who belongs to that organization
+//     (organization_members), or a super admin (profiles.is_admin).
+//
 // Shape cloned from analyze-suggestion (service-role client, facts+profile→JSON,
 // _shared/knowledge.ts loaders, Claude Haiku). See ~/.claude/plans/sequential-scribbling-pumpkin.md.
 
@@ -71,6 +78,13 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const onDemand = !!organization_id
 
+    const denied = await callerProblem(supabase, req, onDemand ? organization_id : null)
+    if (denied) {
+      return new Response(JSON.stringify({ error: denied.error }), {
+        status: denied.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // Royal AI off: the Analyze button gets the early-access answer; the cron run does nothing.
     await assertAiEnabled(supabase)
     const triggerType = onDemand ? 'manual' : 'scheduled'
@@ -123,6 +137,45 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+// ============================================================================
+// CALLER CHECK
+// ============================================================================
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// null = allowed. Otherwise the status and message to answer with.
+async function callerProblem(
+  supabase: SupabaseClient,
+  req: Request,
+  orgId: string | null,
+): Promise<{ status: number; error: string } | null> {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return { status: 401, error: 'Sign in required' }
+
+  if (orgId === null) {
+    // Cron mode runs AI for every eligible org: the service role only.
+    return token === supabaseServiceKey ? null : { status: 403, error: 'Not allowed' }
+  }
+  if (token === supabaseServiceKey) return null
+  if (!UUID_RE.test(orgId)) return { status: 400, error: 'Bad organization_id' }
+
+  const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+  const user = userData?.user
+  if (userErr || !user) return { status: 401, error: 'Sign in required' }
+
+  const { data: member } = await supabase
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', orgId)
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle()
+  if (member) return null
+
+  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
+  return profile?.is_admin ? null : { status: 403, error: 'Not allowed' }
+}
 
 // ============================================================================
 // ELIGIBILITY (cron mode)

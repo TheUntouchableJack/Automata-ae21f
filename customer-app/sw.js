@@ -37,6 +37,12 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // social.js/social.css until the cache name changes and the old caches are
 // evicted — a ?v= bump in the HTML alone is not enough once the HTML itself is
 // cached.
+// v25 (2026-11-22, member sign-in): loyalty members sign in with an emailed code and
+// a real Supabase session (storageKey royalty-member-auth). index.html lost its PIN
+// forms and app.html calls check_in / member_* RPCs keyed on auth.uid(). A cached
+// v24 app.html would still look for app_member_id in localStorage and bounce every
+// signed-in member back to the join page. Mandatory.
+//
 // v24 (2026-10-27, splash video): the splash video loads only while the
 // splash is open, and this worker no longer touches video or range requests.
 // social.html now loads social.js?v=29.
@@ -174,9 +180,9 @@ fcmMessaging.onBackgroundMessage((payload) => {
 // so a returning PWA still serving cached v10 app.html would pair old client code
 // with the new shapes — the "this is you" highlight silently off. Mandatory, not
 // cosmetic.
-const CACHE_NAME = 'royalty-rewards-v24';
-const STATIC_CACHE = 'royalty-static-v24';
-const DYNAMIC_CACHE = 'royalty-dynamic-v24';
+const CACHE_NAME = 'royalty-rewards-v25';
+const STATIC_CACHE = 'royalty-static-v25';
+const DYNAMIC_CACHE = 'royalty-dynamic-v25';
 
 // Static assets to cache on install.
 //

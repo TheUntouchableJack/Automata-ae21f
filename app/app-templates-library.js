@@ -23,7 +23,7 @@ const APP_TEMPLATES_LIBRARY = [
         settings: {
             points_per_scan: 10,
             points_per_dollar: 1,
-            daily_scan_limit: 5,
+            daily_scan_limit: 1,
             welcome_points: 50,
             require_email: true,
             require_phone: false,
@@ -53,7 +53,7 @@ const APP_TEMPLATES_LIBRARY = [
         settings: {
             points_per_scan: 25,
             points_per_dollar: 2,
-            daily_scan_limit: 3,
+            daily_scan_limit: 1,
             welcome_points: 100,
             require_email: true,
             require_phone: true,
@@ -83,7 +83,7 @@ const APP_TEMPLATES_LIBRARY = [
         settings: {
             points_per_scan: 0,
             points_per_dollar: 0,
-            daily_scan_limit: 10,
+            daily_scan_limit: 1,
             welcome_points: 0,
             require_email: true,
             require_phone: true,
@@ -113,7 +113,7 @@ const APP_TEMPLATES_LIBRARY = [
         settings: {
             points_per_scan: 1,
             points_per_dollar: 0,
-            daily_scan_limit: 5,
+            daily_scan_limit: 1,
             welcome_points: 1,
             require_email: true,
             require_phone: false,
@@ -143,7 +143,7 @@ const APP_TEMPLATES_LIBRARY = [
         settings: {
             points_per_scan: 10,
             points_per_dollar: 0,
-            daily_scan_limit: 2,
+            daily_scan_limit: 1,
             welcome_points: 25,
             require_email: true,
             require_phone: false,
@@ -173,7 +173,7 @@ const APP_TEMPLATES_LIBRARY = [
         settings: {
             points_per_scan: 0,
             points_per_dollar: 5,
-            daily_scan_limit: 3,
+            daily_scan_limit: 1,
             welcome_points: 50,
             require_email: true,
             require_phone: true,

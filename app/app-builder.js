@@ -486,7 +486,7 @@ function populateFormFromApp(app) {
     document.getElementById('points-per-scan').value = settings.points_per_scan || 10;
     document.getElementById('points-per-dollar').value = settings.points_per_dollar || 1;
     document.getElementById('welcome-points').value = settings.welcome_points || 50;
-    document.getElementById('daily-scan-limit').value = settings.daily_scan_limit || 5;
+    document.getElementById('daily-scan-limit').value = settings.daily_scan_limit || 1;
 
     const tiers = settings.tier_thresholds || {};
     // Support both flat (silver: 500) and object ({silver: {points: 500, name: "..."}}) formats
@@ -823,7 +823,7 @@ function getAppData() {
         points_per_scan: parseInt(document.getElementById('points-per-scan').value) || 10,
         points_per_dollar: parseInt(document.getElementById('points-per-dollar').value) || 1,
         welcome_points: parseInt(document.getElementById('welcome-points').value) || 50,
-        daily_scan_limit: parseInt(document.getElementById('daily-scan-limit').value) || 5,
+        daily_scan_limit: parseInt(document.getElementById('daily-scan-limit').value) || 1,
         require_email: requireEmailEl ? requireEmailEl.checked : true,
         require_phone: requirePhoneEl ? requirePhoneEl.checked : false,
         tier_thresholds: {

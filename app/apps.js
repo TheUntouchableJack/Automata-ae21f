@@ -653,7 +653,7 @@ async function handleCreateApp(e) {
                 settings = {
                     points_per_scan: 10,
                     points_per_dollar: 1,
-                    daily_scan_limit: 5,
+                    daily_scan_limit: 1,
                     welcome_points: 50,
                     require_email: true,
                     require_phone: false,
