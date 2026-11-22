@@ -35,6 +35,10 @@ const staticPages = [
   { loc: '/roadmap', changefreq: 'weekly', priority: '0.6' },
   { loc: '/privacy.html', changefreq: 'yearly', priority: '0.3' },
   { loc: '/terms.html', changefreq: 'yearly', priority: '0.3' },
+  // Industry pages (2026-11-22). Canonical is the clean URL (netlify.toml rewrites).
+  { loc: '/loyalty-program/coffee-shop', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/loyalty-program/barbershop', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/loyalty-program/nail-salon', changefreq: 'monthly', priority: '0.8' },
 ];
 
 async function fetchPublishedPosts() {
