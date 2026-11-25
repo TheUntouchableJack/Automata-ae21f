@@ -34,3 +34,17 @@ Plan: can-we-enhance-our-breezy-flute. Branch `growth-analytics` (from `owner-jo
 - PostHog personal API key (query:read, project 550932) → secret `POSTHOG_PERSONAL_API_KEY`. Until then the tab
   says "Traffic not connected".
 - One real sign-up from a browser without Do Not Track, to see a source land in Recent sign-ups.
+
+## Follow-up the same day: the noticed items, fixed (`014fedf`)
+
+- 13:47:54 migration `20261125000002_billing_guard_admin_plan_impersonation.sql`; frontend live about 13:48:37.
+- `organizations_guard_billing`: browser roles can't change plan, tier, status, Stripe ids, overrides, AppSumo or
+  payment-failure columns. Before, an owner could give their own org Scale from the browser (checked live with a
+  same-value write). After: refused with 42501, naming the columns; name, Settings AI fields and Royal AI answers
+  still save.
+- `add_messaging_credits`, `increment_email_usage`, `increment_sms_usage`: service_role only. Anon could run them.
+- Edit Plan modal: Free / Starter / Growth / Scale (Pro, Max as legacy). Only differences from the chosen plan are
+  saved; every save used to pin all seven features to the old plan's values. `{}` now clears overrides.
+- `admin_start_impersonation`: "view as" on your own org leaves your row alone (it used to be deleted on stop).
+  Checked live on Royalty: owner before, during and after.
+- Bench: pglite/run2.mjs 50 checks, mut2.mjs 16/16; vitest 1532.
