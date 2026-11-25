@@ -230,7 +230,7 @@ describe('admin.html wiring', () => {
     const i = ADMIN_HTML.indexOf(apex)
     expect(i).toBeGreaterThan(-1)
     expect(ADMIN_HTML.indexOf('admin-growth.js?v=')).toBeGreaterThan(i)
-    expect(ADMIN_HTML.indexOf('admin.js?v=3')).toBeGreaterThan(ADMIN_HTML.indexOf('admin-growth.js?v='))
+    expect(ADMIN_HTML.indexOf('"admin.js?v=')).toBeGreaterThan(ADMIN_HTML.indexOf('admin-growth.js?v='))
   })
 
   it('admin-growth.js adds only window.AdminGrowth to the shared global scope', () => {

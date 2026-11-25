@@ -525,6 +525,11 @@ body.impersonating .mobile-header {
     }
 }
 
+.plan-override-hint {
+    font-size: 12px;
+    margin: 4px 0 10px;
+}
+
 /* ===== Internal orgs (left out of Growth) ===== */
 .plan-badge.internal {
     background: var(--color-bg-tertiary);

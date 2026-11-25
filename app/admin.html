@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
-    <link rel="stylesheet" href="admin.css?v=3">
+    <link rel="stylesheet" href="admin.css?v=4">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
@@ -472,8 +472,9 @@
                     <label>Quick Set Plan</label>
                     <div class="plan-quickset">
                         <button class="plan-quickset-btn" data-plan="free">Free</button>
-                        <button class="plan-quickset-btn" data-plan="pro">Pro</button>
-                        <button class="plan-quickset-btn" data-plan="max">Max</button>
+                        <button class="plan-quickset-btn" data-plan="starter">Starter</button>
+                        <button class="plan-quickset-btn" data-plan="growth">Growth</button>
+                        <button class="plan-quickset-btn" data-plan="scale">Scale</button>
                     </div>
                 </div>
 
@@ -485,15 +486,20 @@
                         <select id="override-plan-type">
                             <option value="free">Free</option>
                             <option value="subscription">Subscription</option>
-                            <option value="appsumo_lifetime">AppSumo Lifetime</option>
+                            <option value="appsumo_lifetime">AppSumo Lifetime (legacy)</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="override-sub-tier">Subscription Tier</label>
                         <select id="override-sub-tier">
                             <option value="">N/A</option>
-                            <option value="pro">Pro</option>
-                            <option value="max">Max</option>
+                            <option value="starter">Starter</option>
+                            <option value="growth">Growth</option>
+                            <option value="scale">Scale</option>
+                            <optgroup label="Legacy">
+                                <option value="pro">Pro</option>
+                                <option value="max">Max</option>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -529,6 +535,8 @@
 
                 <div class="form-group">
                     <label>Feature Toggles</label>
+                    <p class="text-muted plan-override-hint">Ticked boxes start at the plan's own features, and changing the plan resets them.
+                        Only what differs from the plan is saved as an override.</p>
                     <div class="feature-toggles">
                         <label class="checkbox-label"><input type="checkbox" id="override-royal-chat"> Royal AI Chat</label>
                         <label class="checkbox-label"><input type="checkbox" id="override-autonomous"> Autonomous Mode</label>
@@ -560,6 +568,6 @@
     <script src="sidebar.js?v=26"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.0/dist/apexcharts.min.js"></script>
     <script src="admin-growth.js?v=1"></script>
-    <script src="admin.js?v=3"></script>
+    <script src="admin.js?v=4"></script>
 </body>
 </html>

@@ -609,6 +609,79 @@ async function openOrgDetail(orgId) {
 }
 
 // ===== Plan Override Modal =====
+const PLAN_FEATURE_TOGGLES = {
+    royal_chat: 'override-royal-chat',
+    autonomous_mode: 'override-autonomous',
+    business_learning: 'override-learning',
+    fatigue_protection: 'override-fatigue',
+    performance_metrics: 'override-metrics',
+    visit_attribution: 'override-attribution',
+    white_label: 'override-whitelabel'
+};
+const PLAN_NUMERIC_OVERRIDES = {
+    members: 'override-members',
+    emails_monthly: 'override-emails',
+    sms_monthly: 'override-sms',
+    royal_queries_monthly: 'override-ai-queries',
+    max_automations: 'override-automations'
+};
+
+// The chosen plan's own limits, before any override.
+function planDefaultsFor(org, planType, tier) {
+    if (typeof getPlanLimits !== 'function') return {};
+    return getPlanLimits({
+        plan_type: planType,
+        subscription_tier: planType === 'subscription' ? (tier || null) : null,
+        appsumo_tier: org?.appsumo_tier,
+        has_royalty_pro: org?.has_royalty_pro
+    }) || {};
+}
+
+// Only what differs from the plan is an override. {} clears them (admin_update_organization_plan).
+// Saving every toggle used to pin the OLD plan's features: Free → Growth kept Royal chat off.
+function buildPlanOverrides(defaults, numeric, toggles) {
+    const out = {};
+    Object.entries(numeric).forEach(([key, raw]) => {
+        const n = parseInt(raw, 10);
+        if (raw !== '' && raw !== null && raw !== undefined && !Number.isNaN(n)) out[key] = n;
+    });
+    Object.entries(toggles).forEach(([key, on]) => {
+        if (!!on !== !!defaults[key]) out[key] = !!on;
+    });
+    return out;
+}
+
+function setPlanToggles(values) {
+    Object.entries(PLAN_FEATURE_TOGGLES).forEach(([key, id]) => {
+        document.getElementById(id).checked = !!values[key];
+    });
+}
+
+function modalPlanChoice() {
+    const planType = document.getElementById('override-plan-type').value;
+    const tier = planType === 'subscription' ? (document.getElementById('override-sub-tier').value || null) : null;
+    return { planType, tier };
+}
+
+function syncPlanQuickset() {
+    const { planType, tier } = modalPlanChoice();
+    document.querySelectorAll('.plan-quickset-btn').forEach(btn => {
+        const p = btn.dataset.plan;
+        btn.classList.toggle('active', (p === 'free' && planType === 'free') || (planType === 'subscription' && p === tier));
+    });
+}
+
+// A plan change in the modal resets the feature toggles to that plan's features.
+function onModalPlanChange() {
+    const org = allOrganizations.find(o => o.id === planOverrideOrgId);
+    if (document.getElementById('override-plan-type').value !== 'subscription') {
+        document.getElementById('override-sub-tier').value = '';
+    }
+    const { planType, tier } = modalPlanChoice();
+    setPlanToggles(planDefaultsFor(org, planType, tier));
+    syncPlanQuickset();
+}
+
 function openPlanOverride(orgId) {
     const org = allOrganizations.find(o => o.id === orgId);
     if (!org) return;
@@ -620,30 +693,14 @@ function openPlanOverride(orgId) {
     document.getElementById('override-plan-type').value = org.plan_type || 'free';
     document.getElementById('override-sub-tier').value = org.subscription_tier || '';
 
-    // Set override values if they exist
+    // Numeric overrides as stored; feature toggles as the org has them now (plan + overrides).
     const overrides = org.plan_limits_override || {};
-    document.getElementById('override-members').value = overrides.members ?? '';
-    document.getElementById('override-emails').value = overrides.emails_monthly ?? '';
-    document.getElementById('override-sms').value = overrides.sms_monthly ?? '';
-    document.getElementById('override-ai-queries').value = overrides.royal_queries_monthly ?? '';
-    document.getElementById('override-automations').value = overrides.max_automations ?? '';
-
-    // Feature toggles - use override if set, otherwise use plan defaults
-    const limits = typeof getOrgLimits === 'function' ? getOrgLimits(org) : {};
-    document.getElementById('override-royal-chat').checked = overrides.royal_chat ?? limits.royal_chat ?? false;
-    document.getElementById('override-autonomous').checked = overrides.autonomous_mode ?? limits.autonomous_mode ?? false;
-    document.getElementById('override-learning').checked = overrides.business_learning ?? limits.business_learning ?? false;
-    document.getElementById('override-fatigue').checked = overrides.fatigue_protection ?? limits.fatigue_protection ?? false;
-    document.getElementById('override-metrics').checked = overrides.performance_metrics ?? limits.performance_metrics ?? false;
-    document.getElementById('override-attribution').checked = overrides.visit_attribution ?? limits.visit_attribution ?? false;
-    document.getElementById('override-whitelabel').checked = overrides.white_label ?? limits.white_label ?? false;
-
-    // Highlight active quick-set button
-    document.querySelectorAll('.plan-quickset-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (org.plan_type === 'free' && btn.dataset.plan === 'free') btn.classList.add('active');
-        if (org.plan_type === 'subscription' && org.subscription_tier === btn.dataset.plan) btn.classList.add('active');
+    Object.entries(PLAN_NUMERIC_OVERRIDES).forEach(([key, id]) => {
+        document.getElementById(id).value = overrides[key] ?? '';
     });
+    const defaults = planDefaultsFor(org, org.plan_type || 'free', org.subscription_tier);
+    setPlanToggles({ ...defaults, ...overrides });
+    syncPlanQuickset();
 
     modal.classList.add('active');
 }
@@ -651,31 +708,18 @@ function openPlanOverride(orgId) {
 async function savePlanOverride() {
     if (!planOverrideOrgId) return;
 
-    const planType = document.getElementById('override-plan-type').value;
-    const subTier = document.getElementById('override-sub-tier').value || null;
+    const { planType, tier: subTier } = modalPlanChoice();
+    if (planType === 'subscription' && !subTier) {
+        showToast('Pick a tier for a subscription', 'error');
+        return;
+    }
 
-    // Build override JSONB from filled fields
-    const overrides = {};
-    const membersVal = document.getElementById('override-members').value;
-    const emailsVal = document.getElementById('override-emails').value;
-    const smsVal = document.getElementById('override-sms').value;
-    const aiVal = document.getElementById('override-ai-queries').value;
-    const autoVal = document.getElementById('override-automations').value;
-
-    if (membersVal !== '') overrides.members = parseInt(membersVal);
-    if (emailsVal !== '') overrides.emails_monthly = parseInt(emailsVal);
-    if (smsVal !== '') overrides.sms_monthly = parseInt(smsVal);
-    if (aiVal !== '') overrides.royal_queries_monthly = parseInt(aiVal);
-    if (autoVal !== '') overrides.max_automations = parseInt(autoVal);
-
-    // Feature toggles - only include if different from plan default
-    overrides.royal_chat = document.getElementById('override-royal-chat').checked;
-    overrides.autonomous_mode = document.getElementById('override-autonomous').checked;
-    overrides.business_learning = document.getElementById('override-learning').checked;
-    overrides.fatigue_protection = document.getElementById('override-fatigue').checked;
-    overrides.performance_metrics = document.getElementById('override-metrics').checked;
-    overrides.visit_attribution = document.getElementById('override-attribution').checked;
-    overrides.white_label = document.getElementById('override-whitelabel').checked;
+    const org = allOrganizations.find(o => o.id === planOverrideOrgId);
+    const numeric = {};
+    Object.entries(PLAN_NUMERIC_OVERRIDES).forEach(([key, id]) => { numeric[key] = document.getElementById(id).value; });
+    const toggles = {};
+    Object.entries(PLAN_FEATURE_TOGGLES).forEach(([key, id]) => { toggles[key] = document.getElementById(id).checked; });
+    const overrides = buildPlanOverrides(planDefaultsFor(org, planType, subTier), numeric, toggles);
 
     const saveBtn = document.getElementById('plan-save-btn');
     saveBtn.disabled = true;
@@ -686,7 +730,7 @@ async function savePlanOverride() {
             p_org_id: planOverrideOrgId,
             p_plan_type: planType,
             p_subscription_tier: subTier,
-            p_plan_limits_override: Object.keys(overrides).length > 0 ? overrides : null
+            p_plan_limits_override: overrides // {} clears any stored overrides
         });
 
         if (error) throw error;
@@ -717,19 +761,12 @@ async function savePlanOverride() {
     }
 }
 
+// Back to the chosen plan exactly: numbers empty, features as the plan has them. Save then stores {}.
 function clearPlanOverrides() {
-    document.getElementById('override-members').value = '';
-    document.getElementById('override-emails').value = '';
-    document.getElementById('override-sms').value = '';
-    document.getElementById('override-ai-queries').value = '';
-    document.getElementById('override-automations').value = '';
-    document.getElementById('override-royal-chat').checked = false;
-    document.getElementById('override-autonomous').checked = false;
-    document.getElementById('override-learning').checked = false;
-    document.getElementById('override-fatigue').checked = false;
-    document.getElementById('override-metrics').checked = false;
-    document.getElementById('override-attribution').checked = false;
-    document.getElementById('override-whitelabel').checked = false;
+    Object.values(PLAN_NUMERIC_OVERRIDES).forEach(id => { document.getElementById(id).value = ''; });
+    const org = allOrganizations.find(o => o.id === planOverrideOrgId);
+    const { planType, tier } = modalPlanChoice();
+    setPlanToggles(planDefaultsFor(org, planType, tier));
 }
 
 function closePlanOverride() {
@@ -960,13 +997,10 @@ function setupEventListeners() {
     document.getElementById('plan-save-btn').addEventListener('click', savePlanOverride);
     document.getElementById('plan-clear-override').addEventListener('click', clearPlanOverrides);
 
-    // Plan quick-set buttons
+    // Plan quick-set buttons and the two selects
     document.querySelectorAll('.plan-quickset-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const plan = btn.dataset.plan;
-            document.querySelectorAll('.plan-quickset-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
             if (plan === 'free') {
                 document.getElementById('override-plan-type').value = 'free';
                 document.getElementById('override-sub-tier').value = '';
@@ -974,8 +1008,11 @@ function setupEventListeners() {
                 document.getElementById('override-plan-type').value = 'subscription';
                 document.getElementById('override-sub-tier').value = plan;
             }
+            onModalPlanChange();
         });
     });
+    document.getElementById('override-plan-type').addEventListener('change', onModalPlanChange);
+    document.getElementById('override-sub-tier').addEventListener('change', onModalPlanChange);
 
     // Escape key for modals
     document.addEventListener('keydown', (e) => {
