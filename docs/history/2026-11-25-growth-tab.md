@@ -31,7 +31,7 @@ Plan: can-we-enhance-our-breezy-flute. Branch `growth-analytics` (from `owner-jo
 
 ## Open
 
-- One real sign-up from a browser without Do Not Track, to see a source land in Recent sign-ups.
+- Mark the test org from the sign-up test internal.
 
 ## Traffic connected (16:15 UTC)
 
@@ -57,3 +57,13 @@ Plan: can-we-enhance-our-breezy-flute. Branch `growth-analytics` (from `owner-jo
 - `admin_start_impersonation`: "view as" on your own org leaves your row alone (it used to be deleted on stop).
   Checked live on Royalty: owner before, during and after.
 - Bench: pglite/run2.mjs 50 checks, mut2.mjs 16/16; vitest 1532.
+
+## End-to-end sign-up test (16:56 UTC)
+
+- A fresh browser profile (no Do Not Track) opened the homepage with a test UTM, went to Pricing, clicked Growth
+  and signed up. The source rode `?src=` through each page and was saved on the account as `signup_source`
+  (campaign, landing page, plan). It shows in Growth under Sources and Recent sign-ups.
+- PostHog recorded the same path: homepage (with the UTM), pricing, sign-up page, `signup_page_viewed` with the
+  plan, `account_created`.
+- The CAPTCHA refuses a browser driven by test automation, so the form itself was filled by hand.
+- The email confirmation link signs in whichever browser opens it, replacing the session already there.
