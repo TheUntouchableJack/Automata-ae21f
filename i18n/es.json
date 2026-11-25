@@ -1419,7 +1419,25 @@
     "previewStripFirstReward": "Primera recompensa: {reward}",
     "previewEditLater": "Podrás cambiar el nombre, los colores y las recompensas después de registrarte.",
     "showPassword": "Mostrar contraseña",
-    "hidePassword": "Ocultar contraseña"
+    "hidePassword": "Ocultar contraseña",
+    "confirmTitle": "¡Revisa tu bandeja de entrada!",
+    "confirmSentTo": "Enviamos un enlace de confirmación a",
+    "confirmAutoSignIn": "Abre el enlace de ese correo e iniciarás sesión automáticamente para terminar la configuración.",
+    "confirmSpam": "¿No lo recibiste? Revisa la carpeta de spam o envíalo de nuevo.",
+    "resendEmail": "Reenviar correo",
+    "resending": "Enviando…",
+    "resent": "¡Enviado! Revisa tu bandeja de entrada y la carpeta de spam.",
+    "resendWait": "Reenviar en {seconds} s",
+    "resendTooMany": "Acabamos de enviar uno. Espera un minuto e inténtalo de nuevo.",
+    "resendFailed": "No pudimos enviar el correo. Inténtalo de nuevo.",
+    "enterEmailFirst": "Primero escribe tu correo arriba.",
+    "resendDesc": "Enviaremos un nuevo enlace de confirmación al correo de arriba.",
+    "accountExistsTitle": "Este correo ya tiene una cuenta",
+    "accountExistsDesc": "Inicia sesión o restablece tu contraseña si la olvidaste.",
+    "emailNotConfirmed": "Confirma tu correo antes de iniciar sesión.",
+    "linkExpiredTitle": "Ese enlace caducó.",
+    "linkExpiredDesc": "Los enlaces funcionan una sola vez y caducan. Escribe tu correo arriba y te enviaremos uno nuevo.",
+    "confirmFailed": "No se pudo confirmar el correo. Intenta iniciar sesión o solicita un nuevo correo de confirmación."
   },
   "supportSettings": {
     "title": "Support Settings",
@@ -2588,5 +2606,16 @@
     "error": "Algo salió mal. Inténtalo de nuevo.",
     "alreadyRegistered": "Este correo ya tiene una cuenta. Inicia sesión.",
     "passwordShort": "Usa al menos 8 caracteres."
+  },
+  "planOffer": {
+    "eyebrow": "Tu app está publicada",
+    "title": "Elegiste {plan}.",
+    "terms": "Pruébalo gratis 14 días, sin tarjeta. Después {price}/mes, cancela cuando quieras.",
+    "start": "Empezar prueba gratis",
+    "starting": "Abriendo el pago…",
+    "stay": "Seguir en Gratis",
+    "tryLink": "Prueba {plan} gratis 14 días →",
+    "errorSession": "Tu sesión caducó. Recarga la página e inténtalo de nuevo.",
+    "errorGeneric": "No pudimos abrir el pago. Inténtalo de nuevo."
   }
 }

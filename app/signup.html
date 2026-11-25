@@ -280,6 +280,21 @@
         }
         .success-message.visible { display: block; }
 
+        /* "Check your inbox" and "This email already has an account" (built in JS, text only) */
+        .confirm-inbox { text-align: center; color: var(--color-text); }
+        .confirm-inbox-icon { font-size: 48px; margin-bottom: 16px; }
+        .confirm-inbox h3 { color: var(--color-accent); margin: 0 0 8px; }
+        .confirm-inbox p { margin: 0 0 16px; }
+        .confirm-inbox .confirm-inbox-muted { font-size: 13px; color: var(--color-text-muted); }
+        .confirm-inbox .confirm-inbox-email { display: block; font-weight: 600; word-break: break-all; }
+        .confirm-inbox .btn { margin-top: 4px; }
+        .confirm-inbox-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .confirm-resend-status { margin: 12px 0 0; font-size: 13px; }
+        .confirm-resend-status[hidden] { display: none; }
+        .confirm-resend-status.is-ok { color: var(--color-accent); }
+        .confirm-resend-status.is-error { color: var(--color-error); }
+        .confirm-inbox.is-exists h3 { color: var(--color-text); }
+
         .ai-early-access-note { margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: var(--color-text-secondary); text-align: center; }
         .ai-early-access-note[hidden] { display: none; }
         .auth-footer { text-align: center; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--color-border); }
@@ -579,6 +594,7 @@
     <script src="onboarding-storage.js?v=3"></script>
     <script src="workspace.js?v=1"></script>
     <script src="auth.js?v=15"></script>
+    <script src="confirm-resend.js?v=1"></script>
     <script src="password-toggle.js?v=2"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="onboarding-transition.js?v=2"></script>
@@ -662,6 +678,20 @@
             } catch (e) {
                 return null;
             }
+        }
+
+        // The paid plan they clicked on Pricing, kept on the account (auth metadata plan_intent) so
+        // the dashboard can offer exactly that trial once their app is live (app/plan-offer.js).
+        // sessionStorage alone was lost when the confirmation link opened a new tab. Saved even for
+        // visitors who opted out of analytics: it's the plan they asked for, not tracking.
+        function pickedPlanIntent() {
+            let plan = '';
+            try { plan = new URLSearchParams(window.location.search).get('plan') || ''; } catch (e) { /* no URL API */ }
+            if (!plan) {
+                try { plan = sessionStorage.getItem('royalty_plan_intent') || ''; } catch (e) { /* private mode */ }
+            }
+            plan = String(plan).toLowerCase();
+            return ['starter', 'growth', 'scale'].includes(plan) ? plan : null;
         }
 
         // Redirect if already logged in
@@ -833,6 +863,8 @@
                 const source = signupSource();
                 const metadata = { first_name: firstName, last_name: lastName };
                 if (source) metadata.signup_source = source;
+                const pickedPlan = pickedPlanIntent();
+                if (pickedPlan) metadata.plan_intent = pickedPlan;
                 const { data: signUpData, error: signUpError } = await db.auth.signUp({
                     email,
                     password,
@@ -843,6 +875,15 @@
                 });
 
                 if (signUpError) throw signUpError;
+
+                // An address that already has an account comes back as a user with no identities
+                // (Supabase hides it, and sends no email). It used to say "Check your inbox".
+                // Same check as accept-invite.js. Not an account created, so no account_created.
+                if (signUpData?.user && Array.isArray(signUpData.user.identities) && signUpData.user.identities.length === 0) {
+                    royaltyWhenAnalytics(A => A.track('signup_email_exists'));
+                    showSignupOutcome(renderAccountExists(email));
+                    return;
+                }
 
                 // Both branches below (straight in, or confirm by email) are an
                 // account created. $set_once keeps the FIRST source on the person.
@@ -871,41 +912,7 @@
                     // convert at very different rates.
                     window.Analytics?.track('signup_email_confirm_required', { had_onboarding: hasOnboarding });
                     if (progressFill) progressFill.style.width = '100%';
-                    submitBtn.classList.remove('btn-loading');
-                    submitBtn.classList.add('btn-success');
-                    submitBtn.querySelector('.btn-text').style.display = '';
-                    submitBtn.querySelector('.btn-text').textContent = 'Check your email!';
-                    submitBtn.querySelector('.btn-spinner').style.display = 'none';
-                    authCard.classList.add('success');
-
-                    const authFooter = document.getElementById('auth-footer');
-                    if (authFooter) authFooter.style.display = 'none';
-                    signupForm.querySelector('.name-fields').style.display = 'none';
-                    signupForm.querySelectorAll('.form-field').forEach(f => f.style.display = 'none');
-                    submitBtn.style.display = 'none';
-
-                    // Hide CAPTCHA
-                    const captcha = document.querySelector('.cf-turnstile');
-                    if (captcha) captcha.style.display = 'none';
-
-                    successMessage.innerHTML = `
-                        <div style="text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">📧</div>
-                            <h3 style="color: var(--color-accent); margin-bottom: 8px;">Check your inbox!</h3>
-                            <p style="margin-bottom: 16px;">
-                                We've sent a confirmation link to<br>
-                                <strong>${email}</strong>
-                            </p>
-                            <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 24px;">
-                                Click the link in the email and you'll be<br>
-                                <strong>automatically signed in</strong> to continue setup.
-                            </p>
-                            <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 16px;">
-                                Didn't receive the email? Check your spam folder.
-                            </p>
-                        </div>
-                    `;
-                    successMessage.classList.add('visible');
+                    showSignupOutcome(renderCheckInbox(email));
                     return;
                 }
 
@@ -1001,6 +1008,98 @@
             if (!appId) return '/app/intelligence.html';
             window.Analytics?.track('builder_onboarding_entered', { app_id: appId });
             return `/app/app-builder.html?id=${encodeURIComponent(appId)}&onboarding=1`;
+        }
+
+        // ----- After the form: "Check your inbox" / "already has an account" -----
+        // Built with the DOM and textContent: the email address is the visitor's own input and
+        // used to go into innerHTML. Static lines carry data-i18n so a language switch updates them.
+        function signupT(key, fallback) {
+            try {
+                const v = window.I18n && I18n.t(key);
+                if (v && v !== key) return v;
+            } catch (e) { /* English fallback */ }
+            return fallback;
+        }
+        function signupEl(tag, cls, key, fallback) {
+            const n = document.createElement(tag);
+            if (cls) n.className = cls;
+            if (key) { n.setAttribute('data-i18n', key); n.textContent = signupT(key, fallback); }
+            return n;
+        }
+
+        // Hide the form and show `content` in the message box.
+        function showSignupOutcome(content) {
+            const progressFill = document.getElementById('auth-card-progress-fill');
+            if (progressFill) progressFill.style.width = '100%';
+            submitBtn.classList.remove('btn-loading');
+            submitBtn.querySelector('.btn-spinner').style.display = 'none';
+            authCard.classList.remove('form-loading');
+            authCard.classList.add('success');
+            const authFooter = document.getElementById('auth-footer');
+            if (authFooter) authFooter.style.display = 'none';
+            signupForm.querySelector('.name-fields').style.display = 'none';
+            signupForm.querySelectorAll('.form-field').forEach(f => f.style.display = 'none');
+            submitBtn.style.display = 'none';
+            const captcha = document.querySelector('.cf-turnstile');
+            if (captcha) captcha.style.display = 'none';
+            successMessage.textContent = '';
+            successMessage.appendChild(content);
+            successMessage.classList.add('visible');
+        }
+
+        function renderCheckInbox(email) {
+            const box = signupEl('div', 'confirm-inbox');
+            const icon = signupEl('div', 'confirm-inbox-icon');
+            icon.setAttribute('aria-hidden', 'true');
+            icon.textContent = '📧';
+            box.appendChild(icon);
+            box.appendChild(signupEl('h3', null, 'auth.confirmTitle', 'Check your inbox!'));
+            const sent = signupEl('p');
+            sent.appendChild(signupEl('span', null, 'auth.confirmSentTo', 'We sent a confirmation link to'));
+            const addr = signupEl('strong', 'confirm-inbox-email');
+            addr.textContent = email;
+            sent.appendChild(addr);
+            box.appendChild(sent);
+            box.appendChild(signupEl('p', 'confirm-inbox-muted', 'auth.confirmAutoSignIn',
+                'Open the link in that email and you\u2019ll be signed in automatically to finish setting up.'));
+            box.appendChild(signupEl('p', 'confirm-inbox-muted', 'auth.confirmSpam',
+                'Didn\u2019t get it? Check your spam folder, or send it again.'));
+            const resend = signupEl('button', 'btn btn-secondary');
+            resend.id = 'confirm-resend-btn';
+            box.appendChild(resend);
+            const status = signupEl('p', 'confirm-resend-status');
+            status.setAttribute('role', 'status');
+            status.setAttribute('aria-live', 'polite');
+            status.hidden = true;
+            box.appendChild(status);
+            if (typeof ConfirmResend !== 'undefined') {
+                // The email just went out: the first resend waits out Supabase's 60 s.
+                ConfirmResend.attach({ button: resend, status, getEmail: () => email, source: 'signup', startCooled: true });
+            } else {
+                resend.hidden = true;
+            }
+            return box;
+        }
+
+        function renderAccountExists(email) {
+            const box = signupEl('div', 'confirm-inbox is-exists');
+            box.appendChild(signupEl('h3', null, 'auth.accountExistsTitle', 'This email already has an account'));
+            const who = signupEl('p');
+            const addr = signupEl('strong', 'confirm-inbox-email');
+            addr.textContent = email;
+            who.appendChild(addr);
+            box.appendChild(who);
+            box.appendChild(signupEl('p', 'confirm-inbox-muted', 'auth.accountExistsDesc',
+                'Sign in, or reset your password if you\u2019ve forgotten it.'));
+            const actions = signupEl('div', 'confirm-inbox-actions');
+            const signIn = signupEl('a', 'btn btn-primary', 'auth.signIn', 'Sign In');
+            signIn.href = '/app/login.html';
+            const reset = signupEl('a', 'btn btn-secondary', 'auth.resetPasswordBtn', 'Reset Password');
+            reset.href = '/app/forgot-password.html';
+            actions.appendChild(signIn);
+            actions.appendChild(reset);
+            box.appendChild(actions);
+            return box;
         }
 
     </script>

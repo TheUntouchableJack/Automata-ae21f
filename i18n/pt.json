@@ -1419,7 +1419,25 @@
     "previewStripFirstReward": "Primeira recompensa: {reward}",
     "previewEditLater": "Você pode alterar o nome, as cores e as recompensas depois de se cadastrar.",
     "showPassword": "Mostrar senha",
-    "hidePassword": "Ocultar senha"
+    "hidePassword": "Ocultar senha",
+    "confirmTitle": "Verifique sua caixa de entrada!",
+    "confirmSentTo": "Enviamos um link de confirmação para",
+    "confirmAutoSignIn": "Abra o link desse e-mail e você entrará automaticamente para concluir a configuração.",
+    "confirmSpam": "Não recebeu? Verifique a pasta de spam ou envie de novo.",
+    "resendEmail": "Reenviar e-mail",
+    "resending": "Enviando…",
+    "resent": "Enviado! Verifique sua caixa de entrada e a pasta de spam.",
+    "resendWait": "Reenviar em {seconds} s",
+    "resendTooMany": "Acabamos de enviar um. Aguarde um minuto e tente novamente.",
+    "resendFailed": "Não conseguimos enviar o e-mail. Tente novamente.",
+    "enterEmailFirst": "Digite seu e-mail acima primeiro.",
+    "resendDesc": "Enviaremos um novo link de confirmação para o e-mail acima.",
+    "accountExistsTitle": "Este e-mail já tem uma conta",
+    "accountExistsDesc": "Entre, ou redefina sua senha se a esqueceu.",
+    "emailNotConfirmed": "Confirme seu e-mail antes de entrar.",
+    "linkExpiredTitle": "Esse link expirou.",
+    "linkExpiredDesc": "Os links funcionam uma vez e expiram. Digite seu e-mail acima e enviaremos um novo.",
+    "confirmFailed": "A confirmação do e-mail falhou. Tente entrar ou peça um novo e-mail de confirmação."
   },
   "supportSettings": {
     "title": "Support Settings",
@@ -2588,5 +2606,16 @@
     "error": "Algo deu errado. Tente novamente.",
     "alreadyRegistered": "Este e-mail já tem uma conta. Entre em vez disso.",
     "passwordShort": "Use pelo menos 8 caracteres."
+  },
+  "planOffer": {
+    "eyebrow": "Seu app está no ar",
+    "title": "Você escolheu {plan}.",
+    "terms": "Experimente grátis por 14 dias, sem cartão. Depois {price}/mês, cancele quando quiser.",
+    "start": "Começar teste grátis",
+    "starting": "Abrindo o pagamento…",
+    "stay": "Continuar no Grátis",
+    "tryLink": "Experimente {plan} grátis por 14 dias →",
+    "errorSession": "Sua sessão expirou. Atualize a página e tente novamente.",
+    "errorGeneric": "Não conseguimos abrir o pagamento. Tente novamente."
   }
 }

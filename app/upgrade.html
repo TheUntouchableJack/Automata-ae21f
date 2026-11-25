@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
-    <link rel="stylesheet" href="upgrade.css?v=1">
+    <link rel="stylesheet" href="upgrade.css?v=2">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
          Cookieless on public pages, so there is no consent banner. Session
@@ -35,7 +35,7 @@
                     <div>
                         <a href="/app/intelligence.html" style="display: inline-flex; align-items: center; gap: 6px; color: var(--color-primary); font-size: 14px; font-weight: 500; text-decoration: none; margin-bottom: 8px;">&larr; Back</a>
                         <h1 class="page-title">Choose Your Plan</h1>
-                        <p class="page-subtitle" id="page-subtitle">Start with a 14-day free trial. Cancel anytime.</p>
+                        <p class="page-subtitle" id="page-subtitle">Start with a 14-day free trial. No card needed. Cancel anytime.</p>
                     </div>
                 </div>
             </div>
@@ -50,8 +50,8 @@
                                 <path d="M5 16h14v2H5z"/>
                             </svg>
                         </div>
-                        <h1 class="success-title" id="success-title">Welcome to Pro!</h1>
-                        <p class="success-subtitle" id="success-subtitle">Your 14-day free trial has started. Cancel anytime.</p>
+                        <h1 class="success-title" id="success-title" aria-live="polite">Starting your plan…</h1>
+                        <p class="success-subtitle" id="success-subtitle">This takes a few seconds.</p>
                     </div>
 
                     <div class="success-metrics" id="success-metrics">
@@ -59,8 +59,9 @@
                     </div>
 
                     <div class="success-actions">
-                        <a href="/app/intelligence.html" class="btn btn-primary btn-lg">Explore AI Intelligence</a>
-                        <a href="/app/settings.html?tab=billing" class="btn btn-secondary btn-lg">Manage Billing</a>
+                        <a href="/app/dashboard.html" class="btn btn-primary btn-lg" id="success-back-to-app" hidden>Back to my app</a>
+                        <a href="/app/intelligence.html" class="btn btn-secondary btn-lg">Explore AI Intelligence</a>
+                        <button type="button" class="btn btn-secondary btn-lg portal-btn" id="success-manage-billing" hidden>Manage Billing</button>
                     </div>
                 </div>
             </section>
@@ -74,11 +75,11 @@
                             <span class="current-plan-name" id="current-plan-name">Free</span>
                             <span class="plan-status" id="current-plan-status"></span>
                         </div>
-                        <a href="/app/settings.html?tab=billing" class="btn btn-secondary btn-sm" id="manage-billing-link" style="display: none;">Manage Billing</a>
+                        <button type="button" class="btn btn-secondary btn-sm portal-btn" id="manage-billing-link" style="display: none;">Manage Billing</button>
                     </div>
 
                     <!-- Billing Toggle -->
-                    <div class="billing-toggle-container">
+                    <div class="billing-toggle-container" id="billing-toggle-container">
                         <span class="billing-label" data-billing="monthly">Monthly</span>
                         <label class="billing-toggle">
                             <input type="checkbox" id="billing-toggle">
@@ -229,155 +230,173 @@
                         </div>
                     </div>
 
-                    <p class="billing-note">14-day free trial, then billed monthly or annually. Cancel anytime.</p>
+                    <p class="billing-note" id="billing-note">14-day free trial, no card needed. Then billed monthly or annually. Cancel anytime.</p>
 
-                    <!-- Feature Comparison Table -->
-                    <div class="comparison-section">
+                    <!-- Feature Comparison Table. Every cell with data-limit is checked against
+                         PLAN_LIMITS by tests/upgrade-page.test.js: change both together. -->
+                    <div class="comparison-section" id="comparison-section">
                         <h2 class="comparison-title">Compare plans in detail</h2>
                         <p class="comparison-subtitle">Everything you need to know about each plan</p>
 
                         <div class="comparison-table-wrapper">
-                            <table class="comparison-table">
+                            <table class="comparison-table" id="comparison-table">
                                 <thead>
                                     <tr>
                                         <th>Features</th>
-                                        <th>Free</th>
-                                        <th>Pro</th>
-                                        <th>Max</th>
+                                        <th data-plan="free">Free</th>
+                                        <th data-plan="starter">Starter</th>
+                                        <th data-plan="growth">Growth</th>
+                                        <th data-plan="scale">Scale</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Core Limits -->
                                     <tr class="feature-group">
-                                        <td colspan="4">Core Limits</td>
+                                        <td colspan="5">Core Limits</td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="members">
                                         <td>Customers</td>
                                         <td>250</td>
-                                        <td>Unlimited</td>
-                                        <td>Unlimited</td>
-                                    </tr>
-
-                                    <!-- Messaging -->
-                                    <tr class="feature-group">
-                                        <td colspan="4">Messaging</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Emails per month</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td>10,000</td>
-                                        <td>50,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td>SMS per month</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
                                         <td>500</td>
                                         <td>2,000</td>
+                                        <td>10,000</td>
                                     </tr>
-
-                                    <!-- Loyalty Features -->
                                     <tr class="feature-group">
-                                        <td colspan="4">Loyalty Features</td>
+                                        <td colspan="5">Messaging</td>
+                                    </tr>
+                                    <tr data-limit="emails_monthly">
+                                        <td>Emails per month</td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td>1,000</td>
+                                        <td>5,000</td>
+                                        <td>15,000</td>
+                                    </tr>
+                                    <tr data-limit="sms_monthly">
+                                        <td>SMS per month</td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td>100</td>
+                                        <td>300</td>
+                                        <td>750</td>
+                                    </tr>
+                                    <tr class="feature-group">
+                                        <td colspan="5">Loyalty Features</td>
                                     </tr>
                                     <tr>
-                                        <td>Points & rewards</td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td>Points &amp; rewards</td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
                                     <tr>
                                         <td>QR code check-ins</td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
                                     <tr>
-                                        <td>Tiers & VIP levels</td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td>Tiers &amp; VIP levels</td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
                                     <tr>
                                         <td>Referral program</td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
                                     <tr>
                                         <td>Leaderboard</td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-
-                                    <!-- Royal AI Features -->
                                     <tr class="feature-group">
-                                        <td colspan="4">Royal AI</td>
+                                        <td colspan="5">Royal AI</td>
                                     </tr>
-                                    <tr>
-                                        <td>Royal chat (Q&A)</td>
+                                    <tr data-limit="royal_queries_monthly">
+                                        <td>Royal AI queries</td>
                                         <td>20/mo</td>
-                                        <td>Unlimited</td>
-                                        <td>Unlimited</td>
+                                        <td>100/mo</td>
+                                        <td>500/mo</td>
+                                        <td>2,000/mo</td>
                                     </tr>
-                                    <tr>
-                                        <td>AI automations</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td>Unlimited</td>
-                                        <td>Unlimited</td>
+                                    <tr data-limit="review_mode">
+                                        <td>Review-mode automations (you approve)</td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="autonomous_mode">
                                         <td>Autonomous Mode</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-                                    <tr>
-                                        <td>Business learning & discovery</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                    <tr data-limit="business_learning">
+                                        <td>Business learning &amp; discovery</td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="fatigue_protection">
                                         <td>Fatigue protection</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="performance_metrics">
                                         <td>Performance metrics</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="visit_attribution">
                                         <td>Visit attribution (prove ROI)</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-
-                                    <!-- Branding & Support -->
                                     <tr class="feature-group">
-                                        <td colspan="4">Branding & Support</td>
+                                        <td colspan="5">Branding &amp; Support</td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="white_label">
                                         <td>White-label branding</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="email_support">
                                         <td>Email support</td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
-                                    <tr>
+                                    <tr data-limit="priority_support">
                                         <td>Priority support</td>
-                                        <td><span class="dash-icon">&mdash;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
-                                        <td><span class="check-icon">&#10003;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
+                                    </tr>
+                                    <tr data-limit="dedicated_support">
+                                        <td>Dedicated support</td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="dash-icon" aria-label="Not included">&mdash;</span></td>
+                                        <td><span class="check-icon" aria-label="Included">&#10003;</span></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -388,43 +407,7 @@
         </main>
     </div>
 
-    <!-- Checkout Modal (Embedded Stripe Checkout) -->
-    <div class="checkout-modal-overlay" id="checkout-modal" style="display: none;">
-        <div class="checkout-modal">
-            <div class="checkout-modal-header">
-                <h3>Complete Your Subscription</h3>
-                <button class="checkout-close-btn" id="checkout-close-btn" aria-label="Close">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            </div>
-            <!-- Promo Code Input -->
-            <div class="checkout-promo-section" id="checkout-promo-section">
-                <div class="promo-input-wrapper">
-                    <input type="text"
-                           id="checkout-promo-code"
-                           class="promo-input"
-                           placeholder="Promo code (optional)"
-                           autocomplete="off"
-                           spellcheck="false">
-                    <button type="button" id="apply-promo-btn" class="btn btn-secondary btn-sm">Apply</button>
-                </div>
-                <div class="promo-status" id="promo-status"></div>
-            </div>
-            <div class="checkout-modal-body" id="checkout-container">
-                <!-- Stripe Embedded Checkout mounts here -->
-                <div class="checkout-loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading checkout...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Scripts -->
-    <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js?v=14"></script>
@@ -432,8 +415,8 @@
     <script src="auth.js?v=15"></script>
     <script src="utils.js?v=7"></script>
     <script src="celebrate.js?v=2"></script>
-    <script src="plan-limits.js?v=1"></script>
+    <script src="plan-limits.js?v=3"></script>
     <script src="sidebar.js?v=26"></script>
-    <script src="upgrade.js?v=1"></script>
+    <script src="upgrade.js?v=2"></script>
 </body>
 </html>

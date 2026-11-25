@@ -89,6 +89,20 @@ async function initDashboard() {
         loadAppMetrics()
     ]);
 
+    // The paid plan they clicked on Pricing, offered once their app is live (plan-offer.js).
+    // After loadAppMetrics: it covers the publish redirect (?app=…#qr) and the skip path,
+    // whose auto-created app is published. Never blocks the dashboard.
+    if (typeof PlanOffer !== 'undefined' && currentOrganization) {
+        PlanOffer.mount({
+            container: document.getElementById('plan-offer'),
+            user: currentUser,
+            org: currentOrganization,
+            role: orgData.role,
+            isSuperAdmin: userInfo.profile?.is_admin === true,
+            hasPublishedApp: allApps.some(a => a.is_published)
+        }).catch(e => console.warn('[Dashboard] Plan offer skipped:', e));
+    }
+
     // Initialize AI Intelligence Feed (admin only)
     if (typeof AIFeed !== 'undefined' && currentOrganization) {
         AIFeed.init(currentOrganization.id, orgData.role);

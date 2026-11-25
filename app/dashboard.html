@@ -13,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="plan-offer.css?v=1">
     <link rel="stylesheet" href="sidebar.css?v=5">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
@@ -68,6 +69,8 @@
             <!-- App Metrics Section (SMB View) -->
             <section class="app-metrics-section" id="app-metrics-section" style="display: none;">
                 <div class="container">
+                    <!-- The paid plan they picked on Pricing, offered once their app is live (plan-offer.js) -->
+                    <div id="plan-offer" hidden></div>
                     <!-- Customer cap: shown at 80% of the plan's limit and when full (check_member_limit) -->
                     <div class="member-cap-warning" id="member-cap-warning" role="status" hidden>
                         <div class="member-cap-warning-text">
@@ -484,7 +487,8 @@
     <script src="utils.js?v=7"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="danger-modal.js?v=1"></script>
-    <script src="plan-limits.js?v=1"></script>
+    <script src="plan-limits.js?v=3"></script>
+    <script src="plan-offer.js?v=1"></script>
     <script src="onboarding-storage.js?v=3"></script>
     <script src="onboarding-transition.js?v=3"></script>
     <script src="onboarding-processor.js"></script>
@@ -496,7 +500,7 @@
     <script src="shared/ai-templates.js?v=1"></script>
     <script src="ai-feed.js?v=6"></script>
     <script src="qr-sign.js?v=1"></script>
-    <script src="dashboard.js?v=27"></script>
+    <script src="dashboard.js?v=28"></script>
     <script src="/js/ai-status.js?v=1"></script>
     <script>window.AiStatus && window.AiStatus.showBannerIfOff();</script>
 </body>

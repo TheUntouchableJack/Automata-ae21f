@@ -1419,7 +1419,25 @@
     "previewStripFirstReward": "Première récompense : {reward}",
     "previewEditLater": "Vous pourrez modifier le nom, les couleurs et les récompenses après l'inscription.",
     "showPassword": "Afficher le mot de passe",
-    "hidePassword": "Masquer le mot de passe"
+    "hidePassword": "Masquer le mot de passe",
+    "confirmTitle": "Vérifiez votre boîte de réception !",
+    "confirmSentTo": "Nous avons envoyé un lien de confirmation à",
+    "confirmAutoSignIn": "Ouvrez le lien de cet e-mail : vous serez connecté automatiquement pour terminer la configuration.",
+    "confirmSpam": "Rien reçu ? Vérifiez vos spams, ou renvoyez-le.",
+    "resendEmail": "Renvoyer l'e-mail",
+    "resending": "Envoi…",
+    "resent": "Envoyé ! Vérifiez votre boîte de réception et vos spams.",
+    "resendWait": "Renvoyer dans {seconds} s",
+    "resendTooMany": "Nous venons d'en envoyer un. Patientez une minute, puis réessayez.",
+    "resendFailed": "Impossible d'envoyer l'e-mail. Veuillez réessayer.",
+    "enterEmailFirst": "Saisissez d'abord votre e-mail ci-dessus.",
+    "resendDesc": "Nous enverrons un nouveau lien de confirmation à l'e-mail ci-dessus.",
+    "accountExistsTitle": "Cet e-mail a déjà un compte",
+    "accountExistsDesc": "Connectez-vous, ou réinitialisez votre mot de passe si vous l'avez oublié.",
+    "emailNotConfirmed": "Veuillez confirmer votre e-mail avant de vous connecter.",
+    "linkExpiredTitle": "Ce lien a expiré.",
+    "linkExpiredDesc": "Les liens ne fonctionnent qu'une fois et expirent. Saisissez votre e-mail ci-dessus et nous en enverrons un nouveau.",
+    "confirmFailed": "La confirmation de l'e-mail a échoué. Essayez de vous connecter ou demandez un nouvel e-mail de confirmation."
   },
   "supportSettings": {
     "title": "Support Settings",
@@ -2588,5 +2606,16 @@
     "error": "Une erreur s'est produite. Veuillez réessayer.",
     "alreadyRegistered": "Cet e-mail a déjà un compte. Connectez-vous plutôt.",
     "passwordShort": "Utilisez au moins 8 caractères."
+  },
+  "planOffer": {
+    "eyebrow": "Votre app est en ligne",
+    "title": "Vous avez choisi {plan}.",
+    "terms": "Essayez-le gratuitement pendant 14 jours, sans carte. Ensuite {price}/mois, résiliable à tout moment.",
+    "start": "Commencer l'essai gratuit",
+    "starting": "Ouverture du paiement…",
+    "stay": "Rester sur Gratuit",
+    "tryLink": "Essayez {plan} gratuitement 14 jours →",
+    "errorSession": "Votre session a expiré. Actualisez la page et réessayez.",
+    "errorGeneric": "Impossible d'ouvrir le paiement. Veuillez réessayer."
   }
 }

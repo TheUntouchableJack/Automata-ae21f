@@ -116,6 +116,40 @@
             display: block;
         }
 
+        /* Confirm-email recovery: "Email not confirmed" and "That link expired" (confirm-resend.js) */
+        .auth-resend {
+            padding: 12px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .auth-resend[hidden] {
+            display: none;
+        }
+
+        .auth-resend p {
+            margin: 0 0 10px;
+        }
+
+        .confirm-resend-status {
+            margin: 10px 0 0 !important;
+            font-size: 13px;
+        }
+
+        .confirm-resend-status[hidden] {
+            display: none;
+        }
+
+        .confirm-resend-status.is-ok {
+            color: var(--color-accent);
+        }
+
+        .confirm-resend-status.is-error {
+            color: var(--color-error);
+        }
+
         .auth-footer {
             text-align: center;
             margin-top: 24px;
@@ -275,6 +309,13 @@
             <form class="auth-form" id="login-form">
                 <div class="error-message" id="error-message"></div>
 
+                <!-- Shown for "Email not confirmed" and an expired confirmation link -->
+                <div class="auth-resend" id="auth-resend" hidden>
+                    <p id="auth-resend-desc" data-i18n="auth.resendDesc">We'll send a new confirmation link to the email above.</p>
+                    <button type="button" class="btn btn-secondary btn-block" id="auth-resend-btn" data-i18n="auth.resendEmail">Resend email</button>
+                    <p class="confirm-resend-status" id="auth-resend-status" role="status" aria-live="polite" hidden></p>
+                </div>
+
                 <div class="form-field">
                     <label for="email" data-i18n="auth.email">Email</label>
                     <input type="email" id="email" name="email" placeholder="you@example.com" data-i18n-placeholder="auth.emailPlaceholder" required>
@@ -312,6 +353,7 @@
     <script src="onboarding-storage.js?v=3"></script>
     <script src="workspace.js?v=1"></script>
     <script src="auth.js?v=15"></script>
+    <script src="confirm-resend.js?v=1"></script>
     <script src="password-toggle.js?v=2"></script>
     <script src="mfa.js?v=4"></script>
     <script src="onboarding-transition.js?v=2"></script>
@@ -361,6 +403,7 @@
             // Clear previous errors
             errorMessage.classList.remove('visible');
             errorMessage.textContent = '';
+            hideConfirmRecovery();
 
             // Validate CAPTCHA (skip if site key not configured)
             const captchaWidget = document.querySelector('.cf-turnstile');
@@ -426,7 +469,8 @@
                     if (error.message.includes('Invalid login credentials')) {
                         message = 'Invalid email or password.';
                     } else if (error.message.includes('Email not confirmed')) {
-                        message = 'Please verify your email before signing in.';
+                        message = loginT('auth.emailNotConfirmed', 'Please confirm your email before signing in.');
+                        showConfirmRecovery('unconfirmed');
                     } else {
                         message = error.message;
                     }
@@ -449,6 +493,23 @@
             // Check for hash-based tokens (legacy flow)
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const hasHashTokens = hashParams.has('access_token') || hashParams.has('refresh_token');
+
+            // A confirmation link that failed comes back with error / error_code, in the hash or
+            // the query. It used to land on a bare login form.
+            const linkError = urlParams.get('error_code') || hashParams.get('error_code')
+                || urlParams.get('error') || hashParams.get('error');
+            if (linkError) {
+                window.history.replaceState({}, '', window.location.pathname);
+                const expired = linkError === 'otp_expired'
+                    || /expired/i.test(urlParams.get('error_description') || hashParams.get('error_description') || '');
+                errorMessage.textContent = expired
+                    ? loginT('auth.linkExpiredTitle', 'That link expired.')
+                    : loginT('auth.confirmFailed', 'Email confirmation failed. Please try signing in or request a new confirmation email.');
+                errorMessage.classList.add('visible');
+                showConfirmRecovery(expired ? 'expired' : 'failed');
+                royaltyWhenAnalytics(A => A.track('confirm_link_failed', { expired }));
+                return;
+            }
 
             const hasAuthParams = authCode || hasHashTokens;
 
@@ -478,8 +539,9 @@
                     console.error('Failed to exchange code for session:', err);
                     loginForm.style.display = 'block';
                     successMessage.classList.remove('visible');
-                    errorMessage.textContent = 'Email confirmation failed. Please try signing in or request a new confirmation email.';
+                    errorMessage.textContent = loginT('auth.confirmFailed', 'Email confirmation failed. Please try signing in or request a new confirmation email.');
                     errorMessage.classList.add('visible');
+                    showConfirmRecovery('failed');
                     window.history.replaceState({}, '', window.location.pathname);
                     return;
                 }
@@ -510,15 +572,16 @@
 
                         window.history.replaceState({}, '', window.location.pathname);
 
+                        // Resolve the workspace FIRST: the transition reads redirectUrl only
+                        // after onBuild has committed, which is when OnboardingSave.lastAppId
+                        // exists. It used to be computed up front, so the hero path landed on
+                        // Intelligence instead of the builder.
+                        const heroMode = await AppWorkspace.resolve(user);
                         await OnboardingTransition.show({
                             onBuild: async () => {
                                 await saveOnboardingDataAfterLogin(user.id);
                             },
-                            // Unreachable for a scoped user today (they don't
-                            // arrive with landing-page onboarding data), but
-                            // one hardcoded landing left behind is exactly how
-                            // this regresses.
-                            redirectUrl: AppWorkspace.landingFor(await AppWorkspace.resolve(user))
+                            redirectUrl: () => heroDestination(heroMode)
                         });
                     } else {
                         // No onboarding data — simple confirmation message
@@ -557,8 +620,9 @@
                 // Had auth params but no user - something went wrong
                 loginForm.style.display = 'block';
                 successMessage.classList.remove('visible');
-                errorMessage.textContent = 'Email confirmation failed. Please try signing in or request a new confirmation email.';
+                errorMessage.textContent = loginT('auth.confirmFailed', 'Email confirmation failed. Please try signing in or request a new confirmation email.');
                 errorMessage.classList.add('visible');
+                showConfirmRecovery('failed');
                 window.history.replaceState({}, '', window.location.pathname);
             }
             // If no user and no auth params, just show the login form (already visible)
@@ -567,6 +631,55 @@
         handleAuthOnLoad().catch(err => {
             console.error('Auth check error:', err);
         });
+
+        // The translated string for key, or the English fallback.
+        function loginT(key, fallback) {
+            try {
+                const v = window.I18n && I18n.t(key);
+                if (v && v !== key) return v;
+            } catch (e) { /* English fallback */ }
+            return fallback;
+        }
+
+        // Confirm-email recovery: a Resend button using the email in the form. `var` and lookups
+        // inside the functions: handleAuthOnLoad() (called above) can reach these before this line.
+        var loginConfirmResend; // no initializer: reaching this line must not reset an early attach
+        function showConfirmRecovery(kind) {
+            const confirmRecovery = document.getElementById('auth-resend');
+            if (!confirmRecovery) return;
+            const desc = document.getElementById('auth-resend-desc');
+            if (desc) {
+                const key = kind === 'unconfirmed' ? 'auth.resendDesc' : 'auth.linkExpiredDesc';
+                desc.setAttribute('data-i18n', key);
+                desc.textContent = kind === 'unconfirmed'
+                    ? loginT(key, "We'll send a new confirmation link to the email above.")
+                    : loginT(key, "Links work once and expire after a while. Enter your email above and we'll send a new one.");
+            }
+            if (!loginConfirmResend && typeof ConfirmResend !== 'undefined') {
+                loginConfirmResend = ConfirmResend.attach({
+                    button: document.getElementById('auth-resend-btn'),
+                    status: document.getElementById('auth-resend-status'),
+                    getEmail: () => document.getElementById('email').value,
+                    source: kind === 'unconfirmed' ? 'login' : 'login_link'
+                });
+            }
+            confirmRecovery.hidden = !loginConfirmResend;
+        }
+        function hideConfirmRecovery() {
+            const confirmRecovery = document.getElementById('auth-resend');
+            if (confirmRecovery) confirmRecovery.hidden = true;
+        }
+
+        // Where the homepage-hero path lands once the email is confirmed: the builder on the app
+        // the commit just created (as the direct signup path does), else the workspace landing.
+        // Synchronous: OnboardingTransition calls it after onBuild.
+        function heroDestination(mode) {
+            const appId = (typeof OnboardingSave !== 'undefined' && OnboardingSave.lastAppId) || null;
+            if (appId && mode === AppWorkspace.DEFAULT_MODE) {
+                return `/app/app-builder.html?id=${encodeURIComponent(appId)}&onboarding=1`;
+            }
+            return AppWorkspace.landingFor(mode);
+        }
 
         // (templateNames removed — the only consumer was the inline onboarding
         // commit that now delegates to OnboardingSave, which owns that map.)

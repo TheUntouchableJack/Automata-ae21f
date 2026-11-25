@@ -106,7 +106,7 @@ describe('1. the dashboard, banner and Counter read window.I18n', () => {
 
   it('returning visitors get the new files', () => {
     expect(read('i18n/i18n.js')).toContain('const TRANSLATION_VERSION = 25;')
-    expect(read('app/dashboard.html')).toContain('dashboard.js?v=27"')
+    expect(read('app/dashboard.html')).toContain('dashboard.js?v=28"')
     expect(read('app/counter.html')).toContain('counter.js?v=2"')
     expect(read('app/intelligence.html')).toContain('welcome-banner.js?v=19"')
     expect(read('app/settings.html')).toContain('settings.js?v=12"')

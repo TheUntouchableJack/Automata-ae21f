@@ -163,6 +163,22 @@ const IntelligencePage = (function() {
             });
         }
 
+        // Someone who picked a paid plan on Pricing and is eligible for its trial: the stale
+        // "See what Pro unlocks" link becomes "Try <Plan> free for 14 days", pointing at the
+        // dashboard offer (plan-offer.js). Never blocks the page.
+        if (typeof PlanOffer !== 'undefined' && fullOrg) {
+            PlanOffer.check({
+                user,
+                org: fullOrg,
+                role: member.role,
+                isSuperAdmin: userInfo?.is_admin === true
+            }).then((offer) => {
+                if (offer.eligible) {
+                    PlanOffer.pointLink(document.querySelector('#crown-onboarding-card .caption-upgrade-link'), offer.tier);
+                }
+            }).catch(() => { /* the plain upgrade link stays */ });
+        }
+
         // Show welcome banner for new users
         if (typeof WelcomeBanner !== 'undefined') {
             WelcomeBanner.show(supabase, userInfo, fullOrg?.name || 'Your', organizationId);

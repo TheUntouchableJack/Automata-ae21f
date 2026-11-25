@@ -1777,7 +1777,25 @@
     "previewStripFirstReward": "First reward: {reward}",
     "previewEditLater": "You can change the name, colors and rewards after you sign up.",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "confirmTitle": "Check your inbox!",
+    "confirmSentTo": "We sent a confirmation link to",
+    "confirmAutoSignIn": "Open the link in that email and you'll be signed in automatically to finish setting up.",
+    "confirmSpam": "Didn't get it? Check your spam folder, or send it again.",
+    "resendEmail": "Resend email",
+    "resending": "Sending…",
+    "resent": "Sent! Check your inbox, and your spam folder.",
+    "resendWait": "Resend in {seconds}s",
+    "resendTooMany": "We just sent one. Please wait a minute, then try again.",
+    "resendFailed": "We couldn't send the email. Please try again.",
+    "enterEmailFirst": "Enter your email above first.",
+    "resendDesc": "We'll send a new confirmation link to the email above.",
+    "accountExistsTitle": "This email already has an account",
+    "accountExistsDesc": "Sign in, or reset your password if you've forgotten it.",
+    "emailNotConfirmed": "Please confirm your email before signing in.",
+    "linkExpiredTitle": "That link expired.",
+    "linkExpiredDesc": "Links work once and expire after a while. Enter your email above and we'll send a new one.",
+    "confirmFailed": "Email confirmation failed. Please try signing in or request a new confirmation email."
   },
   "analysis": {
     "badge": "AI Business Analysis",
@@ -2588,5 +2606,16 @@
     "error": "Something went wrong. Please try again.",
     "alreadyRegistered": "This email already has an account. Sign in instead.",
     "passwordShort": "Use at least 8 characters."
+  },
+  "planOffer": {
+    "eyebrow": "Your app is live",
+    "title": "You picked {plan}.",
+    "terms": "Try it free for 14 days, no card needed. Then {price}/mo, cancel anytime.",
+    "start": "Start free trial",
+    "starting": "Opening checkout…",
+    "stay": "Stay on Free",
+    "tryLink": "Try {plan} free for 14 days →",
+    "errorSession": "Your session expired. Refresh the page and try again.",
+    "errorGeneric": "We couldn't open checkout. Please try again."
   }
 }

@@ -1419,7 +1419,25 @@
     "previewStripFirstReward": "Erste Prämie: {reward}",
     "previewEditLater": "Name, Farben und Prämien können Sie nach der Registrierung ändern.",
     "showPassword": "Passwort anzeigen",
-    "hidePassword": "Passwort verbergen"
+    "hidePassword": "Passwort verbergen",
+    "confirmTitle": "Prüfen Sie Ihr Postfach!",
+    "confirmSentTo": "Wir haben einen Bestätigungslink gesendet an",
+    "confirmAutoSignIn": "Öffnen Sie den Link in dieser E-Mail – Sie werden automatisch angemeldet und können die Einrichtung abschließen.",
+    "confirmSpam": "Nichts erhalten? Prüfen Sie den Spam-Ordner oder senden Sie sie erneut.",
+    "resendEmail": "E-Mail erneut senden",
+    "resending": "Wird gesendet…",
+    "resent": "Gesendet! Prüfen Sie Ihr Postfach und den Spam-Ordner.",
+    "resendWait": "Erneut senden in {seconds} s",
+    "resendTooMany": "Wir haben gerade eine gesendet. Bitte warten Sie eine Minute und versuchen Sie es dann erneut.",
+    "resendFailed": "Die E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    "enterEmailFirst": "Geben Sie zuerst oben Ihre E-Mail-Adresse ein.",
+    "resendDesc": "Wir senden einen neuen Bestätigungslink an die E-Mail-Adresse oben.",
+    "accountExistsTitle": "Diese E-Mail-Adresse hat bereits ein Konto",
+    "accountExistsDesc": "Melden Sie sich an oder setzen Sie Ihr Passwort zurück, falls Sie es vergessen haben.",
+    "emailNotConfirmed": "Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.",
+    "linkExpiredTitle": "Dieser Link ist abgelaufen.",
+    "linkExpiredDesc": "Links funktionieren nur einmal und laufen ab. Geben Sie oben Ihre E-Mail-Adresse ein, und wir senden Ihnen einen neuen.",
+    "confirmFailed": "Die E-Mail-Bestätigung ist fehlgeschlagen. Melden Sie sich an oder fordern Sie eine neue Bestätigungs-E-Mail an."
   },
   "supportSettings": {
     "title": "Support Settings",
@@ -2588,5 +2606,16 @@
     "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
     "alreadyRegistered": "Für diese E-Mail gibt es schon ein Konto. Melde dich stattdessen an.",
     "passwordShort": "Verwende mindestens 8 Zeichen."
+  },
+  "planOffer": {
+    "eyebrow": "Ihre App ist live",
+    "title": "Sie haben {plan} gewählt.",
+    "terms": "14 Tage kostenlos testen, keine Karte nötig. Danach {price}/Monat, jederzeit kündbar.",
+    "start": "Kostenlos testen",
+    "starting": "Zahlung wird geöffnet…",
+    "stay": "Bei Kostenlos bleiben",
+    "tryLink": "{plan} 14 Tage kostenlos testen →",
+    "errorSession": "Ihre Sitzung ist abgelaufen. Laden Sie die Seite neu und versuchen Sie es erneut.",
+    "errorGeneric": "Die Zahlung konnte nicht geöffnet werden. Bitte versuchen Sie es erneut."
   }
 }

@@ -1419,7 +1419,25 @@
     "previewStripFirstReward": "Primo premio: {reward}",
     "previewEditLater": "Potrai cambiare nome, colori e premi dopo la registrazione.",
     "showPassword": "Mostra password",
-    "hidePassword": "Nascondi password"
+    "hidePassword": "Nascondi password",
+    "confirmTitle": "Controlla la tua casella di posta!",
+    "confirmSentTo": "Abbiamo inviato un link di conferma a",
+    "confirmAutoSignIn": "Apri il link in quell'email e accederai automaticamente per completare la configurazione.",
+    "confirmSpam": "Non l'hai ricevuta? Controlla lo spam o inviala di nuovo.",
+    "resendEmail": "Invia di nuovo l'email",
+    "resending": "Invio…",
+    "resent": "Inviata! Controlla la posta in arrivo e lo spam.",
+    "resendWait": "Invia di nuovo tra {seconds} s",
+    "resendTooMany": "Ne abbiamo appena inviata una. Attendi un minuto e riprova.",
+    "resendFailed": "Impossibile inviare l'email. Riprova.",
+    "enterEmailFirst": "Inserisci prima la tua email qui sopra.",
+    "resendDesc": "Invieremo un nuovo link di conferma all'email qui sopra.",
+    "accountExistsTitle": "Questa email ha già un account",
+    "accountExistsDesc": "Accedi, oppure reimposta la password se l'hai dimenticata.",
+    "emailNotConfirmed": "Conferma la tua email prima di accedere.",
+    "linkExpiredTitle": "Quel link è scaduto.",
+    "linkExpiredDesc": "I link funzionano una sola volta e scadono. Inserisci la tua email qui sopra e te ne invieremo uno nuovo.",
+    "confirmFailed": "Conferma email non riuscita. Prova ad accedere o richiedi una nuova email di conferma."
   },
   "supportSettings": {
     "title": "Support Settings",
@@ -2588,5 +2606,16 @@
     "error": "Qualcosa è andato storto. Riprova.",
     "alreadyRegistered": "Questa email ha già un account. Accedi invece.",
     "passwordShort": "Usa almeno 8 caratteri."
+  },
+  "planOffer": {
+    "eyebrow": "La tua app è online",
+    "title": "Hai scelto {plan}.",
+    "terms": "Provalo gratis per 14 giorni, senza carta. Poi {price}/mese, disdici quando vuoi.",
+    "start": "Inizia la prova gratuita",
+    "starting": "Apertura del pagamento…",
+    "stay": "Resta su Gratis",
+    "tryLink": "Prova {plan} gratis per 14 giorni →",
+    "errorSession": "La sessione è scaduta. Ricarica la pagina e riprova.",
+    "errorGeneric": "Impossibile aprire il pagamento. Riprova."
   }
 }
