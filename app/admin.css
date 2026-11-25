@@ -538,6 +538,13 @@ body.impersonating .mobile-header {
 }
 
 /* ===== Growth tab ===== */
+/* .app-main is a flex item (min-width: auto), so a wide table inside a scroll
+   box still widened the whole page on a narrow screen (the Orgs table did too).
+   This lets the scroll boxes do the scrolling. Only admin.html loads this file. */
+.app-main {
+    min-width: 0;
+}
+
 .growth-toolbar {
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-border);
