@@ -309,16 +309,18 @@
             <form class="auth-form" id="login-form">
                 <div class="error-message" id="error-message"></div>
 
-                <!-- Shown for "Email not confirmed" and an expired confirmation link -->
-                <div class="auth-resend" id="auth-resend" hidden>
-                    <p id="auth-resend-desc" data-i18n="auth.resendDesc">We'll send a new confirmation link to the email above.</p>
-                    <button type="button" class="btn btn-secondary btn-block" id="auth-resend-btn" data-i18n="auth.resendEmail">Resend email</button>
-                    <p class="confirm-resend-status" id="auth-resend-status" role="status" aria-live="polite" hidden></p>
-                </div>
 
                 <div class="form-field">
                     <label for="email" data-i18n="auth.email">Email</label>
                     <input type="email" id="email" name="email" placeholder="you@example.com" data-i18n-placeholder="auth.emailPlaceholder" required>
+                </div>
+
+                <!-- Shown for "Email not confirmed" and an expired confirmation link: under the
+                     email field it sends to (its copy says "the email above") -->
+                <div class="auth-resend" id="auth-resend" hidden>
+                    <p id="auth-resend-desc" data-i18n="auth.resendDesc">We'll send a new confirmation link to the email above.</p>
+                    <button type="button" class="btn btn-secondary btn-block" id="auth-resend-btn" data-i18n="auth.resendEmail">Resend email</button>
+                    <p class="confirm-resend-status" id="auth-resend-status" role="status" aria-live="polite" hidden></p>
                 </div>
 
                 <div class="form-field">

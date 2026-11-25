@@ -299,7 +299,8 @@ describe('wiring', () => {
       expect(po).toBeGreaterThan(auth)
       expect(html.indexOf(page)).toBeGreaterThan(po)
     }
-    expect(DASH_HTML).toContain('<link rel="stylesheet" href="plan-offer.css?v=1">')
+    expect(DASH_HTML).toContain('<link rel="stylesheet" href="plan-offer.css?v=2">')
+    expect(read('app/plan-offer.css')).toMatch(/\.plan-offer-title \{[^}]*text-transform: none;/)
     expect(read('app/dashboard.css')).not.toContain('.plan-offer')
   })
   it('every page that loads plan-limits.js loads v=3', () => {

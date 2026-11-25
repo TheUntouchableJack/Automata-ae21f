@@ -221,6 +221,13 @@ describe('login.html: "Email not confirmed"', () => {
     await flush()
     expect(document.getElementById('auth-resend').hidden).toBe(true)
   })
+  it('the recovery box sits under the email field its copy calls "the email above"', () => {
+    document.body.innerHTML = LOGIN_BODY
+    const box = document.getElementById('auth-resend')
+    const email = document.getElementById('email').closest('.form-field')
+    expect(email.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(box.previousElementSibling).toBe(email)
+  })
   it('the CAPTCHA gate is still the only one (pinned elsewhere too)', () => {
     expect(LOGIN.match(/!turnstileToken/g)).toHaveLength(1)
   })
