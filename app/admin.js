@@ -6,7 +6,7 @@ let users = [];
 let allUsers = []; // unfiltered
 let apps = [];
 let allApps = []; // unfiltered
-let currentTab = 'orgs';
+let currentTab = 'growth';
 let orgPage = 1;
 let userPage = 1;
 let appPage = 1;
@@ -35,11 +35,13 @@ async function initAdmin() {
         });
     }
 
-    // Load organizations
-    await loadOrganizations();
-
     // Setup event listeners
     setupEventListeners();
+
+    // Growth opens first; the Orgs list loads alongside it (its stats and the
+    // detail / plan modals read allOrganizations).
+    if (typeof AdminGrowth !== 'undefined') AdminGrowth.init();
+    await loadOrganizations();
 }
 
 // ===== Load Organizations =====
@@ -76,8 +78,10 @@ function applyOrgFilters() {
         );
     }
 
-    if (planFilter) {
-        filtered = filtered.filter(org => org.plan_type === planFilter);
+    if (planFilter === 'internal') {
+        filtered = filtered.filter(org => org.is_internal);
+    } else if (planFilter) {
+        filtered = filtered.filter(org => orgTierKey(org) === planFilter);
     }
 
     organizations = filtered;
@@ -99,18 +103,26 @@ function applyOrgFilters() {
     updateOrgStats();
 }
 
+// free | starter | growth | scale | legacy (pro, max, AppSumo, anything older)
+function orgTierKey(org) {
+    if (org.plan_type === 'subscription') {
+        return ['starter', 'growth', 'scale'].includes(org.subscription_tier) ? org.subscription_tier : 'legacy';
+    }
+    if (org.plan_type === 'appsumo_lifetime') return 'legacy';
+    return 'free';
+}
+
+// Counts leave out internal (Royalty's own and test) orgs, which get their own number.
 function updateOrgStats() {
-    document.getElementById('stat-total-orgs').textContent = allOrganizations.length;
-    document.getElementById('stat-free-orgs').textContent = allOrganizations.filter(o => o.plan_type === 'free').length;
-    document.getElementById('stat-pro-orgs').textContent = allOrganizations.filter(o =>
-        o.plan_type === 'subscription' && o.subscription_tier === 'pro'
-    ).length;
-    document.getElementById('stat-max-orgs').textContent = allOrganizations.filter(o =>
-        o.plan_type === 'subscription' && o.subscription_tier === 'max'
-    ).length;
-    document.getElementById('stat-appsumo-orgs').textContent = allOrganizations.filter(o =>
-        o.plan_type === 'appsumo_lifetime'
-    ).length;
+    const real = allOrganizations.filter(o => !o.is_internal);
+    const count = (key) => real.filter(o => orgTierKey(o) === key).length;
+    document.getElementById('stat-total-orgs').textContent = real.length;
+    document.getElementById('stat-free-orgs').textContent = count('free');
+    document.getElementById('stat-starter-orgs').textContent = count('starter');
+    document.getElementById('stat-growth-orgs').textContent = count('growth');
+    document.getElementById('stat-scale-orgs').textContent = count('scale');
+    document.getElementById('stat-legacy-orgs').textContent = count('legacy');
+    document.getElementById('stat-internal-orgs').textContent = allOrganizations.length - real.length;
 }
 
 function renderOrganizations() {
@@ -131,6 +143,7 @@ function renderOrganizations() {
                     <div class="org-name-cell">
                         <div class="org-avatar">${initial}</div>
                         <span class="org-name-text">${escapeHtml(org.name || 'Unnamed')}</span>
+                        ${org.is_internal ? '<span class="plan-badge internal" title="Left out of the Growth numbers">Internal</span>' : ''}
                     </div>
                 </td>
                 <td>
@@ -154,6 +167,13 @@ function renderOrganizations() {
                         <button class="action-btn" onclick="openPlanOverride('${org.id}')" title="Edit plan">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <path d="M11.5 2.5L13.5 4.5L5 13H3V11L11.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn${org.is_internal ? ' active' : ''}" onclick="toggleOrgInternal('${org.id}')"
+                            title="${org.is_internal ? 'Internal: click to count it in Growth again' : 'Mark as internal (left out of Growth)'}"
+                            aria-label="${org.is_internal ? 'Unmark internal' : 'Mark as internal'}" aria-pressed="${org.is_internal ? 'true' : 'false'}">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <path d="M3 14V2.5M3 2.5h8.5l-1.5 3 1.5 3H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"${org.is_internal ? ' fill="currentColor" fill-opacity="0.25"' : ''}/>
                             </svg>
                         </button>
                         <button class="action-btn danger" onclick="confirmDeleteOrg('${org.id}')" title="Delete org">
@@ -459,8 +479,12 @@ async function openAppAsOrg(appId, orgId, orgName) {
 // ===== Plan Badge Helper =====
 function getPlanBadge(org) {
     if (org.plan_type === 'subscription') {
-        if (org.subscription_tier === 'max') return { className: 'max', label: 'Max' };
-        return { className: 'pro', label: 'Pro' };
+        const tier = org.subscription_tier;
+        if (tier === 'starter') return { className: 'pro', label: 'Starter' };
+        if (tier === 'growth') return { className: 'pro', label: 'Growth' };
+        if (tier === 'scale') return { className: 'max', label: 'Scale' };
+        if (tier === 'max') return { className: 'max', label: 'Max (legacy)' };
+        return { className: 'pro', label: 'Pro (legacy)' };
     }
     if (org.plan_type === 'appsumo_lifetime') {
         return { className: 'appsumo', label: `AppSumo T${org.appsumo_tier || 1}` };
@@ -713,6 +737,24 @@ function closePlanOverride() {
     planOverrideOrgId = null;
 }
 
+// ===== Internal (left out of the Growth numbers) =====
+async function toggleOrgInternal(orgId) {
+    const org = allOrganizations.find(o => o.id === orgId);
+    if (!org) return;
+    const next = !org.is_internal;
+    try {
+        const { error } = await supabase.rpc('admin_set_org_internal', { p_org_id: orgId, p_internal: next });
+        if (error) throw error;
+        org.is_internal = next;
+        applyOrgFilters();
+        if (typeof AdminGrowth !== 'undefined') AdminGrowth.invalidate();
+        showToast(next ? `"${org.name}" marked internal` : `"${org.name}" counts in Growth again`, 'success');
+    } catch (error) {
+        console.error('Error changing internal flag:', error);
+        showToast('Error changing the internal flag', 'error');
+    }
+}
+
 // ===== Delete Organization =====
 function confirmDeleteOrg(orgId) {
     const org = allOrganizations.find(o => o.id === orgId);
@@ -950,9 +992,15 @@ async function switchTab(tabId) {
     document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`.admin-tab[data-tab="${tabId}"]`).classList.add('active');
 
+    document.getElementById('tab-growth').style.display = tabId === 'growth' ? 'block' : 'none';
     document.getElementById('tab-orgs').style.display = tabId === 'orgs' ? 'block' : 'none';
     document.getElementById('tab-apps').style.display = tabId === 'apps' ? 'block' : 'none';
     document.getElementById('tab-users').style.display = tabId === 'users' ? 'block' : 'none';
+
+    // Growth reloads only if something changed (period, the toggle, an internal flag)
+    if (tabId === 'growth' && typeof AdminGrowth !== 'undefined') {
+        AdminGrowth.load();
+    }
 
     // Lazy-load users on first tab switch
     if (tabId === 'users' && allUsers.length === 0) {
@@ -987,6 +1035,7 @@ function formatRelativeDate(dateStr) {
 window.openOrgDetail = openOrgDetail;
 window.openPlanOverride = openPlanOverride;
 window.confirmDeleteOrg = confirmDeleteOrg;
+window.toggleOrgInternal = toggleOrgInternal;
 window.viewAsOrg = viewAsOrg;
 window.openAppAsOrg = openAppAsOrg;
 window.resetPassword = resetPassword;

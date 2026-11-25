@@ -555,7 +555,8 @@ function startAutomation(templateId) {
 
     // Redirect to signup/login with template context
     // In the future, this could open a modal to collect company info first
-    window.location.href = '/app/login.html?template=' + templateId;
+    const templateUrl = '/app/login.html?template=' + encodeURIComponent(templateId);
+    window.location.href = window.Analytics?.withAttribution ? window.Analytics.withAttribution(templateUrl) : templateUrl;
 }
 
 // ===== Stats Counter Animation =====
@@ -1440,7 +1441,11 @@ function handleConfirmAndSignup() {
         analysis_succeeded: !!_analysisResult
     });
 
-    window.location.href = '/app/signup.html?onboarding=true';
+    // withAttribution carries this visit's source (?src=) to the signup page,
+    // which stores it on the account. A code redirect clicks no link, so the
+    // delegated listener in js/analytics.js can't add it here.
+    const signupUrl = '/app/signup.html?onboarding=true';
+    window.location.href = window.Analytics?.withAttribution ? window.Analytics.withAttribution(signupUrl) : signupUrl;
 }
 
 // Add shake animation for validation

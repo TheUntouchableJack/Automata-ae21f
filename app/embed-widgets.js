@@ -245,7 +245,18 @@ function openRoyaltySignup(automationType) {
     }));
 
     // Redirect to signup
-    window.location.href = '/signup.html?ref=automation-' + encodeURIComponent(automationType);
+    window.location.href = royaltyWidgetSignupUrl();
+}
+
+/**
+ * The signup page, carrying this visit's source when it is known (js/analytics.js
+ * ?src=), else tagged blog_widget. The old /signup.html?ref= target 404'd: the
+ * signup page lives under /app/. The widget type is kept in signup_context above.
+ */
+function royaltyWidgetSignupUrl() {
+    const base = '/app/signup.html';
+    const carried = window.Analytics?.withAttribution ? window.Analytics.withAttribution(base) : base;
+    return carried === base ? base + '?src=blog_widget' : carried;
 }
 
 /**
@@ -266,12 +277,12 @@ function openAppBuilder(appType) {
                     app_type: appType,
                     source: 'embed_widget'
                 }));
-                window.location.href = '/signup.html?ref=app-' + encodeURIComponent(appType);
+                window.location.href = royaltyWidgetSignupUrl();
             }
         });
     } else {
         // Fallback - go to signup
-        window.location.href = '/signup.html?ref=app-' + encodeURIComponent(appType);
+        window.location.href = royaltyWidgetSignupUrl();
     }
 }
 

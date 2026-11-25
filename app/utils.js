@@ -108,6 +108,19 @@ const AppUtils = (function() {
                 limits = getOrgLimits(org);
             }
 
+            // Analytics: the person gets their org and plan, and the org is a
+            // PostHog group. Not reached while a super admin views as an org
+            // (that path returned above), so Jay never joins a customer's group.
+            if (typeof royaltyWhenAnalytics === 'function') {
+                const planLabel = org.plan_type === 'subscription'
+                    ? (org.subscription_tier || 'subscription')
+                    : (org.plan_type || 'free');
+                royaltyWhenAnalytics(A => {
+                    A.identify(userId, { org_id: org.id, plan: planLabel });
+                    A.group('organization', org.id, { plan: planLabel });
+                });
+            }
+
             // Set admin bypass for rate limits (org owners/admins shouldn't be throttled)
             const isAdminRole = memberships[0].role === 'admin' || memberships[0].role === 'owner';
             if (typeof RateLimiter !== 'undefined' && typeof RateLimiter.setAdminStatus === 'function') {

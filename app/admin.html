@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="sidebar.css?v=5">
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="admin.css?v=2">
     <link rel="stylesheet" href="../i18n/i18n.css">
     <link rel="stylesheet" href="danger-modal.css">
     <!-- Analytics: PostHog via the first-party /ingest proxy (netlify.toml).
@@ -22,7 +22,7 @@
          replay + masking inside /app only. See js/analytics.js. -->
     <script src="/js/analytics-config.js?v=1" defer></script>
     <script src="/js/notrack.js?v=1" defer></script>
-    <script src="/js/analytics.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=2" defer></script>
 </head>
 <body>
     <!-- App Layout with Sidebar -->
@@ -40,7 +40,7 @@
                             </svg>
                             Super Admin
                         </h1>
-                        <p class="page-subtitle">Manage organizations, users, and plans</p>
+                        <p class="page-subtitle">Growth, organizations, users and plans</p>
                     </div>
                 </div>
             </div>
@@ -48,36 +48,144 @@
             <!-- Tab Navigation -->
             <div class="admin-tabs">
                 <div class="container">
-                    <button class="admin-tab active" data-tab="orgs">Organizations</button>
+                    <button class="admin-tab active" data-tab="growth">Growth</button>
+                    <button class="admin-tab" data-tab="orgs">Organizations</button>
                     <button class="admin-tab" data-tab="apps">Apps</button>
                     <button class="admin-tab" data-tab="users">Users</button>
                 </div>
             </div>
 
+            <!-- ===== Growth Tab (app/admin-growth.js) ===== -->
+            <section id="tab-growth">
+                <div class="growth-toolbar">
+                    <div class="container">
+                        <div class="growth-periods" role="group" aria-label="Period">
+                            <button type="button" class="growth-period" data-growth-period="7" aria-pressed="false">7d</button>
+                            <button type="button" class="growth-period active" data-growth-period="30" aria-pressed="true">30d</button>
+                            <button type="button" class="growth-period" data-growth-period="90" aria-pressed="false">90d</button>
+                            <button type="button" class="growth-period" data-growth-period="all" aria-pressed="false">All</button>
+                        </div>
+                        <label class="checkbox-label growth-internal-toggle">
+                            <input type="checkbox" id="growth-include-internal"> Include internal <span id="growth-internal-count" class="text-muted"></span>
+                        </label>
+                        <span class="growth-window text-muted" id="growth-window"></span>
+                        <button type="button" class="btn btn-secondary btn-sm" id="growth-refresh">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="admin-content">
+                    <div class="container" id="growth-body" aria-busy="true">
+                        <div class="loading-container" id="growth-loading">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <p class="growth-error" id="growth-error" role="alert" style="display: none;"></p>
+                        <p class="growth-status" id="growth-traffic-status" style="display: none;"></p>
+
+                        <div class="growth-kpis" id="growth-kpis"></div>
+
+                        <div class="growth-grid-2">
+                            <div class="growth-card">
+                                <h3 class="growth-card-title">Visitors per day <span class="growth-note">PostHog, marketing pages</span></h3>
+                                <div id="growth-chart-visitors" class="growth-chart"></div>
+                            </div>
+                            <div class="growth-card">
+                                <h3 class="growth-card-title">Sign-ups per day <span class="growth-note">database</span></h3>
+                                <div id="growth-chart-signups" class="growth-chart"></div>
+                            </div>
+                        </div>
+
+                        <div class="growth-card">
+                            <h3 class="growth-card-title">Funnel</h3>
+                            <div id="growth-funnel" class="growth-funnel"></div>
+                        </div>
+
+                        <div class="growth-grid-2">
+                            <div class="growth-card">
+                                <h3 class="growth-card-title">Where visitors come from <span class="growth-note">PostHog, the page each visit started on</span></h3>
+                                <div id="growth-sources-traffic"></div>
+                            </div>
+                            <div class="growth-card">
+                                <h3 class="growth-card-title">Where sign-ups come from <span class="growth-note">database, this period's sign-ups</span></h3>
+                                <div id="growth-sources-signups" class="growth-scroll"></div>
+                            </div>
+                        </div>
+
+                        <div class="growth-card">
+                            <h3 class="growth-card-title">Weekly cohorts <span class="growth-note">share of each signup week that reached each step, so far</span></h3>
+                            <div id="growth-cohorts" class="growth-scroll"></div>
+                        </div>
+
+                        <div class="growth-card">
+                            <h3 class="growth-card-title">Recent sign-ups <span class="growth-note">the latest 25 · click a row for details</span></h3>
+                            <div id="growth-recent" class="growth-scroll"></div>
+                        </div>
+
+                        <div class="growth-card">
+                            <h3 class="growth-card-title">Customer network <span class="growth-note">what the businesses' own customers do</span></h3>
+                            <div class="growth-grid-3">
+                                <div><div class="growth-network-head" id="growth-chart-members-head"></div><div id="growth-chart-members" class="growth-chart-sm"></div></div>
+                                <div><div class="growth-network-head" id="growth-chart-checkins-head"></div><div id="growth-chart-checkins" class="growth-chart-sm"></div></div>
+                                <div><div class="growth-network-head" id="growth-chart-redemptions-head"></div><div id="growth-chart-redemptions" class="growth-chart-sm"></div></div>
+                            </div>
+                        </div>
+
+                        <details class="growth-card growth-details">
+                            <summary>Daily numbers (table)</summary>
+                            <div id="growth-daily-table" class="growth-scroll"></div>
+                        </details>
+
+                        <details class="growth-card growth-details">
+                            <summary>How each number is counted</summary>
+                            <ul class="growth-defs">
+                                <li><strong>Visitors</strong>: distinct visitor ids per day on the marketing pages, summed over the days. Marketing pages are cookieless, so one person is a new id every day: weekly or monthly uniques would read high, so none are shown.</li>
+                                <li><strong>Sign-up</strong>: an organization created. Staff invited to a team and customers of an app get no organization, so they don't count.</li>
+                                <li><strong>Confirmed email</strong>: the owner clicked the confirmation link.</li>
+                                <li><strong>Came back</strong>: the owner opened the dashboard more than 24 hours after signing up. Super Admin "view as" doesn't count.</li>
+                                <li><strong>Has a reward</strong>: at least one live reward. Publishing isn't used: every new app is published automatically.</li>
+                                <li><strong>First customer</strong>: at least one customer joined the business's app. The business's own team doesn't count.</li>
+                                <li><strong>Activated</strong>: at least 5 customers and at least one check-in by one of them.</li>
+                                <li><strong>Paid</strong>: a subscription that is active or trialing; its date is the last plan change. <strong>Churned</strong>: the subscription ended.</li>
+                                <li><strong>Est. MRR</strong>: each paid business at its tier's monthly list price (Starter $19.99, Growth $39.99, Scale $79.99; legacy Pro $299, Max $749). Annual vs monthly billing isn't stored.</li>
+                                <li><strong>Internal</strong> businesses (Royalty's own and test accounts) are left out unless "Include internal" is ticked. Mark one on the Organizations tab.</li>
+                                <li>Days are UTC. A period of 30 days is today so far plus the 29 days before; "the days before" is the 30 days ahead of that.</li>
+                            </ul>
+                        </details>
+                    </div>
+                </div>
+            </section>
+
             <!-- ===== Organizations Tab ===== -->
-            <section id="tab-orgs">
+            <section id="tab-orgs" style="display: none;">
                 <!-- Stats Bar -->
                 <div class="stats-bar">
                     <div class="container">
                         <div class="stat-item">
                             <span class="stat-value" id="stat-total-orgs">0</span>
-                            <span class="stat-label">Total Orgs</span>
+                            <span class="stat-label">Businesses</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-value" id="stat-free-orgs">0</span>
                             <span class="stat-label">Free</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value" id="stat-pro-orgs">0</span>
-                            <span class="stat-label">Pro</span>
+                            <span class="stat-value" id="stat-starter-orgs">0</span>
+                            <span class="stat-label">Starter</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value" id="stat-max-orgs">0</span>
-                            <span class="stat-label">Max</span>
+                            <span class="stat-value" id="stat-growth-orgs">0</span>
+                            <span class="stat-label">Growth</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value" id="stat-appsumo-orgs">0</span>
-                            <span class="stat-label">AppSumo</span>
+                            <span class="stat-value" id="stat-scale-orgs">0</span>
+                            <span class="stat-label">Scale</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-legacy-orgs">0</span>
+                            <span class="stat-label">Legacy</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-internal-orgs">0</span>
+                            <span class="stat-label">Internal</span>
                         </div>
                     </div>
                 </div>
@@ -97,8 +205,11 @@
                                 <select id="plan-filter" class="filter-select">
                                     <option value="">All Plans</option>
                                     <option value="free">Free</option>
-                                    <option value="subscription">Subscription</option>
-                                    <option value="appsumo_lifetime">AppSumo</option>
+                                    <option value="starter">Starter</option>
+                                    <option value="growth">Growth</option>
+                                    <option value="scale">Scale</option>
+                                    <option value="legacy">Legacy (Pro, Max, AppSumo)</option>
+                                    <option value="internal">Internal only</option>
                                 </select>
                             </div>
                         </div>
@@ -441,12 +552,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../i18n/i18n.js?v=14"></script>
     <script src="workspace.js?v=1"></script>
-    <script src="auth.js?v=14"></script>
-    <script src="utils.js?v=6"></script>
+    <script src="auth.js?v=15"></script>
+    <script src="utils.js?v=7"></script>
     <script src="danger-modal.js?v=1"></script>
     <script src="audit-log.js?v=1"></script>
     <script src="plan-limits.js?v=1"></script>
     <script src="sidebar.js?v=26"></script>
-    <script src="admin.js?v=2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.0/dist/apexcharts.min.js"></script>
+    <script src="admin-growth.js?v=1"></script>
+    <script src="admin.js?v=3"></script>
 </body>
 </html>

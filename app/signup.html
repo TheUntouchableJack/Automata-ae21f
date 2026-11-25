@@ -406,7 +406,7 @@
          replay + masking inside /app only. See js/analytics.js. -->
     <script src="/js/analytics-config.js?v=1" defer></script>
     <script src="/js/notrack.js?v=1" defer></script>
-    <script src="/js/analytics.js?v=1" defer></script>
+    <script src="/js/analytics.js?v=2" defer></script>
 </head>
 <body>
     <div class="signup-layout" id="signup-layout">
@@ -578,7 +578,7 @@
     <script src="../i18n/i18n.js?v=14"></script>
     <script src="onboarding-storage.js?v=3"></script>
     <script src="workspace.js?v=1"></script>
-    <script src="auth.js?v=14"></script>
+    <script src="auth.js?v=15"></script>
     <script src="password-toggle.js?v=2"></script>
     <script src="celebrate.js?v=2"></script>
     <script src="onboarding-transition.js?v=2"></script>
@@ -636,11 +636,33 @@
             if (_plan) {
                 try { sessionStorage.setItem('royalty_plan_intent', _plan); } catch (e) { /* private mode */ }
             }
-            window.Analytics?.track('signup_page_viewed', {
+            // royaltyWhenAnalytics: this inline script runs before the deferred
+            // analytics.js, so a direct call here was always dropped.
+            royaltyWhenAnalytics(A => A.track('signup_page_viewed', {
                 plan_intent: _plan || null,
                 from_onboarding: _params.get('onboarding') === 'true'
-            });
+            }));
         } catch (e) { /* analytics must never block signup */ }
+
+        // Where this sign-up came from: the visit's attribution carried in
+        // ?src= (js/analytics.js), plus the plan button and whether the visitor
+        // came through the homepage builder. Stored on the account as
+        // signup_source (auth metadata); handle_new_user ignores the key and
+        // Super Admin → Growth reads it. null when unknown or opted out.
+        function signupSource() {
+            try {
+                const attr = window.Analytics?.attribution ? window.Analytics.attribution() : null;
+                if (!attr) return null;
+                const params = new URLSearchParams(window.location.search);
+                const plan = (params.get('plan') || '').slice(0, 40);
+                const out = Object.assign({}, attr);
+                if (plan) out.plan = plan;
+                if (params.get('onboarding') === 'true') out.via_hero = true;
+                return out;
+            } catch (e) {
+                return null;
+            }
+        }
 
         // Redirect if already logged in
         redirectIfAuthenticated();
@@ -808,19 +830,28 @@
             if (progressFill) progressFill.style.width = '30%';
 
             try {
+                const source = signupSource();
+                const metadata = { first_name: firstName, last_name: lastName };
+                if (source) metadata.signup_source = source;
                 const { data: signUpData, error: signUpError } = await db.auth.signUp({
                     email,
                     password,
                     options: {
-                        data: {
-                            first_name: firstName,
-                            last_name: lastName
-                        },
+                        data: metadata,
                         emailRedirectTo: window.location.origin + '/app/login.html'
                     }
                 });
 
                 if (signUpError) throw signUpError;
+
+                // Both branches below (straight in, or confirm by email) are an
+                // account created. $set_once keeps the FIRST source on the person.
+                royaltyWhenAnalytics(A => A.track('account_created', {
+                    confirm_required: !signUpData.session,
+                    source: source ? (source.utm_source || source.referrer || 'direct') : 'unknown',
+                    via_hero: !!(source && source.via_hero),
+                    $set_once: source ? { signup_source: source } : {}
+                }));
 
                 // Capture whether this is a "warm" signup (came from the homepage with
                 // business data) BEFORE anything clears storage. The warm path commits

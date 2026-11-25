@@ -431,6 +431,9 @@ entrypoint = "./functions/royal-ai-recommend/index.ts"
 [functions.admin-actions]
 verify_jwt = false
 
+[functions.admin-growth-traffic]
+verify_jwt = false
+
 [functions.ai-health]
 verify_jwt = false
 

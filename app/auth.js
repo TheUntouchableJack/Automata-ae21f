@@ -7,6 +7,21 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Make client available globally for other scripts
 window.supabase = db;
 
+// ===== Analytics timing =====
+// js/analytics.js is a deferred script, so it runs only after the whole page
+// has been parsed. Anything that calls window.Analytics before that (an inline
+// script, or an auth check that resolves early) finds it undefined and the
+// call is lost. This runs fn now if Analytics exists, otherwise once the
+// deferred scripts have run (DOMContentLoaded fires after them).
+function royaltyWhenAnalytics(fn) {
+    const go = () => {
+        if (!window.Analytics) return;
+        try { fn(window.Analytics); } catch (e) { /* analytics must never break the app */ }
+    };
+    if (window.Analytics || document.readyState !== 'loading') { go(); return; }
+    document.addEventListener('DOMContentLoaded', go, { once: true });
+}
+
 // ===== Auth Helper Functions =====
 
 /**
@@ -186,7 +201,7 @@ async function signOut() {
         // Clear the analytics identity too, or the next person to use this
         // browser inherits the previous user's id and their activity merges
         // into the wrong account.
-        window.Analytics?.reset();
+        royaltyWhenAnalytics(A => A.reset());
         window.location.href = '/app/login.html';
     }
     return { error };
@@ -238,8 +253,9 @@ async function requireAuth() {
     // place that needs to tie the analytics session to a stable user id.
     // Without it the post-signup funnel can't join across page loads (/app is
     // multi-page, not a SPA — every nav is a fresh document).
-    // Only the id is sent: no email, no name.
-    window.Analytics?.identify(user.id);
+    // Only the id is sent: no email, no name. The org and plan are added by
+    // AppUtils.loadOrganization once the org resolves.
+    royaltyWhenAnalytics(A => A.identify(user.id));
 
     // Workspace gate. Sends a scoped user (a client who only manages venues
     // and their app) off pages that aren't part of their workspace. For every
