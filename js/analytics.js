@@ -156,8 +156,9 @@
     function attribution() { return decodeSrc(visitSrc); }
 
     // Marketing pages and the two pre-account pages. Inside the product a
-    // visit's source no longer matters, so app links are left alone.
-    var decorates = !isApp || /^\/app\/(signup|login)\.html$/.test(window.location.pathname);
+    // visit's source no longer matters, so app links are left alone. Netlify's
+    // pretty URLs serve /app/signup as well as /app/signup.html.
+    var decorates = !isApp || /^\/app\/(signup|login)(\.html)?$/.test(window.location.pathname);
 
     function decorateLink(a) {
         var url;

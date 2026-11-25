@@ -144,6 +144,11 @@ describe('attribution: carried on links and forms, never stored', () => {
     expect(click('/app/customers.html')).toBe('/app/customers.html')
     load({ url: 'https://royaltyapp.ai/app/login.html?utm_source=email', referrer: '' })
     expect(click('/app/signup.html')).toMatch(/[?&]src=/)
+    // Netlify pretty URLs: the same pages without .html, and links rewritten to match
+    load({ url: 'https://royaltyapp.ai/app/login?utm_source=email', referrer: '' })
+    expect(click('/app/signup')).toMatch(/^\/app\/signup\?src=/)
+    load({ url: 'https://royaltyapp.ai/app/signup?src=' + encodeURIComponent('s=email&l=/app/login'), referrer: 'https://royaltyapp.ai/app/login' })
+    expect(window.Analytics.attribution()).toEqual({ utm_source: 'email', landing: '/app/login' })
   })
 
   it('withAttribution keeps the path relative and its own params', () => {
