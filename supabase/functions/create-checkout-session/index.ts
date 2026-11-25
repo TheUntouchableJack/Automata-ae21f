@@ -4,6 +4,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
+import { decide, REFUSAL_MESSAGES, safeReturnUrl } from '../_shared/checkout-rules.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') as string, {
   apiVersion: '2023-10-16',
@@ -102,10 +103,10 @@ Deno.serve(async (req) => {
     // Determine if this is a one-time bundle purchase
     const isBundle = priceKey.startsWith('sms_bundle_') || priceKey.startsWith('email_bundle_')
 
-    // Get organization
+    // Get organization (with what decide() needs to know about its plan and subscriptions)
     const { data: org, error: orgError } = await supabase
       .from('organizations')
-      .select('id, name, stripe_customer_id')
+      .select('id, name, stripe_customer_id, plan_type, subscription_status, stripe_subscription_id, cancelled_at, has_royalty_pro, royalty_pro_subscription_id, royalty_pro_status')
       .eq('id', organizationId)
       .single()
 
@@ -119,18 +120,18 @@ Deno.serve(async (req) => {
     // Verify user has access to this organization
     const { data: membership } = await supabase
       .from('organization_members')
-      .select('role')
+      .select('role, is_impersonating')
       .eq('organization_id', organizationId)
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    // The role was already being selected and then discarded, so ANY org
-    // member could start a checkout for the whole organization. Same guard as
-    // cancel-subscription/index.ts.
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+    // Owners/admins only, never while "viewing as"; one plan subscription per org; the trial only
+    // for an org that never had one (_shared/checkout-rules.ts). Decided before Stripe is touched.
+    const decision = decide({ priceKey, org, membership })
+    if (!decision.ok) {
       return new Response(
-        JSON.stringify({ error: 'Access denied. Only owners and admins can manage subscriptions.' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: REFUSAL_MESSAGES[decision.code] || 'Checkout refused', code: decision.code }),
+        { status: decision.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -156,7 +157,8 @@ Deno.serve(async (req) => {
     }
 
     // Determine the origin for redirect URLs
-    const origin = req.headers.get('origin') || 'https://royaltyapp.ai'
+    const requestOrigin = req.headers.get('origin') || ''
+    const origin = allowedOrigins.includes(requestOrigin) ? requestOrigin : 'https://royaltyapp.ai'
 
     // Look up promo code if provided
     let stripeCouponId: string | undefined
@@ -201,10 +203,18 @@ Deno.serve(async (req) => {
     // Add subscription-specific config
     if (!isBundle) {
       sessionConfig.subscription_data = {
-        trial_period_days: 14,
         metadata: {
           organization_id: organizationId,
         },
+      }
+      if (decision.trialDays > 0) {
+        // The pricing page promises a 14-day trial with no credit card. A trial that ends without
+        // a card cancels; stripe-webhook then moves the org back to Free (plan D1).
+        sessionConfig.subscription_data.trial_period_days = decision.trialDays
+        sessionConfig.subscription_data.trial_settings = {
+          end_behavior: { missing_payment_method: 'cancel' },
+        }
+        sessionConfig.payment_method_collection = 'if_required'
       }
     }
 
@@ -213,11 +223,12 @@ Deno.serve(async (req) => {
       sessionConfig.ui_mode = 'embedded'
       sessionConfig.return_url = `${origin}/app/upgrade.html?session_id={CHECKOUT_SESSION_ID}&success=true`
     } else {
-      sessionConfig.success_url = successUrl || `${origin}/app/upgrade.html?session_id={CHECKOUT_SESSION_ID}&success=true`
-      sessionConfig.cancel_url = cancelUrl || `${origin}/app/upgrade.html?canceled=true`
+      // Only back to our own pages: a return URL from the browser can't send someone off-site.
+      sessionConfig.success_url = safeReturnUrl(successUrl, allowedOrigins, `${origin}/app/upgrade.html?session_id={CHECKOUT_SESSION_ID}&success=true`)
+      sessionConfig.cancel_url = safeReturnUrl(cancelUrl, allowedOrigins, `${origin}/app/upgrade.html?canceled=true`)
     }
 
-    // Create checkout session with 14-day trial
+    // Create checkout session (14-day trial only when decide() granted one)
     const session = await stripe.checkout.sessions.create(sessionConfig)
 
     // Return client_secret for embedded mode, url for redirect mode
@@ -225,15 +236,18 @@ Deno.serve(async (req) => {
       JSON.stringify({
         sessionId: session.id,
         url: session.url,
-        clientSecret: embedded ? session.client_secret : undefined
+        clientSecret: embedded ? session.client_secret : undefined,
+        trialDays: decision.trialDays,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
+    // Details stay in the function log. Stripe's own text can name the (masked) secret key, as
+    // "Expired API Key provided: sk_live_…" did on 2026-11-25, and means nothing to an owner.
     console.error('Error creating checkout session:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Checkout is unavailable right now. Please try again in a few minutes.', code: 'checkout_unavailable' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

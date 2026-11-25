@@ -17,12 +17,12 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ALLOWED_DAYS, buildQueries, shape } from '../_shared/growth-traffic.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const POSTHOG_QUERY_URL = 'https://us.posthog.com/api/projects/550932/query/'
-const ALLOWED_DAYS = [7, 30, 90, 365]
 const CACHE_MS = 5 * 60 * 1000
 
 const allowedOrigins = ['https://royaltyapp.ai', 'http://localhost:5173']
@@ -37,67 +37,7 @@ function getCorsHeaders(req: Request) {
   }
 }
 
-// ----- HogQL -----
-const HOSTS = `properties.$host IN ('royaltyapp.ai', 'www.royaltyapp.ai')`
-const MARKETING = `${HOSTS} AND NOT startsWith(coalesce(properties.$pathname, ''), '/app/')`
-// An entry pageview: arrived from outside the site (or typed / bookmarked).
-const ENTRY = `coalesce(properties.$referring_domain, '$direct') NOT IN ('royaltyapp.ai', 'www.royaltyapp.ai')`
-const DAY = `toString(toDate(toTimeZone(timestamp, 'UTC')))`
-const since = (days: number) => `timestamp >= toStartOfDay(toTimeZone(now(), 'UTC')) - toIntervalDay(${days - 1})`
-
-export function buildQueries(days: number) {
-  if (!ALLOWED_DAYS.includes(days)) throw new Error('days not allowed')
-  return {
-    // Twice the window, so the previous period comes from the same query.
-    daily: `
-      SELECT ${DAY} AS day,
-             count(DISTINCT if(event = '$pageview' AND ${MARKETING}, person_id, NULL)) AS visitors,
-             countIf(event = '$pageview' AND ${MARKETING}) AS pageviews,
-             count(DISTINCT if(event = 'signup_page_viewed', person_id, NULL)) AS signup_page
-      FROM events
-      WHERE ${since(days * 2)} AND event IN ('$pageview', 'signup_page_viewed') AND ${HOSTS}
-      GROUP BY day ORDER BY day`,
-    sources: `
-      SELECT coalesce(nullIf(properties.$referring_domain, ''), '$direct') AS domain,
-             count(DISTINCT person_id) AS visitors
-      FROM events
-      WHERE ${since(days)} AND event = '$pageview' AND ${MARKETING} AND ${ENTRY}
-      GROUP BY domain ORDER BY visitors DESC LIMIT 15`,
-    utm: `
-      SELECT properties.utm_source AS source, coalesce(properties.utm_campaign, '') AS campaign,
-             count(DISTINCT person_id) AS visitors
-      FROM events
-      WHERE ${since(days)} AND event = '$pageview' AND ${MARKETING}
-        AND notEmpty(coalesce(properties.utm_source, ''))
-      GROUP BY source, campaign ORDER BY visitors DESC LIMIT 15`,
-    landing: `
-      SELECT coalesce(properties.$pathname, '/') AS path, count(DISTINCT person_id) AS visitors
-      FROM events
-      WHERE ${since(days)} AND event = '$pageview' AND ${MARKETING} AND ${ENTRY}
-      GROUP BY path ORDER BY visitors DESC LIMIT 15`,
-    // Same day, same id. "Preview built" is hero_preview_shown: it also fires when the AI call
-    // failed and the template fallback was shown. AI successes are counted separately.
-    hero: `
-      SELECT countIf(a > 0) AS started,
-             countIf(a > 0 AND b > 0) AS analyzed,
-             countIf(a > 0 AND b > 0 AND p > 0) AS preview,
-             countIf(a > 0 AND b > 0 AND p > 0 AND d > 0) AS clicked_signup,
-             countIf(s > 0) AS ai_succeeded
-      FROM (
-        SELECT person_id, ${DAY} AS day,
-               countIf(event IN ('hero_prompt_started', 'hero_prompt_prefilled')) AS a,
-               countIf(event = 'hero_analyze_clicked') AS b,
-               countIf(event = 'hero_preview_shown') AS p,
-               countIf(event = 'hero_confirmed_signup') AS d,
-               countIf(event = 'hero_analysis_succeeded') AS s
-        FROM events
-        WHERE ${since(days)} AND ${HOSTS}
-          AND event IN ('hero_prompt_started', 'hero_prompt_prefilled', 'hero_analyze_clicked',
-                        'hero_preview_shown', 'hero_confirmed_signup', 'hero_analysis_succeeded')
-        GROUP BY person_id, day
-      )`,
-  }
-}
+// buildQueries() and shape() live in _shared/growth-traffic.ts so vitest tests the real code.
 
 async function hogql(key: string, name: string, query: string): Promise<unknown[][]> {
   const res = await fetch(POSTHOG_QUERY_URL, {
@@ -112,50 +52,6 @@ async function hogql(key: string, name: string, query: string): Promise<unknown[
   }
   const json = await res.json()
   return Array.isArray(json?.results) ? json.results : []
-}
-
-const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : Number(v) || 0)
-
-function isoDay(d: Date) { return d.toISOString().slice(0, 10) }
-
-export function shape(days: number, raw: Record<string, unknown[][] | null>) {
-  // Daily rows for both windows, zero-filled.
-  const byDay = new Map<string, { visitors: number; pageviews: number; signup_page: number }>()
-  for (const r of raw.daily || []) {
-    byDay.set(String(r[0]), { visitors: num(r[1]), pageviews: num(r[2]), signup_page: num(r[3]) })
-  }
-  const today = new Date()
-  const dayAt = (offset: number) => {
-    const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
-    d.setUTCDate(d.getUTCDate() - offset)
-    return isoDay(d)
-  }
-  const daily = []
-  for (let i = days - 1; i >= 0; i--) {
-    const date = dayAt(i)
-    daily.push({ date, ...(byDay.get(date) || { visitors: 0, pageviews: 0, signup_page: 0 }) })
-  }
-  const prev = { visitors: 0, pageviews: 0, signup_page: 0 }
-  for (let i = days * 2 - 1; i >= days; i--) {
-    const row = byDay.get(dayAt(i))
-    if (row) { prev.visitors += row.visitors; prev.pageviews += row.pageviews; prev.signup_page += row.signup_page }
-  }
-  const cur = daily.reduce((s, d) => ({
-    visitors: s.visitors + d.visitors, pageviews: s.pageviews + d.pageviews, signup_page: s.signup_page + d.signup_page,
-  }), { visitors: 0, pageviews: 0, signup_page: 0 })
-
-  const h = (raw.hero && raw.hero[0]) || []
-  return {
-    days,
-    daily,
-    totals: { cur, prev: raw.daily ? prev : null },
-    sources: (raw.sources || []).map((r) => ({ domain: String(r[0] ?? ''), visitors: num(r[1]) })),
-    utm: (raw.utm || []).map((r) => ({ source: String(r[0] ?? ''), campaign: String(r[1] ?? ''), visitors: num(r[2]) })),
-    landing: (raw.landing || []).map((r) => ({ path: String(r[0] ?? ''), visitors: num(r[1]) })),
-    hero: raw.hero ? {
-      started: num(h[0]), analyzed: num(h[1]), preview: num(h[2]), clicked_signup: num(h[3]), ai_succeeded: num(h[4]),
-    } : null,
-  }
 }
 
 const cache = new Map<number, { at: number; body: unknown }>()

@@ -4,6 +4,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
+import {
+  subscriptionRole, updatedTarget, deletedAction, paymentSucceededUpdate, paymentFailedColumn, invoiceIsAddOn,
+} from '../_shared/stripe-webhook-rules.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') as string, {
   apiVersion: '2023-10-16',
@@ -175,7 +178,7 @@ Deno.serve(async (req) => {
         // Find organization by Stripe customer ID
         const { data: org } = await supabase
           .from('organizations')
-          .select('id')
+          .select('id, stripe_subscription_id, royalty_pro_subscription_id')
           .eq('stripe_customer_id', customerId)
           .maybeSingle()
 
@@ -186,6 +189,22 @@ Deno.serve(async (req) => {
 
         const priceId = subscription.items.data[0]?.price.id
         const planInfo = PRICE_TO_TIER[priceId]
+
+        // Only the subscription the org runs on may change its plan; the add-on has its own column.
+        const role = subscriptionRole(subscription.id, org, !!planInfo?.isAddOn)
+        const target = updatedTarget(role, subscription.status)
+        if (target === 'addon') {
+          await supabase
+            .from('organizations')
+            .update({ royalty_pro_status: subscription.status })
+            .eq('id', org.id)
+          console.log(`Organization ${org.id} Royalty Pro updated: ${subscription.status}`)
+          break
+        }
+        if (target === null) {
+          console.log(`Organization ${org.id}: ignoring update for subscription ${subscription.id} (${role})`)
+          break
+        }
 
         // Build update object
         const updateData: Record<string, unknown> = {
@@ -220,12 +239,30 @@ Deno.serve(async (req) => {
         // Find organization and downgrade to free
         const { data: org } = await supabase
           .from('organizations')
-          .select('id')
+          .select('id, stripe_subscription_id, royalty_pro_subscription_id')
           .eq('stripe_customer_id', customerId)
           .maybeSingle()
 
         if (!org) {
           console.error(`Organization not found for customer: ${customerId}`)
+          break
+        }
+
+        const deletedPrice = subscription.items?.data?.[0]?.price?.id
+        const role = subscriptionRole(subscription.id, org, !!PRICE_TO_TIER[deletedPrice]?.isAddOn)
+        const action = deletedAction(role)
+        if (action === 'addon') {
+          // Royalty Pro ended: the lifetime plan underneath stays.
+          await supabase
+            .from('organizations')
+            .update({ has_royalty_pro: false, royalty_pro_status: 'canceled', plan_changed_at: new Date().toISOString() })
+            .eq('id', org.id)
+          console.log(`Organization ${org.id} Royalty Pro ended; plan kept`)
+          break
+        }
+        if (action === null) {
+          // Not the subscription this org runs on (a stray second one): the plan stays.
+          console.log(`Organization ${org.id}: subscription ${subscription.id} ended (${role}); plan kept`)
           break
         }
 
@@ -272,6 +309,8 @@ Deno.serve(async (req) => {
             id,
             name,
             subscription_tier,
+            stripe_subscription_id,
+            royalty_pro_subscription_id,
             organization_members!inner(
               user_id,
               role,
@@ -286,11 +325,18 @@ Deno.serve(async (req) => {
           break
         }
 
-        // Update payment status
+        // Update payment status on the subscription that failed (the plan, or the add-on)
+        const isAddOnInvoice = (id: string) => !!PRICE_TO_TIER[id]?.isAddOn
+        const failedRole = subscriptionRole(invoice.subscription as string | null, org, invoiceIsAddOn(invoice, isAddOnInvoice))
+        const failedColumn = paymentFailedColumn(failedRole)
+        if (!failedColumn) {
+          console.log(`Organization ${org.id}: payment failed on subscription ${invoice.subscription} (${failedRole}); plan untouched`)
+          break
+        }
         await supabase
             .from('organizations')
             .update({
-              subscription_status: 'past_due',
+              [failedColumn]: 'past_due',
               payment_failure_count: attemptCount,
               last_payment_failure_at: new Date().toISOString(),
             })
@@ -414,7 +460,7 @@ If you have any questions, just reply to this email.
         // Find organization and confirm active status
         const { data: org } = await supabase
           .from('organizations')
-          .select('id')
+          .select('id, stripe_subscription_id, royalty_pro_subscription_id')
           .eq('stripe_customer_id', customerId)
           .maybeSingle()
 
@@ -423,14 +469,20 @@ If you have any questions, just reply to this email.
           break
         }
 
+        // A trial's $0 opening invoice must not turn 'trialing' into 'active'.
+        const paidRole = subscriptionRole(invoice.subscription as string | null, org,
+          invoiceIsAddOn(invoice, (id: string) => !!PRICE_TO_TIER[id]?.isAddOn))
+        const paidUpdate = paymentSucceededUpdate(paidRole, invoice.amount_paid)
+        if (!paidUpdate) {
+          console.log(`Organization ${org.id}: invoice ${invoice.id} (${paidRole}, paid ${invoice.amount_paid}) changes nothing`)
+          break
+        }
         await supabase
           .from('organizations')
-          .update({
-            subscription_status: 'active',
-          })
+          .update(paidUpdate)
           .eq('id', org.id)
 
-        console.log(`Organization ${org.id} payment succeeded`)
+        console.log(`Organization ${org.id} payment succeeded (${paidRole})`)
         break
       }
 
