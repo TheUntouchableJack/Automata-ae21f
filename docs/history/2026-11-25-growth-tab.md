@@ -31,9 +31,18 @@ Plan: can-we-enhance-our-breezy-flute. Branch `growth-analytics` (from `owner-jo
 
 ## Open
 
-- PostHog personal API key (query:read, project 550932) → secret `POSTHOG_PERSONAL_API_KEY`. Until then the tab
-  says "Traffic not connected".
 - One real sign-up from a browser without Do Not Track, to see a source land in Recent sign-ups.
+
+## Traffic connected (16:15 UTC)
+
+- Secret `POSTHOG_PERSONAL_API_KEY` set (query:read, project 550932); the key never went through the chat.
+- Checked against PostHog's own data, day by day: the tab's visitors and pageviews match PostHog for royaltyapp.ai
+  marketing pages (Nov 22: 6/8, 23: 3/3, 24: 3/4, 25: 3/7). PostHog Web Analytics shows more (23 visitors in
+  90 days) because it also counts `/app/` pages and one localhost visit; the tab counts marketing pages only.
+- Marketing pages have sent pageviews only since 2026-11-22 09:32 UTC, so every comparison with an earlier
+  period reads "up from 0" until a full period has passed.
+- Hero funnel matches (one visitor on Nov 22: started, analyzed, preview). `signup_page_viewed` has never fired
+  before today's fix, so "reached sign-up" counts from today on.
 
 ## Follow-up the same day: the noticed items, fixed (`014fedf`)
 
